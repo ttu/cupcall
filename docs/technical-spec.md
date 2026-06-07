@@ -2,7 +2,7 @@
 
 **Status:** Draft v0.3
 **Date:** 2026-06-06
-**Companion to:** [`functional-spec.md`](./functional-spec.md) — read that first; this document describes *how* to build it.
+**Companion to:** [`functional-spec.md`](./functional-spec.md) — read that first; this document describes _how_ to build it.
 
 ---
 
@@ -14,12 +14,13 @@ testing, and deployment.
 
 Engineering practices (TDD, clean code, type safety, error handling, security, observability, a11y,
 quality gates, Definition of Done) are the standing working agreement in [`/CLAUDE.md`](../CLAUDE.md).
-This spec covers the *architecture and stack* that realize them.
+This spec covers the _architecture and stack_ that realize them.
 
 Guiding constraints (functional spec §13 + this session's direction):
+
 - **Vendor-neutral** — depend only on **standard PostgreSQL** and portable libraries. **No proprietary
   managed-platform features** (no Supabase Auth, no Postgres RLS as the security boundary). The app must
-  run against any Postgres (Neon, Railway, Fly, RDS, a Supabase *database*, or local Docker) with only a
+  run against any Postgres (Neon, Railway, Fly, RDS, a Supabase _database_, or local Docker) with only a
   connection-string change.
 - **Most logic in TypeScript** — authorization, scoring/derivation, validation, and rate limiting all
   live in app-layer TS, not in the database or a vendor service.
@@ -38,35 +39,36 @@ Guiding constraints (functional spec §13 + this session's direction):
 
 ## 2. Recommended tech stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| Language | **TypeScript** (strict) | One language across web, server actions, engine, and sync. |
-| Framework | **Next.js 15 (App Router)** | Server Actions + Route Handlers for mutations; RSC for fast reads. |
-| Runtime | **Node 20 LTS** | Portable; runs the web app, sync script, and engine on any Node host. |
-| Database | **PostgreSQL (provider-agnostic)** | Standard Postgres only. Swap providers with a connection string. |
-| Data access | **Drizzle ORM** | Typed, lightweight, provider-agnostic; no client-side DB access — server only. |
-| Migrations | **Drizzle Kit** | SQL migrations in the repo; portable across providers; runs in CI. |
-| Authorization | **App-layer TS service/policy layer** | Single server-side gate enforces member/owner/lock/audit rules. Not RLS. |
-| Auth (identity) | **Auth.js v5** — Email (magic link) provider + Drizzle adapter | Passwordless, portable, sessions in our own Postgres. |
-| Email delivery | **Resend** (or any SMTP) | Sends magic-link emails (we no longer rely on a platform's built-in mailer). |
-| Validation | **Zod** | One schema for `tournament.json`, `results.json`, import/export, and forms. |
-| Scoring/derivation | **Pure TypeScript package** (`@cup/engine`, no IO) | Keystone for determinism; reused by sync job, server actions, and tests. |
-| Styling/UI | **Tailwind CSS** + **shadcn/ui** (Radix) | Fast, accessible, mobile-first; no heavy component runtime. |
-| Forms | **React Hook Form** + Zod resolver | Large prediction card with partial save; shared client/server schemas. |
-| Sync trigger | **GitHub Actions** on push to `data/**` | Runs the sync script; validates before the DB is touched. |
-| Rate limiting | **Postgres-backed counters** in TS | Stays on free tier; one DB, no extra service. |
-| Unit + integration tests | **Vitest** + **pglite** (in-memory Postgres) | Test-diamond; integration tests run against real in-memory Postgres, no mocks. |
-| E2E tests | **Playwright** | Critical flows (sign-in, predict, lock, owner edit, import). |
-| UI workshop | **Storybook** | Every reusable `shared/ui` component has stories. |
-| Logging | **pino** (structured) | Boundary logging; no secrets (§14). |
-| Lint/format | **ESLint** + **Prettier** | Auto-run after each step. |
-| Git hooks | **husky** + **lint-staged** | Pre-commit format/lint/typecheck; pre-push tests. |
-| Package mgmt | **pnpm** workspace | Isolates `@cup/engine` (domain) from the app slices. |
+| Layer                    | Choice                                                         | Why                                                                            |
+| ------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Language                 | **TypeScript** (strict)                                        | One language across web, server actions, engine, and sync.                     |
+| Framework                | **Next.js 15 (App Router)**                                    | Server Actions + Route Handlers for mutations; RSC for fast reads.             |
+| Runtime                  | **Node 20 LTS**                                                | Portable; runs the web app, sync script, and engine on any Node host.          |
+| Database                 | **PostgreSQL (provider-agnostic)**                             | Standard Postgres only. Swap providers with a connection string.               |
+| Data access              | **Drizzle ORM**                                                | Typed, lightweight, provider-agnostic; no client-side DB access — server only. |
+| Migrations               | **Drizzle Kit**                                                | SQL migrations in the repo; portable across providers; runs in CI.             |
+| Authorization            | **App-layer TS service/policy layer**                          | Single server-side gate enforces member/owner/lock/audit rules. Not RLS.       |
+| Auth (identity)          | **Auth.js v5** — Email (magic link) provider + Drizzle adapter | Passwordless, portable, sessions in our own Postgres.                          |
+| Email delivery           | **Resend** (or any SMTP)                                       | Sends magic-link emails (we no longer rely on a platform's built-in mailer).   |
+| Validation               | **Zod**                                                        | One schema for `tournament.json`, `results.json`, import/export, and forms.    |
+| Scoring/derivation       | **Pure TypeScript package** (`@cup/engine`, no IO)             | Keystone for determinism; reused by sync job, server actions, and tests.       |
+| Styling/UI               | **Tailwind CSS** + **shadcn/ui** (Radix)                       | Fast, accessible, mobile-first; no heavy component runtime.                    |
+| Forms                    | **React Hook Form** + Zod resolver                             | Large prediction card with partial save; shared client/server schemas.         |
+| Sync trigger             | **GitHub Actions** on push to `data/**`                        | Runs the sync script; validates before the DB is touched.                      |
+| Rate limiting            | **Postgres-backed counters** in TS                             | Stays on free tier; one DB, no extra service.                                  |
+| Unit + integration tests | **Vitest** + **pglite** (in-memory Postgres)                   | Test-diamond; integration tests run against real in-memory Postgres, no mocks. |
+| E2E tests                | **Playwright**                                                 | Critical flows (sign-in, predict, lock, owner edit, import).                   |
+| UI workshop              | **Storybook**                                                  | Every reusable `shared/ui` component has stories.                              |
+| Logging                  | **pino** (structured)                                          | Boundary logging; no secrets (§14).                                            |
+| Lint/format              | **ESLint** + **Prettier**                                      | Auto-run after each step.                                                      |
+| Git hooks                | **husky** + **lint-staged**                                    | Pre-commit format/lint/typecheck; pre-push tests.                              |
+| Package mgmt             | **pnpm** workspace                                             | Isolates `@cup/engine` (domain) from the app slices.                           |
 
 > **Stack confirmed.** (The original "Use this tech stack: xxx, yyy" was a placeholder; the table above
 > is the agreed stack.) Hosting: **Vercel** (web) + **Neon** (Postgres); magic-link email via **Resend**.
 
 ### Notable alternatives considered
+
 - **Auth library:** Auth.js v5 recommended; **Lucia** or **better-auth** are equally portable
   alternatives if more control over the session model is wanted. All store identity in our Postgres.
 - **DB provider:** Neon (serverless Postgres, generous free tier, branch-per-PR) pairs well with Vercel;
@@ -141,15 +143,19 @@ interface** (`index.ts`). Other features import **only** from that barrel — ne
 ```
 
 **Boundaries (enforced; lint rule recommended):**
+
 - A feature may import from its own internals, from `shared/`, and from another feature's `index.ts`.
 - A feature may **not** import another feature's internal paths.
 - `shared/` and `@cup/*` may **not** import from `features/`.
-- `@cup/engine` is domain code shared by the web app *and* the sync script (two real consumers, so the
+- `@cup/engine` is domain code shared by the web app _and_ the sync script (two real consumers, so the
   package is justified per the "shared only when multiple use cases" rule); it stays pure (no IO).
 
 ---
 
 ## 5. The scoring & derivation engine (`@cup/engine`)
+
+> **Status: implemented** (`packages/engine`, with `@cup/schemas` for validation). Design doc:
+> [`docs/features/scoring-engine.md`](./features/scoring-engine.md).
 
 The functional spec's correctness hinges on this. It is a **pure, dependency-free TypeScript module**:
 deterministic, no IO, no clock, no DB.
@@ -188,7 +194,7 @@ example as a test, and property tests for determinism (same input → same outpu
   - other members' cards visible only after lock.
 - Because authorization is centralized in TS (not DB RLS), it is unit-testable and provider-independent.
   The trade-off vs RLS — there is no second line of defense in the DB — is acceptable given the server is
-  the *only* client and all paths funnel through the service layer.
+  the _only_ client and all paths funnel through the service layer.
 - **Connection:** a single pooled Postgres connection (e.g. `DATABASE_URL`) used by the server and the
   sync job. Use a serverless-friendly pooler (PgBouncer / provider pooling) for Vercel functions.
 - **Re-scoring** lives in `@cup/engine` (TS), not Postgres functions; writes `scores.breakdown` (jsonb).
@@ -220,6 +226,7 @@ example as a test, and property tests for determinism (same input → same outpu
 ## 9. Validation (`@cup/schemas`)
 
 Single Zod source of truth for:
+
 - `tournament.json` and `results.json` (sync script + PR checks).
 - The **import/export** card format (functional-spec §6.6) — validates `tournamentId`, `version`, and
   that all team/player/match ids exist; partial imports allowed, unknown fields reported.
@@ -253,11 +260,11 @@ mocks for in-system collaborators. **Mock only at system boundaries** (network, 
 randomness, email/third-party). A thinner layer of pure-unit tests covers the engine, value objects,
 and schemas; a thin E2E layer covers critical flows.
 
-| Layer (diamond) | Scope | Tool | What |
-|---|---|---|---|
-| Unit (thin) | Engine, value objects, schemas | Vitest | Derivation/scoring golden fixtures, §7.7 worked example, determinism property tests; branded-type/value-object invariants; valid/invalid JSON & import payloads. |
-| **Integration (bulk)** | Feature slices end-to-end (application + infra + DB) | Vitest + **pglite** | Authorization (member vs owner vs lock), audit writes, owner edit/import re-score, sync idempotency (run twice → same scores). |
-| E2E (thin) | Whole app via browser | Playwright | Sign-in, fill card, lock enforcement, owner edit + audit, import, leaderboard. |
+| Layer (diamond)        | Scope                                                | Tool                | What                                                                                                                                                             |
+| ---------------------- | ---------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit (thin)            | Engine, value objects, schemas                       | Vitest              | Derivation/scoring golden fixtures, §7.7 worked example, determinism property tests; branded-type/value-object invariants; valid/invalid JSON & import payloads. |
+| **Integration (bulk)** | Feature slices end-to-end (application + infra + DB) | Vitest + **pglite** | Authorization (member vs owner vs lock), audit writes, owner edit/import re-score, sync idempotency (run twice → same scores).                                   |
+| E2E (thin)             | Whole app via browser                                | Playwright          | Sign-in, fill card, lock enforcement, owner edit + audit, import, leaderboard.                                                                                   |
 
 - In-memory pglite keeps DB integration tests fast, isolated per test, and provider-neutral (no Docker).
 - **CI** (GitHub Actions): lint + typecheck + unit + integration + build on every PR; the same gates run
@@ -302,9 +309,10 @@ The standing practices in [`/CLAUDE.md`](../CLAUDE.md) map to concrete tech here
 
 ## 15. Open technical decisions
 
-*(none currently open — the items below are locked.)*
+_(none currently open — the items below are locked.)_
 
 ### Resolved this session
+
 - **Frontend hosting → Vercel.** Free tier, per-PR previews, first-class Neon integration. Portable: the
   app is a standard Node/Next app, so Fly/Render/Cloudflare/self-host remain options.
 - **DB provider → Neon.** Serverless Postgres, free tier, branch-per-PR. Still just standard Postgres, so
@@ -319,4 +327,4 @@ The standing practices in [`/CLAUDE.md`](../CLAUDE.md) map to concrete tech here
 
 ---
 
-*End of technical specification — v0.3 draft.*
+_End of technical specification — v0.3 draft._

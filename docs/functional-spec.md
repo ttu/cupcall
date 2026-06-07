@@ -30,23 +30,23 @@ match kickoff**. As real results are entered, points are awarded automatically a
 
 ### Key product decisions
 
-| Decision | Choice |
-|---|---|
-| Platform | Responsive **website** (works on mobile browsers) |
-| Stack | **Next.js** (App Router) + **PostgreSQL** (provider-agnostic) + **TypeScript** |
-| Hosting | **Vercel** free tier (web) + a managed **Postgres** free tier (e.g. Neon) |
-| Auth | **Magic link** (email only, passwordless) |
-| Prediction flow | **All upfront**, single deadline at first kickoff |
-| Scoring system | Per the **"America MM 2026" Excel** schedule (group scores + group order + Round-of-8 + bronze/final + top-4 order + tournament-wide bets) |
-| Knockout progression | **Auto-derived**: group order from predicted scores → qualifiers → per-tie winner picks propagate the bracket. Group order, Round-of-8, finalists, and top-4 are computed, not entered |
-| Predictions scope | **One card per user per pool** (not shared across pools) |
-| Owner edits | A pool **owner can edit any member's answers in their pool at any time** (incl. after lock), fully audited |
-| Tournament & results data | **JSON committed to the repo**, no admin UI |
+| Decision                  | Choice                                                                                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Platform                  | Responsive **website** (works on mobile browsers)                                                                                                                                      |
+| Stack                     | **Next.js** (App Router) + **PostgreSQL** (provider-agnostic) + **TypeScript**                                                                                                         |
+| Hosting                   | **Vercel** free tier (web) + a managed **Postgres** free tier (e.g. Neon)                                                                                                              |
+| Auth                      | **Magic link** (email only, passwordless)                                                                                                                                              |
+| Prediction flow           | **All upfront**, single deadline at first kickoff                                                                                                                                      |
+| Scoring system            | Per the **"America MM 2026" Excel** schedule (group scores + group order + Round-of-8 + bronze/final + top-4 order + tournament-wide bets)                                             |
+| Knockout progression      | **Auto-derived**: group order from predicted scores → qualifiers → per-tie winner picks propagate the bracket. Group order, Round-of-8, finalists, and top-4 are computed, not entered |
+| Predictions scope         | **One card per user per pool** (not shared across pools)                                                                                                                               |
+| Owner edits               | A pool **owner can edit any member's answers in their pool at any time** (incl. after lock), fully audited                                                                             |
+| Tournament & results data | **JSON committed to the repo**, no admin UI                                                                                                                                            |
 
 ### Non-goals (v1)
 
 - No admin web UI for **tournament/results data** — those are managed as code (JSON in repo).
-  (Pool owners *can* edit members' predictions in-app — that's a pool feature, §8.3, not data admin.)
+  (Pool owners _can_ edit members' predictions in-app — that's a pool feature, §8.3, not data admin.)
 - No public/global leaderboard — competition happens inside pools only.
 - No live in-match scoring; results are entered after matches finish.
 - No payments, prizes, or money handling. The Excel's prize split (60/30/10) is **not shown
@@ -57,19 +57,19 @@ match kickoff**. As real results are entered, points are awarded automatically a
 
 ## 2. Glossary
 
-| Term | Meaning |
-|---|---|
-| **Tournament** | A cup competition defined in JSON (teams, groups, matches, bracket rules). |
-| **Group** (tournament) | A first-stage group of teams (e.g. Group A). 2026 WC has 12 groups of 4. |
-| **Pool** | A private social group of users with its own leaderboard. (Named "pool" to avoid clashing with tournament groups.) |
-| **Match** | A single fixture with two teams; group or knockout. Has a kickoff time and, once played, a result. |
-| **Prediction** (card) | A user's complete set of answers for one pool (§6). One card per user per pool. |
-| **Group order** | The final 1st–4th finishing order of a group. Derived from predicted scores and scored (§7.2). |
-| **Round of 8** | The eight teams that reach the quarter-finals. Derived from each player's bracket (§6.3). |
-| **Top-4 order** | The final tournament ranking of positions 1–4 (champion, runner-up, third, fourth). |
-| **Special bets** | Tournament-wide novelty predictions (top scorer, cards, shootouts, etc.) — §6.6. |
-| **Top scorer** | The player who scores the most goals across the whole tournament. |
-| **Lock time** | Kickoff of the tournament's first match. Predictions are read-only afterward. |
+| Term                   | Meaning                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Tournament**         | A cup competition defined in JSON (teams, groups, matches, bracket rules).                                         |
+| **Group** (tournament) | A first-stage group of teams (e.g. Group A). 2026 WC has 12 groups of 4.                                           |
+| **Pool**               | A private social group of users with its own leaderboard. (Named "pool" to avoid clashing with tournament groups.) |
+| **Match**              | A single fixture with two teams; group or knockout. Has a kickoff time and, once played, a result.                 |
+| **Prediction** (card)  | A user's complete set of answers for one pool (§6). One card per user per pool.                                    |
+| **Group order**        | The final 1st–4th finishing order of a group. Derived from predicted scores and scored (§7.2).                     |
+| **Round of 8**         | The eight teams that reach the quarter-finals. Derived from each player's bracket (§6.3).                          |
+| **Top-4 order**        | The final tournament ranking of positions 1–4 (champion, runner-up, third, fourth).                                |
+| **Special bets**       | Tournament-wide novelty predictions (top scorer, cards, shootouts, etc.) — §6.6.                                   |
+| **Top scorer**         | The player who scores the most goals across the whole tournament.                                                  |
+| **Lock time**          | Kickoff of the tournament's first match. Predictions are read-only afterward.                                      |
 
 ---
 
@@ -98,49 +98,54 @@ tournaments or enter results.
 {
   "id": "wc-2026",
   "name": "FIFA World Cup 2026",
-  "firstKickoff": "2026-06-11T18:00:00Z",   // lock time for all predictions
-  "knockoutRounds": ["R32", "R16", "QF", "SF", "Final"],  // labels for display only
+  "firstKickoff": "2026-06-11T18:00:00Z", // lock time for all predictions
+  "knockoutRounds": ["R32", "R16", "QF", "SF", "Final"], // labels for display only
 
   // Full point schedule (§7). The engine reads every value from here — no hard-coded points.
   "scoring": {
-    "groupMatch":            { "exactScore": 6, "correctOutcome": 3 },      // max 6 / match
-    "groupOrder":            { "allCorrect": 6, "twoCorrect": 3, "oneCorrect": 1 }, // max 6 / group
-    "groupTopScoringTeam":   10,
+    "groupMatch": { "exactScore": 6, "correctOutcome": 3 }, // max 6 / match
+    "groupOrder": { "allCorrect": 6, "twoCorrect": 3, "oneCorrect": 1 }, // max 6 / group
+    "groupTopScoringTeam": 10,
     "groupTopConcedingTeam": 10,
-    "roundOf8PerTeam":       3,                                             // max 24 (8 teams)
-    "bronze":                { "exactScore": 5, "perTeam": 5 },             // max 15
-    "final":                 { "exactScore": 5, "perTeam": 5 },             // max 15
-    "topFourOrder":          { "allCorrect": 20, "threeCorrect": 15, "twoCorrect": 10,
-                               "oneCorrect": 5, "teamRightWrongPlace": 2 }, // max 20
-    "tournamentTopScoringTeam":   10,
+    "roundOf8PerTeam": 3, // max 24 (8 teams)
+    "bronze": { "exactScore": 5, "perTeam": 5 }, // max 15
+    "final": { "exactScore": 5, "perTeam": 5 }, // max 15
+    "topFourOrder": {
+      "allCorrect": 20,
+      "threeCorrect": 15,
+      "twoCorrect": 10,
+      "oneCorrect": 5,
+      "teamRightWrongPlace": 2,
+    }, // max 20
+    "tournamentTopScoringTeam": 10,
     "tournamentTopConcedingTeam": 10,
-    "highestMatchGoals":     10,        // most goals in any single match, regulation time
-    "mostYellowCardsTeam":   15,
-    "firstRedCardPlayer":    20,
-    "penaltyShootoutCount":  10,        // number of shootouts in the whole tournament
-    "finalDecidedByPenalties": 10,      // yes/no
+    "highestMatchGoals": 10, // most goals in any single match, regulation time
+    "mostYellowCardsTeam": 15,
+    "firstRedCardPlayer": 20,
+    "penaltyShootoutCount": 10, // number of shootouts in the whole tournament
+    "finalDecidedByPenalties": 10, // yes/no
     "finalDecisiveGoalPlayer": 20,
-    "topScorerPlayer":       15
+    "topScorerPlayer": 15,
   },
 
   "teams": [
     { "id": "MEX", "name": "Mexico" },
-    { "id": "ARG", "name": "Argentina" }
+    { "id": "ARG", "name": "Argentina" },
     // ... 48 teams for WC 2026
   ],
 
   // Players selectable for player bets (top scorer, first red card, decisive final goal):
   "players": [
-    { "id": "ARG-10", "name": "L. Messi", "team": "ARG" }
+    { "id": "ARG-10", "name": "L. Messi", "team": "ARG" },
     // ...
   ],
 
   "groups": [
-    { "id": "A", "teams": ["MEX", "RSA", "KOR", "CZE"] }
+    { "id": "A", "teams": ["MEX", "RSA", "KOR", "CZE"] },
     // ... 12 groups (A–L) of 4 for WC 2026
   ],
   "groupMatches": [
-    { "id": "m1", "group": "A", "home": "MEX", "away": "RSA", "kickoff": "2026-06-11T18:00:00Z" }
+    { "id": "m1", "group": "A", "home": "MEX", "away": "RSA", "kickoff": "2026-06-11T18:00:00Z" },
     // ... all 72 group matches
   ],
 
@@ -159,15 +164,15 @@ tournaments or enter results.
     "entryRound": "R32",
     "slots": [
       // "1A" = group A winner, "2B" = group B runner-up, "3rd[i]" = i-th best third-placed team.
-      { "match": "ro32-1", "home": "1A", "away": "3rd[0]" }
+      { "match": "ro32-1", "home": "1A", "away": "3rd[0]" },
       // ... full entry-round matchup table
     ],
     "progression": [
-      { "match": "ro16-1", "from": ["ro32-1", "ro32-2"] }
+      { "match": "ro16-1", "from": ["ro32-1", "ro32-2"] },
       // ... including the bronze match fed by the two SF losers
     ],
-    "bronzeMatch": { "from": ["sf-1", "sf-2"], "losers": true }
-  }
+    "bronzeMatch": { "from": ["sf-1", "sf-2"], "losers": true },
+  },
 }
 ```
 
@@ -190,7 +195,7 @@ Results are appended/edited as matches finish, committed, and synced.
   "tournamentId": "wc-2026",
 
   "matchResults": [
-    { "matchId": "m1", "home": 2, "away": 1, "status": "final" }
+    { "matchId": "m1", "home": 2, "away": 1, "status": "final" },
     // Group matches use home/away goals only (draws allowed).
   ],
 
@@ -198,37 +203,51 @@ Results are appended/edited as matches finish, committed, and synced.
   // standingsTiebreak; may be supplied here to override when officials apply a tiebreaker the
   // engine doesn't model. Scored against each player's derived group order (§7.2).
   "groupOrder": {
-    "A": ["MEX", "CZE", "KOR", "RSA"]
+    "A": ["MEX", "CZE", "KOR", "RSA"],
     // ... optional overrides
   },
 
   // Actual knockout fixtures as they become known (real results, independent of any player).
   "knockout": [
-    { "round": "QF", "matchId": "qf-1", "home": "ARG", "away": "BRA",
-      "homeGoals": 1, "awayGoals": 0, "winner": "ARG", "decidedBy": "regulation" }
+    {
+      "round": "QF",
+      "matchId": "qf-1",
+      "home": "ARG",
+      "away": "BRA",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "winner": "ARG",
+      "decidedBy": "regulation",
+    },
     // decidedBy: "regulation" | "extraTime" | "penalties"
   ],
 
   // The two designated finish matches, scored exactly (§7.3):
   "bronzeMatch": { "home": "NED", "away": "POR", "homeGoals": 2, "awayGoals": 1 },
-  "finalMatch":  { "home": "ARG", "away": "FRA", "homeGoals": 3, "awayGoals": 2,
-                   "decidedBy": "penalties", "decisiveGoalPlayer": "ARG-10" },
+  "finalMatch": {
+    "home": "ARG",
+    "away": "FRA",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "decidedBy": "penalties",
+    "decisiveGoalPlayer": "ARG-10",
+  },
 
   // Answers to the discrete bets (§7.4–7.5). null until decided.
   "answers": {
-    "roundOf8": ["ARG","BRA","FRA","ESP","ENG","NED","POR","CRO"], // the 8 QF teams
-    "topFourOrder": ["ARG","FRA","NED","POR"],   // 1st,2nd,3rd,4th
-    "groupTopScoringTeam":   "ESP",
+    "roundOf8": ["ARG", "BRA", "FRA", "ESP", "ENG", "NED", "POR", "CRO"], // the 8 QF teams
+    "topFourOrder": ["ARG", "FRA", "NED", "POR"], // 1st,2nd,3rd,4th
+    "groupTopScoringTeam": "ESP",
     "groupTopConcedingTeam": "RSA",
-    "tournamentTopScoringTeam":   "ARG",
+    "tournamentTopScoringTeam": "ARG",
     "tournamentTopConcedingTeam": "RSA",
-    "highestMatchGoals":     7,        // most goals in any one match, regulation
-    "mostYellowCardsTeam":   "CRO",
-    "firstRedCardPlayer":    "GER-4",
-    "penaltyShootoutCount":  5,
-    "topScorerPlayer":       "FRA-9"
+    "highestMatchGoals": 7, // most goals in any one match, regulation
+    "mostYellowCardsTeam": "CRO",
+    "firstRedCardPlayer": "GER-4",
+    "penaltyShootoutCount": 5,
+    "topScorerPlayer": "FRA-9",
     // finalDecidedByPenalties + finalDecisiveGoalPlayer are read from finalMatch above.
-  }
+  },
 }
 ```
 
@@ -290,19 +309,19 @@ time (§8.3).
 
 The player answers each tournament-wide bet once:
 
-| Bet | Input |
-|---|---|
-| Top scorer | one player from `players` |
-| Most goals scored — group stage | one team |
-| Most goals conceded — group stage | one team |
-| Most goals scored — whole tournament | one team |
-| Most goals conceded — whole tournament | one team |
-| Highest total goals in a single match (regulation) | a number |
-| Most yellow cards | one team |
-| First red card | one player |
-| Number of penalty shootouts in the tournament | a number |
-| Is the final decided by penalties? | yes / no |
-| Player who scores the decisive goal in the final | one player |
+| Bet                                                | Input                     |
+| -------------------------------------------------- | ------------------------- |
+| Top scorer                                         | one player from `players` |
+| Most goals scored — group stage                    | one team                  |
+| Most goals conceded — group stage                  | one team                  |
+| Most goals scored — whole tournament               | one team                  |
+| Most goals conceded — whole tournament             | one team                  |
+| Highest total goals in a single match (regulation) | a number                  |
+| Most yellow cards                                  | one team                  |
+| First red card                                     | one player                |
+| Number of penalty shootouts in the tournament      | a number                  |
+| Is the final decided by penalties?                 | yes / no                  |
+| Player who scores the decisive goal in the final   | one player                |
 
 ### 6.5 Locking
 
@@ -322,7 +341,7 @@ The player answers each tournament-wide bet once:
 
 - **Export.** From any card the user can download a portable **JSON file of their inputs** — group
   scores, knockout winner picks, final/bronze predicted scores, and special bets. Derived artifacts
-  (group order, Round-of-8, top-4) are *not* exported; they are recomputed on import. The file carries
+  (group order, Round-of-8, top-4) are _not_ exported; they are recomputed on import. The file carries
   `tournamentId` and a schema `version`.
 - **Import.** Uploading such a file populates a card in one step — the main way to **copy a card between
   pools** (cards aren't shared, so this replaces the old "single shared set") and to restore a backup.
@@ -339,10 +358,10 @@ The player answers each tournament-wide bet once:
 {
   "tournamentId": "wc-2026",
   "version": 1,
-  "groupScores":  [ { "matchId": "m1", "home": 2, "away": 1 } /* ... */ ],
-  "knockoutPicks":[ { "bracketMatchKey": "ro32-1", "winner": "ARG" } /* ... incl. bronze */ ],
+  "groupScores": [{ "matchId": "m1", "home": 2, "away": 1 } /* ... */],
+  "knockoutPicks": [{ "bracketMatchKey": "ro32-1", "winner": "ARG" } /* ... incl. bronze */],
   "finishScores": { "final": { "home": 3, "away": 2 }, "bronze": { "home": 2, "away": 1 } },
-  "specials":     { "topScorerPlayer": "FRA-9", "mostYellowCardsTeam": "CRO" /* ... */ }
+  "specials": { "topScorerPlayer": "FRA-9", "mostYellowCardsTeam": "CRO" /* ... */ },
 }
 ```
 
@@ -355,30 +374,30 @@ Scoring is recomputed whenever results sync (§11). All point values come from t
 All point values come from `scoring` in the tournament JSON (§4.1); the engine must not hard-code
 numbers. Default values shown below are the "America MM 2026" schedule.
 
-### 7.1 Group matches *(max 6 / match)*
+### 7.1 Group matches _(max 6 / match)_
 
 For each group match with a final result:
 
 - **Exact score** (both goal counts match) → **6**.
 - Else **correct outcome** (predicted win/draw/loss matches actual) → **3**.
-- Else **0**. *(Exact and outcome do not stack — exact is worth 6 total, not 9.)*
+- Else **0**. _(Exact and outcome do not stack — exact is worth 6 total, not 9.)_
 
-### 7.2 Group final order *(max 6 / group)*
+### 7.2 Group final order _(max 6 / group)_
 
 Compare the player's **derived** 1–4 order for a group (§6.2) against the **actual** final order.
 Count positions where the predicted team matches the actual team at the same rank:
 
 | Positions correct | Points |
-|---|---|
-| 4 (all) | **6** |
-| 2 | **3** |
-| 1 | **1** |
-| 0 | **0** |
+| ----------------- | ------ |
+| 4 (all)           | **6**  |
+| 2                 | **3**  |
+| 1                 | **1**  |
+| 0                 | **0**  |
 
-*(Exactly 3 correct is impossible in a 4-permutation — if three are right the fourth is too — so
-there is no "3 correct" tier, matching the Excel.)*
+_(Exactly 3 correct is impossible in a 4-permutation — if three are right the fourth is too — so
+there is no "3 correct" tier, matching the Excel.)_
 
-### 7.3 Bronze match & final *(max 15 each)*
+### 7.3 Bronze match & final _(max 15 each)_
 
 The player's bronze/final **pairings are derived** from their bracket (§6.3) and their **scores are
 entered**; each finish match is scored independently against the actual fixture
@@ -392,16 +411,16 @@ So a perfect bronze or final prediction = 10 (teams) + 5 (score) = **15**.
 ### 7.4 Set & ranking bets
 
 - **Round of 8** — for each team in the player's **derived** Round of 8 (§6.3) that is in the actual
-  quarter-final set (`results.answers.roundOf8`) → **3**. Order irrelevant. *(max 24.)*
+  quarter-final set (`results.answers.roundOf8`) → **3**. Order irrelevant. _(max 24.)_
 - **Top-4 final ranking** — compare the player's **derived** top-4 against `results.answers.topFourOrder`.
   Score the **greater of** (a) the position tier or (b) the team consolation — the two are **not added**:
 
-  | (a) Positions correct | Points | | (b) Consolation |
-  |---|---|---|---|
-  | 4 (all) | **20** | | **2** per predicted team that finishes in the actual top 4, |
-  | 3 | **15** | | regardless of position. |
-  | 2 | **10** | | |
-  | 1 | **5** | | |
+  | (a) Positions correct | Points |     | (b) Consolation                                             |
+  | --------------------- | ------ | --- | ----------------------------------------------------------- |
+  | 4 (all)               | **20** |     | **2** per predicted team that finishes in the actual top 4, |
+  | 3                     | **15** |     | regardless of position.                                     |
+  | 2                     | **10** |     |                                                             |
+  | 1                     | **5**  |     |                                                             |
 
   Final top-4 points = `max(tier, 2 × teamsInActualTopFour)`.
 
@@ -409,19 +428,19 @@ So a perfect bronze or final prediction = 10 (teams) + 5 (score) = **15**.
 
 Each correct answer scores once, from `results.answers` (or the final match for the last two):
 
-| Bet | Points |
-|---|---|
-| Most goals scored — group stage | **10** |
-| Most goals conceded — group stage | **10** |
-| Most goals scored — whole tournament | **10** |
-| Most goals conceded — whole tournament | **10** |
+| Bet                                                          | Points |
+| ------------------------------------------------------------ | ------ |
+| Most goals scored — group stage                              | **10** |
+| Most goals conceded — group stage                            | **10** |
+| Most goals scored — whole tournament                         | **10** |
+| Most goals conceded — whole tournament                       | **10** |
 | Highest total goals in one match (regulation) — exact number | **10** |
-| Most yellow cards (team) | **15** |
-| First red card (player) | **20** |
-| Number of penalty shootouts — exact number | **10** |
-| Final decided by penalties (yes/no) | **10** |
-| Decisive goal in the final (player) | **20** |
-| Top scorer (player) | **15** |
+| Most yellow cards (team)                                     | **15** |
+| First red card (player)                                      | **20** |
+| Number of penalty shootouts — exact number                   | **10** |
+| Final decided by penalties (yes/no)                          | **10** |
+| Decisive goal in the final (player)                          | **20** |
+| Top scorer (player)                                          | **15** |
 
 ### 7.6 Total & partial scoring
 
@@ -468,7 +487,7 @@ Pools are private leaderboard cohorts. Any authenticated user can create them.
   silently rejoin** with the old link — see token rules below.
 - The owner can **rotate** the invite token (invalidating old links) and **delete** the pool.
 - The owner cannot be kicked; deleting the pool is the way to wind it down.
-  (Optional: owner may transfer ownership — *deferred to future*.)
+  (Optional: owner may transfer ownership — _deferred to future_.)
 
 #### Owner edits to member cards
 
@@ -510,17 +529,17 @@ Pools are private leaderboard cohorts. Any authenticated user can create them.
 Goal: prevent mass account/pool creation and repeated-join abuse without heavy friction.
 (Chosen approach: **practical limits + rate limiting**.)
 
-| Control | Rule |
-|---|---|
-| Identity | Magic-link = one account per verified email. |
-| Duplicate joins | Unique `(pool_id, user_id)` membership — rejoining does nothing. |
-| Pool creation cap | Max **5** pools created per user (configurable). |
-| Pool size cap | Max **100** members per pool (configurable). |
-| Rate limit: create pool | e.g. ≤ 3 / hour per user. |
-| Rate limit: join | e.g. ≤ 10 / hour per user and per IP. |
+| Control                        | Rule                                                               |
+| ------------------------------ | ------------------------------------------------------------------ |
+| Identity                       | Magic-link = one account per verified email.                       |
+| Duplicate joins                | Unique `(pool_id, user_id)` membership — rejoining does nothing.   |
+| Pool creation cap              | Max **5** pools created per user (configurable).                   |
+| Pool size cap                  | Max **100** members per pool (configurable).                       |
+| Rate limit: create pool        | e.g. ≤ 3 / hour per user.                                          |
+| Rate limit: join               | e.g. ≤ 10 / hour per user and per IP.                              |
 | Rate limit: magic-link request | e.g. ≤ 5 / hour per email + per IP (also mitigates email-bombing). |
-| Token safety | Invite tokens stored hashed, rotatable, optionally expiring. |
-| Kicked users | Tracked; cannot rejoin via old link without owner re-invite. |
+| Token safety                   | Invite tokens stored hashed, rotatable, optionally expiring.       |
+| Kicked users                   | Tracked; cannot rejoin via old link without owner re-invite.       |
 
 Rate limiting is enforced server-side (per-user where authenticated, per-IP for pre-auth
 endpoints like magic-link requests). Limits are configuration constants, tunable without code
@@ -547,9 +566,9 @@ Indicative schema; column types abbreviated.
 - **actual_answers** — `tournament_id`, `bet_key`, `value` (jsonb) — actual results of the discrete
   bets (Round-of-8 set, top-4 order, special bets); some derivable from `matches`
 - **predictions** — `id`, `pool_id`, `user_id`, `tournament_id`, `locked_at?`,
-  unique `(pool_id, user_id)` *(one card per user per pool — not shared across pools)*
+  unique `(pool_id, user_id)` _(one card per user per pool — not shared across pools)_
 - **prediction_group_scores** — `prediction_id`, `match_id`, `home_goals`, `away_goals`
-  *(group order is derived from these, not stored as input)*
+  _(group order is derived from these, not stored as input)_
 - **prediction_knockout_picks** — `prediction_id`, `bracket_match_key`, `winner_team_id`
   (covers every tie including the bronze match)
 - **prediction_finish_scores** — `prediction_id`, `match` (final|bronze), `home_goals`, `away_goals`
@@ -559,8 +578,8 @@ Indicative schema; column types abbreviated.
   `new_value` (jsonb), `reason?`, `source` (manual|import), `edited_at` — audit trail of owner edits
   (§8.3); an owner **import** (§6.6) logs the changed fields here with `source = import`
 - **scores** — `pool_id`, `user_id`, `points_total`, `breakdown` (jsonb), `updated_at`,
-  unique `(pool_id, user_id)` *(`breakdown` records derived artifacts — Round-of-8, top-4 — and
-  per-category points; scored per pool since cards differ)*
+  unique `(pool_id, user_id)` _(`breakdown` records derived artifacts — Round-of-8, top-4 — and
+  per-category points; scored per pool since cards differ)_
 - **pools** — `id`, `tournament_id`, `owner_id`, `name`, `invite_token_hash`, `token_expires_at?`,
   `created_at`
 - **pool_members** — `pool_id`, `user_id`, `joined_at`, unique `(pool_id, user_id)`
@@ -597,16 +616,16 @@ UI** required.
 
 ## 12. Pages & flows
 
-| Route | Purpose |
-|---|---|
-| `/` | Landing; sign in (magic link); if signed in → dashboard. |
-| `/auth/callback` | Magic-link callback. |
-| `/pools` | List pools the user owns/belongs to; create pool. |
-| `/pools/[id]` | Pool leaderboard + manage (owner: kick, rotate token, delete). |
-| `/pools/[id]/predict` | Make/edit **your card for this pool** (group scores → derived bracket & knockout winner picks → final/bronze scores → special bets). **Export / import** your card as JSON (§6.6). Read-only to the member after lock. |
-| `/pools/[id]/members/[memberId]` | View a member's card (members: only after lock). **Owner:** view, edit, and **import** into the card at any time, with audit (§8.3, §6.6). |
-| `/join/[token]` | Join a pool via invite link (creates an empty card for that pool). |
-| `/settings` | Edit display name. |
+| Route                            | Purpose                                                                                                                                                                                                                |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                              | Landing; sign in (magic link); if signed in → dashboard.                                                                                                                                                               |
+| `/auth/callback`                 | Magic-link callback.                                                                                                                                                                                                   |
+| `/pools`                         | List pools the user owns/belongs to; create pool.                                                                                                                                                                      |
+| `/pools/[id]`                    | Pool leaderboard + manage (owner: kick, rotate token, delete).                                                                                                                                                         |
+| `/pools/[id]/predict`            | Make/edit **your card for this pool** (group scores → derived bracket & knockout winner picks → final/bronze scores → special bets). **Export / import** your card as JSON (§6.6). Read-only to the member after lock. |
+| `/pools/[id]/members/[memberId]` | View a member's card (members: only after lock). **Owner:** view, edit, and **import** into the card at any time, with audit (§8.3, §6.6).                                                                             |
+| `/join/[token]`                  | Join a pool via invite link (creates an empty card for that pool).                                                                                                                                                     |
+| `/settings`                      | Edit display name.                                                                                                                                                                                                     |
 
 **Primary flow:** sign in → join or create a pool → fill in that pool's card → share link → (lock) →
 results sync in → watch leaderboard. Owners can correct a member's card from the member view at any time.
@@ -616,7 +635,7 @@ results sync in → watch leaderboard. Owners can correct a member's card from t
 ## 13. Non-functional requirements
 
 - **Authoritative time:** lock enforcement and rate limits use server time, never the client clock.
-  Lock blocks *member* writes only; pool-owner edits bypass it and are always written to the audit log.
+  Lock blocks _member_ writes only; pool-owner edits bypass it and are always written to the audit log.
 - **Auditability:** every owner edit (to any card, including the owner's own) is recorded immutably
   (who/when/old→new) and is visible to **all members of the pool**.
 - **Idempotent sync & scoring:** re-running sync/scoring produces the same result; safe to re-run.
@@ -638,4 +657,4 @@ results sync in → watch leaderboard. Owners can correct a member's card from t
 
 ---
 
-*End of functional specification — v1 draft.*
+_End of functional specification — v1 draft._
