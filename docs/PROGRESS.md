@@ -9,13 +9,13 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 
 ## Status
 
-| Plan | Scope                                                                             | Status         | Commit                                |
-| ---- | --------------------------------------------------------------------------------- | -------------- | ------------------------------------- |
-| 1    | Foundation + scoring engine (`@cup/engine`, `@cup/schemas`, workspace/tooling/CI) | ✅ done        | `feat: foundation and scoring engine` |
-| 2    | Persistence + auth (`apps/web`, `@cup/db`, authz layer, Auth.js magic-link)       | ✅ done        | `feat: persistence and auth`          |
-| 3    | Data-as-code sync pipeline                                                        | ✅ done        | `feat: data-as-code sync pipeline`    |
-| 4    | Predictions feature slice                                                         | ✅ done        | (unpushed)                            |
-| 5    | Pools feature slice                                                               | ⬜ not started |
+| Plan | Scope                                                                             | Status  | Commit                                |
+| ---- | --------------------------------------------------------------------------------- | ------- | ------------------------------------- |
+| 1    | Foundation + scoring engine (`@cup/engine`, `@cup/schemas`, workspace/tooling/CI) | ✅ done | `feat: foundation and scoring engine` |
+| 2    | Persistence + auth (`apps/web`, `@cup/db`, authz layer, Auth.js magic-link)       | ✅ done | `feat: persistence and auth`          |
+| 3    | Data-as-code sync pipeline                                                        | ✅ done | `feat: data-as-code sync pipeline`    |
+| 4    | Predictions feature slice                                                         | ✅ done | (unpushed)                            |
+| 5    | Pools feature slice                                                               | ✅ done | (unpushed)                            |
 
 `main` is linear with one squashed `feat:` commit per plan (no merge commits). The foundation is on
 `origin/main`; later plans may be unpushed (pushing is a deliberate, user-initiated step).
@@ -70,14 +70,35 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 - **Design system** — `globals.css` with full oklch color tokens, `.turf` class, fonts Anton +
   Archivo via CSS variables `--font-display` / `--font-ui`.
 
-> **Known limitation:** Owner field-by-field editing on the member card page is not yet interactive
-> (owner can bulk-import via JSON). Inline owner edit actions (`ownerSaveGroupScore`,
-> `ownerSaveSpecialBet`) exist in `api/actions.ts` and are ready to wire up in a future slice.
+## What exists — Plan 5 additions
+
+- **`packages/db`** — `countPoolsOwnedBy`, `countPoolMembers` repository helpers.
+- **`apps/web/src/features/pools/`** — full vertical slice:
+  - `domain/types.ts` — `PoolSummary`, `PoolDetail`, `LeaderboardEntry`.
+  - `domain/invite.ts` — `generateInviteToken`, `hashInviteToken`, `buildInviteUrl`.
+  - `application/create-pool.ts` — pool cap (≤5), rate-limit, first-tournament pick, owner auto-joins.
+  - `application/join-pool.ts` — token lookup, expiry, kick check, member cap (≤100), rate-limit.
+  - `application/get-user-pools.ts` — parallel leaderboard lookups for score badges.
+  - `application/get-pool-detail.ts` — full detail including invite token and leaderboard.
+  - `api/actions.ts` — `createPool`, `joinPool`, `kickMember`, `rotateToken`, `deletePool`.
+  - `ui/` — `PoolListItem`, `CreatePoolForm`, `Leaderboard`, `InviteSection`, `OwnerControls`.
+  - `index.ts` — public barrel.
+- **`apps/web/src/features/predictions/`** additions:
+  - `GroupScoresSection`, `BracketSection`, `SpecialsSection` — optional `onSave`/`onPick`/`onFinishSave`
+    override props; existing callers unaffected.
+  - `OwnerCardEditor.tsx` — owner inline-edit card component (locked=false, owner action callbacks).
+  - `actions.ts` — added `ownerSaveKnockoutPick`, `ownerSaveFinishScore`.
+- **Pages** — `/pools`, `/pools/[id]`, `/join/[token]`. Home (`/`) redirects signed-in users to `/pools`.
+  Predict page + member card page updated with back-nav links.
+- **Design doc:** [`docs/features/pools.md`](./features/pools.md).
 
 ## What's next (the remaining-plan sequence)
 
-1. **Plan 5 — Pools feature slice**. Create/join/kick/invite, leaderboard, pool management. Owner
-   inline edits on member cards can also be wired up here.
+All planned slices are complete. Potential follow-ups:
+
+1. Playwright E2E for critical flows (sign-in, create pool, join, predict, leaderboard).
+2. Real tournament data (`data/tournaments/`) for a live competition.
+3. Email notifications for pool events (join, kick, lock).
 
 ## Deferred / known follow-ups
 

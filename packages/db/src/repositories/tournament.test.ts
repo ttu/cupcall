@@ -3,7 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { makeTestDb } from '../testing/make-test-db';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
-import { upsertTournamentDef, upsertTournamentResults } from './tournament';
+import { upsertTournamentDef, upsertTournamentResults, listTournaments } from './tournament';
 import { miniTournament } from '@cup/engine/testing';
 import type { ActualResults, GroupId, TeamId } from '@cup/engine';
 import { teamId, groupId, matchId } from '@cup/engine';
@@ -25,6 +25,24 @@ describe('tournament repository', () => {
 
   beforeEach(async () => {
     db = await makeTestDb();
+  });
+
+  describe('listTournaments', () => {
+    it('returns empty array when no tournaments exist', async () => {
+      const result = await listTournaments(db);
+      expect(result).toHaveLength(0);
+    });
+
+    it('returns all tournaments ordered by firstKickoff', async () => {
+      await upsertTournamentDef(db, miniTournament, firstKickoff, makeMatchKickoffs());
+      const later = { ...miniTournament, id: 'wc-2030', name: 'WC 2030' };
+      await upsertTournamentDef(db, later, new Date('2030-06-01T18:00:00Z'), new Map());
+
+      const rows = await listTournaments(db);
+      expect(rows).toHaveLength(2);
+      expect(rows[0]?.id).toBe('mini-2026');
+      expect(rows[1]?.id).toBe('wc-2030');
+    });
   });
 
   describe('upsertTournamentDef', () => {

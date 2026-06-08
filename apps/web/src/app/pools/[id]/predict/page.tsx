@@ -1,4 +1,6 @@
+import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
+import Link from 'next/link';
 import { getPoolById, getTournamentById, getPrediction, listEditsForPrediction } from '@cup/db';
 import { db } from '@/shared/db';
 import { getCurrentActor } from '@/features/auth';
@@ -12,7 +14,7 @@ import type { AuditEntry } from '@/features/predictions';
 
 type Props = { params: Promise<{ id: string }> };
 
-export default async function PredictPage({ params }: Props) {
+export default async function PredictPage({ params }: Props): Promise<ReactElement> {
   const { id: poolId } = await params;
 
   const actor = await getCurrentActor();
@@ -66,13 +68,18 @@ export default async function PredictPage({ params }: Props) {
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
+          <Link
+            href={`/pools/${poolId}`}
+            className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors mb-1 inline-block"
+          >
+            ← {pool.name}
+          </Link>
           <h1
             className="text-2xl font-bold text-[var(--ink)]"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             My Predictions
           </h1>
-          <p className="text-sm text-[var(--ink-soft)] mt-0.5">{pool.name}</p>
         </div>
         <ExportImportControls poolId={poolId} />
       </div>

@@ -31,7 +31,7 @@
   --ink-850: oklch(0.25 0.028 162);
   --ink-800: oklch(0.29 0.03 163);
   --ink-700: oklch(0.36 0.03 164);
-  --ink-line: oklch(0.40 0.03 164);
+  --ink-line: oklch(0.4 0.03 164);
 
   /* Paper / light surfaces */
   --paper: oklch(0.975 0.005 120);
@@ -43,14 +43,14 @@
   /* Text */
   --ink: oklch(0.24 0.018 160);
   --ink-soft: oklch(0.44 0.015 158);
-  --ink-muted: oklch(0.60 0.012 155);
+  --ink-muted: oklch(0.6 0.012 155);
   --on-dark: oklch(0.97 0.006 140);
-  --on-dark-soft: oklch(0.80 0.012 150);
+  --on-dark-soft: oklch(0.8 0.012 150);
   --on-dark-muted: oklch(0.64 0.014 152);
 
   /* Semantic */
   --win: var(--green-500);
-  --danger: oklch(0.60 0.19 25);
+  --danger: oklch(0.6 0.19 25);
   --radius: 14px;
   --radius-sm: 9px;
   --radius-lg: 22px;
@@ -89,7 +89,9 @@ body {
 
 /* Glow utility */
 .glow-green {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 20px 60px -20px var(--green-500);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 20px 60px -20px var(--green-500);
 }
 
 /* Horizontal divider between children */

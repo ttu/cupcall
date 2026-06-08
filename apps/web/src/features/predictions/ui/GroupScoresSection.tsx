@@ -10,12 +10,17 @@ type Props = {
   groups: GroupView[];
   poolId: string;
   locked: boolean;
+  onSave?: (matchId: string, home: number, away: number) => void;
 };
 
-export function GroupScoresSection({ groups, poolId, locked }: Props): ReactElement {
+export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): ReactElement {
   const [, startTransition] = useTransition();
 
   async function handleSave(matchId: string, home: number, away: number) {
+    if (onSave) {
+      onSave(matchId, home, away);
+      return;
+    }
     startTransition(() => {
       void saveGroupScore({ poolId, matchId, home, away });
     });

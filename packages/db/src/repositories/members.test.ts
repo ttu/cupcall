@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { makeTestDb } from '../testing/make-test-db';
 import { testScoring } from '../testing/fixtures';
 import type { Db } from '../client';
-import { addMember, removeMember, listMembers, isMember } from './members';
+import { addMember, removeMember, listMembers, isMember, countPoolMembers } from './members';
 import { createUser } from './users';
 import { createPool } from './pools';
 import type { UserId } from '@cup/engine';
@@ -86,6 +86,25 @@ describe('members repository', () => {
     it('returns empty array when pool has no members', async () => {
       const members = await listMembers(db, poolId);
       expect(members).toHaveLength(0);
+    });
+  });
+
+  describe('countPoolMembers', () => {
+    it('returns 0 for an empty pool', async () => {
+      expect(await countPoolMembers(db, poolId)).toBe(0);
+    });
+
+    it('counts added members correctly', async () => {
+      await addMember(db, poolId, user1Id);
+      await addMember(db, poolId, user2Id);
+      expect(await countPoolMembers(db, poolId)).toBe(2);
+    });
+
+    it('decrements after remove', async () => {
+      await addMember(db, poolId, user1Id);
+      await addMember(db, poolId, user2Id);
+      await removeMember(db, poolId, user1Id);
+      expect(await countPoolMembers(db, poolId)).toBe(1);
     });
   });
 

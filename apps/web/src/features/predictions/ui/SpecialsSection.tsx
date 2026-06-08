@@ -11,12 +11,24 @@ type Props = {
   locked: boolean;
   teams: { id: string; name: string }[];
   players: { id: string; name: string }[];
+  onSave?: (betKey: string, value: string | number | boolean) => void;
 };
 
-export function SpecialsSection({ specials, poolId, locked, teams, players }: Props): ReactElement {
+export function SpecialsSection({
+  specials,
+  poolId,
+  locked,
+  teams,
+  players,
+  onSave,
+}: Props): ReactElement {
   const [, startTransition] = useTransition();
 
   function handleSave(betKey: string, value: string | number | boolean) {
+    if (onSave) {
+      onSave(betKey, value);
+      return;
+    }
     startTransition(() => {
       void saveSpecialBet({ poolId, betKey, value });
     });

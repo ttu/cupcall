@@ -149,6 +149,21 @@ export type TournamentRow = {
 };
 
 /**
+ * Returns all tournament rows, ordered by firstKickoff ascending.
+ */
+export async function listTournaments(db: Database): Promise<TournamentRow[]> {
+  const rows = await db.select().from(schema.tournaments).orderBy(schema.tournaments.firstKickoff);
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    firstKickoff: row.firstKickoff,
+    scoringConfig: row.scoringConfig,
+    definition: (row.definition as Tournament) ?? null,
+    status: row.status,
+  }));
+}
+
+/**
  * Returns a tournament row including the stored definition.
  */
 export async function getTournamentById(

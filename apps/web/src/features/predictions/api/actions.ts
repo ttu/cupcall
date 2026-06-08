@@ -353,6 +353,107 @@ export async function ownerSaveSpecialBet(
 }
 
 // ---------------------------------------------------------------------------
+// Owner: save knockout pick for a member
+// ---------------------------------------------------------------------------
+
+const OwnerSaveKnockoutPickSchema = z.object({
+  poolId: z.string(),
+  targetUserId: z.string(),
+  bracketMatchKey: z.string(),
+  winner: z.string(),
+  reason: z.string().optional(),
+});
+
+export async function ownerSaveKnockoutPick(
+  raw: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = OwnerSaveKnockoutPickSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId, targetUserId, bracketMatchKey: key, winner, reason } = parsed.data;
+
+  try {
+    const { userId: editorId } = await getActorOrThrow();
+    const { pool, tournament } = await loadPoolAndTournament(poolId);
+
+    assertCanOwnerEdit({ userId: editorId }, { id: pool.id, ownerId: pool.ownerId });
+
+    const prediction = await getOrCreatePrediction(db, {
+      poolId,
+      userId: targetUserId as import('@cup/engine').UserId,
+      tournamentId: pool.tournamentId,
+    });
+
+    await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
+    await createPredictionEdit(db, {
+      predictionId: prediction.id,
+      editorUserId: editorId,
+      fieldPath: `knockoutPicks.${key}`,
+      oldValue: null,
+      newValue: winner,
+      ...(reason !== undefined ? { reason } : {}),
+      source: 'manual',
+    });
+    await rescoreAfterEdit(prediction.id, poolId, targetUserId, tournament.definition!);
+
+    revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Owner: save finish score for a member
+// ---------------------------------------------------------------------------
+
+const OwnerSaveFinishScoreSchema = z.object({
+  poolId: z.string(),
+  targetUserId: z.string(),
+  match: z.enum(['final', 'bronze']),
+  home: z.number().int().min(0).max(99),
+  away: z.number().int().min(0).max(99),
+  reason: z.string().optional(),
+});
+
+export async function ownerSaveFinishScore(
+  raw: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = OwnerSaveFinishScoreSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId, targetUserId, match, home, away, reason } = parsed.data;
+
+  try {
+    const { userId: editorId } = await getActorOrThrow();
+    const { pool, tournament } = await loadPoolAndTournament(poolId);
+
+    assertCanOwnerEdit({ userId: editorId }, { id: pool.id, ownerId: pool.ownerId });
+
+    const prediction = await getOrCreatePrediction(db, {
+      poolId,
+      userId: targetUserId as import('@cup/engine').UserId,
+      tournamentId: pool.tournamentId,
+    });
+
+    await upsertFinishScore(db, prediction.id, match, home, away);
+    await createPredictionEdit(db, {
+      predictionId: prediction.id,
+      editorUserId: editorId,
+      fieldPath: `finishScores.${match}`,
+      oldValue: null,
+      newValue: { home, away },
+      ...(reason !== undefined ? { reason } : {}),
+      source: 'manual',
+    });
+    await rescoreAfterEdit(prediction.id, poolId, targetUserId, tournament.definition!);
+
+    revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Export card
 // ---------------------------------------------------------------------------
 

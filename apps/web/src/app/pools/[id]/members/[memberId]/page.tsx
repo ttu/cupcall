@@ -1,4 +1,6 @@
+import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
+import Link from 'next/link';
 import {
   getPoolById,
   getTournamentById,
@@ -12,6 +14,7 @@ import { canViewCard } from '@/shared/authz';
 import {
   getCardView,
   ReadOnlyCard,
+  OwnerCardEditor,
   OwnerEditBanner,
   AuditLog,
   ExportImportControls,
@@ -21,7 +24,7 @@ import { userId } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string; memberId: string }> };
 
-export default async function MemberCardPage({ params }: Props) {
+export default async function MemberCardPage({ params }: Props): Promise<ReactElement> {
   const { id: poolId, memberId } = await params;
 
   const actor = await getCurrentActor();
@@ -83,24 +86,42 @@ export default async function MemberCardPage({ params }: Props) {
     }));
   }
 
+  const teams = tournamentDef.teams.map((t) => ({ id: t.id, name: t.name }));
+  const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name }));
+
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
+          <Link
+            href={`/pools/${poolId}`}
+            className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors mb-1 inline-block"
+          >
+            ← {pool.name}
+          </Link>
           <h1
             className="text-2xl font-bold text-[var(--ink)]"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             {isSelf ? 'My Predictions' : `${memberName}'s Predictions`}
           </h1>
-          <p className="text-sm text-[var(--ink-soft)] mt-0.5">{pool.name}</p>
         </div>
         {isOwner && <ExportImportControls poolId={poolId} targetUserId={memberId} />}
       </div>
 
       {isOwner && !isSelf && <OwnerEditBanner memberName={memberName} />}
 
-      <ReadOnlyCard card={card} />
+      {isOwner ? (
+        <OwnerCardEditor
+          card={card}
+          poolId={poolId}
+          targetUserId={memberId}
+          teams={teams}
+          players={players}
+        />
+      ) : (
+        <ReadOnlyCard card={card} />
+      )}
 
       {auditEntries.length > 0 && <AuditLog entries={auditEntries} />}
     </main>

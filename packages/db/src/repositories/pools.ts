@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, count } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import type { UserId } from '@cup/engine';
@@ -101,4 +101,12 @@ export async function rotateInviteTokenHash(
 
 export async function deletePool(db: Database, poolId: string): Promise<void> {
   await db.delete(schema.pools).where(eq(schema.pools.id, poolId));
+}
+
+export async function countPoolsOwnedBy(db: Database, ownerId: UserId): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(schema.pools)
+    .where(eq(schema.pools.ownerId, ownerId));
+  return row?.n ?? 0;
 }

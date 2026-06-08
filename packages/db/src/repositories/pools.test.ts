@@ -10,6 +10,7 @@ import {
   listPoolsForUser,
   rotateInviteTokenHash,
   deletePool,
+  countPoolsOwnedBy,
 } from './pools';
 import { createUser } from './users';
 import { addMember } from './members';
@@ -167,6 +168,31 @@ describe('pools repository', () => {
       await deletePool(db, pool.id);
       const found = await getPoolById(db, pool.id);
       expect(found).toBeUndefined();
+    });
+  });
+
+  describe('countPoolsOwnedBy', () => {
+    it('returns 0 when user owns no pools', async () => {
+      expect(await countPoolsOwnedBy(db, ownerId)).toBe(0);
+    });
+
+    it('counts only pools owned by the given user', async () => {
+      await createPool(db, { tournamentId, ownerId, name: 'P1', inviteTokenHash: 'h-co1' });
+      await createPool(db, { tournamentId, ownerId, name: 'P2', inviteTokenHash: 'h-co2' });
+
+      const other = await createUser(db, {
+        email: `other-co-${crypto.randomUUID()}@x.com`,
+        displayName: 'Other',
+      });
+      await createPool(db, {
+        tournamentId,
+        ownerId: other.id,
+        name: 'Other Pool',
+        inviteTokenHash: 'h-co3',
+      });
+
+      expect(await countPoolsOwnedBy(db, ownerId)).toBe(2);
+      expect(await countPoolsOwnedBy(db, other.id)).toBe(1);
     });
   });
 

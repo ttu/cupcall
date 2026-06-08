@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, count } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import { userId, type UserId } from '@cup/engine';
@@ -38,6 +38,14 @@ export async function listMembers(db: Database, poolId: string): Promise<MemberR
     .from(schema.poolMembers)
     .where(eq(schema.poolMembers.poolId, poolId));
   return rows.map(toMemberRow);
+}
+
+export async function countPoolMembers(db: Database, poolId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(schema.poolMembers)
+    .where(eq(schema.poolMembers.poolId, poolId));
+  return row?.n ?? 0;
 }
 
 export async function isMember(db: Database, poolId: string, userId: UserId): Promise<boolean> {

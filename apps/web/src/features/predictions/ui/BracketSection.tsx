@@ -10,18 +10,34 @@ type Props = {
   bracket: BracketView;
   poolId: string;
   locked: boolean;
+  onPick?: (bracketMatchKey: string, winner: string) => void;
+  onFinishSave?: (match: 'final' | 'bronze', home: number, away: number) => void;
 };
 
-export function BracketSection({ bracket, poolId, locked }: Props): ReactElement {
+export function BracketSection({
+  bracket,
+  poolId,
+  locked,
+  onPick,
+  onFinishSave,
+}: Props): ReactElement {
   const [, startTransition] = useTransition();
 
   function handlePick(bracketMatchKey: string, winner: string) {
+    if (onPick) {
+      onPick(bracketMatchKey, winner);
+      return;
+    }
     startTransition(() => {
       void saveKnockoutPick({ poolId, bracketMatchKey, winner });
     });
   }
 
   async function handleFinishSave(match: 'final' | 'bronze', home: number, away: number) {
+    if (onFinishSave) {
+      onFinishSave(match, home, away);
+      return;
+    }
     startTransition(() => {
       void saveFinishScore({ poolId, match, home, away });
     });
