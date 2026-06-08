@@ -17,3 +17,35 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm -C apps/web build
+
+  e2e:
+    needs: [quality]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: cup_prediction
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cup_prediction
+      AUTH_SECRET: ci-only-secret-not-used-in-production-32x
+      AUTH_URL: http://localhost:3000
+      RESEND_API_KEY: re_test_ci_placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
