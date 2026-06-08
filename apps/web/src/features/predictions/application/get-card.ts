@@ -225,7 +225,9 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   const totalFields =
     groups.reduce((acc, g) => acc + g.matches.length, 0) +
     bracket.slots.length +
-    bracket.progression.filter((p) => p.match !== bracket.bronzeMatch).length +
+    bracket.progression.filter(
+      (p) => p.match !== bracket.bronzeMatch && p.match !== bracket.finalMatch,
+    ).length +
     2 /* final + bronze scores */ +
     specials.length;
   const filledFields =
