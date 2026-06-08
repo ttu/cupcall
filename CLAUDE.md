@@ -98,6 +98,10 @@ Working agreement for all code in this repo. These are **requirements**, not sug
 
 - Keep docs current. **Each main feature has its own design doc** (`docs/features/<feature>.md`).
 - Maintain the architecture, data-model (functional-spec §10), and testing docs as they evolve.
+- **Cross-session continuity:** keep a single handoff doc at **`docs/PROGRESS.md`** — what's done,
+  what's next, where things live, and the workflow. Treat it as the "start here" file and **update it
+  whenever a plan/milestone completes**, so work is never bound to one session or agent. Persist a
+  one-line pointer to it in project memory.
 
 ## Definition of Done
 

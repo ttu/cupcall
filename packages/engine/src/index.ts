@@ -1,6 +1,14 @@
 // Id constructors and branded primitive types
-export { teamId, playerId, groupId, matchId, bracketMatchKey, points } from './brand.js';
-export type { TeamId, PlayerId, GroupId, MatchId, BracketMatchKey, Points } from './brand.js';
+export { teamId, playerId, groupId, matchId, bracketMatchKey, points, userId } from './brand.js';
+export type {
+  TeamId,
+  PlayerId,
+  GroupId,
+  MatchId,
+  BracketMatchKey,
+  Points,
+  UserId,
+} from './brand.js';
 
 // Public types
 export type {

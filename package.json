@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && pnpm -C apps/web typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky"

@@ -183,6 +183,11 @@ example as a test, and property tests for determinism (same input → same outpu
 
 ## 6. Data layer & authorization (replaces RLS)
 
+> **Status: implemented** — `@cup/db` (schema + migration + repositories + pglite harness) and the
+> `apps/web/src/shared/authz` policy layer. Design doc:
+> [`docs/features/persistence-and-auth.md`](./features/persistence-and-auth.md). (Final code lives in
+> `packages/db` and `apps/web/src/shared/authz`, not the `apps/web/lib/*` paths sketched below.)
+
 - **Schema** per functional-spec §10, defined in **Drizzle** (`apps/web/lib/db`), migrated with Drizzle Kit.
 - **Single access path:** no ORM calls scattered through components. All DB access goes through a
   **service layer** (`lib/services/*`) whose every function takes the **acting user** and enforces the
@@ -202,6 +207,10 @@ example as a test, and property tests for determinism (same input → same outpu
 ---
 
 ## 7. Auth (identity)
+
+> **Status: implemented** — `apps/web/src/features/auth` (Auth.js v5 + Drizzle adapter + Resend),
+> database sessions, display-name-on-create, and minimal sign-in/settings UI. Full browser e2e of the
+> magic-link flow is deferred to a Playwright pass.
 
 - **Auth.js v5** with the **Email (magic link) provider** and the **Drizzle adapter**, storing users and
   sessions in our Postgres (functional-spec §5, §12). Magic-link emails sent via **Resend** (or SMTP).

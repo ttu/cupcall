@@ -1,0 +1,24 @@
+{
+  "name": "@cup/db",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./testing": "./src/testing/make-test-db.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.2",
+    "@cup/engine": "workspace:*",
+    "@electric-sql/pglite": "^0.2.0",
+    "drizzle-orm": "^0.40.0",
+    "postgres": "^3.4.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.30.0"
+  }
+}

@@ -14,3 +14,6 @@ export const groupId = (s: string): GroupId => s as GroupId;
 export const matchId = (s: string): MatchId => s as MatchId;
 export const bracketMatchKey = (s: string): BracketMatchKey => s as BracketMatchKey;
 export const points = (n: number): Points => n as Points;
+
+export type UserId = Brand<string, 'UserId'>;
+export const userId = (s: string): UserId => s as UserId;
