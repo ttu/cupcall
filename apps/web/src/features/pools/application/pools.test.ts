@@ -162,6 +162,7 @@ describe('joinPool', () => {
     // Retrieve the raw token from the detail
     const detail = await getPoolDetail(db, poolId);
     if (!detail) throw new Error('getPoolDetail failed');
+    if (!detail.inviteToken) throw new Error('pool has no invite token');
     poolToken = detail.inviteToken;
   });
 

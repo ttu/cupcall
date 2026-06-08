@@ -11,7 +11,7 @@ export type PoolRow = {
   tournamentId: string;
   ownerId: UserId;
   name: string;
-  inviteTokenHash: string;
+  inviteTokenHash: string | null;
   tokenExpiresAt: Date | null;
   createdAt: Date;
 };
@@ -26,7 +26,7 @@ export async function createPool(
     tournamentId: string;
     ownerId: UserId;
     name: string;
-    inviteTokenHash: string;
+    inviteTokenHash?: string;
     tokenExpiresAt?: Date;
   },
 ): Promise<PoolRow> {
@@ -97,6 +97,10 @@ export async function rotateInviteTokenHash(
     .update(schema.pools)
     .set({ inviteTokenHash: newHash })
     .where(eq(schema.pools.id, poolId));
+}
+
+export async function clearInviteToken(db: Database, poolId: string): Promise<void> {
+  await db.update(schema.pools).set({ inviteTokenHash: null }).where(eq(schema.pools.id, poolId));
 }
 
 export async function deletePool(db: Database, poolId: string): Promise<void> {

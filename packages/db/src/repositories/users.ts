@@ -14,6 +14,12 @@ export type UserRow = {
   displayName: string;
 };
 
+export type DbSession = {
+  sessionToken: string;
+  userId: string;
+  expires: Date;
+};
+
 function toUserRow(raw: typeof schema.users.$inferSelect): UserRow {
   return {
     ...raw,
@@ -41,6 +47,34 @@ export async function getUserById(db: Database, id: UserId): Promise<UserRow | u
 export async function getUserByEmail(db: Database, email: string): Promise<UserRow | undefined> {
   const [row] = await db.select().from(schema.users).where(eq(schema.users.email, email));
   return row ? toUserRow(row) : undefined;
+}
+
+export async function createGuestUser(
+  db: Database,
+  input: { displayName: string },
+): Promise<UserRow> {
+  const [row] = await db
+    .insert(schema.users)
+    .values({ displayName: input.displayName })
+    .returning();
+  if (!row) throw new Error('createGuestUser: insert did not return a row');
+  return toUserRow(row);
+}
+
+export async function createDbSession(
+  db: Database,
+  input: { sessionToken: string; userId: UserId; expires: Date },
+): Promise<DbSession> {
+  const [row] = await db
+    .insert(schema.sessions)
+    .values({
+      sessionToken: input.sessionToken,
+      userId: input.userId,
+      expires: input.expires,
+    })
+    .returning();
+  if (!row) throw new Error('createDbSession: insert did not return a row');
+  return row;
 }
 
 export async function updateDisplayName(

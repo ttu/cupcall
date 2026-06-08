@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import Resend from 'next-auth/providers/resend';
-import { db } from '../../shared/db';
+import { getDb } from '../../shared/db';
 import * as schema from '@cup/db/schema';
 import { getEnv } from '../../shared/env';
 import { logger, safeEmailDomain } from '../../shared/observability/logger';
@@ -27,7 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
 
   return {
     ...authConfig,
-    adapter: DrizzleAdapter(db, {
+    adapter: DrizzleAdapter(getDb(), {
       usersTable: schema.users,
       accountsTable: schema.accounts,
       sessionsTable: schema.sessions,
@@ -52,7 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
        */
       async createUser({ user }) {
         try {
-          await applyDerivedDisplayName(db, { id: user.id ?? '', email: user.email });
+          await applyDerivedDisplayName(getDb(), { id: user.id ?? '', email: user.email });
           if (user.email) {
             logger.info(
               { domain: safeEmailDomain(user.email) },

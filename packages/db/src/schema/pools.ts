@@ -15,8 +15,8 @@ export const pools = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    // Unique: invite-link security model requires no two pools share a token hash.
-    inviteTokenHash: text('invite_token_hash').notNull(),
+    // Null means invite link is disabled; unique when set.
+    inviteTokenHash: text('invite_token_hash'),
     tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

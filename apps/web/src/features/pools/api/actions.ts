@@ -8,11 +8,15 @@ import { getCurrentActor } from '@/features/auth';
 import { assertIsOwner, assertSignedIn } from '@/shared/authz';
 import {
   getPoolById,
+  getPoolByInviteTokenHash,
   removeMember,
   recordKick,
   rotateInviteTokenHash,
+  clearInviteToken,
   deletePool as dbDeletePool,
+  createGuestUser,
 } from '@cup/db';
+import { signInAsExistingGuest } from '@/features/auth';
 import { createPool as appCreatePool } from '../application/create-pool';
 import { joinPool as appJoinPool } from '../application/join-pool';
 import { generateInviteToken } from '../domain/invite';
@@ -151,6 +155,32 @@ export async function kickMember(
 }
 
 // ---------------------------------------------------------------------------
+// Clear invite link
+// ---------------------------------------------------------------------------
+
+const ClearInviteLinkSchema = z.object({ poolId: z.string() });
+
+export async function clearInviteLink(
+  raw: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = ClearInviteLinkSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId } = parsed.data;
+
+  try {
+    const actor = await getActorOrThrow();
+    const pool = await getOwnerPoolOrThrow(poolId);
+    assertIsOwner(pool, actor.userId);
+
+    await clearInviteToken(db, poolId);
+    revalidatePath(`/pools/${poolId}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Rotate token
 // ---------------------------------------------------------------------------
 
@@ -203,4 +233,50 @@ export async function deletePool(
   }
 
   redirect('/pools');
+}
+
+// ---------------------------------------------------------------------------
+// Join as guest (no email required — name only)
+// ---------------------------------------------------------------------------
+
+const JoinAsGuestSchema = z.object({
+  displayName: z.string().trim().min(2, 'Name must be at least 2 characters').max(50),
+  token: z.string().min(1),
+});
+
+/**
+ * Creates a guest user with only a display name, joins them to the pool
+ * identified by `token`, then opens a session (no email, no password).
+ * On success this redirects to the pool page and never returns.
+ */
+export async function joinAsGuest(raw: unknown): Promise<{ ok: false; error: string }> {
+  const parsed = JoinAsGuestSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.errors[0]?.message ?? 'Invalid input.' };
+  }
+  const { displayName, token } = parsed.data;
+
+  const pool = await getPoolByInviteTokenHash(db, token);
+  if (!pool) return { ok: false, error: 'Invite link is invalid or has been removed.' };
+
+  if (pool.tokenExpiresAt && new Date() >= pool.tokenExpiresAt) {
+    return { ok: false, error: 'Invite link has expired.' };
+  }
+
+  const user = await createGuestUser(db, { displayName });
+
+  const joinResult = await appJoinPool(db, { userId: user.id, token, now: new Date() });
+  if (!joinResult.ok) {
+    const { code } = joinResult.error;
+    if (code === 'pool_full')
+      return { ok: false, error: `This pool is full (max ${joinResult.error.limit} members).` };
+    if (code === 'rate_limited') return { ok: false, error: 'Too many attempts. Try again later.' };
+    return { ok: false, error: 'Could not join pool.' };
+  }
+
+  // Opens a session cookie and redirects — never returns on success.
+  await signInAsExistingGuest(user.id, `/pools/${joinResult.poolId}`);
+
+  // Unreachable; satisfies the return type.
+  return { ok: false, error: 'Unexpected error.' };
 }

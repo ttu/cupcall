@@ -30,5 +30,5 @@ const db = new Proxy({} as Db<AppSchema>, {
   },
 });
 
-export { db };
+export { db, getDb };
 export type { Db, AppSchema };

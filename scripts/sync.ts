@@ -119,7 +119,26 @@ const isDirectlyExecuted =
   (process.argv[1].endsWith('/scripts/sync.ts') || process.argv[1].endsWith('/scripts/sync.js'));
 
 if (isDirectlyExecuted) {
-  const tournamentId = process.argv[2];
+  // Auto-load apps/web/.env.local when DATABASE_URL is not already set.
+  if (!process.env['DATABASE_URL']) {
+    const { existsSync, readFileSync: readEnv } = await import('node:fs');
+    const envPath = join(process.cwd(), 'apps', 'web', '.env.local');
+    if (existsSync(envPath)) {
+      for (const line of readEnv(envPath, 'utf8').split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eq = trimmed.indexOf('=');
+        if (eq === -1) continue;
+        const key = trimmed.slice(0, eq).trim();
+        const val = trimmed.slice(eq + 1).trim();
+        if (key && !(key in process.env)) process.env[key] = val;
+      }
+    }
+  }
+
+  // Skip the pnpm '--' separator so both `pnpm sync -- id` and `pnpm sync id` work.
+  const args = process.argv.slice(2).filter((a) => a !== '--');
+  const tournamentId = args[0];
 
   if (!tournamentId) {
     process.stderr.write('Usage: pnpm sync -- <tournamentId>\n');
@@ -128,7 +147,9 @@ if (isDirectlyExecuted) {
 
   const databaseUrl = process.env['DATABASE_URL'];
   if (!databaseUrl) {
-    process.stderr.write('DATABASE_URL environment variable is required\n');
+    process.stderr.write(
+      'DATABASE_URL is not set. Add it to apps/web/.env.local or export it in your shell.\n',
+    );
     process.exit(1);
   }
 

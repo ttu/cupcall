@@ -14,14 +14,14 @@ export async function getPoolDetail(
     getTournamentById(db, pool.tournamentId),
   ]);
 
-  // inviteTokenHash column stores the raw invite token (see create-pool.ts for rationale).
   return {
     id: pool.id,
     name: pool.name,
     tournamentId: pool.tournamentId,
     tournamentName: tournament?.name ?? pool.tournamentId,
     ownerId: pool.ownerId,
-    inviteToken: pool.inviteTokenHash,
+    // inviteTokenHash stores the raw token; null means the link is disabled.
+    inviteToken: pool.inviteTokenHash ?? null,
     leaderboard,
     memberCount: leaderboard.length,
     lockTime: tournament?.firstKickoff ?? new Date(0),

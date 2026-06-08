@@ -3,7 +3,15 @@ export { buildInviteUrl } from './domain/invite';
 
 export { getUserPools } from './application/get-user-pools';
 export { getPoolDetail } from './application/get-pool-detail';
-export { createPool, joinPool, kickMember, rotateToken, deletePool } from './api/actions';
+export {
+  createPool,
+  joinPool,
+  kickMember,
+  rotateToken,
+  deletePool,
+  clearInviteLink,
+  joinAsGuest,
+} from './api/actions';
 
 export { PoolListItem } from './ui/PoolListItem';
 export { CreatePoolForm } from './ui/CreatePoolForm';

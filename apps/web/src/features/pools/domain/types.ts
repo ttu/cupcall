@@ -19,7 +19,7 @@ export type PoolDetail = {
   tournamentId: string;
   tournamentName: string;
   ownerId: UserId;
-  inviteToken: string;
+  inviteToken: string | null;
   leaderboard: LeaderboardEntry[];
   memberCount: number;
   lockTime: Date;

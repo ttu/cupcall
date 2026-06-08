@@ -92,6 +92,26 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
   Predict page + member card page updated with back-nav links.
 - **Design doc:** [`docs/features/pools.md`](./features/pools.md).
 
+## What exists — Guest auth additions
+
+- **`packages/db/migrations/0003_guest_auth.sql`** — makes `pools.invite_token_hash` nullable (null = invite disabled).
+- **`packages/db`** — `createGuestUser(db, { displayName })`, `createDbSession(db, { sessionToken, userId, expires })`,
+  `clearInviteToken(db, poolId)`, `getPoolByInviteTokenHash(db, token)`. `PoolRow.inviteTokenHash` is now `string | null`.
+- **`apps/web/src/features/auth/guest.ts`** — `signInAsGuest(displayName, redirectTo)` and
+  `signInAsExistingGuest(userId, redirectTo)`: create a guest user (display name only, no email), insert an
+  Auth.js-compatible session row, write the `authjs.session-token` cookie, then redirect. Bypasses email
+  magic-link entirely; Auth.js `auth()` validates these sessions normally via the same DB table.
+- **`apps/web/src/features/pools/api/actions.ts`** — added `clearInviteLink` (owner disables invite) and
+  `joinAsGuest({ displayName, token })` (name-only join: creates user → joins pool → opens session → redirects).
+- **`apps/web/src/features/pools/ui/InviteSection.tsx`** — handles `token: string | null`:
+  when null, owner sees "Generate invite link"; when set, owner gets "Remove link" in addition to rotate.
+- **`apps/web/src/app/page.tsx`** — home page shows two options: "Join without email" (name-only form) and
+  "Sign in with email" (existing magic-link flow).
+- **`apps/web/src/app/join/[token]/page.tsx`** — unauthenticated visitors see a `GuestJoinForm` (name input)
+  rather than being redirected to sign-in; signed-in path unchanged.
+- **`scripts/sync.ts`** — auto-loads `apps/web/.env.local` when `DATABASE_URL` is not already set, so
+  `pnpm sync -- <id>` works on developer machines without manually exporting env vars.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:
