@@ -92,7 +92,9 @@ export function buildBracket(
   //   - For bronzeMatch: participants = LOSERS of the two semi-final matches.
   //     (Bronze is always contested by SF losers — this is the fixed cup convention.)
   //
-  // Iterate in declaration order (fixture: sf1, sf2, final, bronze — valid topo order).
+  // Iterate in declaration order (valid topo order: R32 → R16 → QF → SF → Final).
+  // If any prerequisite pick is absent the match is skipped — partial cards are normal
+  // during card creation. Invalid picks (wrong team) still throw.
 
   for (const prog of bracket.progression) {
     if (prog.match === bracket.bronzeMatch) {
@@ -100,14 +102,11 @@ export function buildBracket(
       continue;
     }
 
-    // Participants of this match = winners of the `from` matches
-    const participants: TeamId[] = prog.from.map((fromKey) => {
-      const winner = pickByKey.get(fromKey);
-      if (!winner) {
-        throw new Error(`Missing knockout pick for match "${fromKey}" (needed by "${prog.match}")`);
-      }
-      return winner;
-    });
+    const maybeParticipants = prog.from.map((fromKey) => pickByKey.get(fromKey));
+    // Skip if any prerequisite pick is missing — card is partially filled
+    if (maybeParticipants.some((p) => p === undefined)) continue;
+
+    const participants = maybeParticipants as TeamId[];
     if (participants.length !== 2) {
       throw new Error(`Expected 2 participants for "${prog.match}", got ${participants.length}`);
     }
@@ -118,16 +117,17 @@ export function buildBracket(
   // Find the bronzeMatch progression entry to identify which SF matches feed it.
   const bronzeProg = bracket.progression.find((p) => p.match === bracket.bronzeMatch);
   if (bronzeProg) {
-    const sfLosers = bronzeProg.from.map((sfKey) => {
+    const sfLosers: TeamId[] = [];
+    for (const sfKey of bronzeProg.from) {
       const pair = participantsByMatch.get(sfKey);
-      if (!pair) throw new Error(`No participants resolved for SF "${sfKey}" (needed by bronze)`);
       const winner = pickByKey.get(sfKey);
-      if (!winner) throw new Error(`Missing pick for SF "${sfKey}" (needed by bronze)`);
+      if (!pair || !winner) break; // SF not yet resolved — skip bronze too
       const [sfHome, sfAway] = pair;
-      return winner === sfHome ? sfAway : sfHome;
-    });
-    if (sfLosers.length !== 2) throw new Error('Expected 2 SF losers for bronze match');
-    participantsByMatch.set(bracket.bronzeMatch, [sfLosers[0]!, sfLosers[1]!]);
+      sfLosers.push(winner === sfHome ? sfAway : sfHome);
+    }
+    if (sfLosers.length === 2) {
+      participantsByMatch.set(bracket.bronzeMatch, [sfLosers[0]!, sfLosers[1]!]);
+    }
   }
 
   // ── Validate all picks against their resolved participants ───────────────────
@@ -141,43 +141,50 @@ export function buildBracket(
   }
 
   // ── Derive roundOf8 ──────────────────────────────────────────────────────────
-  // All teams in entry-round slots, in slot order (home then away for each QF)
+  // All teams in entry-round slots, in slot order (home then away for each match).
+  // Matches whose participants aren't yet resolved (partial card) are omitted.
   const roundOf8: TeamId[] = bracket.roundOf8Matches.flatMap((key) => {
     const pair = participantsByMatch.get(key);
-    if (!pair) throw new Error(`No participants resolved for round-of-8 match "${key}"`);
-    return pair;
+    return pair ?? [];
   });
 
-  // ── Helper: resolve a match's loser ─────────────────────────────────────────
-  function loserOf(matchKey: BracketMatchKey): TeamId {
+  // ── Helper: resolve a match's loser (null when participants/pick is absent) ──
+  function loserOf(matchKey: BracketMatchKey): TeamId | null {
     const pair = participantsByMatch.get(matchKey);
-    if (!pair) throw new Error(`No participants for "${matchKey}"`);
+    if (!pair) return null;
     const winner = pickByKey.get(matchKey);
-    if (!winner) throw new Error(`No pick for "${matchKey}"`);
+    if (!winner) return null;
     const [home, away] = pair;
     return winner === home ? away : home;
   }
 
-  // ── Finalists = SF winners ───────────────────────────────────────────────────
-  const finalists: TeamId[] = bracket.semiFinals.map((sfKey) => {
+  // ── Finalists = SF winners (only those picked) ───────────────────────────────
+  const finalists: TeamId[] = bracket.semiFinals.flatMap((sfKey) => {
     const winner = pickByKey.get(sfKey);
-    if (!winner) throw new Error(`Missing pick for semi-final "${sfKey}"`);
-    return winner;
+    return winner ? [winner] : [];
   });
 
-  // ── bronzePair = SF losers ───────────────────────────────────────────────────
-  const bronzePair: TeamId[] = bracket.semiFinals.map((sfKey) => loserOf(sfKey));
+  // ── bronzePair = SF losers (only those resolved) ────────────────────────────
+  const bronzePair: TeamId[] = bracket.semiFinals.flatMap((sfKey) => {
+    const loser = loserOf(sfKey);
+    return loser ? [loser] : [];
+  });
 
   // ── topFour = [finalWinner, finalLoser, bronzeWinner, bronzeLoser] ───────────
+  // Only includes positions that are fully resolved; may be shorter than 4 for partial cards.
+  const topFour: TeamId[] = [];
   const finalWinner = pickByKey.get(bracket.finalMatch);
-  if (!finalWinner) throw new Error('Missing pick for final');
-  const finalLoser = loserOf(bracket.finalMatch);
-
+  if (finalWinner) {
+    topFour.push(finalWinner);
+    const finalLoser = loserOf(bracket.finalMatch);
+    if (finalLoser) topFour.push(finalLoser);
+  }
   const bronzeWinner = pickByKey.get(bracket.bronzeMatch);
-  if (!bronzeWinner) throw new Error('Missing pick for bronze match');
-  const bronzeLoser = loserOf(bracket.bronzeMatch);
-
-  const topFour: TeamId[] = [finalWinner, finalLoser, bronzeWinner, bronzeLoser];
+  if (bronzeWinner) {
+    topFour.push(bronzeWinner);
+    const bronzeLoser = loserOf(bracket.bronzeMatch);
+    if (bronzeLoser) topFour.push(bronzeLoser);
+  }
 
   return { roundOf8, finalists, bronzePair, topFour };
 }
