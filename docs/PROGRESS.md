@@ -9,13 +9,13 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 
 ## Status
 
-| Plan | Scope                                                                             | Status                                | Commit                                |
-| ---- | --------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------- |
-| 1    | Foundation + scoring engine (`@cup/engine`, `@cup/schemas`, workspace/tooling/CI) | ✅ done                               | `feat: foundation and scoring engine` |
-| 2    | Persistence + auth (`apps/web`, `@cup/db`, authz layer, Auth.js magic-link)       | ✅ done                               | `feat: persistence and auth`          |
-| 3    | Data-as-code sync pipeline                                                        | ⬜ not started (plan not yet written) |
-| 4    | Predictions feature slice                                                         | ⬜ blocked on UI designs              |
-| 5    | Pools feature slice                                                               | ⬜ blocked on UI designs              |
+| Plan | Scope                                                                             | Status                   | Commit                                |
+| ---- | --------------------------------------------------------------------------------- | ------------------------ | ------------------------------------- |
+| 1    | Foundation + scoring engine (`@cup/engine`, `@cup/schemas`, workspace/tooling/CI) | ✅ done                  | `feat: foundation and scoring engine` |
+| 2    | Persistence + auth (`apps/web`, `@cup/db`, authz layer, Auth.js magic-link)       | ✅ done                  | `feat: persistence and auth`          |
+| 3    | Data-as-code sync pipeline                                                        | ✅ done                  | (unpushed)                            |
+| 4    | Predictions feature slice                                                         | ⬜ blocked on UI designs |
+| 5    | Pools feature slice                                                               | ⬜ blocked on UI designs |
 
 `main` is linear with one squashed `feat:` commit per plan (no merge commits). The foundation is on
 `origin/main`; later plans may be unpushed (pushing is a deliberate, user-initiated step).
@@ -23,30 +23,35 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 ## What exists (done)
 
 - **`packages/engine` (`@cup/engine`)** — pure, deterministic derivation + scoring (functional-spec §6–7).
-  Public API: `deriveCard`, `scoreCard`, branded id constructors, domain types. Design:
+  Public API: `deriveCard`, `scoreCard`, `deriveGroupOrders`, branded id constructors, domain types. Design:
   [`docs/features/scoring-engine.md`](./features/scoring-engine.md).
 - **`packages/schemas` (`@cup/schemas`)** — Zod contracts for `tournament.json` / `results.json` /
   card import-export, with cross-ref validation + a compile-time schema↔engine drift guard.
-- **`packages/db` (`@cup/db`)** — full Drizzle schema for the functional-spec §10 data model, one
-  committed migration, typed repositories, a fixed-window rate limiter, and the pglite `makeTestDb`
-  harness (`@cup/db/testing`).
+- **`packages/db` (`@cup/db`)** — full Drizzle schema for the functional-spec §10 data model, two
+  committed migrations (incl. nullable kickoff), typed repositories for users/pools/members/kicks/scores/
+  rate-limits/**tournament**/predictions, and the pglite `makeTestDb` harness (`@cup/db/testing`).
 - **`apps/web`** — Next.js 15 App Router. `shared/{env,db,observability,authz}`, `features/auth`
   (Auth.js v5 + Drizzle adapter + Resend magic-link, database sessions), minimal sign-in/settings UI.
   The **authorization policy layer** (`shared/authz`) enforces lock/owner/visibility/audit in TS (no
   RLS), with an injected clock. Design: [`docs/features/persistence-and-auth.md`](./features/persistence-and-auth.md).
+- **`scripts/sync.ts`** (`pnpm sync -- <tournamentId>`) — data-as-code sync pipeline:
+  reads `data/tournaments/<id>/{tournament.json,results.json}`, Zod-validates, upserts tournament
+  definition + results via `@cup/db` repositories, rescores every card via `@cup/engine`, upserts
+  scores. Idempotent. CLI entry guarded by `isDirectlyExecuted` so module is testable.
+  `@cup/engine/testing` export added for test fixtures.
+- **`data/tournaments/mini-2026/`** — sample tournament + empty results JSON files.
+- **`.github/workflows/sync.yml`** — GitHub Action: auto-runs sync on push to `data/tournaments/**`;
+  supports `workflow_dispatch` with a `tournament_id` input.
+- **`vitest.config.ts`** updated: resolves `@cup/*` workspace packages via explicit aliases (enables
+  `scripts/*.test.ts` to import workspace packages); includes `scripts/**/*.test.ts` in test discovery.
 
 ## What's next (the remaining-plan sequence)
 
 Build the **design-independent** work first; the feature slices consume the UI designs as they land.
 
-1. **Plan 3 — data-as-code sync pipeline** (design-independent; ready to plan/build now).
-   A `scripts/sync.ts` (+ `npm run sync -- <id>`) that: Zod-validates `data/tournaments/<id>/{tournament,results}.json`
-   (`@cup/schemas`) → upserts via `@cup/db` repositories → recomputes every card's score with
-   `@cup/engine` → updates `scores` + leaderboards; idempotent; a GitHub Action on push to `data/**`.
-   See functional-spec §11, technical-spec §8.
-2. **Plan 4 — Predictions feature slice** (needs UI designs). Card CRUD, derived bracket, lock,
+1. **Plan 4 — Predictions feature slice** (needs UI designs). Card CRUD, derived bracket, lock,
    export/import — built on the `@cup/db` repos + `shared/authz` primitives.
-3. **Plan 5 — Pools feature slice** (needs UI designs). Create/join/kick/invite, leaderboard, owner
+2. **Plan 5 — Pools feature slice** (needs UI designs). Create/join/kick/invite, leaderboard, owner
    edits + audit, import.
 
 ## Deferred / known follow-ups

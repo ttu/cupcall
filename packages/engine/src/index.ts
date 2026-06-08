@@ -32,3 +32,4 @@ export { ok, err } from './result.js';
 // Core engine functions
 export { deriveCard } from './derive.js';
 export { scoreCard } from './score.js';
+export { deriveGroupOrders } from './standings.js';

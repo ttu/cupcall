@@ -1,0 +1,109 @@
+{
+  "id": "mini-2026",
+  "name": "Mini Tournament 2026",
+  "firstKickoff": "2026-06-11T18:00:00Z",
+  "knockoutRounds": ["QF", "SF", "Final"],
+  "scoring": {
+    "groupMatch": { "exactScore": 6, "correctOutcome": 3 },
+    "groupOrder": { "allCorrect": 6, "twoCorrect": 3, "oneCorrect": 1 },
+    "groupTopScoringTeam": 10,
+    "groupTopConcedingTeam": 10,
+    "roundOf8PerTeam": 3,
+    "bronze": { "exactScore": 5, "perTeam": 5 },
+    "final": { "exactScore": 5, "perTeam": 5 },
+    "topFourOrder": {
+      "allCorrect": 20,
+      "threeCorrect": 15,
+      "twoCorrect": 10,
+      "oneCorrect": 5,
+      "teamRightWrongPlace": 2
+    },
+    "tournamentTopScoringTeam": 10,
+    "tournamentTopConcedingTeam": 10,
+    "highestMatchGoals": 10,
+    "mostYellowCardsTeam": 15,
+    "firstRedCardPlayer": 20,
+    "penaltyShootoutCount": 10,
+    "finalDecidedByPenalties": 10,
+    "finalDecisiveGoalPlayer": 20,
+    "topScorerPlayer": 15
+  },
+  "teams": [
+    { "id": "A1", "name": "Team A1" },
+    { "id": "A2", "name": "Team A2" },
+    { "id": "A3", "name": "Team A3" },
+    { "id": "A4", "name": "Team A4" },
+    { "id": "B1", "name": "Team B1" },
+    { "id": "B2", "name": "Team B2" },
+    { "id": "B3", "name": "Team B3" },
+    { "id": "B4", "name": "Team B4" },
+    { "id": "C1", "name": "Team C1" },
+    { "id": "C2", "name": "Team C2" },
+    { "id": "C3", "name": "Team C3" },
+    { "id": "C4", "name": "Team C4" },
+    { "id": "D1", "name": "Team D1" },
+    { "id": "D2", "name": "Team D2" },
+    { "id": "D3", "name": "Team D3" },
+    { "id": "D4", "name": "Team D4" }
+  ],
+  "players": [
+    { "id": "A1-P", "name": "Player A1", "team": "A1" },
+    { "id": "B1-P", "name": "Player B1", "team": "B1" },
+    { "id": "C1-P", "name": "Player C1", "team": "C1" },
+    { "id": "D1-P", "name": "Player D1", "team": "D1" }
+  ],
+  "groups": [
+    { "id": "A", "teams": ["A1", "A2", "A3", "A4"] },
+    { "id": "B", "teams": ["B1", "B2", "B3", "B4"] },
+    { "id": "C", "teams": ["C1", "C2", "C3", "C4"] },
+    { "id": "D", "teams": ["D1", "D2", "D3", "D4"] }
+  ],
+  "groupMatches": [
+    { "id": "mA1", "group": "A", "home": "A1", "away": "A2", "kickoff": "2026-06-11T18:00:00Z" },
+    { "id": "mA2", "group": "A", "home": "A1", "away": "A3", "kickoff": "2026-06-12T18:00:00Z" },
+    { "id": "mA3", "group": "A", "home": "A1", "away": "A4", "kickoff": "2026-06-13T18:00:00Z" },
+    { "id": "mA4", "group": "A", "home": "A2", "away": "A3", "kickoff": "2026-06-14T18:00:00Z" },
+    { "id": "mA5", "group": "A", "home": "A2", "away": "A4", "kickoff": "2026-06-15T18:00:00Z" },
+    { "id": "mA6", "group": "A", "home": "A3", "away": "A4", "kickoff": "2026-06-16T18:00:00Z" },
+    { "id": "mB1", "group": "B", "home": "B1", "away": "B2", "kickoff": "2026-06-11T21:00:00Z" },
+    { "id": "mB2", "group": "B", "home": "B1", "away": "B3", "kickoff": "2026-06-12T21:00:00Z" },
+    { "id": "mB3", "group": "B", "home": "B1", "away": "B4", "kickoff": "2026-06-13T21:00:00Z" },
+    { "id": "mB4", "group": "B", "home": "B2", "away": "B3", "kickoff": "2026-06-14T21:00:00Z" },
+    { "id": "mB5", "group": "B", "home": "B2", "away": "B4", "kickoff": "2026-06-15T21:00:00Z" },
+    { "id": "mB6", "group": "B", "home": "B3", "away": "B4", "kickoff": "2026-06-16T21:00:00Z" },
+    { "id": "mC1", "group": "C", "home": "C1", "away": "C2", "kickoff": "2026-06-12T15:00:00Z" },
+    { "id": "mC2", "group": "C", "home": "C1", "away": "C3", "kickoff": "2026-06-13T15:00:00Z" },
+    { "id": "mC3", "group": "C", "home": "C1", "away": "C4", "kickoff": "2026-06-14T15:00:00Z" },
+    { "id": "mC4", "group": "C", "home": "C2", "away": "C3", "kickoff": "2026-06-15T15:00:00Z" },
+    { "id": "mC5", "group": "C", "home": "C2", "away": "C4", "kickoff": "2026-06-16T15:00:00Z" },
+    { "id": "mC6", "group": "C", "home": "C3", "away": "C4", "kickoff": "2026-06-17T15:00:00Z" },
+    { "id": "mD1", "group": "D", "home": "D1", "away": "D2", "kickoff": "2026-06-12T18:00:00Z" },
+    { "id": "mD2", "group": "D", "home": "D1", "away": "D3", "kickoff": "2026-06-13T18:00:00Z" },
+    { "id": "mD3", "group": "D", "home": "D1", "away": "D4", "kickoff": "2026-06-14T18:00:00Z" },
+    { "id": "mD4", "group": "D", "home": "D2", "away": "D3", "kickoff": "2026-06-15T18:00:00Z" },
+    { "id": "mD5", "group": "D", "home": "D2", "away": "D4", "kickoff": "2026-06-16T18:00:00Z" },
+    { "id": "mD6", "group": "D", "home": "D3", "away": "D4", "kickoff": "2026-06-17T18:00:00Z" }
+  ],
+  "qualification": { "autoQualifyPerGroup": 2, "bestThirdPlaced": 0 },
+  "standingsTiebreak": ["points", "goalDifference", "goalsFor", "seedOrder"],
+  "bracket": {
+    "rounds": ["QF", "SF", "Final"],
+    "entryRound": "QF",
+    "roundOf8Matches": ["qf1", "qf2", "qf3", "qf4"],
+    "slots": [
+      { "match": "qf1", "home": "1A", "away": "2B" },
+      { "match": "qf2", "home": "1C", "away": "2D" },
+      { "match": "qf3", "home": "1B", "away": "2A" },
+      { "match": "qf4", "home": "1D", "away": "2C" }
+    ],
+    "progression": [
+      { "match": "sf1", "from": ["qf1", "qf2"] },
+      { "match": "sf2", "from": ["qf3", "qf4"] },
+      { "match": "final", "from": ["sf1", "sf2"] },
+      { "match": "bronze", "from": ["sf1", "sf2"] }
+    ],
+    "semiFinals": ["sf1", "sf2"],
+    "finalMatch": "final",
+    "bronzeMatch": "bronze"
+  }
+}

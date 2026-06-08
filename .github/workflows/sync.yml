@@ -1,0 +1,43 @@
+name: Sync tournament data
+on:
+  push:
+    paths:
+      - 'data/tournaments/**'
+  workflow_dispatch:
+    inputs:
+      tournament_id:
+        description: Tournament ID (e.g. mini-2026)
+        required: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Detect changed tournament IDs
+        id: detect
+        if: github.event_name == 'push'
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD | grep '^data/tournaments/' | sed 's|data/tournaments/||; s|/.*||' | sort -u | tr '\n' ' ')
+          echo "ids=$CHANGED" >> $GITHUB_OUTPUT
+      - name: Sync (push)
+        if: github.event_name == 'push' && steps.detect.outputs.ids != ''
+        run: |
+          for ID in ${{ steps.detect.outputs.ids }}; do
+            pnpm sync -- $ID
+          done
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Sync (manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: pnpm sync -- ${{ inputs.tournament_id }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

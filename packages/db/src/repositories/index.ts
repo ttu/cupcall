@@ -4,3 +4,5 @@ export * from './members';
 export * from './kicks';
 export * from './scores';
 export * from './rate-limits';
+export * from './tournament';
+export * from './predictions';
