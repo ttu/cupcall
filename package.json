@@ -14,7 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky",
-    "sync": "tsx scripts/sync.ts"
+    "sync": "tsx scripts/sync.ts",
+    "db:migrate": "pnpm -C packages/db exec drizzle-kit migrate",
+    "dev": "bash scripts/dev.sh"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
