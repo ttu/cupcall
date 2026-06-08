@@ -1,0 +1,49 @@
+{
+  "name": "Cup Prediction",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/football-cup-prediction",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+  "mounts": ["source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"],
+  "forwardPorts": [3000, 5432],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js dev server",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "sudo chown -R node:node /home/node/.claude && ([ -f /home/node/.claude.json ] || echo '{\"hasCompletedOnboarding\":true,\"theme\":\"dark\"}' > /home/node/.claude.json) && sudo corepack enable && sudo corepack prepare pnpm@10.30.3 --activate && pnpm install && npx playwright install --with-deps chromium && npx --yes --package @playwright/mcp@latest -- playwright install chromium",
+  "updateContentCommand": "pnpm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-playwright.playwright",
+        "vitest.explorer"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      }
+    }
+  },
+  "containerEnv": {
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_AUTOUPDATER": "1",
+    "GIT_TERMINAL_PROMPT": "0",
+    "SSH_AUTH_SOCK": "",
+    "GIT_ASKPASS": "/bin/false",
+    "GITHUB_TOKEN": "",
+    "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
+  },
+  "remoteUser": "node"
+}
