@@ -1,1 +1,98 @@
 @import 'tailwindcss';
+
+/* ============================================================
+   CUP PREDICTION — Design System
+   Sporty / stadium-at-night. Pitch green + warm orange.
+   ============================================================ */
+
+:root {
+  /* Brand: pitch green */
+  --green-700: oklch(0.46 0.12 153);
+  --green-600: oklch(0.55 0.145 153);
+  --green-500: oklch(0.64 0.16 152);
+  --green-400: oklch(0.74 0.165 150);
+  --green-300: oklch(0.85 0.12 148);
+  --green-050: oklch(0.96 0.03 150);
+
+  /* Warm accent: orange */
+  --orange-600: oklch(0.62 0.17 47);
+  --orange-500: oklch(0.71 0.175 52);
+  --orange-400: oklch(0.79 0.155 60);
+  --orange-050: oklch(0.96 0.035 65);
+
+  /* Gold / silver / bronze (medals) */
+  --gold: oklch(0.81 0.135 85);
+  --silver: oklch(0.78 0.012 250);
+  --bronze: oklch(0.66 0.09 55);
+
+  /* Stadium-night ink (dark surfaces) */
+  --ink-950: oklch(0.17 0.022 162);
+  --ink-900: oklch(0.21 0.026 162);
+  --ink-850: oklch(0.25 0.028 162);
+  --ink-800: oklch(0.29 0.03 163);
+  --ink-700: oklch(0.36 0.03 164);
+  --ink-line: oklch(0.40 0.03 164);
+
+  /* Paper / light surfaces */
+  --paper: oklch(0.975 0.005 120);
+  --surface: oklch(0.995 0.002 120);
+  --surface-2: oklch(0.965 0.006 130);
+  --line: oklch(0.905 0.007 140);
+  --line-soft: oklch(0.94 0.006 140);
+
+  /* Text */
+  --ink: oklch(0.24 0.018 160);
+  --ink-soft: oklch(0.44 0.015 158);
+  --ink-muted: oklch(0.60 0.012 155);
+  --on-dark: oklch(0.97 0.006 140);
+  --on-dark-soft: oklch(0.80 0.012 150);
+  --on-dark-muted: oklch(0.64 0.014 152);
+
+  /* Semantic */
+  --win: var(--green-500);
+  --danger: oklch(0.60 0.19 25);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-lg: 22px;
+
+  --shadow-sm: 0 1px 2px rgba(20, 30, 22, 0.06), 0 1px 3px rgba(20, 30, 22, 0.08);
+  --shadow-md: 0 4px 14px rgba(20, 40, 25, 0.08), 0 1px 3px rgba(20, 40, 25, 0.06);
+  --shadow-lg: 0 18px 50px rgba(15, 35, 20, 0.16), 0 4px 14px rgba(15, 35, 20, 0.08);
+  --shadow-dark: 0 16px 50px rgba(0, 0, 0, 0.45);
+}
+
+/* Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.003em;
+  line-height: 1.45;
+}
+
+/* Turf: stadium-at-night field stripe texture */
+.turf {
+  background-color: var(--ink-900);
+  background-image: repeating-linear-gradient(
+    100deg,
+    oklch(0.215 0.027 162) 0 64px,
+    oklch(0.2 0.024 162) 64px 128px
+  );
+}
+
+/* Glow utility */
+.glow-green {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 20px 60px -20px var(--green-500);
+}
+
+/* Horizontal divider between children */
+.divide > * + * {
+  border-top: 1px solid var(--line-soft);
+}

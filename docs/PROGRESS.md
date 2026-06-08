@@ -9,13 +9,13 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 
 ## Status
 
-| Plan | Scope                                                                             | Status                   | Commit                                |
-| ---- | --------------------------------------------------------------------------------- | ------------------------ | ------------------------------------- |
-| 1    | Foundation + scoring engine (`@cup/engine`, `@cup/schemas`, workspace/tooling/CI) | ✅ done                  | `feat: foundation and scoring engine` |
-| 2    | Persistence + auth (`apps/web`, `@cup/db`, authz layer, Auth.js magic-link)       | ✅ done                  | `feat: persistence and auth`          |
-| 3    | Data-as-code sync pipeline                                                        | ✅ done                  | (unpushed)                            |
-| 4    | Predictions feature slice                                                         | ⬜ blocked on UI designs |
-| 5    | Pools feature slice                                                               | ⬜ blocked on UI designs |
+| Plan | Scope                                                                             | Status         | Commit                                |
+| ---- | --------------------------------------------------------------------------------- | -------------- | ------------------------------------- |
+| 1    | Foundation + scoring engine (`@cup/engine`, `@cup/schemas`, workspace/tooling/CI) | ✅ done        | `feat: foundation and scoring engine` |
+| 2    | Persistence + auth (`apps/web`, `@cup/db`, authz layer, Auth.js magic-link)       | ✅ done        | `feat: persistence and auth`          |
+| 3    | Data-as-code sync pipeline                                                        | ✅ done        | `feat: data-as-code sync pipeline`    |
+| 4    | Predictions feature slice                                                         | ✅ done        | (unpushed)                            |
+| 5    | Pools feature slice                                                               | ⬜ not started |
 
 `main` is linear with one squashed `feat:` commit per plan (no merge commits). The foundation is on
 `origin/main`; later plans may be unpushed (pushing is a deliberate, user-initiated step).
@@ -45,14 +45,39 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 - **`vitest.config.ts`** updated: resolves `@cup/*` workspace packages via explicit aliases (enables
   `scripts/*.test.ts` to import workspace packages); includes `scripts/**/*.test.ts` in test discovery.
 
+## What exists — Plan 4 additions
+
+- **`packages/db`** — `getActualResults` repository function; `tournament.definition` (jsonb) column
+  storing the full `Tournament` object so the web app avoids runtime type lookups.
+- **`apps/web/src/features/predictions/`** — full vertical slice:
+  - `domain/types.ts` — `CardView`, `GroupView`, `BracketView`, `TieView`, `SpecialBetView`,
+    `AuditEntry`, `CardExport`, `PredictionStatus`.
+  - `domain/special-bet-defs.ts` — `getSpecialBetDefs(scoring)` for the 11 spec §6.4 bets.
+  - `application/get-card.ts` — `getCardView(params)` assembles the full `CardView` (groups,
+    bracket, specials, completion %).
+  - `application/rescore.ts` — `rescoreCard` called after every mutation.
+  - `application/load-actual-results.ts` — thin wrapper over `getActualResults`.
+  - `api/actions.ts` — server actions: `saveGroupScore`, `saveKnockoutPick`, `saveFinishScore`,
+    `saveSpecialBet`, `ownerSaveGroupScore`, `ownerSaveSpecialBet`, `exportCard`, `importCard`.
+  - `ui/` — `ScoreCell`, `GroupScoresSection`, `BracketSection`, `SpecialsSection`,
+    `CompletionBar`, `PredictStepper`, `ReadOnlyCard`, `AuditLog`, `OwnerEditBanner`,
+    `ExportImportControls`.
+  - `index.ts` — public barrel exporting all types, use-cases, actions, and UI components.
+- **`apps/web/src/app/pools/[id]/predict/page.tsx`** — server component: loads card view (creates
+  empty prediction on first visit), shows `PredictStepper` (editable) or read-only notice after lock.
+- **`apps/web/src/app/pools/[id]/members/[memberId]/page.tsx`** — server component: enforces
+  `canViewCard` policy, shows `ReadOnlyCard` with audit log; owner gets import controls.
+- **Design system** — `globals.css` with full oklch color tokens, `.turf` class, fonts Anton +
+  Archivo via CSS variables `--font-display` / `--font-ui`.
+
+> **Known limitation:** Owner field-by-field editing on the member card page is not yet interactive
+> (owner can bulk-import via JSON). Inline owner edit actions (`ownerSaveGroupScore`,
+> `ownerSaveSpecialBet`) exist in `api/actions.ts` and are ready to wire up in a future slice.
+
 ## What's next (the remaining-plan sequence)
 
-Build the **design-independent** work first; the feature slices consume the UI designs as they land.
-
-1. **Plan 4 — Predictions feature slice** (needs UI designs). Card CRUD, derived bracket, lock,
-   export/import — built on the `@cup/db` repos + `shared/authz` primitives.
-2. **Plan 5 — Pools feature slice** (needs UI designs). Create/join/kick/invite, leaderboard, owner
-   edits + audit, import.
+1. **Plan 5 — Pools feature slice**. Create/join/kick/invite, leaderboard, pool management. Owner
+   inline edits on member cards can also be wired up here.
 
 ## Deferred / known follow-ups
 

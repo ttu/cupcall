@@ -1,0 +1,37 @@
+/**
+ * Re-derives and re-scores a prediction card after any input change.
+ * Reads the current CardInputs from the DB, calls @cup/engine, writes scores.
+ */
+import { getPredictionInputs, upsertScore } from '@cup/db';
+import type { Db } from '@cup/db';
+import { deriveCard, scoreCard, points } from '@cup/engine';
+import type { Tournament, ActualResults } from '@cup/engine';
+import type { AppSchema } from '@/shared/db';
+
+type Deps = {
+  db: Db<AppSchema>;
+  predictionId: string;
+  poolId: string;
+  userId: string;
+  tournament: Tournament;
+  actual: ActualResults;
+};
+
+/**
+ * Reads the stored CardInputs for `predictionId`, derives the card, scores it,
+ * and upserts the result into the scores table.
+ */
+export async function rescoreCard(deps: Deps): Promise<void> {
+  const { db, predictionId, poolId, tournament, actual } = deps;
+
+  const inputs = await getPredictionInputs(db, predictionId);
+  const derived = deriveCard(inputs, tournament);
+  const breakdown = scoreCard(derived, inputs, actual, tournament.scoring);
+
+  await upsertScore(db, {
+    poolId,
+    userId: deps.userId as import('@cup/engine').UserId,
+    pointsTotal: points(breakdown.total),
+    breakdown,
+  });
+}

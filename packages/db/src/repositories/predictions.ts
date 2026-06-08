@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import {
@@ -18,11 +18,216 @@ import {
 
 type Database = Db<typeof schema>;
 
+export type PredictionRow = {
+  id: string;
+  poolId: string;
+  userId: UserId;
+  tournamentId: string;
+  lockedAt: Date | null;
+};
+
+export type EditRow = {
+  id: string;
+  predictionId: string;
+  editorUserId: UserId;
+  fieldPath: string;
+  oldValue: unknown;
+  newValue: unknown;
+  reason: string | null;
+  source: 'manual' | 'import';
+  editedAt: Date;
+};
+
 export type PredictionRef = {
   predictionId: string;
   poolId: string;
   userId: UserId;
 };
+
+/**
+ * Returns the prediction row for (poolId, userId), or undefined if none exists.
+ */
+export async function getPrediction(
+  db: Database,
+  poolId: string,
+  uid: UserId,
+): Promise<PredictionRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(schema.predictions)
+    .where(eq(schema.predictions.poolId, poolId) && eq(schema.predictions.userId, uid));
+  if (!row) return undefined;
+  return { ...row, userId: userId(row.userId) };
+}
+
+/**
+ * Gets the existing prediction for (poolId, userId), or creates an empty one.
+ * Used when a member first visits their predict page for a pool.
+ */
+export async function getOrCreatePrediction(
+  db: Database,
+  input: { poolId: string; userId: UserId; tournamentId: string },
+): Promise<PredictionRow> {
+  const existing = await db
+    .select()
+    .from(schema.predictions)
+    .where(
+      eq(schema.predictions.poolId, input.poolId) && eq(schema.predictions.userId, input.userId),
+    );
+  if (existing[0]) return { ...existing[0], userId: userId(existing[0].userId) };
+
+  const [row] = await db
+    .insert(schema.predictions)
+    .values({
+      poolId: input.poolId,
+      userId: input.userId,
+      tournamentId: input.tournamentId,
+    })
+    .returning();
+  if (!row) throw new Error('getOrCreatePrediction: insert did not return a row');
+  return { ...row, userId: userId(row.userId) };
+}
+
+/** Upserts a single group-match score prediction. */
+export async function upsertGroupScore(
+  db: Database,
+  predictionId: string,
+  mid: string,
+  homeGoals: number,
+  awayGoals: number,
+): Promise<void> {
+  await db
+    .insert(schema.predictionGroupScores)
+    .values({ predictionId, matchId: mid, homeGoals, awayGoals })
+    .onConflictDoUpdate({
+      target: [schema.predictionGroupScores.predictionId, schema.predictionGroupScores.matchId],
+      set: { homeGoals, awayGoals },
+    });
+}
+
+/** Upserts a knockout winner pick. */
+export async function upsertKnockoutPick(
+  db: Database,
+  predictionId: string,
+  key: BracketMatchKey,
+  winnerTeamId: string,
+): Promise<void> {
+  await db
+    .insert(schema.predictionKnockoutPicks)
+    .values({ predictionId, bracketMatchKey: key, winnerTeamId })
+    .onConflictDoUpdate({
+      target: [
+        schema.predictionKnockoutPicks.predictionId,
+        schema.predictionKnockoutPicks.bracketMatchKey,
+      ],
+      set: { winnerTeamId },
+    });
+}
+
+/**
+ * Deletes knockout picks for the given bracket match keys.
+ * Called when group scores change and downstream picks become invalid.
+ */
+export async function deleteKnockoutPicks(
+  db: Database,
+  predictionId: string,
+  keys: BracketMatchKey[],
+): Promise<void> {
+  if (keys.length === 0) return;
+  await db
+    .delete(schema.predictionKnockoutPicks)
+    .where(
+      eq(schema.predictionKnockoutPicks.predictionId, predictionId) &&
+        inArray(schema.predictionKnockoutPicks.bracketMatchKey, keys),
+    );
+}
+
+/** Upserts the predicted exact score for the final or bronze match. */
+export async function upsertFinishScore(
+  db: Database,
+  predictionId: string,
+  match: 'final' | 'bronze',
+  homeGoals: number,
+  awayGoals: number,
+): Promise<void> {
+  await db
+    .insert(schema.predictionFinishScores)
+    .values({ predictionId, match, homeGoals, awayGoals })
+    .onConflictDoUpdate({
+      target: [schema.predictionFinishScores.predictionId, schema.predictionFinishScores.match],
+      set: { homeGoals, awayGoals },
+    });
+}
+
+/** Upserts a single special bet. Value must be JSON-serializable. */
+export async function upsertSpecialBet(
+  db: Database,
+  predictionId: string,
+  betKey: string,
+  value: unknown,
+): Promise<void> {
+  await db
+    .insert(schema.predictionSpecials)
+    .values({ predictionId, betKey, value })
+    .onConflictDoUpdate({
+      target: [schema.predictionSpecials.predictionId, schema.predictionSpecials.betKey],
+      set: { value },
+    });
+}
+
+/** Appends an audit record for an owner edit. */
+export async function createPredictionEdit(
+  db: Database,
+  input: {
+    predictionId: string;
+    editorUserId: UserId;
+    fieldPath: string;
+    oldValue: unknown;
+    newValue: unknown;
+    reason?: string;
+    source: 'manual' | 'import';
+  },
+): Promise<void> {
+  await db.insert(schema.predictionEdits).values({
+    predictionId: input.predictionId,
+    editorUserId: input.editorUserId,
+    fieldPath: input.fieldPath,
+    oldValue: input.oldValue ?? null,
+    newValue: input.newValue ?? null,
+    reason: input.reason ?? null,
+    source: input.source,
+  });
+}
+
+/**
+ * Returns edit history for a prediction, most-recent first.
+ * Readable by all pool members per functional-spec §8.3.
+ */
+export async function listEditsForPrediction(
+  db: Database,
+  predictionId: string,
+): Promise<EditRow[]> {
+  const rows = await db
+    .select()
+    .from(schema.predictionEdits)
+    .where(eq(schema.predictionEdits.predictionId, predictionId))
+    .orderBy(schema.predictionEdits.editedAt);
+
+  return rows
+    .slice()
+    .reverse()
+    .map((r) => ({
+      id: r.id,
+      predictionId: r.predictionId,
+      editorUserId: userId(r.editorUserId),
+      fieldPath: r.fieldPath,
+      oldValue: r.oldValue,
+      newValue: r.newValue,
+      reason: r.reason,
+      source: r.source,
+      editedAt: r.editedAt,
+    }));
+}
 
 /**
  * Returns all predictions for a tournament across all pools.

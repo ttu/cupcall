@@ -20,7 +20,7 @@ export async function upsertTournamentDef(
   firstKickoff: Date,
   matchKickoffs: Map<string, Date | null>,
 ): Promise<void> {
-  // 1. Upsert the tournament row
+  // 1. Upsert the tournament row (store full definition for bracket/qualification access)
   await db
     .insert(schema.tournaments)
     .values({
@@ -28,6 +28,7 @@ export async function upsertTournamentDef(
       name: tournament.name,
       firstKickoff,
       scoringConfig: tournament.scoring,
+      definition: tournament,
     })
     .onConflictDoUpdate({
       target: schema.tournaments.id,
@@ -35,6 +36,7 @@ export async function upsertTournamentDef(
         name: tournament.name,
         firstKickoff,
         scoringConfig: tournament.scoring,
+        definition: tournament,
       },
     });
 
@@ -135,6 +137,37 @@ export async function upsertTournamentDef(
         },
       });
   }
+}
+
+export type TournamentRow = {
+  id: string;
+  name: string;
+  firstKickoff: Date;
+  scoringConfig: import('@cup/engine').Scoring;
+  definition: Tournament | null;
+  status: 'upcoming' | 'active' | 'finished';
+};
+
+/**
+ * Returns a tournament row including the stored definition.
+ */
+export async function getTournamentById(
+  db: Database,
+  tournamentId: string,
+): Promise<TournamentRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(schema.tournaments)
+    .where(eq(schema.tournaments.id, tournamentId));
+  if (!row) return undefined;
+  return {
+    id: row.id,
+    name: row.name,
+    firstKickoff: row.firstKickoff,
+    scoringConfig: row.scoringConfig,
+    definition: (row.definition as Tournament) ?? null,
+    status: row.status,
+  };
 }
 
 /**

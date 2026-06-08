@@ -1,0 +1,139 @@
+/**
+ * View-model types for the predictions feature.
+ * These are derived from domain + tournament data and passed to UI components.
+ * They carry only what the UI needs — no raw DB rows exposed.
+ */
+
+import type { TeamId, PlayerId, MatchId, BracketMatchKey, GroupId } from '@cup/engine';
+
+// ---------------------------------------------------------------------------
+// Card status
+// ---------------------------------------------------------------------------
+
+export type PredictionStatus = 'editable' | 'locked';
+
+// ---------------------------------------------------------------------------
+// Group scores
+// ---------------------------------------------------------------------------
+
+export type GroupMatchView = {
+  matchId: MatchId;
+  group: GroupId;
+  homeTeamId: TeamId;
+  homeTeamName: string;
+  awayTeamId: TeamId;
+  awayTeamName: string;
+  kickoff: Date | null;
+  predictedHome: number | null;
+  predictedAway: number | null;
+};
+
+export type GroupView = {
+  groupId: GroupId;
+  matches: GroupMatchView[];
+  /** Derived standing order for this group (from the user's predicted scores), 1st → last */
+  derivedOrder: Array<{ teamId: TeamId; teamName: string; qualifies: boolean }>;
+  /** True when all matches in this group have been predicted */
+  complete: boolean;
+};
+
+// ---------------------------------------------------------------------------
+// Bracket / knockout
+// ---------------------------------------------------------------------------
+
+export type TieView = {
+  bracketMatchKey: BracketMatchKey;
+  homeTeamId: TeamId | null;
+  homeTeamName: string | null;
+  awayTeamId: TeamId | null;
+  awayTeamName: string | null;
+  /** The user's current winner pick (null = not yet picked) */
+  pickedWinnerId: TeamId | null;
+};
+
+export type BracketRoundView = {
+  label: string;
+  ties: TieView[];
+};
+
+export type FinishMatchView = {
+  homeTeamId: TeamId | null;
+  homeTeamName: string | null;
+  awayTeamId: TeamId | null;
+  awayTeamName: string | null;
+  predictedHome: number | null;
+  predictedAway: number | null;
+};
+
+export type BracketView = {
+  rounds: BracketRoundView[];
+  final: FinishMatchView;
+  bronze: FinishMatchView;
+  /** Derived: 8 teams the user has as QF qualifiers */
+  roundOf8: Array<{ teamId: TeamId; teamName: string }>;
+  /** Derived top-4 ranking */
+  topFour: Array<{ teamId: TeamId; teamName: string; position: number }>;
+};
+
+// ---------------------------------------------------------------------------
+// Special bets
+// ---------------------------------------------------------------------------
+
+export type BetInputKind = 'player' | 'team' | 'number' | 'bool';
+
+export type SpecialBetDef = {
+  key: string;
+  label: string;
+  kind: BetInputKind;
+  points: number;
+};
+
+export type SpecialBetView = SpecialBetDef & {
+  value: string | number | boolean | null;
+};
+
+// ---------------------------------------------------------------------------
+// Full card view (passed to prediction pages)
+// ---------------------------------------------------------------------------
+
+export type CardView = {
+  predictionId: string;
+  poolId: string;
+  tournamentId: string;
+  status: PredictionStatus;
+  completionPercent: number;
+  groups: GroupView[];
+  bracket: BracketView;
+  specials: SpecialBetView[];
+};
+
+// ---------------------------------------------------------------------------
+// Audit log
+// ---------------------------------------------------------------------------
+
+export type AuditEntry = {
+  id: string;
+  editorName: string;
+  fieldPath: string;
+  oldValue: unknown;
+  newValue: unknown;
+  reason?: string;
+  source: 'manual' | 'import';
+  editedAt: Date;
+};
+
+// ---------------------------------------------------------------------------
+// Export/import format (functional-spec §6.6)
+// ---------------------------------------------------------------------------
+
+export type CardExport = {
+  tournamentId: string;
+  version: 1;
+  groupScores: Array<{ matchId: string; home: number; away: number }>;
+  knockoutPicks: Array<{ bracketMatchKey: string; winner: string }>;
+  finishScores: {
+    final?: { home: number; away: number };
+    bronze?: { home: number; away: number };
+  };
+  specials: Record<string, unknown>;
+};

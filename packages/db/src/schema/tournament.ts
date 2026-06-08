@@ -1,5 +1,5 @@
 import { integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
-import type { Scoring } from '@cup/engine';
+import type { Scoring, Tournament } from '@cup/engine';
 
 export const stageEnum = pgEnum('stage', ['group', 'R32', 'R16', 'QF', 'SF', 'Final', 'bronze']);
 
@@ -19,6 +19,8 @@ export const tournaments = pgTable('tournaments', {
   name: text('name').notNull(),
   firstKickoff: timestamp('first_kickoff', { withTimezone: true }).notNull(),
   scoringConfig: jsonb('scoring_config').notNull().$type<Scoring>(),
+  /** Full Tournament definition (bracket, groups, qualification, tiebreak). Populated by sync. */
+  definition: jsonb('definition').$type<Tournament>(),
   status: tournamentStatusEnum('status').notNull().default('upcoming'),
 });
 
