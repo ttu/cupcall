@@ -3,6 +3,9 @@ services:
     image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
     volumes:
       - ..:/workspaces/football-cup-prediction:cached
+      # node_modules on a native volume, not the macOS bind mount: pnpm's
+      # hardlink/rmdir churn triggers ESTALE (-116) / ENOTEMPTY on VirtioFS.
+      - node-modules:/workspaces/football-cup-prediction/node_modules
     command: sleep infinity
     depends_on:
       db:
@@ -12,6 +15,10 @@ services:
       AUTH_SECRET: dev-auth-secret-at-least-32-chars!!
       AUTH_URL: http://localhost:3000
       RESEND_API_KEY: re_dev_placeholder
+      # Keep the pnpm store on the same native volume as node_modules so pnpm
+      # hardlinks within one filesystem; otherwise it copyfiles off the bind
+      # mount and hits ESTALE (-116).
+      npm_config_store_dir: /workspaces/football-cup-prediction/node_modules/.pnpm-store
 
   db:
     image: postgres:16-bookworm
@@ -32,3 +39,4 @@ services:
 
 volumes:
   postgres-data:
+  node-modules:
