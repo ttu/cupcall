@@ -61,3 +61,14 @@ export const verificationTokens = pgTable(
   },
   (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })],
 );
+
+// Personal login tokens for guest users (no email/password).
+// One token per user; upsert to rotate. Stored plaintext like viewToken.
+export const userLoginTokens = pgTable('user_login_token', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .$type<UserId>(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

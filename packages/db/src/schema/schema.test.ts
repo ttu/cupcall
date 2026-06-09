@@ -51,6 +51,7 @@ describe('migrations apply cleanly', () => {
       db.select().from(schema.predictionEdits),
       db.select().from(schema.scores),
       db.select().from(schema.rateLimits),
+      db.select().from(schema.userLoginTokens),
     ]);
     for (const result of results) {
       expect(result).toEqual([]);

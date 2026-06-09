@@ -3,6 +3,8 @@ import type { Db } from '../client';
 import * as schema from '../schema/index';
 import { userId, type UserId } from '@cup/engine';
 
+export type LoginTokenRow = { userId: UserId; token: string; createdAt: Date };
+
 type Database = Db<typeof schema>;
 
 export type UserRow = {
@@ -88,4 +90,45 @@ export async function updateDisplayName(
     .where(eq(schema.users.id, id))
     .returning();
   return row ? toUserRow(row) : undefined;
+}
+
+export async function upsertLoginToken(
+  db: Database,
+  id: UserId,
+  token: string,
+): Promise<LoginTokenRow> {
+  const [row] = await db
+    .insert(schema.userLoginTokens)
+    .values({ userId: id, token })
+    .onConflictDoUpdate({
+      target: schema.userLoginTokens.userId,
+      set: { token, createdAt: new Date() },
+    })
+    .returning();
+  if (!row) throw new Error('upsertLoginToken: insert did not return a row');
+  return { userId: userId(row.userId), token: row.token, createdAt: row.createdAt };
+}
+
+export async function getLoginTokenByToken(
+  db: Database,
+  token: string,
+): Promise<LoginTokenRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(schema.userLoginTokens)
+    .where(eq(schema.userLoginTokens.token, token));
+  if (!row) return undefined;
+  return { userId: userId(row.userId), token: row.token, createdAt: row.createdAt };
+}
+
+export async function getLoginTokenByUserId(
+  db: Database,
+  id: UserId,
+): Promise<LoginTokenRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(schema.userLoginTokens)
+    .where(eq(schema.userLoginTokens.userId, id));
+  if (!row) return undefined;
+  return { userId: userId(row.userId), token: row.token, createdAt: row.createdAt };
 }

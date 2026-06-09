@@ -19,12 +19,19 @@ import {
   createGuestUser,
   getTournamentById,
   getActualResults,
+  upsertLoginToken,
+  isMember,
 } from '@cup/db';
 import { signInAsExistingGuest } from '@/features/auth';
 import { rescoreCard } from '@/features/predictions';
 import { createPool as appCreatePool } from '../application/create-pool';
 import { joinPool as appJoinPool } from '../application/join-pool';
-import { generateInviteToken, generateViewToken } from '../domain/invite';
+import {
+  generateInviteToken,
+  generateViewToken,
+  generateLoginToken,
+  buildLoginUrl,
+} from '../domain/invite';
 import {
   buildPoolExport,
   restorePoolFromBackup,
@@ -344,6 +351,43 @@ export async function joinAsGuest(raw: unknown): Promise<{ ok: false; error: str
 
   // Unreachable; satisfies the return type.
   return { ok: false, error: 'Unexpected error.' };
+}
+
+// ---------------------------------------------------------------------------
+// Generate member login link (owner only)
+// ---------------------------------------------------------------------------
+
+const GenerateMemberLoginLinkSchema = z.object({
+  poolId: z.string(),
+  targetUserId: z.string(),
+});
+
+export async function generateMemberLoginLink(
+  raw: unknown,
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const parsed = GenerateMemberLoginLinkSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId, targetUserId } = parsed.data;
+
+  try {
+    const actor = await getActorOrThrow();
+    const pool = await getOwnerPoolOrThrow(poolId);
+    assertIsOwner(pool, actor.userId);
+
+    if (targetUserId === pool.ownerId) {
+      return { ok: false, error: 'Cannot generate a login link for the pool owner.' };
+    }
+
+    const inPool = await isMember(db, poolId, targetUserId as import('@cup/engine').UserId);
+    if (!inPool) return { ok: false, error: 'User is not a member of this pool.' };
+
+    const token = generateLoginToken();
+    await upsertLoginToken(db, targetUserId as import('@cup/engine').UserId, token);
+
+    return { ok: true, url: buildLoginUrl(token) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
 }
 
 // ---------------------------------------------------------------------------

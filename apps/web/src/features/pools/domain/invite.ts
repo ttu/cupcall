@@ -19,3 +19,11 @@ export function generateViewToken(): string {
 export function buildViewUrl(token: string): string {
   return `/view/${token}`;
 }
+
+export function generateLoginToken(): string {
+  return randomBytes(24).toString('hex');
+}
+
+export function buildLoginUrl(token: string): string {
+  return `/login/${token}`;
+}

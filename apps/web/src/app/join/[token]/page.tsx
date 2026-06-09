@@ -201,6 +201,16 @@ function GuestJoinForm({ token, poolName }: { token: string; poolName: string })
         </button>
       </form>
 
+      <div className="rounded-lg bg-[var(--surface-2)] border border-[var(--line)] px-4 py-3 space-y-1">
+        <p className="text-xs font-medium text-[var(--ink)]">How sign-in works</p>
+        <p className="text-xs text-[var(--ink-soft)]">
+          This browser will remember you automatically. If you ever want to continue from a
+          different device, you&apos;ll find a personal login link on your{' '}
+          <span className="font-medium text-[var(--ink)]">My Pools</span> page — save it somewhere
+          safe.
+        </p>
+      </div>
+
       <p className="text-center text-xs text-[var(--ink-muted)]">
         Already have an account?{' '}
         <Link

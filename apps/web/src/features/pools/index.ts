@@ -1,6 +1,6 @@
 export type { PoolSummary, PoolDetail, LeaderboardEntry } from './domain/types';
 export type { PoolBackup } from './application/pool-backup';
-export { buildInviteUrl, buildViewUrl } from './domain/invite';
+export { buildInviteUrl, buildViewUrl, buildLoginUrl, generateLoginToken } from './domain/invite';
 
 export { getUserPools } from './application/get-user-pools';
 export { getPoolDetail } from './application/get-pool-detail';
@@ -16,6 +16,7 @@ export {
   joinAsGuest,
   exportPool,
   importPool,
+  generateMemberLoginLink,
 } from './api/actions';
 
 export { PoolListItem } from './ui/PoolListItem';
@@ -26,3 +27,4 @@ export { ViewSection } from './ui/ViewSection';
 export { OwnerControls } from './ui/OwnerControls';
 export { PoolBackupControls } from './ui/PoolBackupControls';
 export { ScoringGuide } from './ui/ScoringGuide';
+export { MyLoginLink } from './ui/MyLoginLink';

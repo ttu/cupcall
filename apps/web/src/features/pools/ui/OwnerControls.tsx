@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { LeaderboardEntry } from '../domain/types';
 import type { UserId } from '@cup/engine';
-import { kickMember, deletePool } from '../api/actions';
+import { kickMember, deletePool, generateMemberLoginLink } from '../api/actions';
 
 type Props = {
   poolId: string;
@@ -20,12 +20,36 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
   const [isPendingKick, startKickTransition] = useTransition();
   const [isPendingDelete, startDeleteTransition] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [loginLinks, setLoginLinks] = useState<Record<string, string>>({});
+  const [loginLinkPending, setLoginLinkPending] = useState<Record<string, boolean>>({});
+  const [loginLinkError, setLoginLinkError] = useState<Record<string, string>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   function handleKick(targetUserId: UserId) {
     setKickError(null);
     startKickTransition(async () => {
       const result = await kickMember({ poolId, targetUserId });
       if (!result.ok) setKickError(result.error);
+    });
+  }
+
+  async function handleGetLink(targetUserId: UserId) {
+    setLoginLinkError((prev) => ({ ...prev, [targetUserId]: '' }));
+    setLoginLinkPending((prev) => ({ ...prev, [targetUserId]: true }));
+    const result = await generateMemberLoginLink({ poolId, targetUserId });
+    setLoginLinkPending((prev) => ({ ...prev, [targetUserId]: false }));
+    if (!result.ok) {
+      setLoginLinkError((prev) => ({ ...prev, [targetUserId]: result.error }));
+    } else {
+      const fullUrl = `${window.location.origin}${result.url}`;
+      setLoginLinks((prev) => ({ ...prev, [targetUserId]: fullUrl }));
+    }
+  }
+
+  function handleCopy(targetUserId: string, url: string) {
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(targetUserId);
+      setTimeout(() => setCopiedId(null), 2000);
     });
   }
 
@@ -63,24 +87,58 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
           <p className="px-4 py-4 text-sm text-[var(--ink-muted)]">No other members yet.</p>
         ) : (
           <div className="divide">
-            {otherMembers.map((member) => (
-              <div key={member.userId} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="flex-1 text-sm text-[var(--ink)] truncate">
-                  {member.displayName}
-                </span>
-                <span className="text-xs text-[var(--ink-muted)] tabular-nums">
-                  {member.pointsTotal} pts
-                </span>
-                <button
-                  type="button"
-                  disabled={isPendingKick}
-                  onClick={() => handleKick(member.userId)}
-                  className="text-xs px-2.5 py-1 rounded-md text-[var(--danger)] border border-[var(--danger)]/30 hover:bg-[var(--danger)]/5 transition-colors disabled:opacity-50"
-                >
-                  Kick
-                </button>
-              </div>
-            ))}
+            {otherMembers.map((member) => {
+              const link = loginLinks[member.userId];
+              const pending = loginLinkPending[member.userId] ?? false;
+              const linkErr = loginLinkError[member.userId];
+              return (
+                <div key={member.userId} className="px-4 py-2.5 space-y-1.5">
+                  <div className="flex items-center gap-3">
+                    <span className="flex-1 text-sm text-[var(--ink)] truncate">
+                      {member.displayName}
+                    </span>
+                    <span className="text-xs text-[var(--ink-muted)] tabular-nums">
+                      {member.pointsTotal} pts
+                    </span>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => void handleGetLink(member.userId)}
+                      className="text-xs px-2.5 py-1 rounded-md text-[var(--ink-muted)] border border-[var(--line)] hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
+                    >
+                      {pending ? 'Getting…' : 'Get link'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isPendingKick}
+                      onClick={() => handleKick(member.userId)}
+                      className="text-xs px-2.5 py-1 rounded-md text-[var(--danger)] border border-[var(--danger)]/30 hover:bg-[var(--danger)]/5 transition-colors disabled:opacity-50"
+                    >
+                      Kick
+                    </button>
+                  </div>
+                  {link && (
+                    <div className="flex items-center gap-2 pl-0">
+                      <span className="flex-1 text-xs text-[var(--ink-soft)] truncate font-mono bg-[var(--surface-2)] rounded px-2 py-1">
+                        {link}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(member.userId, link)}
+                        className="shrink-0 text-xs px-2.5 py-1 rounded-md text-[var(--ink-muted)] border border-[var(--line)] hover:bg-[var(--surface-2)] transition-colors"
+                      >
+                        {copiedId === member.userId ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
+                  )}
+                  {linkErr && (
+                    <p role="alert" className="text-xs text-[var(--danger)]">
+                      {linkErr}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         {kickError && (
