@@ -89,10 +89,20 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
       />
 
       {/* Invite section */}
-      <InviteSection poolId={poolId} token={detail.inviteToken} isOwner={isOwner} />
+      <InviteSection
+        poolId={poolId}
+        token={detail.inviteToken}
+        isOwner={isOwner}
+        baseUrl={process.env.AUTH_URL ?? ''}
+      />
 
       {/* View link */}
-      <ViewSection poolId={poolId} token={detail.viewToken} isOwner={isOwner} />
+      <ViewSection
+        poolId={poolId}
+        token={detail.viewToken}
+        isOwner={isOwner}
+        baseUrl={process.env.AUTH_URL ?? ''}
+      />
 
       {/* Owner controls */}
       {isOwner && (

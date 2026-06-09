@@ -8,7 +8,6 @@ import {
   PoolListItem,
   CreatePoolForm,
   MyLoginLink,
-  buildLoginUrl,
   generateLoginToken,
 } from '@/features/pools';
 
@@ -21,13 +20,14 @@ export default async function PoolsPage(): Promise<ReactElement> {
     getUserById(db, actor.userId),
   ]);
 
-  let myLoginUrl: string | null = null;
+  let myLoginToken: string | null = null;
   if (user && !user.email) {
     const existing = await getLoginTokenByUserId(db, actor.userId);
     const token = existing?.token ?? generateLoginToken();
     if (!existing) await upsertLoginToken(db, actor.userId, token);
-    myLoginUrl = `${process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? ''}${buildLoginUrl(token)}`;
+    myLoginToken = token;
   }
+  const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -59,7 +59,7 @@ export default async function PoolsPage(): Promise<ReactElement> {
       )}
 
       {/* Personal login link (guests only) */}
-      {myLoginUrl && <MyLoginLink url={myLoginUrl} />}
+      {myLoginToken && <MyLoginLink token={myLoginToken} baseUrl={baseUrl} />}
 
       {/* Create a new pool */}
       <section aria-labelledby="create-pool-heading">

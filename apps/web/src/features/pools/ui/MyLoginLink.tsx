@@ -1,17 +1,36 @@
 'use client';
 
 import type { ReactElement } from 'react';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { rotateMyLoginToken } from '../api/actions';
+import { buildLoginUrl } from '../domain/invite';
 
-type Props = { url: string };
+type Props = { token: string; baseUrl: string };
 
-export function MyLoginLink({ url }: Props): ReactElement {
+export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactElement {
+  const [token, setToken] = useState(initialToken);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const url = `${baseUrl}${buildLoginUrl(token)}`;
 
   function handleCopy() {
     void navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function handleReset() {
+    setError(null);
+    startTransition(async () => {
+      const result = await rotateMyLoginToken();
+      if (result.ok) {
+        setToken(result.token);
+      } else {
+        setError(result.error);
+      }
     });
   }
 
@@ -31,9 +50,13 @@ export function MyLoginLink({ url }: Props): ReactElement {
           device. Store it somewhere safe — anyone with it can access your account.
         </p>
         <div className="flex items-center gap-2">
-          <span className="flex-1 text-xs text-[var(--ink-soft)] truncate font-mono bg-[var(--surface-2)] rounded px-2 py-1.5">
-            {url}
-          </span>
+          <input
+            readOnly
+            value={url}
+            aria-label="Login link"
+            className="flex-1 rounded-lg border border-[var(--line)] px-3 py-2 text-xs bg-[var(--surface-2)] text-[var(--ink)] font-mono select-all"
+            onFocus={(e) => e.target.select()}
+          />
           <button
             type="button"
             onClick={handleCopy}
@@ -42,6 +65,19 @@ export function MyLoginLink({ url }: Props): ReactElement {
             {copied ? 'Copied!' : 'Copy'}
           </button>
         </div>
+        <button
+          type="button"
+          onClick={handleReset}
+          disabled={isPending}
+          className="text-xs text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors disabled:opacity-50"
+        >
+          {isPending ? 'Working…' : 'Reset link'}
+        </button>
+        {error && (
+          <p role="alert" className="text-xs text-[var(--danger)]">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );

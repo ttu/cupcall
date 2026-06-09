@@ -9,20 +9,21 @@ type Props = {
   poolId: string;
   token: string | null;
   isOwner: boolean;
+  baseUrl: string;
 };
 
-export function ViewSection({ poolId, token: initialToken, isOwner }: Props): ReactElement | null {
+export function ViewSection({
+  poolId,
+  token: initialToken,
+  isOwner,
+  baseUrl,
+}: Props): ReactElement | null {
   const [token, setToken] = useState(initialToken);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const viewUrl =
-    token && typeof window !== 'undefined'
-      ? `${window.location.origin}${buildViewUrl(token)}`
-      : token
-        ? buildViewUrl(token)
-        : null;
+  const viewUrl = token ? `${baseUrl}${buildViewUrl(token)}` : null;
 
   function handleCopy() {
     if (!viewUrl) return;

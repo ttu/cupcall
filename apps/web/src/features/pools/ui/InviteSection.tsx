@@ -9,20 +9,21 @@ type Props = {
   poolId: string;
   token: string | null;
   isOwner: boolean;
+  baseUrl: string;
 };
 
-export function InviteSection({ poolId, token: initialToken, isOwner }: Props): ReactElement {
+export function InviteSection({
+  poolId,
+  token: initialToken,
+  isOwner,
+  baseUrl,
+}: Props): ReactElement {
   const [token, setToken] = useState(initialToken);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const inviteUrl =
-    token && typeof window !== 'undefined'
-      ? `${window.location.origin}${buildInviteUrl(token)}`
-      : token
-        ? buildInviteUrl(token)
-        : null;
+  const inviteUrl = token ? `${baseUrl}${buildInviteUrl(token)}` : null;
 
   function handleCopy() {
     if (!inviteUrl) return;
