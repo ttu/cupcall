@@ -86,19 +86,26 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     const derivedGroupOrder = derived.groupOrders[group.id as GroupId] ?? [];
     const autoQualify = tournament.qualification.autoQualifyPerGroup;
 
+    const complete = matches.every((m) => m.predictedHome !== null);
+
     return {
       groupId: group.id as GroupId,
       matches,
       derivedOrder: derivedGroupOrder.map((tid, i) => ({
         teamId: tid,
         teamName: teamMap.get(tid) ?? tid,
-        qualifies: i < autoQualify,
+        qualifies: complete && i < autoQualify,
       })),
-      complete: matches.every((m) => m.predictedHome !== null),
+      complete,
     };
   });
 
   // 6. Build bracket view
+  const completeGroupsSet = new Set<GroupId>(
+    groups.filter((g) => g.complete).map((g) => g.groupId),
+  );
+  const allGroupsComplete = completeGroupsSet.size === tournament.groups.length;
+
   const knockoutPickMap = new Map(
     inputs.knockoutPicks.map((kp) => [kp.bracketMatchKey, kp.winner]),
   );
@@ -115,9 +122,23 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     if (!tiesByRound.has(roundLabel)) tiesByRound.set(roundLabel, []);
 
     const picked = knockoutPickMap.get(slot.match) ?? null;
-    // We don't know home/away team IDs until group stage is derived — derive from qualifiers
-    const homeId = resolveSlotTeam(slot.home, derived.qualifiers, derived.groupOrders) ?? null;
-    const awayId = resolveSlotTeam(slot.away, derived.qualifiers, derived.groupOrders) ?? null;
+    // Only resolve slot teams when the relevant group is fully predicted
+    const homeId =
+      resolveSlotTeam(
+        slot.home,
+        derived.qualifiers,
+        derived.groupOrders,
+        completeGroupsSet,
+        allGroupsComplete,
+      ) ?? null;
+    const awayId =
+      resolveSlotTeam(
+        slot.away,
+        derived.qualifiers,
+        derived.groupOrders,
+        completeGroupsSet,
+        allGroupsComplete,
+      ) ?? null;
 
     tiesByRound.get(roundLabel)!.push({
       bracketMatchKey: slot.match,
@@ -278,18 +299,21 @@ function resolveSlotTeam(
   slotRef: string,
   qualifiers: TeamId[],
   groupOrders: Record<GroupId, TeamId[]>,
+  completeGroups: Set<GroupId>,
+  allGroupsComplete: boolean,
 ): TeamId | undefined {
-  // SlotRef formats: "1A" (1st of group A), "2B", "3rd[0]" (best third-placed)
   const posGroupMatch = slotRef.match(/^(\d+)([A-Z]+)$/);
   if (posGroupMatch) {
     const pos = parseInt(posGroupMatch[1]!) - 1;
-    const groupId = posGroupMatch[2] as GroupId;
-    return groupOrders[groupId]?.[pos];
+    const gId = posGroupMatch[2] as GroupId;
+    if (!completeGroups.has(gId)) return undefined;
+    return groupOrders[gId]?.[pos];
   }
   const thirdMatch = slotRef.match(/^3rd\[(\d+)\]$/);
   if (thirdMatch) {
+    // Thirds ranking is cross-group — need all groups complete
+    if (!allGroupsComplete) return undefined;
     const idx = parseInt(thirdMatch[1]!);
-    // Third-placed qualifiers are those NOT in top-2 of any group, sorted — index into qualifiers
     return qualifiers[idx];
   }
   return undefined;

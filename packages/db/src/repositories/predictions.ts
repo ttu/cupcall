@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import {
@@ -137,8 +137,10 @@ export async function deleteKnockoutPicks(
   await db
     .delete(schema.predictionKnockoutPicks)
     .where(
-      eq(schema.predictionKnockoutPicks.predictionId, predictionId) &&
+      and(
+        eq(schema.predictionKnockoutPicks.predictionId, predictionId),
         inArray(schema.predictionKnockoutPicks.bracketMatchKey, keys),
+      ),
     );
 }
 

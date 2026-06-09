@@ -112,6 +112,24 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 - **`scripts/sync.ts`** — auto-loads `apps/web/.env.local` when `DATABASE_URL` is not already set, so
   `pnpm sync -- <id>` works on developer machines without manually exporting env vars.
 
+## What exists — Bracket validation additions
+
+- **`packages/engine`** — `findInvalidatedPickKeys(tournament, newGroupOrders, newQualifiers, existingPicks)`
+  walks entry-round slots and bracket progression in topological order; returns keys of picks whose
+  team is no longer a valid participant, cascading through R16 → QF → SF → Final/Bronze.
+  `selectQualifiers` and `deriveGroupOrders` now exported from `@cup/engine`. Design:
+  [`docs/superpowers/specs/2026-06-08-bracket-validation-design.md`](./superpowers/specs/2026-06-08-bracket-validation-design.md).
+- **`packages/db`** — `deleteKnockoutPicks` WHERE bug fixed (JS `&&` → Drizzle `and()`).
+- **`apps/web/src/features/predictions/application/get-card.ts`** — qualifying highlight suppressed
+  until group is complete; entry-round slots resolve to null team when the relevant group has
+  incomplete scores (cross-group 3rd-place slots require all groups complete).
+- **`apps/web/src/features/predictions/ui/BracketSection.tsx`** — both pick buttons disabled when
+  either team slot is empty (`eitherMissing`), not only the missing-team button.
+- **`apps/web/src/features/predictions/api/actions.ts`** — `saveGroupScore` and `ownerSaveGroupScore`
+  now run `invalidatePicksAfterGroupScoreChange` before persisting the score; deletes any picks
+  whose team is displaced and cascades all downstream picks.
+- **Tests** — 14 new integration + unit tests covering all three behaviours.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

@@ -19,7 +19,7 @@ const STEPS: { id: Step; label: string }[] = [
 type Props = {
   card: CardView;
   teams: { id: string; name: string }[];
-  players: { id: string; name: string }[];
+  players: { id: string; name: string; team: string }[];
 };
 
 export function PredictStepper({ card, teams, players }: Props): ReactElement {

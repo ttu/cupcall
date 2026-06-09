@@ -5,6 +5,7 @@ import { useTransition } from 'react';
 import { saveGroupScore } from '../api/actions';
 import type { GroupView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
+import { teamFlag } from './teamFlag';
 
 type Props = {
   groups: GroupView[];
@@ -52,7 +53,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
             {group.matches.map((match) => (
               <div key={match.matchId} className="flex items-center gap-3 px-4 py-3">
                 <span className="flex-1 text-right text-sm font-medium text-[var(--ink)] truncate">
-                  {match.homeTeamName}
+                  {match.homeTeamName} {teamFlag(match.homeTeamId)}
                 </span>
                 <ScoreCell
                   matchId={match.matchId}
@@ -63,7 +64,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
                   onSave={handleSave}
                 />
                 <span className="flex-1 text-left text-sm font-medium text-[var(--ink)] truncate">
-                  {match.awayTeamName}
+                  {teamFlag(match.awayTeamId)} {match.awayTeamName}
                 </span>
               </div>
             ))}
@@ -82,7 +83,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
                   }
                 >
                   <span className="opacity-60">{i + 1}.</span>
-                  {entry.teamName}
+                  {teamFlag(entry.teamId)} {entry.teamName}
                 </span>
               ))}
             </div>

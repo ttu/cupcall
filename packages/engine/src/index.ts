@@ -33,3 +33,5 @@ export { ok, err } from './result.js';
 export { deriveCard } from './derive.js';
 export { scoreCard } from './score.js';
 export { deriveGroupOrders } from './standings.js';
+export { selectQualifiers } from './qualifiers.js';
+export { findInvalidatedPickKeys } from './bracket.js';

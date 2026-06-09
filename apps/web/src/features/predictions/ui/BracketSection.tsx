@@ -5,6 +5,7 @@ import { useTransition } from 'react';
 import { saveKnockoutPick, saveFinishScore } from '../api/actions';
 import type { BracketView, TieView, FinishMatchView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
+import { teamFlag } from './teamFlag';
 
 type Props = {
   bracket: BracketView;
@@ -83,7 +84,7 @@ export function BracketSection({
                 key={t.teamId}
                 className="text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--orange-050)] text-[var(--orange-600)] ring-1 ring-[var(--orange-400)]/40"
               >
-                {t.teamName}
+                {teamFlag(t.teamId)} {t.teamName}
               </span>
             ))}
           </div>
@@ -124,7 +125,7 @@ function TieRow({
 }) {
   const { homeTeamId, homeTeamName, awayTeamId, awayTeamName, bracketMatchKey, pickedWinnerId } =
     tie;
-  const noTeams = !homeTeamId && !awayTeamId;
+  const eitherMissing = !homeTeamId || !awayTeamId;
 
   return (
     <div className="flex items-center gap-2 px-4 py-3">
@@ -132,7 +133,7 @@ function TieRow({
         teamId={homeTeamId}
         teamName={homeTeamName ?? '?'}
         picked={pickedWinnerId === homeTeamId}
-        disabled={locked || noTeams || !homeTeamId}
+        disabled={locked || eitherMissing}
         onClick={() => homeTeamId && onPick(bracketMatchKey, homeTeamId)}
         side="home"
       />
@@ -141,7 +142,7 @@ function TieRow({
         teamId={awayTeamId}
         teamName={awayTeamName ?? '?'}
         picked={pickedWinnerId === awayTeamId}
-        disabled={locked || noTeams || !awayTeamId}
+        disabled={locked || eitherMissing}
         onClick={() => awayTeamId && onPick(bracketMatchKey, awayTeamId)}
         side="away"
       />
@@ -150,7 +151,7 @@ function TieRow({
 }
 
 function TeamPickButton({
-  teamId: _teamId,
+  teamId,
   teamName,
   picked,
   disabled,
@@ -165,6 +166,7 @@ function TeamPickButton({
   side: 'home' | 'away';
 }) {
   const align = side === 'home' ? 'text-right' : 'text-left';
+  const flag = teamFlag(teamId);
   return (
     <button
       type="button"
@@ -180,7 +182,7 @@ function TeamPickButton({
             : ' bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[var(--green-050)] hover:text-[var(--green-700)] cursor-pointer')
       }
     >
-      {teamName}
+      {side === 'home' ? `${teamName} ${flag}` : `${flag} ${teamName}`}
     </button>
   );
 }
@@ -212,7 +214,7 @@ function FinishMatchSection({
       </div>
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="flex-1 text-right text-sm font-medium text-[var(--ink)] truncate">
-          {match.homeTeamName ?? '—'}
+          {match.homeTeamName ?? '—'} {teamFlag(match.homeTeamId)}
         </span>
         <ScoreCell
           matchId={matchKey}
@@ -223,7 +225,7 @@ function FinishMatchSection({
           onSave={(_, home, away) => onSave(matchKey, home, away)}
         />
         <span className="flex-1 text-left text-sm font-medium text-[var(--ink)] truncate">
-          {match.awayTeamName ?? '—'}
+          {teamFlag(match.awayTeamId)} {match.awayTeamName ?? '—'}
         </span>
       </div>
     </div>

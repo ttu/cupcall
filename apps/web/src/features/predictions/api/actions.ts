@@ -14,11 +14,17 @@ import {
   createPredictionEdit,
   getPrediction,
   getOrCreatePrediction,
+  getPredictionInputs,
   deleteKnockoutPicks,
   getTournamentById,
 } from '@cup/db';
-import { bracketMatchKey as bmk } from '@cup/engine';
-import type { BracketMatchKey, MatchId, TeamId } from '@cup/engine';
+import {
+  bracketMatchKey as bmk,
+  deriveGroupOrders,
+  selectQualifiers,
+  findInvalidatedPickKeys,
+} from '@cup/engine';
+import type { BracketMatchKey, MatchId, TeamId, Tournament } from '@cup/engine';
 import { rescoreCard } from '../application/rescore';
 import { loadActualResults } from '../application/load-actual-results';
 
@@ -64,6 +70,38 @@ async function rescoreAfterEdit(
   });
 }
 
+async function invalidatePicksAfterGroupScoreChange(
+  predictionId: string,
+  matchId: string,
+  home: number,
+  away: number,
+  existingInputs: Awaited<ReturnType<typeof getPredictionInputs>>,
+  tournamentDef: Tournament,
+) {
+  const updatedScores = [
+    ...existingInputs.groupScores.filter((s) => s.matchId !== matchId),
+    { matchId, home, away },
+  ];
+  const newGroupOrders = deriveGroupOrders(
+    tournamentDef,
+    updatedScores as Parameters<typeof deriveGroupOrders>[1],
+  );
+  const newQualifiers = selectQualifiers(
+    tournamentDef,
+    updatedScores as Parameters<typeof selectQualifiers>[1],
+    newGroupOrders,
+  );
+  const invalidKeys = findInvalidatedPickKeys(
+    tournamentDef,
+    newGroupOrders,
+    newQualifiers,
+    existingInputs.knockoutPicks,
+  );
+  if (invalidKeys.length > 0) {
+    await deleteKnockoutPicks(db, predictionId, invalidKeys);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Save group score (own card)
 // ---------------------------------------------------------------------------
@@ -99,6 +137,15 @@ export async function saveGroupScore(
       tournamentId: pool.tournamentId,
     });
 
+    const inputs = await getPredictionInputs(db, prediction.id);
+    await invalidatePicksAfterGroupScoreChange(
+      prediction.id,
+      mId,
+      home,
+      away,
+      inputs,
+      tournament.definition!,
+    );
     await upsertGroupScore(db, prediction.id, mId, home, away);
     await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
 
@@ -274,11 +321,18 @@ export async function ownerSaveGroupScore(
       tournamentId: pool.tournamentId,
     });
 
-    // Capture old value for audit
-    const { getPredictionInputs } = await import('@cup/db');
+    // Capture old value for audit and invalidation
     const oldInputs = await getPredictionInputs(db, prediction.id);
     const oldScore = oldInputs.groupScores.find((gs) => gs.matchId === mId);
 
+    await invalidatePicksAfterGroupScoreChange(
+      prediction.id,
+      mId,
+      home,
+      away,
+      oldInputs,
+      tournament.definition!,
+    );
     await upsertGroupScore(db, prediction.id, mId, home, away);
     await createPredictionEdit(db, {
       predictionId: prediction.id,
@@ -329,7 +383,6 @@ export async function ownerSaveSpecialBet(
       tournamentId: pool.tournamentId,
     });
 
-    const { getPredictionInputs } = await import('@cup/db');
     const oldInputs = await getPredictionInputs(db, prediction.id);
     const oldValue = (oldInputs.specials as Record<string, unknown>)[betKey] ?? null;
 
@@ -472,7 +525,6 @@ export async function exportCard(
     const prediction = await getPrediction(db, poolId, userId);
     if (!prediction) return { ok: false, error: 'No prediction found for this pool' };
 
-    const { getPredictionInputs } = await import('@cup/db');
     const inputs = await getPredictionInputs(db, prediction.id);
 
     const data = {

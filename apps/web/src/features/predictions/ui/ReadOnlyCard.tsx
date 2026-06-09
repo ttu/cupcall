@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import type { CardView } from '../domain/types';
 import { CompletionBar } from './CompletionBar';
+import { teamFlag } from './teamFlag';
 
 type Props = { card: CardView };
 
@@ -35,7 +36,7 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
                 {group.matches.map((match) => (
                   <div key={match.matchId} className="flex items-center gap-3 px-4 py-2.5">
                     <span className="flex-1 text-right text-sm text-[var(--ink)] truncate">
-                      {match.homeTeamName}
+                      {match.homeTeamName} {teamFlag(match.homeTeamId)}
                     </span>
                     <span className="text-sm font-semibold tabular-nums text-[var(--ink)] min-w-[3.5rem] text-center">
                       {match.predictedHome !== null
@@ -43,7 +44,7 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
                         : '—'}
                     </span>
                     <span className="flex-1 text-left text-sm text-[var(--ink)] truncate">
-                      {match.awayTeamName}
+                      {teamFlag(match.awayTeamId)} {match.awayTeamName}
                     </span>
                   </div>
                 ))}
@@ -81,7 +82,7 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
                     <span
                       className={`flex-1 text-right text-sm truncate ${tie.pickedWinnerId === tie.homeTeamId ? 'font-semibold text-[var(--green-700)]' : 'text-[var(--ink)]'}`}
                     >
-                      {tie.homeTeamName ?? '?'}
+                      {tie.homeTeamName ?? '?'} {teamFlag(tie.homeTeamId)}
                     </span>
                     <span className="text-xs text-[var(--ink-muted)] font-bold select-none px-1">
                       vs
@@ -89,7 +90,7 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
                     <span
                       className={`flex-1 text-left text-sm truncate ${tie.pickedWinnerId === tie.awayTeamId ? 'font-semibold text-[var(--green-700)]' : 'text-[var(--ink)]'}`}
                     >
-                      {tie.awayTeamName ?? '?'}
+                      {teamFlag(tie.awayTeamId)} {tie.awayTeamName ?? '?'}
                     </span>
                   </div>
                 ))}
@@ -109,7 +110,7 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
             </div>
             <div className="flex items-center gap-3 px-4 py-2.5">
               <span className="flex-1 text-right text-sm text-[var(--ink)] truncate">
-                {card.bracket.final.homeTeamName ?? '—'}
+                {card.bracket.final.homeTeamName ?? '—'} {teamFlag(card.bracket.final.homeTeamId)}
               </span>
               <span className="text-sm font-semibold tabular-nums text-[var(--ink)] min-w-[3.5rem] text-center">
                 {card.bracket.final.predictedHome !== null
@@ -117,7 +118,7 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
                   : '—'}
               </span>
               <span className="flex-1 text-left text-sm text-[var(--ink)] truncate">
-                {card.bracket.final.awayTeamName ?? '—'}
+                {teamFlag(card.bracket.final.awayTeamId)} {card.bracket.final.awayTeamName ?? '—'}
               </span>
             </div>
           </div>

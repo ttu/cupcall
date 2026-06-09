@@ -4,13 +4,14 @@ import type { ReactElement } from 'react';
 import { useTransition } from 'react';
 import { saveSpecialBet } from '../api/actions';
 import type { SpecialBetView } from '../domain/types';
+import { teamFlag } from './teamFlag';
 
 type Props = {
   specials: SpecialBetView[];
   poolId: string;
   locked: boolean;
   teams: { id: string; name: string }[];
-  players: { id: string; name: string }[];
+  players: { id: string; name: string; team: string }[];
   onSave?: (betKey: string, value: string | number | boolean) => void;
 };
 
@@ -67,7 +68,7 @@ function SpecialBetInput({
   bet: SpecialBetView;
   locked: boolean;
   teams: { id: string; name: string }[];
-  players: { id: string; name: string }[];
+  players: { id: string; name: string; team: string }[];
   onSave: (key: string, value: string | number | boolean) => void;
 }) {
   const id = `special-${bet.key}`;
@@ -85,7 +86,7 @@ function SpecialBetInput({
         <option value="">Select team…</option>
         {teams.map((t) => (
           <option key={t.id} value={t.id}>
-            {t.name}
+            {teamFlag(t.id)} {t.name}
           </option>
         ))}
       </select>
@@ -104,7 +105,7 @@ function SpecialBetInput({
         <option value="">Select player…</option>
         {players.map((p) => (
           <option key={p.id} value={p.id}>
-            {p.name}
+            {teamFlag(p.team)} {p.name}
           </option>
         ))}
       </select>

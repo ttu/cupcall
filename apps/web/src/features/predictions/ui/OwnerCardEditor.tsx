@@ -19,7 +19,7 @@ type Props = {
   poolId: string;
   targetUserId: string;
   teams: { id: string; name: string }[];
-  players: { id: string; name: string }[];
+  players: { id: string; name: string; team: string }[];
 };
 
 export function OwnerCardEditor({

@@ -87,7 +87,7 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
   }
 
   const teams = tournamentDef.teams.map((t) => ({ id: t.id, name: t.name }));
-  const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name }));
+  const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name, team: p.team }));
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">

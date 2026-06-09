@@ -93,6 +93,7 @@ Working agreement for all code in this repo. These are **requirements**, not sug
 
 - Deliver in **small, runnable increments**; the system stays in a working state after each step.
 - Prefer early user-visible progress where applicable.
+- **One commit per feature.** Each feature is landed as a single, self-contained commit that includes implementation, tests, and docs. Do not create intermediate or partial commits for a feature.
 
 ## Documentation
 
@@ -102,6 +103,8 @@ Working agreement for all code in this repo. These are **requirements**, not sug
   what's next, where things live, and the workflow. Treat it as the "start here" file and **update it
   whenever a plan/milestone completes**, so work is never bound to one session or agent. Persist a
   one-line pointer to it in project memory.
+- **Do not commit design specs separately.** Commit spec files together with the implementation they
+  describe in the same commit (or PR).
 
 ## Definition of Done
 

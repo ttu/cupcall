@@ -191,3 +191,107 @@ export function buildBracket(
 
 /** Helper exported for tests: resolve a slot reference (exposed for bracket.test.ts). */
 export { resolveSlot };
+
+/** Safe slot resolver — returns undefined instead of throwing when refs are unresolvable. */
+function resolveSlotSafe(
+  ref: string,
+  groupOrders: Record<GroupId, TeamId[]>,
+  rankedThirds: TeamId[],
+): TeamId | undefined {
+  try {
+    return resolveSlot(ref, groupOrders, rankedThirds);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Returns the BracketMatchKeys of picks that are no longer valid after a group score change.
+ *
+ * Walks the bracket in topological order (entry slots → progression → bronze).
+ * When a pick is invalidated it is removed from the working pick map so that downstream
+ * matches that depend on it are also flagged.
+ *
+ * Bronze is handled specially: its participants are SF losers, not SF winners.
+ */
+export function findInvalidatedPickKeys(
+  t: Tournament,
+  newGroupOrders: Record<GroupId, TeamId[]>,
+  newQualifiers: TeamId[],
+  existingPicks: KnockoutPick[],
+): BracketMatchKey[] {
+  const { bracket, groups, qualification } = t;
+  const autoCount = groups.length * qualification.autoQualifyPerGroup;
+  const rankedThirds: TeamId[] = newQualifiers.slice(autoCount);
+
+  const pickMap = new Map<BracketMatchKey, TeamId>(
+    existingPicks.map((p) => [p.bracketMatchKey, p.winner]),
+  );
+  const participantsByMatch = new Map<BracketMatchKey, [TeamId, TeamId]>();
+  const invalidKeys: BracketMatchKey[] = [];
+
+  // 1. Entry-round slots (e.g. R32 / QF depending on tournament)
+  for (const slot of bracket.slots) {
+    const home = resolveSlotSafe(slot.home, newGroupOrders, rankedThirds);
+    const away = resolveSlotSafe(slot.away, newGroupOrders, rankedThirds);
+
+    if (home !== undefined && away !== undefined) {
+      participantsByMatch.set(slot.match, [home, away]);
+    }
+
+    const pick = pickMap.get(slot.match);
+    if (pick !== undefined) {
+      if (home === undefined || away === undefined || (pick !== home && pick !== away)) {
+        invalidKeys.push(slot.match);
+        pickMap.delete(slot.match);
+      }
+    }
+  }
+
+  // 2. Progression entries in declaration order (topo: R32→R16→QF→SF→Final); skip bronze
+  for (const prog of bracket.progression) {
+    if (prog.match === bracket.bronzeMatch) continue;
+
+    const homePick = prog.from[0] != null ? pickMap.get(prog.from[0]) : undefined;
+    const awayPick = prog.from[1] != null ? pickMap.get(prog.from[1]) : undefined;
+
+    if (homePick !== undefined && awayPick !== undefined) {
+      participantsByMatch.set(prog.match, [homePick, awayPick]);
+    }
+
+    const pick = pickMap.get(prog.match);
+    if (pick !== undefined) {
+      if (
+        homePick === undefined ||
+        awayPick === undefined ||
+        (pick !== homePick && pick !== awayPick)
+      ) {
+        invalidKeys.push(prog.match);
+        pickMap.delete(prog.match);
+      }
+    }
+  }
+
+  // 3. Bronze: participants are SF losers (not winners)
+  const bronzeProg = bracket.progression.find((p) => p.match === bracket.bronzeMatch);
+  if (bronzeProg) {
+    const bronzeParticipants: TeamId[] = [];
+    for (const sfKey of bronzeProg.from) {
+      const sfPair = participantsByMatch.get(sfKey);
+      const sfWinner = pickMap.get(sfKey);
+      if (sfPair !== undefined && sfWinner !== undefined) {
+        const loser = sfWinner === sfPair[0] ? sfPair[1] : sfPair[0];
+        bronzeParticipants.push(loser);
+      }
+    }
+
+    const bronzePick = pickMap.get(bracket.bronzeMatch);
+    if (bronzePick !== undefined) {
+      if (bronzeParticipants.length < 2 || !bronzeParticipants.includes(bronzePick)) {
+        invalidKeys.push(bracket.bronzeMatch);
+      }
+    }
+  }
+
+  return invalidKeys;
+}

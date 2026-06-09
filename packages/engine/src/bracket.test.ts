@@ -3,7 +3,7 @@ import { bracketMatchKey, groupId, teamId, type GroupId, type TeamId } from './b
 import { miniTournament } from './__fixtures__/mini-tournament.js';
 import { deriveGroupOrders } from './standings.js';
 import { selectQualifiers } from './qualifiers.js';
-import { buildBracket, resolveSlot } from './bracket.js';
+import { buildBracket, resolveSlot, findInvalidatedPickKeys } from './bracket.js';
 import type { GroupScore, KnockoutPick } from './types.js';
 
 // All-draw scores → seed order in each group
@@ -187,5 +187,164 @@ describe('resolveSlot', () => {
 
   it('throws when a "3rd[i]" index is out of range', () => {
     expect(() => resolveSlot('3rd[5]', groupOrders, rankedThirds)).toThrow();
+  });
+});
+
+describe('findInvalidatedPickKeys', () => {
+  // Baseline: all-draw group orders (seed order)
+  const baseOrders: Record<GroupId, TeamId[]> = {
+    [groupId('A')]: [teamId('A1'), teamId('A2'), teamId('A3'), teamId('A4')],
+    [groupId('B')]: [teamId('B1'), teamId('B2'), teamId('B3'), teamId('B4')],
+    [groupId('C')]: [teamId('C1'), teamId('C2'), teamId('C3'), teamId('C4')],
+    [groupId('D')]: [teamId('D1'), teamId('D2'), teamId('D3'), teamId('D4')],
+  };
+  // Qualifiers: top-2 from each group (autoQualifyPerGroup=2, no thirds)
+  const baseQualifiers: TeamId[] = [
+    teamId('A1'),
+    teamId('A2'),
+    teamId('B1'),
+    teamId('B2'),
+    teamId('C1'),
+    teamId('C2'),
+    teamId('D1'),
+    teamId('D2'),
+  ];
+  // Full set of picks: A1 wins qf1, C1 wins qf2, B1 wins qf3, D1 wins qf4,
+  //                    A1 wins sf1, B1 wins sf2, A1 wins final, C1 wins bronze
+  const fullPicks: KnockoutPick[] = [
+    { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+    { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+    { bracketMatchKey: bracketMatchKey('qf3'), winner: teamId('B1') },
+    { bracketMatchKey: bracketMatchKey('qf4'), winner: teamId('D1') },
+    { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('A1') },
+    { bracketMatchKey: bracketMatchKey('sf2'), winner: teamId('B1') },
+    { bracketMatchKey: bracketMatchKey('final'), winner: teamId('A1') },
+    { bracketMatchKey: bracketMatchKey('bronze'), winner: teamId('C1') },
+  ];
+
+  it('returns empty array when no picks exist', () => {
+    const keys = findInvalidatedPickKeys(miniTournament, baseOrders, baseQualifiers, []);
+    expect(keys).toHaveLength(0);
+  });
+
+  it('returns empty array when group orders unchanged and all picks are valid', () => {
+    const keys = findInvalidatedPickKeys(miniTournament, baseOrders, baseQualifiers, fullPicks);
+    expect(keys).toHaveLength(0);
+  });
+
+  it('does not invalidate bronze when sf picks and bronze pick are all valid', () => {
+    // C1 is sf1 loser → valid bronze pick
+    const keys = findInvalidatedPickKeys(miniTournament, baseOrders, baseQualifiers, fullPicks);
+    expect(keys).not.toContain(bracketMatchKey('bronze'));
+  });
+
+  it('invalidates qf pick when picked team is displaced from its slot', () => {
+    // A2 now beats A1 → A=[A2,A1,A3,A4]; qf1 slot becomes A2 vs B2; A1 pick invalid
+    const swappedOrders: Record<GroupId, TeamId[]> = {
+      ...baseOrders,
+      [groupId('A')]: [teamId('A2'), teamId('A1'), teamId('A3'), teamId('A4')],
+    };
+    const swappedQualifiers: TeamId[] = [
+      teamId('A2'),
+      teamId('A1'),
+      teamId('B1'),
+      teamId('B2'),
+      teamId('C1'),
+      teamId('C2'),
+      teamId('D1'),
+      teamId('D2'),
+    ];
+    const picks: KnockoutPick[] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+    ];
+
+    const keys = findInvalidatedPickKeys(miniTournament, swappedOrders, swappedQualifiers, picks);
+    expect(keys).toContain(bracketMatchKey('qf1'));
+    expect(keys).toHaveLength(1);
+  });
+
+  it('does not invalidate qf pick when picked team stays in slot despite opponent change', () => {
+    // B3 becomes runner-up instead of B2 → qf1: A1 vs B3; A1 pick still valid
+    const changedBOrders: Record<GroupId, TeamId[]> = {
+      ...baseOrders,
+      [groupId('B')]: [teamId('B1'), teamId('B3'), teamId('B2'), teamId('B4')],
+    };
+    const changedQualifiers: TeamId[] = [
+      teamId('A1'),
+      teamId('A2'),
+      teamId('B1'),
+      teamId('B3'),
+      teamId('C1'),
+      teamId('C2'),
+      teamId('D1'),
+      teamId('D2'),
+    ];
+    const picks: KnockoutPick[] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+    ];
+
+    const keys = findInvalidatedPickKeys(miniTournament, changedBOrders, changedQualifiers, picks);
+    expect(keys).toHaveLength(0);
+  });
+
+  it('cascades: invalidating a qf pick also invalidates the dependent sf pick', () => {
+    // A2 becomes 1st → qf1 now A2 vs B2 → qf1 pick (A1) invalid → sf1 pick (A1) also invalid
+    const swappedOrders: Record<GroupId, TeamId[]> = {
+      ...baseOrders,
+      [groupId('A')]: [teamId('A2'), teamId('A1'), teamId('A3'), teamId('A4')],
+    };
+    const swappedQualifiers: TeamId[] = [
+      teamId('A2'),
+      teamId('A1'),
+      teamId('B1'),
+      teamId('B2'),
+      teamId('C1'),
+      teamId('C2'),
+      teamId('D1'),
+      teamId('D2'),
+    ];
+    const picks: KnockoutPick[] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+      { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('A1') },
+    ];
+
+    const keys = findInvalidatedPickKeys(miniTournament, swappedOrders, swappedQualifiers, picks);
+    expect(keys).toContain(bracketMatchKey('qf1'));
+    expect(keys).toContain(bracketMatchKey('sf1'));
+    expect(keys).not.toContain(bracketMatchKey('qf2'));
+  });
+
+  it('cascades through qf → sf → final → bronze on full pick set', () => {
+    const swappedOrders: Record<GroupId, TeamId[]> = {
+      ...baseOrders,
+      [groupId('A')]: [teamId('A2'), teamId('A1'), teamId('A3'), teamId('A4')],
+    };
+    const swappedQualifiers: TeamId[] = [
+      teamId('A2'),
+      teamId('A1'),
+      teamId('B1'),
+      teamId('B2'),
+      teamId('C1'),
+      teamId('C2'),
+      teamId('D1'),
+      teamId('D2'),
+    ];
+
+    const keys = findInvalidatedPickKeys(
+      miniTournament,
+      swappedOrders,
+      swappedQualifiers,
+      fullPicks,
+    );
+
+    expect(keys).toContain(bracketMatchKey('qf1'));
+    expect(keys).toContain(bracketMatchKey('sf1'));
+    expect(keys).toContain(bracketMatchKey('final'));
+    expect(keys).toContain(bracketMatchKey('bronze'));
+    expect(keys).not.toContain(bracketMatchKey('qf2'));
+    expect(keys).not.toContain(bracketMatchKey('qf3'));
+    expect(keys).not.toContain(bracketMatchKey('qf4'));
+    expect(keys).not.toContain(bracketMatchKey('sf2'));
   });
 });
