@@ -130,6 +130,14 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
   whose team is displaced and cascades all downstream picks.
 - **Tests** — 14 new integration + unit tests covering all three behaviours.
 
+## What exists — Pool backup additions
+
+- **`apps/web/src/features/pools/application/pool-backup.ts`** — `buildPoolExport` (assembles all members + predictions into a `PoolBackup` JSON), `restorePoolFromBackup` (resolves/creates users, clears existing data, writes backup predictions, writes audit record), Zod schemas (`PoolBackupSchema`, `MemberBackupSchema`), and derived types.
+- **`apps/web/src/features/pools/api/actions.ts`** — `exportPool` (owner-only; returns `PoolBackup` JSON for download) and `importPool` (owner-only; validates backup, restores members/predictions, rescores all in parallel).
+- **`apps/web/src/features/pools/ui/PoolBackupControls.tsx`** — client component with export and import buttons; shown in pool detail owner section.
+- **`apps/web/src/features/predictions/index.ts`** — `rescoreCard` added to the public barrel so the pools feature can rescore without reaching into predictions internals.
+- **Design doc:** [`docs/features/pool-backup.md`](./features/pool-backup.md).
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

@@ -3,7 +3,13 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
-import { getPoolDetail, Leaderboard, InviteSection, OwnerControls } from '@/features/pools';
+import {
+  getPoolDetail,
+  Leaderboard,
+  InviteSection,
+  OwnerControls,
+  PoolBackupControls,
+} from '@/features/pools';
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -69,7 +75,14 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
 
       {/* Owner controls */}
       {isOwner && (
-        <OwnerControls poolId={poolId} members={detail.leaderboard} currentUserId={actor.userId} />
+        <>
+          <OwnerControls
+            poolId={poolId}
+            members={detail.leaderboard}
+            currentUserId={actor.userId}
+          />
+          <PoolBackupControls poolId={poolId} />
+        </>
       )}
     </main>
   );

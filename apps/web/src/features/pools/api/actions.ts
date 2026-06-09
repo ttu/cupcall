@@ -15,11 +15,20 @@ import {
   clearInviteToken,
   deletePool as dbDeletePool,
   createGuestUser,
+  getTournamentById,
+  getActualResults,
 } from '@cup/db';
 import { signInAsExistingGuest } from '@/features/auth';
+import { rescoreCard } from '@/features/predictions';
 import { createPool as appCreatePool } from '../application/create-pool';
 import { joinPool as appJoinPool } from '../application/join-pool';
 import { generateInviteToken } from '../domain/invite';
+import {
+  buildPoolExport,
+  restorePoolFromBackup,
+  PoolBackupSchema,
+} from '../application/pool-backup';
+import type { PoolBackup } from '../application/pool-backup';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -279,4 +288,91 @@ export async function joinAsGuest(raw: unknown): Promise<{ ok: false; error: str
 
   // Unreachable; satisfies the return type.
   return { ok: false, error: 'Unexpected error.' };
+}
+
+// ---------------------------------------------------------------------------
+// Export pool (backup)
+// ---------------------------------------------------------------------------
+
+const ExportPoolSchema = z.object({ poolId: z.string() });
+
+export async function exportPool(
+  raw: unknown,
+): Promise<{ ok: true; data: PoolBackup } | { ok: false; error: string }> {
+  const parsed = ExportPoolSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId } = parsed.data;
+
+  try {
+    const actor = await getActorOrThrow();
+    const pool = await getOwnerPoolOrThrow(poolId);
+    assertIsOwner(pool, actor.userId);
+
+    const backup = await buildPoolExport(db, poolId, pool.name, pool.tournamentId);
+    return { ok: true, data: backup };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Import pool (restore from backup)
+// ---------------------------------------------------------------------------
+
+const ImportPoolSchema = z.object({
+  poolId: z.string(),
+  backupData: PoolBackupSchema,
+});
+
+export async function importPool(
+  raw: unknown,
+): Promise<{ ok: true; membersRestored: number } | { ok: false; error: string }> {
+  const parsed = ImportPoolSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId, backupData } = parsed.data;
+
+  try {
+    const actor = await getActorOrThrow();
+    const pool = await getOwnerPoolOrThrow(poolId);
+    assertIsOwner(pool, actor.userId);
+
+    if (backupData.tournamentId !== pool.tournamentId) {
+      return {
+        ok: false,
+        error: `Backup is for tournament "${backupData.tournamentId}" but pool uses "${pool.tournamentId}".`,
+      };
+    }
+
+    const tournament = await getTournamentById(db, pool.tournamentId);
+    if (!tournament?.definition) {
+      return { ok: false, error: 'Tournament definition not loaded. Run pnpm sync first.' };
+    }
+
+    const { membersRestored, restoredPredictions } = await restorePoolFromBackup(
+      db,
+      poolId,
+      pool.tournamentId,
+      backupData,
+      actor.userId,
+    );
+
+    const actual = await getActualResults(db, pool.tournamentId);
+    await Promise.all(
+      restoredPredictions.map(({ predictionId, userId }) =>
+        rescoreCard({
+          db,
+          predictionId,
+          poolId,
+          userId,
+          tournament: tournament.definition!,
+          actual,
+        }),
+      ),
+    );
+
+    revalidatePath(`/pools/${poolId}`);
+    return { ok: true, membersRestored };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
 }

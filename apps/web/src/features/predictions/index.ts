@@ -19,6 +19,7 @@ export type {
 
 export { getCardView } from './application/get-card';
 export { loadActualResults } from './application/load-actual-results';
+export { rescoreCard } from './application/rescore';
 
 export {
   saveGroupScore,
