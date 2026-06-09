@@ -86,10 +86,15 @@ export type SpecialBetDef = {
   label: string;
   kind: BetInputKind;
   points: number;
+  /** Player bets only: allow typing a name not in the player list */
+  allowFreeText?: boolean;
 };
 
 export type SpecialBetView = SpecialBetDef & {
+  /** Human-readable display value (player name, team name, number, bool, or custom text) */
   value: string | number | boolean | null;
+  /** Raw stored value — player/team ID, number, bool, or custom free-text string */
+  storedValue: string | number | boolean | null;
 };
 
 // ---------------------------------------------------------------------------

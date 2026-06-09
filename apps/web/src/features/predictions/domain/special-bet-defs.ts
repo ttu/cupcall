@@ -12,12 +12,14 @@ export function getSpecialBetDefs(scoring: Scoring): SpecialBetDef[] {
       label: 'Top scorer',
       kind: 'player',
       points: scoring.topScorerPlayer,
+      allowFreeText: true,
     },
     {
       key: 'finalDecisiveGoalPlayer',
       label: 'Decisive goal in the final',
       kind: 'player',
       points: scoring.finalDecisiveGoalPlayer,
+      allowFreeText: true,
     },
     {
       key: 'firstRedCardPlayer',

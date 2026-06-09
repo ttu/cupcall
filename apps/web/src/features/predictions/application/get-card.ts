@@ -225,16 +225,20 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   const specials: SpecialBetView[] = defs.map((def) => {
     const raw = (inputs.specials as Record<string, unknown>)[def.key];
     let displayValue: string | number | boolean | null = null;
+    let storedValue: string | number | boolean | null = null;
     if (raw !== undefined && raw !== null) {
       if (def.kind === 'player') {
+        storedValue = String(raw);
         displayValue = playerMap.get(raw as import('@cup/engine').PlayerId) ?? String(raw);
       } else if (def.kind === 'team') {
+        storedValue = String(raw);
         displayValue = teamMap.get(raw as TeamId) ?? String(raw);
       } else {
+        storedValue = raw as number | boolean;
         displayValue = raw as number | boolean;
       }
     }
-    return { ...def, value: displayValue };
+    return { ...def, value: displayValue, storedValue };
   });
 
   // 8. Completion

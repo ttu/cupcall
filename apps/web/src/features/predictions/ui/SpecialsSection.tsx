@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactElement } from 'react';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { saveSpecialBet } from '../api/actions';
 import type { SpecialBetView } from '../domain/types';
 import { teamFlag } from './teamFlag';
@@ -79,7 +79,7 @@ function SpecialBetInput({
       <select
         id={id}
         disabled={locked}
-        defaultValue={typeof bet.value === 'string' ? bet.value : ''}
+        defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
         onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
         className={`w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20 ${disabledClass}`}
       >
@@ -94,11 +94,16 @@ function SpecialBetInput({
   }
 
   if (bet.kind === 'player') {
+    if (bet.allowFreeText) {
+      return (
+        <PlayerFreeTextInput id={id} bet={bet} locked={locked} players={players} onSave={onSave} />
+      );
+    }
     return (
       <select
         id={id}
         disabled={locked}
-        defaultValue={typeof bet.value === 'string' ? bet.value : ''}
+        defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
         onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
         className={`w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20 ${disabledClass}`}
       >
@@ -157,4 +162,96 @@ function SpecialBetInput({
   }
 
   return null;
+}
+
+function PlayerFreeTextInput({
+  id,
+  bet,
+  locked,
+  players,
+  onSave,
+}: {
+  id: string;
+  bet: SpecialBetView;
+  locked: boolean;
+  players: { id: string; name: string; team: string }[];
+  onSave: (key: string, value: string) => void;
+}) {
+  const storedIsInList =
+    typeof bet.storedValue === 'string' && players.some((p) => p.id === bet.storedValue);
+  const initialMode: 'select' | 'custom' =
+    bet.storedValue !== null && !storedIsInList ? 'custom' : 'select';
+
+  const [mode, setMode] = useState<'select' | 'custom'>(initialMode);
+  const [customText, setCustomText] = useState(
+    initialMode === 'custom' ? String(bet.storedValue) : '',
+  );
+
+  const selectClass =
+    'w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20';
+  const inputClass =
+    'flex-1 rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20';
+
+  if (locked) {
+    return (
+      <span className="text-sm text-[var(--ink)]">
+        {bet.value !== null ? String(bet.value) : '—'}
+      </span>
+    );
+  }
+
+  if (mode === 'custom') {
+    return (
+      <div className="flex gap-2 items-center">
+        <input
+          id={id}
+          type="text"
+          value={customText}
+          placeholder="Type player name…"
+          onChange={(e) => setCustomText(e.target.value)}
+          onBlur={() => {
+            const trimmed = customText.trim();
+            if (trimmed) onSave(bet.key, trimmed);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur();
+            }
+          }}
+          className={inputClass}
+        />
+        <button
+          type="button"
+          onClick={() => setMode('select')}
+          className="shrink-0 text-xs text-[var(--green-700)] hover:underline px-1"
+        >
+          ← List
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <select
+      id={id}
+      defaultValue={storedIsInList ? String(bet.storedValue) : ''}
+      onChange={(e) => {
+        if (e.target.value === '__custom__') {
+          setMode('custom');
+          setCustomText('');
+        } else if (e.target.value) {
+          onSave(bet.key, e.target.value);
+        }
+      }}
+      className={selectClass}
+    >
+      <option value="">Select player…</option>
+      {players.map((p) => (
+        <option key={p.id} value={p.id}>
+          {teamFlag(p.team)} {p.name}
+        </option>
+      ))}
+      <option value="__custom__">Other (type a name)…</option>
+    </select>
+  );
 }

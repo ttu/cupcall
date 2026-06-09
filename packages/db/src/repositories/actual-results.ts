@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNotNull } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import {
@@ -18,11 +18,17 @@ type Database = Db<typeof schema>;
  * Used by rescore pipelines after any mutation or sync.
  */
 export async function getActualResults(db: Database, tournamentId: string): Promise<ActualResults> {
-  const [matchRows, groupOrderRows, answerRows] = await Promise.all([
+  const [allCompletedMatchRows, groupOrderRows, answerRows] = await Promise.all([
     db
       .select()
       .from(schema.matches)
-      .where(and(eq(schema.matches.tournamentId, tournamentId), eq(schema.matches.stage, 'group'))),
+      .where(
+        and(
+          eq(schema.matches.tournamentId, tournamentId),
+          isNotNull(schema.matches.homeGoals),
+          isNotNull(schema.matches.awayGoals),
+        ),
+      ),
     db
       .select()
       .from(schema.actualGroupOrder)
@@ -33,13 +39,13 @@ export async function getActualResults(db: Database, tournamentId: string): Prom
       .where(eq(schema.actualAnswers.tournamentId, tournamentId)),
   ]);
 
-  const matchResults = matchRows
-    .filter((r) => r.homeGoals !== null && r.awayGoals !== null)
-    .map((r) => ({
-      matchId: matchId(r.id),
-      home: r.homeGoals!,
-      away: r.awayGoals!,
-    }));
+  const completedGroupMatches = allCompletedMatchRows.filter((r) => r.stage === 'group');
+
+  const matchResults = completedGroupMatches.map((r) => ({
+    matchId: matchId(r.id),
+    home: r.homeGoals!,
+    away: r.awayGoals!,
+  }));
 
   const groupOrder: Record<GroupId, TeamId[]> = {};
   for (const row of groupOrderRows) {
@@ -102,13 +108,46 @@ export async function getActualResults(db: Database, tournamentId: string): Prom
       }
     : undefined;
 
+  // Auto-calculate stats derivable from match data; actualAnswers values take precedence.
+  let calcHighestGoals: number | undefined;
+  const groupGoalsFor = new Map<string, number>();
+  const groupGoalsAgainst = new Map<string, number>();
+
+  for (const m of allCompletedMatchRows) {
+    const total = m.homeGoals! + m.awayGoals!;
+    if (calcHighestGoals === undefined || total > calcHighestGoals) calcHighestGoals = total;
+  }
+  for (const m of completedGroupMatches) {
+    if (m.homeTeamId && m.awayTeamId) {
+      groupGoalsFor.set(m.homeTeamId, (groupGoalsFor.get(m.homeTeamId) ?? 0) + m.homeGoals!);
+      groupGoalsFor.set(m.awayTeamId, (groupGoalsFor.get(m.awayTeamId) ?? 0) + m.awayGoals!);
+      groupGoalsAgainst.set(
+        m.homeTeamId,
+        (groupGoalsAgainst.get(m.homeTeamId) ?? 0) + m.awayGoals!,
+      );
+      groupGoalsAgainst.set(
+        m.awayTeamId,
+        (groupGoalsAgainst.get(m.awayTeamId) ?? 0) + m.homeGoals!,
+      );
+    }
+  }
+
+  const calcGroupTopScoringId = [...groupGoalsFor.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const calcGroupTopConcedingId = [...groupGoalsAgainst.entries()].sort(
+    (a, b) => b[1] - a[1],
+  )[0]?.[0];
+
   const roundOf8 = getTeamIds('roundOf8');
   const topFourOrder = getTeamIds('topFourOrder');
-  const groupTopScoringTeam = getTeamId('groupTopScoringTeam');
-  const groupTopConcedingTeam = getTeamId('groupTopConcedingTeam');
+  const groupTopScoringTeam =
+    getTeamId('groupTopScoringTeam') ??
+    (calcGroupTopScoringId ? teamId(calcGroupTopScoringId) : undefined);
+  const groupTopConcedingTeam =
+    getTeamId('groupTopConcedingTeam') ??
+    (calcGroupTopConcedingId ? teamId(calcGroupTopConcedingId) : undefined);
   const tournamentTopScoringTeam = getTeamId('tournamentTopScoringTeam');
   const tournamentTopConcedingTeam = getTeamId('tournamentTopConcedingTeam');
-  const highestMatchGoals = getNum('highestMatchGoals');
+  const highestMatchGoals = getNum('highestMatchGoals') ?? calcHighestGoals;
   const mostYellowCardsTeam = getTeamId('mostYellowCardsTeam');
   const firstRedCardPlayer = getPlayerId('firstRedCardPlayer');
   const penaltyShootoutCount = getNum('penaltyShootoutCount');
