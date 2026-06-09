@@ -71,6 +71,17 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         <span aria-hidden="true">→</span>
       </Link>
 
+      {/* Results & standings link */}
+      <Link
+        href={`/pools/${poolId}/results`}
+        className="flex items-center justify-between px-4 py-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--line-soft)] transition-colors shadow-[var(--shadow-sm)]"
+      >
+        <span className="text-sm font-medium">Results &amp; standings</span>
+        <span aria-hidden="true" className="text-[var(--ink-muted)]">
+          →
+        </span>
+      </Link>
+
       {/* Scoring guide link */}
       <Link
         href={`/pools/${poolId}/scoring`}

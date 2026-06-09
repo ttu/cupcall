@@ -138,6 +138,32 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 - **`apps/web/src/features/predictions/index.ts`** — `rescoreCard` added to the public barrel so the pools feature can rescore without reaching into predictions internals.
 - **Design doc:** [`docs/features/pool-backup.md`](./features/pool-backup.md).
 
+## What exists — Results & standings additions
+
+- **`packages/db`** — `getMatchesForTournament(db, tournamentId)` → all match rows (group +
+  knockout); `finalizeMatch` → set a match to status='final' with goals; `upsertKnockoutMatch` →
+  insert/update a knockout match result. All exposed from `@cup/db`.
+- **`apps/web/src/features/results/`** — full vertical slice:
+  - `domain/types.ts` — `ResultsView`, `GroupResultView`, `GroupMatchResultRow`, `GroupStandingRow`,
+    `KnockoutMatchView`, `BracketRoundResultView`, `BracketHealth`, `StageProgress`, `UserRankChip`.
+  - `application/get-results-view.ts` — `getResultsView(params)` assembles the full view: user rank,
+    stage progress, group match results with hit/miss/exact status, group standings from actual match
+    data, knockout bracket tracker with pick-alive/busted/pending status, bracket health counts.
+  - `ui/StageBar.tsx` — horizontal tournament-stage stepper (Group → R16 → QF → SF → Final).
+  - `ui/UserScoreChip.tsx` — points + rank readout for the page header.
+  - `ui/HitChip.tsx` — color-coded exact/outcome/missed chip.
+  - `ui/GroupMatchFeed.tsx` — completed match rows with score, your prediction, and hit chip.
+  - `ui/GroupTable.tsx` — live group standings (P, GD, Pts) with qualifying highlight.
+  - `ui/PickStatusChip.tsx` — alive/busted/upcoming bracket pick chip.
+  - `ui/BracketMatchCard.tsx` — knockout tie card with teams, score/date, pick status.
+  - `ui/KnockoutBracket.tsx` — bracket columns (entry round → Final) plus third-place.
+  - `ui/BracketHealthPanel.tsx` — right-rail bracket health + champion pick.
+  - `ui/ResultsPageClient.tsx` — client shell owning Group Stage / Knockout tab + group selector.
+  - `index.ts` — public barrel.
+- **`apps/web/src/app/pools/[id]/results/page.tsx`** — server component requiring member auth.
+- **Pool page** — added "Results & standings" link alongside existing pool actions.
+- **Design doc:** [`docs/features/results.md`](./features/results.md).
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

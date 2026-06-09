@@ -185,6 +185,49 @@ export async function getTournamentById(
   };
 }
 
+export type MatchRow = {
+  id: string;
+  tournamentId: string;
+  stage: 'group' | 'R32' | 'R16' | 'QF' | 'SF' | 'Final' | 'bronze';
+  groupId: string | null;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
+  kickoff: Date | null;
+  homeGoals: number | null;
+  awayGoals: number | null;
+  winnerTeamId: string | null;
+  decidedBy: 'regulation' | 'extraTime' | 'penalties' | null;
+  status: 'scheduled' | 'in_progress' | 'final' | 'cancelled';
+};
+
+/**
+ * Returns all matches for a tournament, ordered by kickoff (nulls last).
+ */
+export async function getMatchesForTournament(
+  db: Database,
+  tournamentId: string,
+): Promise<MatchRow[]> {
+  const rows = await db
+    .select()
+    .from(schema.matches)
+    .where(eq(schema.matches.tournamentId, tournamentId))
+    .orderBy(schema.matches.kickoff);
+  return rows.map((r) => ({
+    id: r.id,
+    tournamentId: r.tournamentId,
+    stage: r.stage,
+    groupId: r.groupId ?? null,
+    homeTeamId: r.homeTeamId ?? null,
+    awayTeamId: r.awayTeamId ?? null,
+    kickoff: r.kickoff ?? null,
+    homeGoals: r.homeGoals ?? null,
+    awayGoals: r.awayGoals ?? null,
+    winnerTeamId: r.winnerTeamId ?? null,
+    decidedBy: r.decidedBy ?? null,
+    status: r.status,
+  }));
+}
+
 /**
  * Upserts actual results for a tournament:
  *  - Updates group match rows with goals + status='final'
@@ -319,4 +362,71 @@ export async function upsertTournamentResults(
         set: { value: schema.actualAnswers.value },
       });
   }
+}
+
+/**
+ * Sets a group match to 'final' status with the given goals.
+ * Used by the sync pipeline and by integration tests.
+ */
+export async function finalizeMatch(
+  db: Database,
+  tournamentId: string,
+  matchId: string,
+  homeGoals: number,
+  awayGoals: number,
+): Promise<void> {
+  await db
+    .update(schema.matches)
+    .set({ homeGoals, awayGoals, status: 'final' })
+    .where(and(eq(schema.matches.tournamentId, tournamentId), eq(schema.matches.id, matchId)));
+}
+
+/**
+ * Upserts a knockout match (insert or update) with full result data.
+ * Used by the sync pipeline when knockout fixtures and results become known.
+ */
+export async function upsertKnockoutMatch(
+  db: Database,
+  input: {
+    id: string;
+    tournamentId: string;
+    stage: 'R32' | 'R16' | 'QF' | 'SF' | 'Final' | 'bronze';
+    homeTeamId?: string;
+    awayTeamId?: string;
+    homeGoals?: number;
+    awayGoals?: number;
+    winnerTeamId?: string;
+    decidedBy?: 'regulation' | 'extraTime' | 'penalties';
+    kickoff?: Date;
+    status?: 'scheduled' | 'in_progress' | 'final';
+  },
+): Promise<void> {
+  await db
+    .insert(schema.matches)
+    .values({
+      id: input.id,
+      tournamentId: input.tournamentId,
+      stage: input.stage,
+      homeTeamId: input.homeTeamId,
+      awayTeamId: input.awayTeamId,
+      homeGoals: input.homeGoals,
+      awayGoals: input.awayGoals,
+      winnerTeamId: input.winnerTeamId,
+      decidedBy: input.decidedBy,
+      kickoff: input.kickoff,
+      status: input.status ?? 'scheduled',
+    })
+    .onConflictDoUpdate({
+      target: [schema.matches.tournamentId, schema.matches.id],
+      set: {
+        homeTeamId: schema.matches.homeTeamId,
+        awayTeamId: schema.matches.awayTeamId,
+        homeGoals: schema.matches.homeGoals,
+        awayGoals: schema.matches.awayGoals,
+        winnerTeamId: schema.matches.winnerTeamId,
+        decidedBy: schema.matches.decidedBy,
+        kickoff: schema.matches.kickoff,
+        status: schema.matches.status,
+      },
+    });
 }
