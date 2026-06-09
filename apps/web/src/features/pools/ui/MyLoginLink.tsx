@@ -12,6 +12,7 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const url = `${baseUrl}${buildLoginUrl(token)}`;
 
@@ -22,8 +23,13 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
     });
   }
 
-  function handleReset() {
+  function handleResetClick() {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
     setError(null);
+    setConfirmReset(false);
     startTransition(async () => {
       const result = await rotateMyLoginToken();
       if (result.ok) {
@@ -65,14 +71,34 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
             {copied ? 'Copied!' : 'Copy'}
           </button>
         </div>
-        <button
-          type="button"
-          onClick={handleReset}
-          disabled={isPending}
-          className="text-xs text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors disabled:opacity-50"
-        >
-          {isPending ? 'Working…' : 'Reset link'}
-        </button>
+        {confirmReset ? (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={handleResetClick}
+              className="text-xs px-2.5 py-1 rounded-md bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90 transition-colors disabled:opacity-50"
+            >
+              Confirm reset
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmReset(false)}
+              className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResetClick}
+            disabled={isPending}
+            className="text-xs text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors disabled:opacity-50"
+          >
+            {isPending ? 'Working…' : 'Reset link'}
+          </button>
+        )}
         {error && (
           <p role="alert" className="text-xs text-[var(--danger)]">
             {error}

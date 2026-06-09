@@ -19,14 +19,20 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isPendingKick, startKickTransition] = useTransition();
   const [isPendingDelete, startDeleteTransition] = useTransition();
+  const [confirmKickId, setConfirmKickId] = useState<UserId | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [loginLinks, setLoginLinks] = useState<Record<string, string>>({});
   const [loginLinkPending, setLoginLinkPending] = useState<Record<string, boolean>>({});
   const [loginLinkError, setLoginLinkError] = useState<Record<string, string>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  function handleKick(targetUserId: UserId) {
+  function handleKickClick(targetUserId: UserId) {
+    if (confirmKickId !== targetUserId) {
+      setConfirmKickId(targetUserId);
+      return;
+    }
     setKickError(null);
+    setConfirmKickId(null);
     startKickTransition(async () => {
       const result = await kickMember({ poolId, targetUserId });
       if (!result.ok) setKickError(result.error);
@@ -111,14 +117,34 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
                     >
                       {pending ? 'Getting…' : 'Get link'}
                     </button>
-                    <button
-                      type="button"
-                      disabled={isPendingKick}
-                      onClick={() => handleKick(member.userId)}
-                      className="text-xs px-2.5 py-1 rounded-md text-[var(--danger)] border border-[var(--danger)]/30 hover:bg-[var(--danger)]/5 transition-colors disabled:opacity-50"
-                    >
-                      Kick
-                    </button>
+                    {confirmKickId === member.userId ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isPendingKick}
+                          onClick={() => handleKickClick(member.userId)}
+                          className="text-xs px-2.5 py-1 rounded-md bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90 transition-colors disabled:opacity-50"
+                        >
+                          Confirm kick
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmKickId(null)}
+                          className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isPendingKick}
+                        onClick={() => handleKickClick(member.userId)}
+                        className="text-xs px-2.5 py-1 rounded-md text-[var(--danger)] border border-[var(--danger)]/30 hover:bg-[var(--danger)]/5 transition-colors disabled:opacity-50"
+                      >
+                        Kick
+                      </button>
+                    )}
                   </div>
                   {link && (
                     <div className="flex items-center gap-2 pl-0">

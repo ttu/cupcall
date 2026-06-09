@@ -22,6 +22,8 @@ export function InviteSection({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [confirmRotate, setConfirmRotate] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const inviteUrl = token ? `${baseUrl}${buildInviteUrl(token)}` : null;
 
@@ -45,8 +47,14 @@ export function InviteSection({
     });
   }
 
-  function handleRotate() {
+  function handleRotateClick() {
+    if (!confirmRotate) {
+      setConfirmRotate(true);
+      setConfirmRemove(false);
+      return;
+    }
     setError(null);
+    setConfirmRotate(false);
     startTransition(async () => {
       const result = await rotateToken({ poolId });
       if (result.ok) {
@@ -57,8 +65,14 @@ export function InviteSection({
     });
   }
 
-  function handleRemove() {
+  function handleRemoveClick() {
+    if (!confirmRemove) {
+      setConfirmRemove(true);
+      setConfirmRotate(false);
+      return;
+    }
     setError(null);
+    setConfirmRemove(false);
     startTransition(async () => {
       const result = await clearInviteLink({ poolId });
       if (result.ok) {
@@ -102,23 +116,67 @@ export function InviteSection({
             </button>
           </div>
           {isOwner && (
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={handleRotate}
-                disabled={isPending}
-                className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors disabled:opacity-50"
-              >
-                {isPending ? 'Working…' : 'Reset link'}
-              </button>
-              <button
-                type="button"
-                onClick={handleRemove}
-                disabled={isPending}
-                className="text-xs text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors disabled:opacity-50"
-              >
-                Remove link
-              </button>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 items-center">
+              {confirmRotate ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={handleRotateClick}
+                    className="text-xs px-2.5 py-1 rounded-md bg-[var(--ink-900)] text-[var(--on-dark)] hover:bg-[var(--ink-800)] transition-colors disabled:opacity-50"
+                  >
+                    Confirm reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmRotate(false)}
+                    className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleRotateClick}
+                  disabled={isPending}
+                  className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors disabled:opacity-50"
+                >
+                  {isPending ? 'Working…' : 'Reset link'}
+                </button>
+              )}
+              {!confirmRotate && (
+                <>
+                  {confirmRemove ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={handleRemoveClick}
+                        className="text-xs px-2.5 py-1 rounded-md bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90 transition-colors disabled:opacity-50"
+                      >
+                        Confirm remove
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRemove(false)}
+                        className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleRemoveClick}
+                      disabled={isPending}
+                      className="text-xs text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors disabled:opacity-50"
+                    >
+                      Remove link
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
