@@ -148,9 +148,12 @@ function SignedInJoinForm({ token, error }: { token: string; error?: string | un
   return (
     <form action={handleJoin} className="space-y-3">
       {error && (
-        <p role="alert" className="text-sm text-[var(--red-600)] text-center">
+        <div
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-[var(--danger)] text-center"
+        >
           {error}
-        </p>
+        </div>
       )}
       <JoinSubmitButton />
     </form>
@@ -188,9 +191,12 @@ function GuestJoinForm({
 
       <form action={handleGuestJoin} className="space-y-4">
         {error && (
-          <p role="alert" className="text-sm text-[var(--red-600)]">
+          <div
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-[var(--danger)]"
+          >
             {error}
-          </p>
+          </div>
         )}
         <div>
           <label htmlFor="displayName" className="block text-sm font-medium text-[var(--ink)] mb-1">
