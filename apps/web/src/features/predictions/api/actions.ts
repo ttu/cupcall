@@ -53,6 +53,31 @@ async function getActorOrThrow() {
   return actor;
 }
 
+async function invalidatePicksAfterKnockoutPickChange(
+  predictionId: string,
+  updatedInputs: Awaited<ReturnType<typeof getPredictionInputs>>,
+  tournamentDef: Tournament,
+) {
+  const groupOrders = deriveGroupOrders(
+    tournamentDef,
+    updatedInputs.groupScores as Parameters<typeof deriveGroupOrders>[1],
+  );
+  const qualifiers = selectQualifiers(
+    tournamentDef,
+    updatedInputs.groupScores as Parameters<typeof selectQualifiers>[1],
+    groupOrders,
+  );
+  const invalidKeys = findInvalidatedPickKeys(
+    tournamentDef,
+    groupOrders,
+    qualifiers,
+    updatedInputs.knockoutPicks,
+  );
+  if (invalidKeys.length > 0) {
+    await deleteKnockoutPicks(db, predictionId, invalidKeys);
+  }
+}
+
 async function invalidatePicksAfterGroupScoreChange(
   predictionId: string,
   matchId: string,
@@ -174,6 +199,12 @@ export async function saveKnockoutPick(
     });
 
     await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
+    const updatedInputs = await getPredictionInputs(db, prediction.id);
+    await invalidatePicksAfterKnockoutPickChange(
+      prediction.id,
+      updatedInputs,
+      tournament.definition!,
+    );
     await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
 
     revalidatePath(`/pools/${poolId}/predict`);
@@ -430,6 +461,12 @@ export async function ownerSaveKnockoutPick(
     });
 
     await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
+    const updatedInputs = await getPredictionInputs(db, prediction.id);
+    await invalidatePicksAfterKnockoutPickChange(
+      prediction.id,
+      updatedInputs,
+      tournament.definition!,
+    );
     await createPredictionEdit(db, {
       predictionId: prediction.id,
       editorUserId: editorId,

@@ -105,6 +105,8 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     groups.filter((g) => g.complete).map((g) => g.groupId),
   );
   const allGroupsComplete = completeGroupsSet.size === tournament.groups.length;
+  const autoQualifiedCount =
+    tournament.groups.length * tournament.qualification.autoQualifyPerGroup;
 
   const knockoutPickMap = new Map(
     inputs.knockoutPicks.map((kp) => [kp.bracketMatchKey, kp.winner]),
@@ -127,6 +129,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
       resolveSlotTeam(
         slot.home,
         derived.qualifiers,
+        autoQualifiedCount,
         derived.groupOrders,
         completeGroupsSet,
         allGroupsComplete,
@@ -135,6 +138,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
       resolveSlotTeam(
         slot.away,
         derived.qualifiers,
+        autoQualifiedCount,
         derived.groupOrders,
         completeGroupsSet,
         allGroupsComplete,
@@ -178,19 +182,10 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     .map((r) => ({ label: r, ties: tiesByRound.get(r) ?? [] }));
 
   // Final + bronze match views
-  const finalPick = knockoutPickMap.get(bracket.finalMatch);
   const [finalist1, finalist2] = derived.finalists;
   const finalFinish = inputs.finishScores.final;
 
-  const bronzeFrom = bracket.progression.find((p) => p.match === bracket.bronzeMatch);
-  const bronze1 =
-    bronzeFrom && bronzeFrom.from[0] != null
-      ? getProgTeam(bronzeFrom.from[0], knockoutPickMap)
-      : null;
-  const bronze2 =
-    bronzeFrom && bronzeFrom.from[1] != null
-      ? getProgTeam(bronzeFrom.from[1], knockoutPickMap)
-      : null;
+  const [bronze1, bronze2] = derived.bronzePair;
   const bronzeFinish = inputs.finishScores.bronze;
 
   const finalView: FinishMatchView = {
@@ -203,10 +198,10 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   };
 
   const bronzeView: FinishMatchView = {
-    homeTeamId: bronze1 as TeamId | null,
-    homeTeamName: bronze1 ? (teamMap.get(bronze1 as TeamId) ?? bronze1) : null,
-    awayTeamId: bronze2 as TeamId | null,
-    awayTeamName: bronze2 ? (teamMap.get(bronze2 as TeamId) ?? bronze2) : null,
+    homeTeamId: bronze1 ?? null,
+    homeTeamName: bronze1 ? (teamMap.get(bronze1) ?? bronze1) : null,
+    awayTeamId: bronze2 ?? null,
+    awayTeamName: bronze2 ? (teamMap.get(bronze2) ?? bronze2) : null,
     predictedHome: bronzeFinish?.home ?? null,
     predictedAway: bronzeFinish?.away ?? null,
   };
@@ -298,6 +293,7 @@ function getRoundLabel(matchKey: string, rounds: string[]): string {
 function resolveSlotTeam(
   slotRef: string,
   qualifiers: TeamId[],
+  autoQualifiedCount: number,
   groupOrders: Record<GroupId, TeamId[]>,
   completeGroups: Set<GroupId>,
   allGroupsComplete: boolean,
@@ -314,7 +310,8 @@ function resolveSlotTeam(
     // Thirds ranking is cross-group — need all groups complete
     if (!allGroupsComplete) return undefined;
     const idx = parseInt(thirdMatch[1]!);
-    return qualifiers[idx];
+    // rankedThirds start after the auto-qualified teams in the qualifiers array
+    return qualifiers[autoQualifiedCount + idx];
   }
   return undefined;
 }

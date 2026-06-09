@@ -125,15 +125,14 @@ function TieRow({
 }) {
   const { homeTeamId, homeTeamName, awayTeamId, awayTeamName, bracketMatchKey, pickedWinnerId } =
     tie;
-  const eitherMissing = !homeTeamId || !awayTeamId;
 
   return (
     <div className="flex items-center gap-2 px-4 py-3">
       <TeamPickButton
         teamId={homeTeamId}
         teamName={homeTeamName ?? '?'}
-        picked={pickedWinnerId === homeTeamId}
-        disabled={locked || eitherMissing}
+        picked={pickedWinnerId !== null && pickedWinnerId === homeTeamId}
+        disabled={locked || !homeTeamId}
         onClick={() => homeTeamId && onPick(bracketMatchKey, homeTeamId)}
         side="home"
       />
@@ -141,8 +140,8 @@ function TieRow({
       <TeamPickButton
         teamId={awayTeamId}
         teamName={awayTeamName ?? '?'}
-        picked={pickedWinnerId === awayTeamId}
-        disabled={locked || eitherMissing}
+        picked={pickedWinnerId !== null && pickedWinnerId === awayTeamId}
+        disabled={locked || !awayTeamId}
         onClick={() => awayTeamId && onPick(bracketMatchKey, awayTeamId)}
         side="away"
       />
@@ -167,6 +166,7 @@ function TeamPickButton({
 }) {
   const align = side === 'home' ? 'text-right' : 'text-left';
   const flag = teamFlag(teamId);
+  const unknown = !teamId;
   return (
     <button
       type="button"
@@ -177,9 +177,11 @@ function TeamPickButton({
         align +
         (picked
           ? ' bg-[var(--green-500)] text-white shadow-[var(--shadow-sm)] ring-2 ring-[var(--green-400)]/50'
-          : disabled
-            ? ' bg-[var(--surface-2)] text-[var(--ink-muted)] cursor-default'
-            : ' bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[var(--green-050)] hover:text-[var(--green-700)] cursor-pointer')
+          : unknown
+            ? ' bg-[var(--surface)] text-[var(--ink-muted)] ring-1 ring-inset ring-[var(--line)] cursor-not-allowed'
+            : disabled
+              ? ' bg-[var(--surface-2)] text-[var(--ink-muted)] cursor-default'
+              : ' bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[var(--green-050)] hover:text-[var(--green-700)] cursor-pointer')
       }
     >
       {side === 'home' ? `${teamName} ${flag}` : `${flag} ${teamName}`}
