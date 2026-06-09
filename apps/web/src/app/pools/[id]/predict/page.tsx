@@ -84,7 +84,12 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
         <ExportImportControls poolId={poolId} />
       </div>
 
-      <PredictStepper card={card} teams={teams} players={players} />
+      <PredictStepper
+        card={card}
+        teams={teams}
+        players={players}
+        isDev={process.env.NODE_ENV === 'development'}
+      />
 
       {auditEntries.length > 0 && <AuditLog entries={auditEntries} />}
     </main>

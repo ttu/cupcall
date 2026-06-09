@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { makeTestDb } from '../testing/make-test-db';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
-import { listPredictionsForTournament, getPredictionInputs } from './predictions';
+import {
+  listPredictionsForTournament,
+  getPredictionInputs,
+  clearPredictionInputs,
+} from './predictions';
 import { upsertTournamentDef } from './tournament';
 import { createUser } from './users';
 import { createPool } from './pools';
@@ -158,6 +162,56 @@ describe('predictions repository', () => {
       expect(inputs.specials.topScorerPlayer).toBe(playerId('A1-P'));
       expect(inputs.specials.penaltyShootoutCount).toBe(3);
       expect(inputs.specials.finalDecidedByPenalties).toBe(true);
+    });
+  });
+
+  describe('clearPredictionInputs', () => {
+    it('deletes all sub-rows for the given prediction', async () => {
+      const predId = await seedPrediction(db, poolId, userId1, tournamentId);
+
+      await db
+        .insert(schema.predictionGroupScores)
+        .values([{ predictionId: predId, matchId: 'mA1', homeGoals: 2, awayGoals: 1 }]);
+      await db
+        .insert(schema.predictionKnockoutPicks)
+        .values([
+          { predictionId: predId, bracketMatchKey: bracketMatchKey('qf1'), winnerTeamId: 'A1' },
+        ]);
+      await db
+        .insert(schema.predictionFinishScores)
+        .values([{ predictionId: predId, match: 'final', homeGoals: 1, awayGoals: 0 }]);
+      await db
+        .insert(schema.predictionSpecials)
+        .values([{ predictionId: predId, betKey: 'penaltyShootoutCount', value: 3 }]);
+
+      await clearPredictionInputs(db, predId);
+
+      const inputs = await getPredictionInputs(db, predId);
+      expect(inputs.groupScores).toHaveLength(0);
+      expect(inputs.knockoutPicks).toHaveLength(0);
+      expect(inputs.finishScores).toEqual({});
+      expect(inputs.specials).toEqual({});
+    });
+
+    it('does not touch rows belonging to other predictions', async () => {
+      const pred1 = await seedPrediction(db, poolId, userId1, tournamentId);
+      const user2 = await createUser(db, {
+        email: `u2-${crypto.randomUUID()}@x.com`,
+        displayName: 'Bob',
+      });
+      const pred2 = await seedPrediction(db, poolId, user2.id, tournamentId);
+
+      await db.insert(schema.predictionGroupScores).values([
+        { predictionId: pred1, matchId: 'mA1', homeGoals: 1, awayGoals: 0 },
+        { predictionId: pred2, matchId: 'mA1', homeGoals: 2, awayGoals: 2 },
+      ]);
+
+      await clearPredictionInputs(db, pred1);
+
+      const inputs1 = await getPredictionInputs(db, pred1);
+      const inputs2 = await getPredictionInputs(db, pred2);
+      expect(inputs1.groupScores).toHaveLength(0);
+      expect(inputs2.groupScores).toHaveLength(1);
     });
   });
 });

@@ -17,6 +17,7 @@ import {
   getPredictionInputs,
   deleteKnockoutPicks,
   getTournamentById,
+  clearPredictionInputs,
 } from '@cup/db';
 import {
   bracketMatchKey as bmk,
@@ -25,8 +26,7 @@ import {
   findInvalidatedPickKeys,
 } from '@cup/engine';
 import type { BracketMatchKey, MatchId, TeamId, Tournament } from '@cup/engine';
-import { rescoreCard } from '../application/rescore';
-import { loadActualResults } from '../application/load-actual-results';
+import { rescoreAfterEdit } from './rescore-helper';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -51,23 +51,6 @@ async function getActorOrThrow() {
   const actor = await getCurrentActor();
   if (!actor) throw new Error('Not signed in');
   return actor;
-}
-
-async function rescoreAfterEdit(
-  predictionId: string,
-  poolId: string,
-  userId: string,
-  tournamentDef: import('@cup/engine').Tournament,
-) {
-  const actual = await loadActualResults(db, tournamentDef.id);
-  await rescoreCard({
-    db,
-    predictionId,
-    poolId,
-    userId,
-    tournament: tournamentDef,
-    actual,
-  });
 }
 
 async function invalidatePicksAfterGroupScoreChange(
@@ -343,7 +326,12 @@ export async function ownerSaveGroupScore(
       ...(reason !== undefined ? { reason } : {}),
       source: 'manual',
     });
-    await rescoreAfterEdit(prediction.id, poolId, targetUserId, tournament.definition!);
+    await rescoreAfterEdit(
+      prediction.id,
+      poolId,
+      targetUserId as import('@cup/engine').UserId,
+      tournament.definition!,
+    );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
     return { ok: true };
@@ -396,7 +384,12 @@ export async function ownerSaveSpecialBet(
       ...(reason !== undefined ? { reason } : {}),
       source: 'manual',
     });
-    await rescoreAfterEdit(prediction.id, poolId, targetUserId, tournament.definition!);
+    await rescoreAfterEdit(
+      prediction.id,
+      poolId,
+      targetUserId as import('@cup/engine').UserId,
+      tournament.definition!,
+    );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
     return { ok: true };
@@ -446,7 +439,12 @@ export async function ownerSaveKnockoutPick(
       ...(reason !== undefined ? { reason } : {}),
       source: 'manual',
     });
-    await rescoreAfterEdit(prediction.id, poolId, targetUserId, tournament.definition!);
+    await rescoreAfterEdit(
+      prediction.id,
+      poolId,
+      targetUserId as import('@cup/engine').UserId,
+      tournament.definition!,
+    );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
     return { ok: true };
@@ -497,7 +495,12 @@ export async function ownerSaveFinishScore(
       ...(reason !== undefined ? { reason } : {}),
       source: 'manual',
     });
-    await rescoreAfterEdit(prediction.id, poolId, targetUserId, tournament.definition!);
+    await rescoreAfterEdit(
+      prediction.id,
+      poolId,
+      targetUserId as import('@cup/engine').UserId,
+      tournament.definition!,
+    );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
     return { ok: true };
@@ -707,6 +710,46 @@ export async function importCard(
     revalidatePath(revalidateTarget);
 
     return { ok: true, imported, skipped };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Clear all predictions (own card)
+// ---------------------------------------------------------------------------
+
+const ClearAllPredictionsSchema = z.object({ poolId: z.string() });
+
+export async function clearAllPredictions(
+  raw: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = ClearAllPredictionsSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId } = parsed.data;
+
+  try {
+    const { userId } = await getActorOrThrow();
+    const { pool, tournament } = await loadPoolAndTournament(poolId);
+
+    await assertCanEditOwnCard(db, {
+      actor: { userId },
+      pool: { id: pool.id, ownerId: pool.ownerId },
+      lockTime: tournament.firstKickoff,
+      now: new Date(),
+    });
+
+    const prediction = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: pool.tournamentId,
+    });
+
+    await clearPredictionInputs(db, prediction.id);
+    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
+
+    revalidatePath(`/pools/${poolId}/predict`);
+    return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }

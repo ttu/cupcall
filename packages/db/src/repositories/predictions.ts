@@ -144,6 +144,24 @@ export async function deleteKnockoutPicks(
     );
 }
 
+/** Removes all prediction sub-rows (group scores, knockout picks, finish scores, specials) for a prediction. */
+export async function clearPredictionInputs(db: Database, predictionId: string): Promise<void> {
+  await Promise.all([
+    db
+      .delete(schema.predictionGroupScores)
+      .where(eq(schema.predictionGroupScores.predictionId, predictionId)),
+    db
+      .delete(schema.predictionKnockoutPicks)
+      .where(eq(schema.predictionKnockoutPicks.predictionId, predictionId)),
+    db
+      .delete(schema.predictionFinishScores)
+      .where(eq(schema.predictionFinishScores.predictionId, predictionId)),
+    db
+      .delete(schema.predictionSpecials)
+      .where(eq(schema.predictionSpecials.predictionId, predictionId)),
+  ]);
+}
+
 /** Upserts the predicted exact score for the final or bronze match. */
 export async function upsertFinishScore(
   db: Database,

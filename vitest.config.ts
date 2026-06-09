@@ -35,6 +35,10 @@ export default defineConfig({
         find: '@cup/schemas',
         replacement: join(__dirname, 'packages/schemas/src/index.ts'),
       },
+      {
+        find: /^@\//,
+        replacement: join(__dirname, 'apps/web/src/'),
+      },
     ],
   },
   test: {

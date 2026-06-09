@@ -7,6 +7,7 @@ import { GroupScoresSection } from './GroupScoresSection';
 import { BracketSection } from './BracketSection';
 import { SpecialsSection } from './SpecialsSection';
 import { CompletionBar } from './CompletionBar';
+import { DevControls } from './DevControls';
 
 type Step = 'groups' | 'bracket' | 'specials';
 
@@ -20,9 +21,10 @@ type Props = {
   card: CardView;
   teams: { id: string; name: string }[];
   players: { id: string; name: string; team: string }[];
+  isDev: boolean;
 };
 
-export function PredictStepper({ card, teams, players }: Props): ReactElement {
+export function PredictStepper({ card, teams, players, isDev }: Props): ReactElement {
   const [step, setStep] = useState<Step>('groups');
   const locked = card.status === 'locked';
 
@@ -30,6 +32,9 @@ export function PredictStepper({ card, teams, players }: Props): ReactElement {
     <div className="flex flex-col gap-4">
       {/* Progress */}
       <CompletionBar percent={card.completionPercent} />
+
+      {/* Dev controls */}
+      <DevControls poolId={card.poolId} isDev={isDev} />
 
       {/* Lock notice */}
       {locked && (
