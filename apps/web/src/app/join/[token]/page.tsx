@@ -5,6 +5,7 @@ import { db } from '@/shared/db';
 import { getPoolByInviteTokenHash, isMember, isKicked } from '@cup/db';
 import { joinPool, joinAsGuest } from '@/features/pools';
 import { redirect } from 'next/navigation';
+import { JoinSubmitButton } from './JoinSubmitButton';
 
 type Props = { params: Promise<{ token: string }> };
 
@@ -142,12 +143,7 @@ function SignedInJoinForm({ token }: { token: string }) {
 
   return (
     <form action={handleJoin}>
-      <button
-        type="submit"
-        className="w-full px-6 py-3 rounded-[var(--radius)] bg-[var(--green-600)] text-white text-base font-bold hover:bg-[var(--green-700)] transition-colors shadow-[var(--shadow-md)]"
-      >
-        Join pool
-      </button>
+      <JoinSubmitButton />
     </form>
   );
 }
@@ -193,12 +189,7 @@ function GuestJoinForm({ token, poolName }: { token: string; poolName: string })
           />
         </div>
 
-        <button
-          type="submit"
-          className="w-full px-6 py-3 rounded-[var(--radius)] bg-[var(--green-600)] text-white text-base font-bold hover:bg-[var(--green-700)] transition-colors shadow-[var(--shadow-md)]"
-        >
-          Join pool
-        </button>
+        <JoinSubmitButton />
       </form>
 
       <div className="rounded-lg bg-[var(--surface-2)] border border-[var(--line)] px-4 py-3 space-y-1">
