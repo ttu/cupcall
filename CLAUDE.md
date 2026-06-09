@@ -51,6 +51,11 @@ Working agreement for all code in this repo. These are **requirements**, not sug
 - **Prefer integration over mocks** when validating module collaboration.
 - **Integration tests use an in-memory database** (pglite) — fast, isolated, provider-neutral.
 - E2E (Playwright) covers the critical user flows only.
+- **E2E selectors use `data-testid` attributes.** Never target elements by CSS class, text content,
+  or structural position (`:nth-child`, `:has(text)`, `:scope > div`). Add `data-testid` to any
+  component that an E2E test needs to reach, then select with `[data-testid="..."]`.
+  - `aria-label` / `role` / `getByRole` are acceptable for inputs and interactive controls where
+    accessibility semantics already provide a stable, unique handle (e.g. `aria-label="Home goals"`).
 - See technical-spec §12 for the full strategy.
 
 ## UI

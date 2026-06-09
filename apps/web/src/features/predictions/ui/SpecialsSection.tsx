@@ -36,10 +36,11 @@ export function SpecialsSection({
   }
 
   return (
-    <section aria-label="Special bets" className="space-y-3">
+    <section data-testid="specials-section" aria-label="Special bets" className="space-y-3">
       {specials.map((bet) => (
         <div
           key={bet.key}
+          data-testid={`special-bet-${bet.key}`}
           className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] px-4 py-3 flex flex-col gap-1.5"
         >
           <label htmlFor={`special-${bet.key}`} className="text-sm font-semibold text-[var(--ink)]">

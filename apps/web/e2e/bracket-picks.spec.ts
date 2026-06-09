@@ -27,31 +27,32 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   await fillAllGroups(page);
   await page.getByRole('button', { name: 'Bracket' }).click();
 
-  const bracketSection = page.locator('[aria-label="Knockout bracket predictions"]');
-  const r32Card = bracketSection.locator(':scope > div').filter({ hasText: 'R32' }).first();
+  const bracketSection = page.locator('[data-testid="bracket-section"]');
+  const r32Card = bracketSection.locator('[data-testid="bracket-round-R32"]');
   await r32Card.locator('button:not([disabled])').first().waitFor({ timeout: 15_000 });
 
   // ── All 16 R32 ties show real team names — no "?" placeholders ────────────
-  const r32Ties = r32Card.locator('div:has(span:text("vs"))');
+  const r32Ties = r32Card.locator('[data-testid="bracket-tie-row"]');
   expect(await r32Ties.count()).toBe(16);
 
   for (let i = 0; i < 16; i++) {
-    const buttons = r32Ties.nth(i).locator('button');
-    const homeText = (await buttons.first().textContent()) ?? '';
-    const awayText = (await buttons.last().textContent()) ?? '';
+    const homeText =
+      (await r32Ties.nth(i).locator('[data-testid="pick-home"]').textContent()) ?? '';
+    const awayText =
+      (await r32Ties.nth(i).locator('[data-testid="pick-away"]').textContent()) ?? '';
     expect(homeText.trim()).not.toBe('?');
     expect(awayText.trim()).not.toBe('?');
   }
 
   // ── Away (right-side) buttons are clickable ───────────────────────────────
   // Pick the away team for the first R32 tie and verify it turns green.
-  const firstR32Away = r32Ties.first().locator('button').last();
+  const firstR32Away = r32Ties.first().locator('[data-testid="pick-away"]');
   await firstR32Away.click();
   await page.waitForLoadState('networkidle');
   await expect(firstR32Away).toHaveClass(/ring-2/);
 
   // Pick the away team for the second tie as well.
-  const secondR32Away = r32Ties.nth(1).locator('button').last();
+  const secondR32Away = r32Ties.nth(1).locator('[data-testid="pick-away"]');
   await secondR32Away.click();
   await page.waitForLoadState('networkidle');
   await expect(secondR32Away).toHaveClass(/ring-2/);
@@ -62,15 +63,15 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   // ── Cascade: switching an R32 pick clears the dependent R16 pick ──────────
   // r32m73 is the first R32 slot; it feeds r16m90 (the 2nd R16 tie) as home.
   // After fillAllBracketPicks the home team was picked, so r16m90 home is green.
-  const r16Card = bracketSection.locator(':scope > div').filter({ hasText: 'R16' }).first();
-  const r16Ties = r16Card.locator('div:has(span:text("vs"))');
+  const r16Card = bracketSection.locator('[data-testid="bracket-round-R16"]');
+  const r16Ties = r16Card.locator('[data-testid="bracket-tie-row"]');
   // r16m90 = index 1 in the R16 list (r16m89 is index 0)
-  const r16m90HomeBtn = r16Ties.nth(1).locator('button').first();
+  const r16m90HomeBtn = r16Ties.nth(1).locator('[data-testid="pick-home"]');
   await expect(r16m90HomeBtn).toHaveClass(/ring-2/);
 
   // Now switch r32m73 to the away team — this changes who advances to R16
-  const firstR32Home = r32Ties.first().locator('button').first();
-  const firstR32AwayBtn = r32Ties.first().locator('button').last();
+  const firstR32Home = r32Ties.first().locator('[data-testid="pick-home"]');
+  const firstR32AwayBtn = r32Ties.first().locator('[data-testid="pick-away"]');
   // Capture the away team name to confirm it differs from the home pick
   const awayTeamName = (await firstR32AwayBtn.textContent()) ?? '';
   const homeTeamName = (await firstR32Home.textContent()) ?? '';
@@ -87,20 +88,11 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   await fillAllBracketPicks(page);
 
   // ── Final and 3rd-Place show DIFFERENT teams ──────────────────────────────
-  // Find the Final and Bronze sections by their header text.
-  const allSections = bracketSection.locator(':scope > div');
-  const finalSection = allSections.filter({ hasText: /^.*Final.*$/ }).last();
-  const bronzeSection = allSections.filter({ hasText: /^.*3rd Place.*$/ }).last();
+  const finalSection = bracketSection.locator('[data-testid="final-section"]');
+  const bronzeSection = bracketSection.locator('[data-testid="bronze-section"]');
 
-  // Get the home team name from each section (the left-side team span)
-  const finalHome = await finalSection
-    .locator('.flex.items-center span.flex-1')
-    .first()
-    .textContent();
-  const bronzeHome = await bronzeSection
-    .locator('.flex.items-center span.flex-1')
-    .first()
-    .textContent();
+  const finalHome = await finalSection.locator('[data-testid="home-team-name"]').textContent();
+  const bronzeHome = await bronzeSection.locator('[data-testid="home-team-name"]').textContent();
 
   // The teams in the Final cannot be the same as the teams in the 3rd-Place match
   expect(finalHome?.trim()).toBeTruthy();

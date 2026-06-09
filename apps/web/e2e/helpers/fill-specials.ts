@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test';
  * values for numbers, and clicks "Yes" for the bool bet.
  */
 export async function fillAllSpecials(page: Page): Promise<void> {
-  const section = page.locator('[aria-label="Special bets"]');
+  const section = page.locator('[data-testid="specials-section"]');
 
   // Player selects — selectOption({ index: 1 }) picks the first real option after the placeholder
   const playerKeys = ['topScorerPlayer', 'finalDecisiveGoalPlayer', 'firstRedCardPlayer'];
@@ -37,8 +37,8 @@ export async function fillAllSpecials(page: Page): Promise<void> {
   await section.locator('#special-penaltyShootoutCount').press('Tab');
   await page.waitForLoadState('networkidle');
 
-  // Bool bet — Yes/No buttons have no id; find their container via the associated label
-  const boolContainer = section.locator('div:has(label[for="special-finalDecidedByPenalties"])');
+  // Bool bet — click "Yes" in the finalDecidedByPenalties bet container
+  const boolContainer = section.locator('[data-testid="special-bet-finalDecidedByPenalties"]');
   await boolContainer.getByRole('button', { name: 'Yes' }).click();
   await page.waitForLoadState('networkidle');
 }

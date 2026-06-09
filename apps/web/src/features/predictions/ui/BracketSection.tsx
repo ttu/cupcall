@@ -45,10 +45,15 @@ export function BracketSection({
   }
 
   return (
-    <section aria-label="Knockout bracket predictions" className="space-y-6">
+    <section
+      data-testid="bracket-section"
+      aria-label="Knockout bracket predictions"
+      className="space-y-6"
+    >
       {bracket.rounds.map((round) => (
         <div
           key={round.label}
+          data-testid={`bracket-round-${round.label}`}
           className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]"
         >
           <div className="px-4 py-2.5 turf">
@@ -127,7 +132,7 @@ function TieRow({
     tie;
 
   return (
-    <div className="flex items-center gap-2 px-4 py-3">
+    <div data-testid="bracket-tie-row" className="flex items-center gap-2 px-4 py-3">
       <TeamPickButton
         teamId={homeTeamId}
         teamName={homeTeamName ?? '?'}
@@ -170,6 +175,7 @@ function TeamPickButton({
   return (
     <button
       type="button"
+      data-testid={side === 'home' ? 'pick-home' : 'pick-away'}
       disabled={disabled}
       onClick={onClick}
       className={
@@ -205,7 +211,10 @@ function FinishMatchSection({
   onSave: (match: 'final' | 'bronze', home: number, away: number) => Promise<void>;
 }) {
   return (
-    <div className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]">
+    <div
+      data-testid={`${matchKey}-section`}
+      className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]"
+    >
       <div className="px-4 py-2.5 turf">
         <span
           className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
@@ -215,7 +224,10 @@ function FinishMatchSection({
         </span>
       </div>
       <div className="flex items-center gap-3 px-4 py-3">
-        <span className="flex-1 text-right text-sm font-medium text-[var(--ink)] truncate">
+        <span
+          data-testid="home-team-name"
+          className="flex-1 text-right text-sm font-medium text-[var(--ink)] truncate"
+        >
           {match.homeTeamName ?? '—'} {teamFlag(match.homeTeamId)}
         </span>
         <ScoreCell

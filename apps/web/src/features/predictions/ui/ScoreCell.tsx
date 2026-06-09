@@ -42,7 +42,11 @@ export function ScoreCell({
       : ' bg-white border-[var(--line)] text-[var(--ink)]');
 
   return (
-    <span className="inline-flex items-center gap-1" aria-label="Score">
+    <span
+      data-testid={`score-${matchId}`}
+      className="inline-flex items-center gap-1"
+      aria-label="Score"
+    >
       <input
         ref={homeRef}
         type="number"

@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
  * Sets each match to 1–0 (home win). Waits for all saves to complete before returning.
  */
 export async function fillAllGroups(page: Page): Promise<void> {
-  const scoreCells = page.locator('[aria-label="Score"]');
+  const scoreCells = page.locator('[data-testid^="score-"]');
   const count = await scoreCells.count();
 
   for (let i = 0; i < count; i++) {
