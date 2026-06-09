@@ -6,8 +6,9 @@ import { upsertScore, getLeaderboard } from './scores';
 import { createUser } from './users';
 import { createPool } from './pools';
 import { addMember } from './members';
+import { getOrCreatePrediction } from './predictions';
 import type { UserId } from '@cup/engine';
-import { points } from '@cup/engine';
+import { points, bracketMatchKey } from '@cup/engine';
 import * as schema from '../schema/index';
 import type { ScoreBreakdown } from '@cup/engine';
 
@@ -27,6 +28,7 @@ function makeBreakdown(total: number): ScoreBreakdown {
 describe('scores repository', () => {
   let db: Db<typeof schema>;
   let poolId: string;
+  let tournamentId: string;
   let userId1: UserId;
   let userId2: UserId;
   let userId3: UserId;
@@ -34,6 +36,7 @@ describe('scores repository', () => {
   beforeEach(async () => {
     db = await makeTestDb();
     const tId = `wc-${crypto.randomUUID()}`;
+    tournamentId = tId;
     await db.insert(schema.tournaments).values({
       id: tId,
       name: 'Test',
@@ -193,6 +196,68 @@ describe('scores repository', () => {
     it('returns empty array when pool has no members', async () => {
       const board = await getLeaderboard(db, poolId);
       expect(board).toHaveLength(0);
+    });
+
+    describe('completionPercent', () => {
+      it('is null when the member has no prediction row', async () => {
+        await addMember(db, poolId, userId1);
+        const [entry] = await getLeaderboard(db, poolId, 10);
+        expect(entry?.completionPercent).toBeNull();
+      });
+
+      it('is null for all entries when totalFields is 0 (default)', async () => {
+        await addMember(db, poolId, userId1);
+        await getOrCreatePrediction(db, { poolId, userId: userId1, tournamentId });
+        const [entry] = await getLeaderboard(db, poolId);
+        expect(entry?.completionPercent).toBeNull();
+      });
+
+      it('is 0 when prediction exists but no fields are filled', async () => {
+        await addMember(db, poolId, userId1);
+        await getOrCreatePrediction(db, { poolId, userId: userId1, tournamentId });
+        const [entry] = await getLeaderboard(db, poolId, 10);
+        expect(entry?.completionPercent).toBe(0);
+      });
+
+      it('computes percent from filled group scores', async () => {
+        await addMember(db, poolId, userId1);
+        const pred = await getOrCreatePrediction(db, { poolId, userId: userId1, tournamentId });
+        // Insert 3 of 10 total fields as group score rows
+        await db.insert(schema.predictionGroupScores).values([
+          { predictionId: pred.id, matchId: 'm1', homeGoals: 1, awayGoals: 0 },
+          { predictionId: pred.id, matchId: 'm2', homeGoals: 2, awayGoals: 1 },
+          { predictionId: pred.id, matchId: 'm3', homeGoals: 0, awayGoals: 0 },
+        ]);
+        const [entry] = await getLeaderboard(db, poolId, 10);
+        expect(entry?.completionPercent).toBe(30);
+      });
+
+      it('is 100 when all fields are filled', async () => {
+        await addMember(db, poolId, userId1);
+        const pred = await getOrCreatePrediction(db, { poolId, userId: userId1, tournamentId });
+        // 2 group scores + 1 knockout pick + 1 finish score + 1 special = 5 of 5 total
+        await db.insert(schema.predictionGroupScores).values([
+          { predictionId: pred.id, matchId: 'm1', homeGoals: 1, awayGoals: 0 },
+          { predictionId: pred.id, matchId: 'm2', homeGoals: 0, awayGoals: 2 },
+        ]);
+        await db
+          .insert(schema.predictionKnockoutPicks)
+          .values([
+            {
+              predictionId: pred.id,
+              bracketMatchKey: bracketMatchKey('qf1'),
+              winnerTeamId: 'teamA',
+            },
+          ]);
+        await db
+          .insert(schema.predictionFinishScores)
+          .values([{ predictionId: pred.id, match: 'final', homeGoals: 2, awayGoals: 1 }]);
+        await db
+          .insert(schema.predictionSpecials)
+          .values([{ predictionId: pred.id, betKey: 'topScorerPlayer', value: 'p1' }]);
+        const [entry] = await getLeaderboard(db, poolId, 5);
+        expect(entry?.completionPercent).toBe(100);
+      });
     });
   });
 });

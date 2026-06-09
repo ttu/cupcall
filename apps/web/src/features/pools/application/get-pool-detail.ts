@@ -1,6 +1,24 @@
 import type { Db } from '@cup/db';
 import { getPoolById, getLeaderboard, getTournamentById } from '@cup/db';
+import type { Tournament } from '@cup/engine';
 import type { PoolDetail } from '../domain/types';
+
+// getSpecialBetDefs always produces 11 bets for any standard tournament scoring config.
+const SPECIALS_COUNT = 11;
+
+function computeTotalFields(definition: Tournament | null): number {
+  if (!definition) return 0;
+  const { bracket } = definition;
+  return (
+    definition.groupMatches.length +
+    bracket.slots.length +
+    bracket.progression.filter(
+      (p) => p.match !== bracket.bronzeMatch && p.match !== bracket.finalMatch,
+    ).length +
+    2 + // final + bronze finish scores
+    SPECIALS_COUNT
+  );
+}
 
 export async function getPoolDetail(
   db: Db<import('@/shared/db').AppSchema>,
@@ -9,10 +27,9 @@ export async function getPoolDetail(
   const pool = await getPoolById(db, poolId);
   if (!pool) return undefined;
 
-  const [leaderboard, tournament] = await Promise.all([
-    getLeaderboard(db, poolId),
-    getTournamentById(db, pool.tournamentId),
-  ]);
+  const tournament = await getTournamentById(db, pool.tournamentId);
+  const totalFields = computeTotalFields(tournament?.definition ?? null);
+  const leaderboard = await getLeaderboard(db, poolId, totalFields);
 
   return {
     id: pool.id,

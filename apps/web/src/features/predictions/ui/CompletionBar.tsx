@@ -13,7 +13,7 @@ export function CompletionBar({ percent }: Props): ReactElement {
         aria-valuemax={100}
       >
         <div
-          className="h-full rounded-full bg-[var(--green-500)] transition-all duration-300"
+          className={`h-full rounded-full transition-all duration-300 ${percent === 100 ? 'bg-[var(--green-500)]' : 'bg-amber-400'}`}
           style={{ width: `${percent}%` }}
         />
       </div>

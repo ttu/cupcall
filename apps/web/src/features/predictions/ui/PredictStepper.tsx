@@ -36,6 +36,18 @@ export function PredictStepper({ card, teams, players, isDev }: Props): ReactEle
       {/* Dev controls */}
       <DevControls poolId={card.poolId} isDev={isDev} />
 
+      {/* Incomplete warning */}
+      {card.completionPercent < 100 && (
+        <div className="rounded-[var(--radius-sm)] border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 flex items-center gap-2">
+          <span aria-hidden="true">⚠</span>
+          <span>
+            {locked
+              ? 'Prediction was incomplete when the tournament started.'
+              : 'Your prediction is not complete — fill in all sections to earn full points.'}
+          </span>
+        </div>
+      )}
+
       {/* Lock notice */}
       {locked && (
         <div className="rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--surface-2)] px-4 py-2.5 text-sm text-[var(--ink-soft)] flex items-center gap-2">

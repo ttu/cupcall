@@ -72,10 +72,22 @@ export function Leaderboard({
                   )}
                 </span>
 
-                {/* Score */}
-                <span className="text-sm font-semibold tabular-nums text-[var(--ink)] shrink-0">
-                  {entry.pointsTotal} pts
-                </span>
+                {/* Score + completion */}
+                <div className="flex flex-col items-end shrink-0 gap-0.5">
+                  <span className="text-sm font-semibold tabular-nums text-[var(--ink)]">
+                    {entry.pointsTotal} pts
+                  </span>
+                  {entry.completionPercent === null && (
+                    <span className="text-[10px] font-medium px-1.5 py-px rounded bg-red-50 text-red-600 border border-red-200 leading-tight">
+                      No prediction
+                    </span>
+                  )}
+                  {entry.completionPercent !== null && entry.completionPercent < 100 && (
+                    <span className="text-[10px] font-medium px-1.5 py-px rounded bg-amber-50 text-amber-700 border border-amber-200 leading-tight">
+                      {entry.completionPercent}% filled
+                    </span>
+                  )}
+                </div>
 
                 {/* Card link */}
                 {canViewCards && (
