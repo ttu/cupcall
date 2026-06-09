@@ -5,6 +5,105 @@ import type { CardInputs, DerivedCard, ActualResults } from './types.js';
 import { deriveCard } from './derive.js';
 import { scoreCard } from './score.js';
 
+// ---- Shared full-prediction fixtures ----
+
+const fullKnockoutPicks: CardInputs['knockoutPicks'] = [
+  { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+  { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+  { bracketMatchKey: bracketMatchKey('qf3'), winner: teamId('B1') },
+  { bracketMatchKey: bracketMatchKey('qf4'), winner: teamId('D1') },
+  { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('A1') },
+  { bracketMatchKey: bracketMatchKey('sf2'), winner: teamId('B1') },
+  { bracketMatchKey: bracketMatchKey('final'), winner: teamId('A1') },
+  { bracketMatchKey: bracketMatchKey('bronze'), winner: teamId('C1') },
+];
+
+const allDrawGroupScores: CardInputs['groupScores'] = miniTournament.groupMatches.map((m) => ({
+  matchId: m.id,
+  home: 0,
+  away: 0,
+}));
+
+describe('scoreCard — zero when no games have been played', () => {
+  it('scores 0 for every category even when the prediction is fully filled', () => {
+    const cardInput: CardInputs = {
+      groupScores: allDrawGroupScores,
+      knockoutPicks: fullKnockoutPicks,
+      finishScores: {
+        final: { home: 2, away: 1 },
+        bronze: { home: 1, away: 0 },
+      },
+      specials: {
+        topScorerPlayer: playerId('A1-P'),
+        penaltyShootoutCount: 2,
+        highestMatchGoals: 5,
+        finalDecidedByPenalties: false,
+      },
+    };
+    const emptyActual: ActualResults = { matchResults: [], groupOrder: {}, answers: {} };
+
+    const derived = deriveCard(cardInput, miniTournament);
+    const breakdown = scoreCard(derived, cardInput, emptyActual, miniScoring);
+
+    expect(breakdown.groupMatches).toBe(0);
+    expect(breakdown.groupOrder).toBe(0);
+    expect(breakdown.roundOf8).toBe(0);
+    expect(breakdown.topFour).toBe(0);
+    expect(breakdown.final).toBe(0);
+    expect(breakdown.bronze).toBe(0);
+    expect(breakdown.specials).toBe(0);
+    expect(breakdown.total).toBe(0);
+  });
+});
+
+describe('scoreCard — partial prediction', () => {
+  it('scores groupMatches=0 when no group scores are predicted', () => {
+    const cardInput: CardInputs = {
+      groupScores: [],
+      knockoutPicks: fullKnockoutPicks,
+      finishScores: {},
+      specials: {},
+    };
+    const actual: ActualResults = {
+      matchResults: [
+        { matchId: matchId('mA1'), home: 2, away: 1 },
+        { matchId: matchId('mA2'), home: 0, away: 0 },
+      ],
+      groupOrder: {},
+      answers: {},
+    };
+
+    const derived = deriveCard(cardInput, miniTournament);
+    const breakdown = scoreCard(derived, cardInput, actual, miniScoring);
+
+    expect(breakdown.groupMatches).toBe(0);
+  });
+
+  it('scores specials=0 when no special bets are predicted', () => {
+    const cardInput: CardInputs = {
+      groupScores: [],
+      knockoutPicks: [],
+      finishScores: {},
+      specials: {},
+    };
+    const actual: ActualResults = {
+      matchResults: [],
+      groupOrder: {},
+      answers: {
+        topScorerPlayer: playerId('A1-P'),
+        penaltyShootoutCount: 2,
+        highestMatchGoals: 5,
+        groupTopScoringTeam: teamId('A1'),
+      },
+    };
+
+    const derived = deriveCard(cardInput, miniTournament);
+    const breakdown = scoreCard(derived, cardInput, actual, miniScoring);
+
+    expect(breakdown.specials).toBe(0);
+  });
+});
+
 // ---- §7.7 worked example setup ----
 //
 // groupMatches:   correct-outcome-only(3) + exact(6)       = 9

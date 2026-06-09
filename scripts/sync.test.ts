@@ -114,6 +114,112 @@ describe('syncTournament integration', () => {
     expect(poolScores[0]?.userId).toBe(user.id);
   });
 
+  it('does not write actual group orders when no games have been played', async () => {
+    await syncTournament(db, 'mini-2026', mini2026Dir);
+
+    const orders = await db.select().from(schema.actualGroupOrder);
+    expect(orders).toHaveLength(0);
+  });
+
+  it('scores 0 for every prediction category when no games have been played', async () => {
+    await syncTournament(db, 'mini-2026', mini2026Dir);
+
+    const owner = await createUser(db, {
+      email: `o-${crypto.randomUUID()}@x.com`,
+      displayName: 'Owner',
+    });
+    const user = await createUser(db, {
+      email: `u-${crypto.randomUUID()}@x.com`,
+      displayName: 'User',
+    });
+    const pool = await createPool(db, {
+      tournamentId: 'mini-2026',
+      ownerId: owner.id,
+      name: 'Zero Pool',
+      inviteTokenHash: `h-${crypto.randomUUID()}`,
+    });
+
+    const [predRow] = await db
+      .insert(schema.predictions)
+      .values({ poolId: pool.id, userId: user.id, tournamentId: 'mini-2026' })
+      .returning();
+    if (!predRow) throw new Error('No prediction row returned');
+
+    // All 8 knockout picks
+    await db.insert(schema.predictionKnockoutPicks).values([
+      { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('qf1'), winnerTeamId: 'A1' },
+      { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('qf2'), winnerTeamId: 'C1' },
+      { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('qf3'), winnerTeamId: 'B1' },
+      { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('qf4'), winnerTeamId: 'D1' },
+      { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('sf1'), winnerTeamId: 'A1' },
+      { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('sf2'), winnerTeamId: 'B1' },
+      { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('final'), winnerTeamId: 'A1' },
+      { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('bronze'), winnerTeamId: 'C1' },
+    ]);
+
+    // All 24 group match scores predicted as 0-0 — this is the regression case:
+    // the old bug would write seed-order group orders to the DB, and a 0-0 prediction
+    // derives the same seed order, so group order scoring would award false points.
+    const groupMatchIds = [
+      'mA1',
+      'mA2',
+      'mA3',
+      'mA4',
+      'mA5',
+      'mA6',
+      'mB1',
+      'mB2',
+      'mB3',
+      'mB4',
+      'mB5',
+      'mB6',
+      'mC1',
+      'mC2',
+      'mC3',
+      'mC4',
+      'mC5',
+      'mC6',
+      'mD1',
+      'mD2',
+      'mD3',
+      'mD4',
+      'mD5',
+      'mD6',
+    ];
+    await db.insert(schema.predictionGroupScores).values(
+      groupMatchIds.map((matchId) => ({
+        predictionId: predRow.id,
+        matchId,
+        homeGoals: 0,
+        awayGoals: 0,
+      })),
+    );
+
+    // Finish scores and specials — all filled in so every category is exercised
+    await db.insert(schema.predictionFinishScores).values([
+      { predictionId: predRow.id, match: 'final' as const, homeGoals: 2, awayGoals: 1 },
+      { predictionId: predRow.id, match: 'bronze' as const, homeGoals: 1, awayGoals: 0 },
+    ]);
+    await db.insert(schema.predictionSpecials).values([
+      { predictionId: predRow.id, betKey: 'topScorerPlayer', value: 'A1-P' },
+      { predictionId: predRow.id, betKey: 'penaltyShootoutCount', value: 2 },
+      { predictionId: predRow.id, betKey: 'highestMatchGoals', value: 5 },
+      { predictionId: predRow.id, betKey: 'finalDecidedByPenalties', value: false },
+    ]);
+
+    const result = await syncTournament(db, 'mini-2026', mini2026Dir);
+    expect(result.scored).toBe(1);
+
+    const allScores = await db.select().from(schema.scores);
+    const score = allScores.find((s) => s.poolId === pool.id);
+    expect(score?.pointsTotal).toBe(0);
+    // Breakdown should be all zeros too
+    expect(score?.breakdown?.groupOrder).toBe(0);
+    expect(score?.breakdown?.groupMatches).toBe(0);
+    expect(score?.breakdown?.specials).toBe(0);
+    expect(score?.breakdown?.roundOf8).toBe(0);
+  });
+
   it('rescore idempotency — running sync twice with a complete prediction upserts score once', async () => {
     await syncTournament(db, 'mini-2026', mini2026Dir);
 

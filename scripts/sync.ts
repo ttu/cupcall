@@ -69,10 +69,24 @@ export async function syncTournament(
     ]),
   );
 
-  // 4. Derive actual group orders from match results; explicit overrides take precedence
+  // 4. Derive actual group orders from match results; explicit overrides take precedence.
+  // Only include derived orders for groups where every match has been played — a partial
+  // group still has an indeterminate order and should not be treated as a scored result.
   const derivedGroupOrders = deriveGroupOrders(tournament, actual.matchResults);
+  const playedMatchIds = new Set(actual.matchResults.map((r) => r.matchId));
+  const completeGroups = new Set(
+    tournament.groups
+      .filter((g) =>
+        tournament.groupMatches
+          .filter((m) => m.group === g.id)
+          .every((m) => playedMatchIds.has(m.id)),
+      )
+      .map((g) => g.id),
+  );
   const mergedGroupOrder: Record<GroupId, TeamId[]> = {
-    ...(derivedGroupOrders as Record<GroupId, TeamId[]>),
+    ...Object.fromEntries(
+      Object.entries(derivedGroupOrders).filter(([gid]) => completeGroups.has(gid as GroupId)),
+    ),
     ...actual.groupOrder,
   };
   const mergedActual = { ...actual, groupOrder: mergedGroupOrder };
@@ -156,8 +170,10 @@ if (isDirectlyExecuted) {
   const db = createDb(databaseUrl, schema);
   const dataDir = join(process.cwd(), 'data', 'tournaments', tournamentId);
 
-  syncTournament(db, tournamentId, dataDir).catch((err: unknown) => {
-    logger.error(err, 'sync failed');
-    process.exit(1);
-  });
+  syncTournament(db, tournamentId, dataDir)
+    .then(() => process.exit(0))
+    .catch((err: unknown) => {
+      logger.error(err, 'sync failed');
+      process.exit(1);
+    });
 }
