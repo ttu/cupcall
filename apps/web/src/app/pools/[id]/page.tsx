@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
+import { isMember } from '@cup/db';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
 import {
@@ -22,6 +23,8 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
 
   const detail = await getPoolDetail(db, poolId);
   if (!detail) notFound();
+
+  if (!(await isMember(db, poolId, actor.userId))) notFound();
 
   const isOwner = actor.userId === detail.ownerId;
   const now = new Date();
