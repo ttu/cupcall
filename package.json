@@ -16,6 +16,7 @@
     "prepare": "husky",
     "sync": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/sync.ts",
     "db:migrate": "pnpm -C packages/db exec drizzle-kit migrate",
+    "db:reset": "bash scripts/db-reset.sh",
     "dev": "bash scripts/dev.sh",
     "e2e": "pnpm -C apps/web run e2e"
   },
