@@ -11,3 +11,11 @@ export function hashInviteToken(token: string): string {
 export function buildInviteUrl(token: string): string {
   return `/join/${token}`;
 }
+
+export function generateViewToken(): string {
+  return randomBytes(24).toString('hex');
+}
+
+export function buildViewUrl(token: string): string {
+  return `/view/${token}`;
+}

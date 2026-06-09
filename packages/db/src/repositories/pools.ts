@@ -13,6 +13,7 @@ export type PoolRow = {
   name: string;
   inviteTokenHash: string | null;
   tokenExpiresAt: Date | null;
+  viewToken: string | null;
   createdAt: Date;
 };
 
@@ -101,6 +102,26 @@ export async function rotateInviteTokenHash(
 
 export async function clearInviteToken(db: Database, poolId: string): Promise<void> {
   await db.update(schema.pools).set({ inviteTokenHash: null }).where(eq(schema.pools.id, poolId));
+}
+
+export async function getPoolByViewToken(
+  db: Database,
+  token: string,
+): Promise<PoolRow | undefined> {
+  const [row] = await db.select().from(schema.pools).where(eq(schema.pools.viewToken, token));
+  return row ? toPoolRow(row) : undefined;
+}
+
+export async function rotateViewToken(
+  db: Database,
+  poolId: string,
+  newToken: string,
+): Promise<void> {
+  await db.update(schema.pools).set({ viewToken: newToken }).where(eq(schema.pools.id, poolId));
+}
+
+export async function clearViewToken(db: Database, poolId: string): Promise<void> {
+  await db.update(schema.pools).set({ viewToken: null }).where(eq(schema.pools.id, poolId));
 }
 
 export async function deletePool(db: Database, poolId: string): Promise<void> {

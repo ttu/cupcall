@@ -7,6 +7,7 @@ import {
   getPoolDetail,
   Leaderboard,
   InviteSection,
+  ViewSection,
   OwnerControls,
   PoolBackupControls,
 } from '@/features/pools';
@@ -61,6 +62,17 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         <span aria-hidden="true">→</span>
       </Link>
 
+      {/* Scoring guide link */}
+      <Link
+        href={`/pools/${poolId}/scoring`}
+        className="flex items-center justify-between px-4 py-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--line-soft)] transition-colors shadow-[var(--shadow-sm)]"
+      >
+        <span className="text-sm">How are points calculated?</span>
+        <span aria-hidden="true" className="text-[var(--ink-muted)]">
+          →
+        </span>
+      </Link>
+
       {/* Leaderboard */}
       <Leaderboard
         entries={detail.leaderboard}
@@ -72,6 +84,9 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
 
       {/* Invite section */}
       <InviteSection poolId={poolId} token={detail.inviteToken} isOwner={isOwner} />
+
+      {/* View link */}
+      <ViewSection poolId={poolId} token={detail.viewToken} isOwner={isOwner} />
 
       {/* Owner controls */}
       {isOwner && (

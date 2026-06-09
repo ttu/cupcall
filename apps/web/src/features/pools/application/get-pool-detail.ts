@@ -22,8 +22,10 @@ export async function getPoolDetail(
     ownerId: pool.ownerId,
     // inviteTokenHash stores the raw token; null means the link is disabled.
     inviteToken: pool.inviteTokenHash ?? null,
+    viewToken: pool.viewToken ?? null,
     leaderboard,
     memberCount: leaderboard.length,
     lockTime: tournament?.firstKickoff ?? new Date(0),
+    scoring: tournament?.scoringConfig ?? null,
   } satisfies PoolDetail;
 }

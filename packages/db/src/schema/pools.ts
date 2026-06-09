@@ -18,9 +18,14 @@ export const pools = pgTable(
     // Null means invite link is disabled; unique when set.
     inviteTokenHash: text('invite_token_hash'),
     tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }),
+    // Null means view link is disabled; unique when set.
+    viewToken: text('view_token'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('pools_invite_token_hash_uniq').on(t.inviteTokenHash)],
+  (t) => [
+    uniqueIndex('pools_invite_token_hash_uniq').on(t.inviteTokenHash),
+    uniqueIndex('pools_view_token_uniq').on(t.viewToken),
+  ],
 );
 
 export const poolMembers = pgTable(

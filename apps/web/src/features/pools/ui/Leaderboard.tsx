@@ -5,10 +5,12 @@ import type { UserId } from '@cup/engine';
 
 type Props = {
   entries: LeaderboardEntry[];
-  currentUserId: UserId;
+  currentUserId: UserId | null;
   poolId: string;
   isOwner: boolean;
   locked: boolean;
+  /** When set, card links route through /view/[viewToken]/members/[id] instead of the pool route. */
+  viewToken?: string;
 };
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -19,6 +21,7 @@ export function Leaderboard({
   poolId,
   isOwner,
   locked,
+  viewToken,
 }: Props): ReactElement {
   const canViewCards = isOwner || locked;
 
@@ -38,12 +41,14 @@ export function Leaderboard({
       ) : (
         <div className="divide">
           {entries.map((entry, i) => {
-            const isSelf = entry.userId === currentUserId;
+            const isSelf = currentUserId !== null && entry.userId === currentUserId;
             const rank = i + 1;
             const medal = MEDALS[i];
-            const cardHref = isSelf
-              ? `/pools/${poolId}/predict`
-              : `/pools/${poolId}/members/${entry.userId}`;
+            const cardHref = viewToken
+              ? `/view/${viewToken}/members/${entry.userId}`
+              : isSelf
+                ? `/pools/${poolId}/predict`
+                : `/pools/${poolId}/members/${entry.userId}`;
 
             return (
               <div

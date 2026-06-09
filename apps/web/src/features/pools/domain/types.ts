@@ -1,4 +1,4 @@
-import type { UserId, Points } from '@cup/engine';
+import type { UserId, Points, Scoring } from '@cup/engine';
 import type { LeaderboardEntry } from '@cup/db';
 
 export type { LeaderboardEntry };
@@ -20,7 +20,9 @@ export type PoolDetail = {
   tournamentName: string;
   ownerId: UserId;
   inviteToken: string | null;
+  viewToken: string | null;
   leaderboard: LeaderboardEntry[];
   memberCount: number;
   lockTime: Date;
+  scoring: Scoring | null;
 };

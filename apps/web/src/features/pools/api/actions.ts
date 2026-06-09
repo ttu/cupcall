@@ -13,6 +13,8 @@ import {
   recordKick,
   rotateInviteTokenHash,
   clearInviteToken,
+  rotateViewToken as dbRotateViewToken,
+  clearViewToken as dbClearViewToken,
   deletePool as dbDeletePool,
   createGuestUser,
   getTournamentById,
@@ -22,7 +24,7 @@ import { signInAsExistingGuest } from '@/features/auth';
 import { rescoreCard } from '@/features/predictions';
 import { createPool as appCreatePool } from '../application/create-pool';
 import { joinPool as appJoinPool } from '../application/join-pool';
-import { generateInviteToken } from '../domain/invite';
+import { generateInviteToken, generateViewToken } from '../domain/invite';
 import {
   buildPoolExport,
   restorePoolFromBackup,
@@ -212,6 +214,60 @@ export async function rotateToken(
 
     revalidatePath(`/pools/${poolId}`);
     return { ok: true, newToken };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rotate view token
+// ---------------------------------------------------------------------------
+
+const RotateViewTokenSchema = z.object({ poolId: z.string() });
+
+export async function rotateViewToken(
+  raw: unknown,
+): Promise<{ ok: true; newToken: string } | { ok: false; error: string }> {
+  const parsed = RotateViewTokenSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId } = parsed.data;
+
+  try {
+    const actor = await getActorOrThrow();
+    const pool = await getOwnerPoolOrThrow(poolId);
+    assertIsOwner(pool, actor.userId);
+
+    const newToken = generateViewToken();
+    await dbRotateViewToken(db, poolId, newToken);
+
+    revalidatePath(`/pools/${poolId}`);
+    return { ok: true, newToken };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Clear view link
+// ---------------------------------------------------------------------------
+
+const ClearViewLinkSchema = z.object({ poolId: z.string() });
+
+export async function clearViewLink(
+  raw: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = ClearViewLinkSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId } = parsed.data;
+
+  try {
+    const actor = await getActorOrThrow();
+    const pool = await getOwnerPoolOrThrow(poolId);
+    assertIsOwner(pool, actor.userId);
+
+    await dbClearViewToken(db, poolId);
+    revalidatePath(`/pools/${poolId}`);
+    return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
