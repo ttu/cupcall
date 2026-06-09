@@ -1,0 +1,128 @@
+{
+  "tournamentId": "test-wc-2026",
+  "matchResults": [
+    { "matchId": "mA1", "home": 2, "away": 0 },
+    { "matchId": "mA2", "home": 2, "away": 1 },
+    { "matchId": "mA3", "home": 2, "away": 0 },
+    { "matchId": "mA4", "home": 2, "away": 1 },
+    { "matchId": "mA5", "home": 1, "away": 2 },
+    { "matchId": "mA6", "home": 0, "away": 2 },
+
+    { "matchId": "mB1", "home": 2, "away": 0 },
+    { "matchId": "mB2", "home": 1, "away": 3 },
+    { "matchId": "mB3", "home": 2, "away": 0 },
+    { "matchId": "mB4", "home": 2, "away": 1 },
+    { "matchId": "mB5", "home": 1, "away": 0 },
+    { "matchId": "mB6", "home": 1, "away": 2 },
+
+    { "matchId": "mC1", "home": 3, "away": 0 },
+    { "matchId": "mC2", "home": 0, "away": 2 },
+    { "matchId": "mC3", "home": 1, "away": 2 },
+    { "matchId": "mC4", "home": 6, "away": 1 },
+    { "matchId": "mC5", "home": 1, "away": 2 },
+    { "matchId": "mC6", "home": 2, "away": 0 },
+
+    { "matchId": "mD1", "home": 2, "away": 0 },
+    { "matchId": "mD2", "home": 1, "away": 2 },
+    { "matchId": "mD3", "home": 2, "away": 1 },
+    { "matchId": "mD4", "home": 2, "away": 0 },
+    { "matchId": "mD5", "home": 0, "away": 1 },
+    { "matchId": "mD6", "home": 1, "away": 2 },
+
+    { "matchId": "mE1", "home": 4, "away": 0 },
+    { "matchId": "mE2", "home": 1, "away": 2 },
+    { "matchId": "mE3", "home": 2, "away": 0 },
+    { "matchId": "mE4", "home": 3, "away": 0 },
+    { "matchId": "mE5", "home": 1, "away": 2 },
+    { "matchId": "mE6", "home": 0, "away": 2 },
+
+    { "matchId": "mF1", "home": 2, "away": 1 },
+    { "matchId": "mF2", "home": 3, "away": 0 },
+    { "matchId": "mF3", "home": 1, "away": 0 },
+    { "matchId": "mF4", "home": 0, "away": 2 },
+    { "matchId": "mF5", "home": 1, "away": 2 },
+    { "matchId": "mF6", "home": 0, "away": 2 },
+
+    { "matchId": "mG1", "home": 2, "away": 1 },
+    { "matchId": "mG2", "home": 2, "away": 0 },
+    { "matchId": "mG3", "home": 2, "away": 0 },
+    { "matchId": "mG4", "home": 0, "away": 2 },
+    { "matchId": "mG5", "home": 2, "away": 1 },
+    { "matchId": "mG6", "home": 0, "away": 3 },
+
+    { "matchId": "mH1", "home": 3, "away": 0 },
+    { "matchId": "mH2", "home": 1, "away": 2 },
+    { "matchId": "mH3", "home": 2, "away": 0 },
+    { "matchId": "mH4", "home": 2, "away": 0 },
+    { "matchId": "mH5", "home": 1, "away": 2 },
+    { "matchId": "mH6", "home": 1, "away": 2 },
+
+    { "matchId": "mI1", "home": 2, "away": 0 },
+    { "matchId": "mI2", "home": 0, "away": 3 },
+    { "matchId": "mI3", "home": 3, "away": 0 },
+    { "matchId": "mI4", "home": 2, "away": 0 },
+    { "matchId": "mI5", "home": 1, "away": 2 },
+    { "matchId": "mI6", "home": 2, "away": 0 },
+
+    { "matchId": "mJ1", "home": 3, "away": 0 },
+    { "matchId": "mJ2", "home": 2, "away": 0 },
+    { "matchId": "mJ3", "home": 2, "away": 1 },
+    { "matchId": "mJ4", "home": 1, "away": 2 },
+    { "matchId": "mJ5", "home": 1, "away": 2 },
+    { "matchId": "mJ6", "home": 0, "away": 2 },
+
+    { "matchId": "mK1", "home": 3, "away": 0 },
+    { "matchId": "mK2", "home": 0, "away": 2 },
+    { "matchId": "mK3", "home": 2, "away": 0 },
+    { "matchId": "mK4", "home": 2, "away": 1 },
+    { "matchId": "mK5", "home": 1, "away": 2 },
+    { "matchId": "mK6", "home": 2, "away": 0 },
+
+    { "matchId": "mL1", "home": 2, "away": 0 },
+    { "matchId": "mL2", "home": 2, "away": 1 },
+    { "matchId": "mL3", "home": 2, "away": 0 },
+    { "matchId": "mL4", "home": 0, "away": 2 },
+    { "matchId": "mL5", "home": 0, "away": 3 },
+    { "matchId": "mL6", "home": 2, "away": 0 }
+  ],
+  "groupOrder": {
+    "A": ["MEX", "KOR", "CZE", "RSA"],
+    "B": ["SUI", "CAN", "QAT", "BIH"],
+    "C": ["BRA", "MAR", "SCO", "HAI"],
+    "D": ["USA", "TUR", "AUS", "PAR"],
+    "E": ["GER", "ECU", "CIV", "CUW"],
+    "F": ["NED", "SWE", "JPN", "TUN"],
+    "G": ["BEL", "EGY", "IRN", "NZL"],
+    "H": ["ESP", "URU", "KSA", "CPV"],
+    "I": ["FRA", "NOR", "SEN", "IRQ"],
+    "J": ["ARG", "AUT", "ALG", "JOR"],
+    "K": ["POR", "COL", "COD", "UZB"],
+    "L": ["ENG", "CRO", "GHA", "PAN"]
+  },
+  "bronzeMatch": {
+    "home": "GER",
+    "away": "BRA",
+    "homeGoals": 2,
+    "awayGoals": 1
+  },
+  "finalMatch": {
+    "home": "ESP",
+    "away": "ARG",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "decidedBy": "penalties"
+  },
+  "answers": {
+    "roundOf8": ["GER", "NED", "ESP", "BEL", "BRA", "ENG", "ARG", "POR"],
+    "topFourOrder": ["ARG", "ESP", "GER", "BRA"],
+    "groupTopScoringTeam": "BRA",
+    "groupTopConcedingTeam": "CUW",
+    "tournamentTopScoringTeam": "ARG",
+    "tournamentTopConcedingTeam": "CUW",
+    "highestMatchGoals": 7,
+    "mostYellowCardsTeam": "ARG",
+    "firstRedCardPlayer": "mex-alvarez",
+    "penaltyShootoutCount": 1,
+    "topScorerPlayer": "arg-messi"
+  }
+}

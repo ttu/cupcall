@@ -15,6 +15,8 @@
     "test:watch": "vitest",
     "prepare": "husky",
     "sync": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/sync.ts",
+    "seed": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed.ts",
+    "seed:fresh": "bash scripts/db-reset.sh && TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed.ts",
     "db:migrate": "pnpm -C packages/db exec drizzle-kit migrate",
     "db:reset": "bash scripts/db-reset.sh",
     "dev": "bash scripts/dev.sh",
