@@ -77,9 +77,11 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
                   key={entry.teamId}
                   className={
                     'inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ' +
-                    (entry.qualifies
+                    (entry.qualifies === 'auto'
                       ? 'bg-[var(--green-050)] text-[var(--green-700)] ring-1 ring-[var(--green-300)]'
-                      : 'bg-[var(--surface-2)] text-[var(--ink-muted)] ring-1 ring-[var(--line)]')
+                      : entry.qualifies === 'best-third'
+                        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-300'
+                        : 'bg-[var(--surface-2)] text-[var(--ink-muted)] ring-1 ring-[var(--line)]')
                   }
                 >
                   <span className="opacity-60">{i + 1}.</span>

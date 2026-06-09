@@ -65,6 +65,23 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   // 5. Build group score views
   const groupScoreMap = new Map(inputs.groupScores.map((gs) => [gs.matchId, gs]));
 
+  const autoQualify = tournament.qualification.autoQualifyPerGroup;
+  const autoQualifiedCount = tournament.groups.length * autoQualify;
+
+  // Pre-compute which groups are fully predicted so best-third logic can be applied in one pass.
+  const completeGroupIds = new Set<GroupId>(
+    tournament.groups
+      .filter((g) =>
+        tournament.groupMatches
+          .filter((m) => m.group === g.id)
+          .every((m) => groupScoreMap.has(m.id)),
+      )
+      .map((g) => g.id as GroupId),
+  );
+  const allGroupsComplete = completeGroupIds.size === tournament.groups.length;
+  // Best-third qualifiers are appended after auto-qualifiers in derived.qualifiers.
+  const bestThirdsSet = new Set(derived.qualifiers.slice(autoQualifiedCount));
+
   const groups: GroupView[] = tournament.groups.map((group) => {
     const matches: GroupMatchView[] = tournament.groupMatches
       .filter((m) => m.group === group.id)
@@ -84,29 +101,25 @@ export async function getCardView(params: Params): Promise<CardView | null> {
       });
 
     const derivedGroupOrder = derived.groupOrders[group.id as GroupId] ?? [];
-    const autoQualify = tournament.qualification.autoQualifyPerGroup;
-
-    const complete = matches.every((m) => m.predictedHome !== null);
+    const complete = completeGroupIds.has(group.id as GroupId);
 
     return {
       groupId: group.id as GroupId,
       matches,
-      derivedOrder: derivedGroupOrder.map((tid, i) => ({
-        teamId: tid,
-        teamName: teamMap.get(tid) ?? tid,
-        qualifies: complete && i < autoQualify,
-      })),
+      derivedOrder: derivedGroupOrder.map((tid, i) => {
+        let qualifies: 'auto' | 'best-third' | false = false;
+        if (complete && i < autoQualify) {
+          qualifies = 'auto';
+        } else if (allGroupsComplete && i === autoQualify && bestThirdsSet.has(tid)) {
+          qualifies = 'best-third';
+        }
+        return { teamId: tid, teamName: teamMap.get(tid) ?? tid, qualifies };
+      }),
       complete,
     };
   });
 
   // 6. Build bracket view
-  const completeGroupsSet = new Set<GroupId>(
-    groups.filter((g) => g.complete).map((g) => g.groupId),
-  );
-  const allGroupsComplete = completeGroupsSet.size === tournament.groups.length;
-  const autoQualifiedCount =
-    tournament.groups.length * tournament.qualification.autoQualifyPerGroup;
 
   const knockoutPickMap = new Map(
     inputs.knockoutPicks.map((kp) => [kp.bracketMatchKey, kp.winner]),
@@ -131,7 +144,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
         derived.qualifiers,
         autoQualifiedCount,
         derived.groupOrders,
-        completeGroupsSet,
+        completeGroupIds,
         allGroupsComplete,
       ) ?? null;
     const awayId =
@@ -140,7 +153,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
         derived.qualifiers,
         autoQualifiedCount,
         derived.groupOrders,
-        completeGroupsSet,
+        completeGroupIds,
         allGroupsComplete,
       ) ?? null;
 
@@ -299,14 +312,14 @@ function resolveSlotTeam(
   qualifiers: TeamId[],
   autoQualifiedCount: number,
   groupOrders: Record<GroupId, TeamId[]>,
-  completeGroups: Set<GroupId>,
+  completeGroupIds: Set<GroupId>,
   allGroupsComplete: boolean,
 ): TeamId | undefined {
   const posGroupMatch = slotRef.match(/^(\d+)([A-Z]+)$/);
   if (posGroupMatch) {
     const pos = parseInt(posGroupMatch[1]!) - 1;
     const gId = posGroupMatch[2] as GroupId;
-    if (!completeGroups.has(gId)) return undefined;
+    if (!completeGroupIds.has(gId)) return undefined;
     return groupOrders[gId]?.[pos];
   }
   const thirdMatch = slotRef.match(/^3rd\[(\d+)\]$/);

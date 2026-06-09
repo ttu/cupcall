@@ -106,8 +106,8 @@ describe('getCardView — qualifying highlight', () => {
 
     const groupA = card!.groups.find((g) => g.groupId === groupId('A'))!;
     expect(groupA.complete).toBe(true);
-    expect(groupA.derivedOrder[0]!.qualifies).toBe(true);
-    expect(groupA.derivedOrder[1]!.qualifies).toBe(true);
+    expect(groupA.derivedOrder[0]!.qualifies).toBe('auto');
+    expect(groupA.derivedOrder[1]!.qualifies).toBe('auto');
     expect(groupA.derivedOrder[2]!.qualifies).toBe(false);
     expect(groupA.derivedOrder[3]!.qualifies).toBe(false);
   });

@@ -32,7 +32,11 @@ export type GroupView = {
   groupId: GroupId;
   matches: GroupMatchView[];
   /** Derived standing order for this group (from the user's predicted scores), 1st → last */
-  derivedOrder: Array<{ teamId: TeamId; teamName: string; qualifies: boolean }>;
+  derivedOrder: Array<{
+    teamId: TeamId;
+    teamName: string;
+    qualifies: 'auto' | 'best-third' | false;
+  }>;
   /** True when all matches in this group have been predicted */
   complete: boolean;
 };
