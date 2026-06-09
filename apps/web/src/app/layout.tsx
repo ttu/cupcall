@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Anton, Archivo } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const anton = Anton({
@@ -23,7 +24,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }): ReactNode {
   return (
     <html lang="en" className={`${anton.variable} ${archivo.variable}`}>
-      <body style={{ fontFamily: 'var(--font-ui, system-ui, sans-serif)' }}>{children}</body>
+      <body style={{ fontFamily: 'var(--font-ui, system-ui, sans-serif)' }}>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
