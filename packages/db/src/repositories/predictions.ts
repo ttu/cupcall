@@ -55,7 +55,7 @@ export async function getPrediction(
   const [row] = await db
     .select()
     .from(schema.predictions)
-    .where(eq(schema.predictions.poolId, poolId) && eq(schema.predictions.userId, uid));
+    .where(and(eq(schema.predictions.poolId, poolId), eq(schema.predictions.userId, uid)));
   if (!row) return undefined;
   return { ...row, userId: userId(row.userId) };
 }
@@ -72,7 +72,7 @@ export async function getOrCreatePrediction(
     .select()
     .from(schema.predictions)
     .where(
-      eq(schema.predictions.poolId, input.poolId) && eq(schema.predictions.userId, input.userId),
+      and(eq(schema.predictions.poolId, input.poolId), eq(schema.predictions.userId, input.userId)),
     );
   if (existing[0]) return { ...existing[0], userId: userId(existing[0].userId) };
 
