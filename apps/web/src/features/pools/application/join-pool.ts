@@ -12,7 +12,7 @@ import {
 import type { UserId } from '@cup/engine';
 
 /** Maximum members per pool (functional-spec §9). */
-const MAX_MEMBERS_PER_POOL = 100;
+const MAX_MEMBERS_PER_POOL = 30;
 
 export type JoinPoolError =
   | { code: 'not_found' }

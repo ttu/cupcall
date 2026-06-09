@@ -534,7 +534,7 @@ Goal: prevent mass account/pool creation and repeated-join abuse without heavy f
 | Identity                       | Magic-link = one account per verified email.                       |
 | Duplicate joins                | Unique `(pool_id, user_id)` membership — rejoining does nothing.   |
 | Pool creation cap              | Max **5** pools created per user (configurable).                   |
-| Pool size cap                  | Max **100** members per pool (configurable).                       |
+| Pool size cap                  | Max **30** members per pool (configurable).                        |
 | Rate limit: create pool        | e.g. ≤ 3 / hour per user.                                          |
 | Rate limit: join               | e.g. ≤ 10 / hour per user and per IP.                              |
 | Rate limit: magic-link request | e.g. ≤ 5 / hour per email + per IP (also mitigates email-bombing). |
