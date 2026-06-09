@@ -94,7 +94,10 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
               return (
                 <div key={member.userId} className="px-4 py-2.5 space-y-1.5">
                   <div className="flex items-center gap-3">
-                    <span className="flex-1 text-sm text-[var(--ink)] truncate">
+                    <span
+                      className="flex-1 text-sm text-[var(--ink)] truncate"
+                      title={member.userId}
+                    >
                       {member.displayName}
                     </span>
                     <span className="text-xs text-[var(--ink-muted)] tabular-nums">

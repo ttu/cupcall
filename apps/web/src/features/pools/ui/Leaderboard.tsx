@@ -63,6 +63,7 @@ export function Leaderboard({
                 {/* Name */}
                 <span
                   className={`flex-1 text-sm truncate ${isSelf ? 'font-semibold text-[var(--green-700)]' : 'text-[var(--ink)]'}`}
+                  title={isOwner ? entry.userId : undefined}
                 >
                   {entry.displayName}
                   {isSelf && (
