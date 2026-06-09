@@ -330,7 +330,14 @@
     { "id": "mL6", "group": "L", "home": "CRO", "away": "GHA", "kickoff": "2026-06-27T21:00:00Z" }
   ],
   "qualification": { "autoQualifyPerGroup": 2, "bestThirdPlaced": 8 },
-  "standingsTiebreak": ["points", "goalDifference", "goalsFor", "seedOrder"],
+  "standingsTiebreak": [
+    "points",
+    "h2hPoints",
+    "h2hGoalDifference",
+    "h2hGoalsFor",
+    "goalDifference",
+    "goalsFor"
+  ],
   "bracket": {
     "rounds": ["R32", "R16", "QF", "SF", "Final"],
     "entryRound": "R32",

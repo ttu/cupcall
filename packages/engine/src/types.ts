@@ -1,6 +1,12 @@
 import type { TeamId, PlayerId, GroupId, MatchId, BracketMatchKey, Points } from './brand.js';
 
-export type TiebreakKey = 'points' | 'goalDifference' | 'goalsFor' | 'seedOrder';
+export type TiebreakKey =
+  | 'points'
+  | 'h2hPoints'
+  | 'h2hGoalDifference'
+  | 'h2hGoalsFor'
+  | 'goalDifference'
+  | 'goalsFor';
 
 export interface Team {
   id: TeamId;

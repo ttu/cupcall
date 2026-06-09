@@ -43,7 +43,14 @@ const validTournamentJson = {
     { id: 'm2', group: 'A', home: 'RSA', away: 'KOR' },
   ],
   qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 1 },
-  standingsTiebreak: ['points', 'goalDifference', 'goalsFor', 'seedOrder'],
+  standingsTiebreak: [
+    'points',
+    'h2hPoints',
+    'h2hGoalDifference',
+    'h2hGoalsFor',
+    'goalDifference',
+    'goalsFor',
+  ],
   bracket: {
     rounds: ['R32', 'Final'],
     entryRound: 'R32',
@@ -69,7 +76,14 @@ describe('tournamentSchema', () => {
     expect(result.groups[0]?.teams).toEqual(['MEX', 'ARG', 'RSA', 'KOR']);
     expect(result.groupMatches[0]?.id).toBe('m1');
     expect(result.qualification.autoQualifyPerGroup).toBe(2);
-    expect(result.standingsTiebreak).toEqual(['points', 'goalDifference', 'goalsFor', 'seedOrder']);
+    expect(result.standingsTiebreak).toEqual([
+      'points',
+      'h2hPoints',
+      'h2hGoalDifference',
+      'h2hGoalsFor',
+      'goalDifference',
+      'goalsFor',
+    ]);
     expect(result.bracket.finalMatch).toBe('final-1');
     expect(result.bracket.bronzeMatch).toBe('bronze-1');
     expect(result.scoring.groupMatch.exactScore).toBe(6);

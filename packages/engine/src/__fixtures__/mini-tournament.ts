@@ -88,7 +88,14 @@ export const miniTournament: Tournament = {
   })),
   groupMatches: groupMatchDefs,
   qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 0 },
-  standingsTiebreak: ['points', 'goalDifference', 'goalsFor', 'seedOrder'],
+  standingsTiebreak: [
+    'points',
+    'h2hPoints',
+    'h2hGoalDifference',
+    'h2hGoalsFor',
+    'goalDifference',
+    'goalsFor',
+  ],
   bracket: {
     rounds: ['QF', 'SF', 'Final'],
     entryRound: 'QF',

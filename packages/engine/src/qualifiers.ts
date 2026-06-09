@@ -49,7 +49,8 @@ export function selectQualifiers(
 
   // Rank thirds: same tiebreak metrics, then group index (stable / deterministic)
   const thirdsMetricKeys = t.standingsTiebreak.filter(
-    (k): k is 'points' | 'goalDifference' | 'goalsFor' => k !== 'seedOrder',
+    (k): k is 'points' | 'goalDifference' | 'goalsFor' =>
+      k === 'points' || k === 'goalDifference' || k === 'goalsFor',
   );
 
   thirds.sort((a, b) => {

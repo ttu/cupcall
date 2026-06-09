@@ -1,5 +1,5 @@
 import type { GroupId, TeamId } from './brand.js';
-import type { GroupScore, TiebreakKey, Tournament } from './types.js';
+import type { GroupMatchDef, GroupScore, TiebreakKey, Tournament } from './types.js';
 
 /**
  * Per-team standings metrics within a group. This is the cross-module contract
@@ -14,21 +14,22 @@ export interface TeamMetrics {
   ga: number;
 }
 
-/** Compute the numeric metric value for a row given a tiebreak key. */
-export function metric(
-  key: TiebreakKey,
-  r: { points: number; gf: number; ga: number; seed: number },
-): number {
+/**
+ * Compute the numeric metric value for a row given a tiebreak key.
+ * H2h variants map to their overall counterparts — the caller is responsible
+ * for passing head-to-head computed data when an h2h key is used.
+ */
+export function metric(key: TiebreakKey, r: { points: number; gf: number; ga: number }): number {
   switch (key) {
     case 'points':
+    case 'h2hPoints':
       return r.points;
     case 'goalDifference':
+    case 'h2hGoalDifference':
       return r.gf - r.ga;
     case 'goalsFor':
+    case 'h2hGoalsFor':
       return r.gf;
-    case 'seedOrder':
-      // Lower seed index = higher rank → negate so higher metric = better rank
-      return -r.seed;
   }
 }
 
@@ -75,25 +76,117 @@ export function teamMetrics(
   return rows;
 }
 
+/** Compute head-to-head metrics for a subset of teams using only their mutual matches. */
+function computeH2HMetrics(
+  teams: TeamMetrics[],
+  scores: GroupScore[],
+  groupMatches: GroupMatchDef[],
+): Map<TeamId, { points: number; gf: number; ga: number }> {
+  const teamSet = new Set(teams.map((t) => t.team));
+  const rows = new Map(teams.map((t) => [t.team, { points: 0, gf: 0, ga: 0 }]));
+  const scoreById = new Map(scores.map((s) => [s.matchId, s]));
+
+  for (const m of groupMatches) {
+    if (!teamSet.has(m.home) || !teamSet.has(m.away)) continue;
+    const s = scoreById.get(m.id);
+    if (!s) continue;
+
+    const home = rows.get(m.home)!;
+    const away = rows.get(m.away)!;
+
+    home.gf += s.home;
+    home.ga += s.away;
+    away.gf += s.away;
+    away.ga += s.home;
+
+    if (s.home > s.away) {
+      home.points += 3;
+    } else if (s.home < s.away) {
+      away.points += 3;
+    } else {
+      home.points += 1;
+      away.points += 1;
+    }
+  }
+
+  return rows;
+}
+
+/**
+ * Recursively resolve the standings order for groups of tied teams.
+ *
+ * For each key in `keys` (applied left-to-right), teams are partitioned by the
+ * metric value. When an h2h key is reached, metrics are computed only for the
+ * mutual matches within each tied group. Seed order is the implicit final
+ * tiebreaker when all configured keys are exhausted.
+ */
+function resolveOrder(
+  tiedGroups: TeamMetrics[][],
+  scores: GroupScore[],
+  groupMatches: GroupMatchDef[],
+  keys: TiebreakKey[],
+): TeamId[] {
+  const result: TeamId[] = [];
+
+  for (const group of tiedGroups) {
+    if (group.length === 1) {
+      result.push(group[0]!.team);
+      continue;
+    }
+
+    if (keys.length === 0) {
+      // Final implicit fallback: seed order (lower index = higher rank)
+      result.push(...[...group].sort((a, b) => a.seed - b.seed).map((r) => r.team));
+      continue;
+    }
+
+    const key = keys[0]!;
+    const remaining = keys.slice(1);
+    const isH2H = key === 'h2hPoints' || key === 'h2hGoalDifference' || key === 'h2hGoalsFor';
+
+    let getMetric: (r: TeamMetrics) => number;
+    if (isH2H) {
+      const h2hMap = computeH2HMetrics(group, scores, groupMatches);
+      getMetric = (r) => metric(key, h2hMap.get(r.team)!);
+    } else {
+      getMetric = (r) => metric(key, r);
+    }
+
+    // Partition by this metric (descending: higher = better)
+    const scored = [...group].map((r) => ({ r, m: getMetric(r) }));
+    scored.sort((a, b) => b.m - a.m);
+
+    const subGroups: TeamMetrics[][] = [];
+    let current: TeamMetrics[] = [scored[0]!.r];
+    for (let i = 1; i < scored.length; i++) {
+      const cur = scored[i]!;
+      const prev = scored[i - 1]!;
+      if (cur.m === prev.m) {
+        current.push(cur.r);
+      } else {
+        subGroups.push(current);
+        current = [cur.r];
+      }
+    }
+    subGroups.push(current);
+
+    result.push(...resolveOrder(subGroups, scores, groupMatches, remaining));
+  }
+
+  return result;
+}
+
 /**
  * Compute the final standings order for a group.
  *
- * Tiebreak applied top-to-bottom using `t.standingsTiebreak`:
- * points → goalDifference → goalsFor → seedOrder (lower index = higher rank).
- * Unpredicted matches (no GroupScore for that matchId) contribute nothing.
+ * Tiebreak applied using `t.standingsTiebreak` (left to right). H2h keys
+ * compare only the mutual matches among the currently-tied teams. Seed order
+ * (lower index = higher rank) is the implicit final fallback.
  */
 export function computeStandings(t: Tournament, group: GroupId, scores: GroupScore[]): TeamId[] {
   const rows = teamMetrics(t, group, scores);
-
-  const cmp = (a: TeamMetrics, b: TeamMetrics): number => {
-    for (const key of t.standingsTiebreak) {
-      const d = metric(key, b) - metric(key, a);
-      if (d !== 0) return d;
-    }
-    return 0;
-  };
-
-  return [...rows.values()].sort(cmp).map((r) => r.team);
+  const groupMatches = t.groupMatches.filter((m) => m.group === group);
+  return resolveOrder([[...rows.values()]], scores, groupMatches, t.standingsTiebreak);
 }
 
 /** Compute standings for every group in the tournament. */

@@ -92,7 +92,14 @@ const scoringSchema = z.object({
   topScorerPlayer: z.number(),
 });
 
-const tiebreakKeySchema = z.enum(['points', 'goalDifference', 'goalsFor', 'seedOrder']);
+const tiebreakKeySchema = z.enum([
+  'points',
+  'h2hPoints',
+  'h2hGoalDifference',
+  'h2hGoalsFor',
+  'goalDifference',
+  'goalsFor',
+]);
 
 // Internal (non-exported) schema retains Zod's inferred output type so we can drift-check it
 // against the engine `Tournament`. The public `tournamentSchema` is annotated `z.ZodType<Tournament>`

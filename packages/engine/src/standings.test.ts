@@ -52,9 +52,8 @@ describe('computeStandings', () => {
     expect(result).toEqual(['A1', 'A3', 'A2', 'A4']);
   });
 
-  it('falls back to seed order when all matches are draws', () => {
-    // All draws → all teams have 1pt per match played (3 matches each → 3pts)
-    // Same GD=0, GF=3, so seedOrder decides: A1 < A2 < A3 < A4 (lower index = higher rank)
+  it('falls back to seed order when all tiebreakers are equal', () => {
+    // All 1-1 draws → equal points, h2h, GD, and GF; seed order is the implicit final fallback
     const scores: GroupScore[] = [
       { matchId: matchId('mA1'), home: 1, away: 1 },
       { matchId: matchId('mA2'), home: 1, away: 1 },
@@ -65,6 +64,24 @@ describe('computeStandings', () => {
     ];
     const result = computeStandings(miniTournament, groupId('A'), scores);
     expect(result).toEqual(['A1', 'A2', 'A3', 'A4']);
+  });
+
+  it('uses head-to-head results before overall goal difference', () => {
+    // A1 beats A2 h2h (1-0) but A2 has much better overall GD (+5 vs -1).
+    // A4 beats A3 h2h (1-0) but A3 has better overall GD (+1 vs -5).
+    // h2h takes priority: A1 > A2, A4 > A3 — opposite of what overall GD alone would give.
+    const scores: GroupScore[] = [
+      { matchId: matchId('mA1'), home: 1, away: 0 }, // A1 beats A2 (h2h)
+      { matchId: matchId('mA2'), home: 0, away: 5 }, // A3 beats A1
+      { matchId: matchId('mA3'), home: 3, away: 0 }, // A1 beats A4
+      { matchId: matchId('mA4'), home: 3, away: 0 }, // A2 beats A3
+      { matchId: matchId('mA5'), home: 3, away: 0 }, // A2 beats A4
+      { matchId: matchId('mA6'), home: 0, away: 1 }, // A4 beats A3 (h2h)
+    ];
+    // Overall GD: A2(+5) > A3(+1) > A1(-1) > A4(-5) → would give A2, A1 and A3, A4
+    // With h2h:   A1 beat A2 → A1 first; A4 beat A3 → A4 before A3
+    const result = computeStandings(miniTournament, groupId('A'), scores);
+    expect(result).toEqual(['A1', 'A2', 'A4', 'A3']);
   });
 
   it('throws for unknown group', () => {

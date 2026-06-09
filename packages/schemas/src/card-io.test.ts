@@ -55,7 +55,14 @@ const tournament: Tournament = {
     { id: matchId('m2'), group: groupId('A'), home: teamId('RSA'), away: teamId('CZE') },
   ],
   qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 1 },
-  standingsTiebreak: ['points', 'goalDifference', 'goalsFor', 'seedOrder'],
+  standingsTiebreak: [
+    'points',
+    'h2hPoints',
+    'h2hGoalDifference',
+    'h2hGoalsFor',
+    'goalDifference',
+    'goalsFor',
+  ],
   bracket: {
     rounds: ['R32', 'Final'],
     entryRound: 'R32',
