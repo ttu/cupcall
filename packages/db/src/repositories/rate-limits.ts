@@ -15,6 +15,8 @@ export const RATE_LIMITS = {
   createPool: { limit: 3, windowMs: HOUR_MS },
   /** Pool join: ≤ 10 per hour per user (and per IP — key encodes the dimension). */
   join: { limit: 10, windowMs: HOUR_MS },
+  /** Guest join (no email): ≤ 5 per hour per IP. Checked before user creation. */
+  joinGuestIp: { limit: 5, windowMs: HOUR_MS },
   /** Magic-link request: ≤ 5 per hour per email (+ per IP — key encodes the dimension). */
   magicLink: { limit: 5, windowMs: HOUR_MS },
 } as const satisfies Record<string, { limit: number; windowMs: number }>;

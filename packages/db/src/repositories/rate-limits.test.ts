@@ -106,6 +106,11 @@ describe('rate-limits repository', () => {
       expect(RATE_LIMITS.join.windowMs).toBe(60 * 60 * 1_000);
     });
 
+    it('exports joinGuestIp limit', () => {
+      expect(RATE_LIMITS.joinGuestIp.limit).toBe(5);
+      expect(RATE_LIMITS.joinGuestIp.windowMs).toBe(60 * 60 * 1_000);
+    });
+
     it('exports magicLink limit', () => {
       expect(RATE_LIMITS.magicLink.limit).toBe(5);
       expect(RATE_LIMITS.magicLink.windowMs).toBe(60 * 60 * 1_000);

@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import { db } from '@/shared/db';
 import { getCurrentActor } from '@/features/auth';
@@ -21,6 +22,8 @@ import {
   getActualResults,
   upsertLoginToken,
   isMember,
+  checkRateLimit,
+  RATE_LIMITS,
 } from '@cup/db';
 import { signInAsExistingGuest } from '@/features/auth';
 import { rescoreCard } from '@/features/predictions';
@@ -328,6 +331,16 @@ export async function joinAsGuest(raw: unknown): Promise<{ ok: false; error: str
   }
   const { displayName, token } = parsed.data;
 
+  const h = await headers();
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? 'unknown';
+  const ipRl = await checkRateLimit(db, {
+    key: `join:guest:ip:${ip}`,
+    limit: RATE_LIMITS.joinGuestIp.limit,
+    windowMs: RATE_LIMITS.joinGuestIp.windowMs,
+    now: new Date(),
+  });
+  if (!ipRl.allowed) return { ok: false, error: 'Too many attempts. Try again later.' };
+
   const pool = await getPoolByInviteTokenHash(db, token);
   if (!pool) return { ok: false, error: 'Invite link is invalid or has been removed.' };
 
@@ -385,6 +398,23 @@ export async function generateMemberLoginLink(
     await upsertLoginToken(db, targetUserId as import('@cup/engine').UserId, token);
 
     return { ok: true, url: buildLoginUrl(token) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rotate own login token (guest users only)
+// ---------------------------------------------------------------------------
+
+export async function rotateMyLoginToken(): Promise<
+  { ok: true; token: string } | { ok: false; error: string }
+> {
+  try {
+    const actor = await getActorOrThrow();
+    const token = generateLoginToken();
+    await upsertLoginToken(db, actor.userId, token);
+    return { ok: true, token };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
