@@ -79,24 +79,23 @@ describe('scoreFinal', () => {
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10);
   });
 
-  it('exact score side-agnostic: predicted 3-2, actual 2-3 → 5 exact awarded', () => {
-    // Both teams correct too: A1 and A2 in match (side swapped)
+  it('predicted 3-2, actual 2-3 (sides swapped) → no exact points', () => {
+    // Both teams correct (A1 and A2 in match, sides swapped), but score does not match exactly
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 3, away: 2 }); // predicted 3-2
     const actual = makeActual({
       finalMatch: { home: A2, away: A1, homeGoals: 2, awayGoals: 3 }, // actual 2-3
     });
-    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(15); // 10 teams + 5 exact
+    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10); // 10 teams + 0 exact
   });
 
-  it('exact score side-agnostic counts even when teams wrong', () => {
-    // 0 teams correct, but predicted score multiset matches
+  it('predicted 2-3, actual 3-2 (sides swapped, teams wrong) → no exact points', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 2, away: 3 }); // predicted 2-3
     const actual = makeActual({
       finalMatch: { home: B1, away: B2, homeGoals: 3, awayGoals: 2 }, // actual 3-2
     });
-    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(5); // 0 teams + 5 exact
+    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(0); // 0 teams + 0 exact
   });
 
   it('zero teams correct + wrong score → 0', () => {
@@ -155,13 +154,13 @@ describe('scoreBronze', () => {
     expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(15);
   });
 
-  it('exact score side-agnostic for bronze', () => {
+  it('predicted 3-0, actual 0-3 (sides swapped) → no exact points for bronze', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs(undefined, { home: 3, away: 0 }); // predicted 3-0
     const actual = makeActual({
       bronzeMatch: { home: B2, away: B1, homeGoals: 0, awayGoals: 3 }, // actual 0-3
     });
-    // Both teams correct (B1 and B2 in bronzePair), exact matches side-agnostically
-    expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(15);
+    // Both teams correct (B1 and B2 in bronzePair), but score doesn't match exactly
+    expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(10);
   });
 });

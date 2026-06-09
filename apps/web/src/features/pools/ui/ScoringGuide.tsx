@@ -83,11 +83,7 @@ export function ScoringGuide({ scoring }: Props): ReactElement {
       {/* Knockout Matches */}
       <SectionCard title="Bronze & Final Matches">
         <Row label="Correct team in the match" pts={scoring.final.perTeam} note="up to 2 teams" />
-        <Row
-          label="Exact score (side-agnostic)"
-          pts={scoring.final.exactScore}
-          note="3–2 = 2–3 ✓"
-        />
+        <Row label="Exact score" pts={scoring.final.exactScore} />
         <Row label="Maximum per match" pts={finishMatchMax} />
       </SectionCard>
 

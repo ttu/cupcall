@@ -10,27 +10,11 @@ import type { Points, TeamId } from '../brand.js';
 import { points } from '../brand.js';
 
 /**
- * Side-agnostic score equality: the multiset {a, b} == multiset {c, d}.
- * Equivalent to (a==c && b==d) || (a==d && b==c).
- */
-function scoresMatchSideAgnostic(
-  predictedHome: number,
-  predictedAway: number,
-  actualHome: number,
-  actualAway: number,
-): boolean {
-  return (
-    (predictedHome === actualHome && predictedAway === actualAway) ||
-    (predictedHome === actualAway && predictedAway === actualHome)
-  );
-}
-
-/**
  * Shared scoring logic for a finish match (bronze or final).
  * - TEAM points: count how many of the player's two derived teams appear in {actual.home, actual.away},
  *   regardless of side. Each match awards 0, perTeam, or perTeam*2.
- * - EXACT SCORE points: award exactScore iff finishScore is present AND the scoreline matches
- *   side-agnostically. Independent of team correctness.
+ * - EXACT SCORE points: award exactScore iff finishScore is present AND home/away goals match exactly.
+ *   Independent of team correctness.
  */
 function scoreFinishMatch(
   derivedPair: TeamId[],
@@ -48,17 +32,10 @@ function scoreFinishMatch(
   const teamCount = derivedPair.filter((t) => actualTeams.has(t)).length;
   const teamPoints = teamCount * scoring.perTeam;
 
-  // Exact score points: only if a score was predicted and it matches side-agnostically
+  // Exact score points: only if a score was predicted and home/away goals match exactly
   let exactPoints = 0;
   if (finishScore !== undefined) {
-    if (
-      scoresMatchSideAgnostic(
-        finishScore.home,
-        finishScore.away,
-        actualMatch.homeGoals,
-        actualMatch.awayGoals,
-      )
-    ) {
+    if (finishScore.home === actualMatch.homeGoals && finishScore.away === actualMatch.awayGoals) {
       exactPoints = scoring.exactScore;
     }
   }
