@@ -550,18 +550,21 @@ export async function ownerSaveFinishScore(
 // Export card
 // ---------------------------------------------------------------------------
 
-const ExportCardSchema = z.object({ poolId: z.string() });
+const ExportCardSchema = z.object({ poolId: z.string(), targetUserId: z.string().optional() });
 
 export async function exportCard(
   raw: unknown,
 ): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
   const parsed = ExportCardSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId, targetUserId } = parsed.data;
 
   try {
-    const { userId } = await getActorOrThrow();
+    const { userId: actorId } = await getActorOrThrow();
     const { pool } = await loadPoolAndTournament(poolId);
+    const isOwner = actorId === pool.ownerId;
+    const userId =
+      isOwner && targetUserId ? (targetUserId as import('@cup/engine').UserId) : actorId;
     const prediction = await getPrediction(db, poolId, userId);
     if (!prediction) return { ok: false, error: 'No prediction found for this pool' };
 

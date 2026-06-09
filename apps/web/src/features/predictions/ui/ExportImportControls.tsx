@@ -16,7 +16,7 @@ export function ExportImportControls({ poolId, targetUserId }: Props): ReactElem
 
   function handleExport() {
     startTransition(async () => {
-      const result = await exportCard({ poolId });
+      const result = await exportCard({ poolId, targetUserId });
       if (!result.ok) {
         setMessage({ ok: false, text: result.error });
         return;
