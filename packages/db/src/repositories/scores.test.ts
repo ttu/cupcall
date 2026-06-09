@@ -240,15 +240,13 @@ describe('scores repository', () => {
           { predictionId: pred.id, matchId: 'm1', homeGoals: 1, awayGoals: 0 },
           { predictionId: pred.id, matchId: 'm2', homeGoals: 0, awayGoals: 2 },
         ]);
-        await db
-          .insert(schema.predictionKnockoutPicks)
-          .values([
-            {
-              predictionId: pred.id,
-              bracketMatchKey: bracketMatchKey('qf1'),
-              winnerTeamId: 'teamA',
-            },
-          ]);
+        await db.insert(schema.predictionKnockoutPicks).values([
+          {
+            predictionId: pred.id,
+            bracketMatchKey: bracketMatchKey('qf1'),
+            winnerTeamId: 'teamA',
+          },
+        ]);
         await db
           .insert(schema.predictionFinishScores)
           .values([{ predictionId: pred.id, match: 'final', homeGoals: 2, awayGoals: 1 }]);

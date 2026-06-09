@@ -26,6 +26,8 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   const isOwner = actor.userId === detail.ownerId;
   const now = new Date();
   const locked = now >= detail.lockTime;
+  const myEntry = detail.leaderboard.find((e) => e.userId === actor.userId);
+  const predictionComplete = myEntry?.completionPercent === 100;
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -57,7 +59,11 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         className="flex items-center justify-between px-4 py-3 rounded-[var(--radius)] border border-[var(--green-300)] bg-[var(--green-050)] text-[var(--green-700)] hover:bg-[var(--green-050)]/80 transition-colors"
       >
         <span className="text-sm font-semibold">
-          {locked ? 'View my predictions' : 'Fill in my predictions'}
+          {locked
+            ? 'View my predictions'
+            : predictionComplete
+              ? 'Edit my predictions'
+              : 'Fill in my predictions'}
         </span>
         <span aria-hidden="true">→</span>
       </Link>
