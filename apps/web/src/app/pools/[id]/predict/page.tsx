@@ -1,7 +1,13 @@
 import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getPoolById, getTournamentById, getPrediction, listEditsForPrediction } from '@cup/db';
+import {
+  getPoolById,
+  getTournamentById,
+  getPrediction,
+  listEditsForPrediction,
+  isMember,
+} from '@cup/db';
 import { db } from '@/shared/db';
 import { getCurrentActor } from '@/features/auth';
 import {
@@ -22,6 +28,8 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
 
   const pool = await getPoolById(db, poolId);
   if (!pool) notFound();
+
+  if (!(await isMember(db, poolId, actor.userId))) notFound();
 
   const tournament = await getTournamentById(db, pool.tournamentId);
   if (!tournament?.definition) notFound();
