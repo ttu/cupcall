@@ -7,10 +7,14 @@ import { joinPool, joinAsGuest } from '@/features/pools';
 import { redirect } from 'next/navigation';
 import { JoinSubmitButton } from './JoinSubmitButton';
 
-type Props = { params: Promise<{ token: string }> };
+type Props = {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ error?: string }>;
+};
 
-export default async function JoinPage({ params }: Props): Promise<ReactElement> {
+export default async function JoinPage({ params, searchParams }: Props): Promise<ReactElement> {
   const { token } = await params;
+  const { error } = await searchParams;
 
   const pool = await getPoolByInviteTokenHash(db, token);
 
@@ -100,7 +104,7 @@ export default async function JoinPage({ params }: Props): Promise<ReactElement>
             {pool.name}
           </h1>
         </div>
-        <SignedInJoinForm token={token} />
+        <SignedInJoinForm token={token} error={error} />
       </main>
     );
   }
@@ -120,14 +124,14 @@ export default async function JoinPage({ params }: Props): Promise<ReactElement>
         </h1>
       </div>
 
-      <GuestJoinForm token={token} poolName={pool.name} />
+      <GuestJoinForm token={token} poolName={pool.name} error={error} />
     </main>
   );
 }
 
 // ── Signed-in join form ────────────────────────────────────────────────────
 
-function SignedInJoinForm({ token }: { token: string }) {
+function SignedInJoinForm({ token, error }: { token: string; error?: string | undefined }) {
   async function handleJoin() {
     'use server';
     const { getCurrentActor: getActor } = await import('@/features/auth');
@@ -138,11 +142,16 @@ function SignedInJoinForm({ token }: { token: string }) {
     if (result.ok) {
       redirect(`/pools/${result.poolId}`);
     }
-    redirect('/pools');
+    redirect(`/join/${token}?error=${encodeURIComponent(result.error)}`);
   }
 
   return (
-    <form action={handleJoin}>
+    <form action={handleJoin} className="space-y-3">
+      {error && (
+        <p role="alert" className="text-sm text-[var(--red-600)] text-center">
+          {error}
+        </p>
+      )}
       <JoinSubmitButton />
     </form>
   );
@@ -150,15 +159,21 @@ function SignedInJoinForm({ token }: { token: string }) {
 
 // ── Guest join form (name only) ────────────────────────────────────────────
 
-function GuestJoinForm({ token, poolName }: { token: string; poolName: string }) {
+function GuestJoinForm({
+  token,
+  poolName,
+  error,
+}: {
+  token: string;
+  poolName: string;
+  error?: string | undefined;
+}) {
   async function handleGuestJoin(formData: FormData) {
     'use server';
     const displayName = (formData.get('displayName') as string | null)?.trim() ?? '';
-    // joinAsGuest validates the name and redirects on success.
-    await joinAsGuest({ displayName, token });
-    // If validation fails it returns an error — but since this is a plain form
-    // action we redirect back with a fallback rather than surfacing it inline.
-    redirect(`/join/${token}?error=1`);
+    // joinAsGuest only returns when there's an error; success redirects internally.
+    const result = await joinAsGuest({ displayName, token });
+    redirect(`/join/${token}?error=${encodeURIComponent(result.error)}`);
   }
 
   return (
@@ -172,6 +187,11 @@ function GuestJoinForm({ token, poolName }: { token: string; poolName: string })
       </div>
 
       <form action={handleGuestJoin} className="space-y-4">
+        {error && (
+          <p role="alert" className="text-sm text-[var(--red-600)]">
+            {error}
+          </p>
+        )}
         <div>
           <label htmlFor="displayName" className="block text-sm font-medium text-[var(--ink)] mb-1">
             Your name
