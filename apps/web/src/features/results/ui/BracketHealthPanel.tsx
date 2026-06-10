@@ -11,41 +11,36 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
   const champion = championPick?.pickedWinnerId;
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Health card */}
       <div
-        className="rounded-[var(--radius)] p-4"
-        style={{ background: 'var(--green-050)', border: '1px solid var(--green-300)' }}
+        className="card"
+        style={{
+          background: 'var(--green-050)',
+          border: '1px solid var(--green-300)',
+          padding: '14px 16px',
+        }}
       >
-        <div
-          className="text-[10px] font-bold uppercase tracking-wider mb-2"
-          style={{ color: 'var(--green-700)' }}
-        >
+        <div className="eyebrow" style={{ color: 'var(--green-700)', marginBottom: 10 }}>
           Bracket health
         </div>
-        <div className="flex items-baseline gap-2 mb-3">
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
           <span
-            className="font-black"
-            style={{ fontFamily: 'var(--font-display)', fontSize: 40, color: 'var(--green-700)' }}
+            className="display"
+            style={{ fontSize: 44, color: 'var(--green-700)', lineHeight: 1 }}
           >
             {health.alivePicks}
-            <span style={{ fontSize: 22, color: 'var(--green-600)' }}>/{health.totalPicks}</span>
+            <span style={{ fontSize: 24, color: 'var(--green-600)' }}>/{health.totalPicks}</span>
           </span>
-          <span className="text-sm font-bold" style={{ color: 'var(--green-700)' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green-700)' }}>
             picks alive
           </span>
         </div>
-        <div
-          className="rounded-full overflow-hidden"
-          style={{ height: 6, background: 'var(--green-300)' }}
-        >
-          <div
-            className="h-full rounded-full transition-all"
-            style={{ width: `${pct}%`, background: 'var(--green-500)' }}
-          />
+        <div className="bar" style={{ marginTop: 4 }}>
+          <i style={{ width: `${pct}%` }} />
         </div>
         {health.bustedPicks > 0 && (
-          <p className="text-[11px] font-semibold mt-2" style={{ color: 'var(--ink-muted)' }}>
+          <p style={{ fontSize: 11, fontWeight: 600, marginTop: 8, color: 'var(--ink-muted)' }}>
             {health.bustedPicks} pick{health.bustedPicks !== 1 ? 's' : ''} busted
           </p>
         )}
@@ -53,37 +48,19 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
 
       {/* Champion card */}
       {champion && (
-        <div
-          className="rounded-[var(--radius)] px-4 py-3"
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--line-soft)',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <div className="flex items-center gap-2 mb-1">
+        <div className="card" style={{ padding: '12px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
             <span>🏆</span>
-            <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>
               Your champion
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="badge sm">{champion}</span>
             <span
-              className="inline-flex items-center justify-center rounded text-[9px] font-black"
               style={{
-                width: 26,
-                height: 18,
-                background: 'var(--surface-2)',
-                color: 'var(--ink-soft)',
-                boxShadow: 'inset 0 0 0 1px var(--line)',
-                fontFamily: 'var(--font-display)',
-              }}
-            >
-              {champion}
-            </span>
-            <span
-              className="font-bold text-sm"
-              style={{
+                fontWeight: 700,
+                fontSize: 13,
                 color:
                   championPick.pickStatus === 'alive'
                     ? 'var(--green-700)'

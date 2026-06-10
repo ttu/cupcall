@@ -7,6 +7,7 @@ import { GroupMatchFeed } from './GroupMatchFeed';
 import { GroupTable } from './GroupTable';
 import { KnockoutBracket } from './KnockoutBracket';
 import { BracketHealthPanel } from './BracketHealthPanel';
+import { SectionLabel, Icon } from '@/shared/ui';
 
 type Tab = 'group' | 'knockout';
 
@@ -18,73 +19,80 @@ export function ResultsPageClient({ view }: Props): ReactElement {
 
   const activeGroup = view.groupResults.find((g) => g.groupId === activeGroupId);
 
-  // The final match is the last bracket round — use it for champion pick lookup
   const finalRound = view.bracketRounds.find((r) => r.label === 'Final');
   const finalMatch = finalRound?.matches[0] ?? null;
 
   return (
     <div>
       {/* Tabs */}
-      <div className="flex gap-1 mb-6" style={{ borderBottom: '1px solid var(--line)' }}>
-        {(['group', 'knockout'] as Tab[]).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className="px-4 py-3 text-sm font-bold cursor-pointer border-none bg-transparent"
-            style={{
-              color: activeTab === tab ? 'var(--ink)' : 'var(--ink-muted)',
-              boxShadow: activeTab === tab ? 'inset 0 -3px 0 var(--green-500)' : 'none',
-            }}
-          >
-            {tab === 'group' ? 'Group Stage' : 'Knockout'}
-          </button>
-        ))}
-      </div>
+      <nav
+        aria-label="Results sections"
+        style={{ display: 'flex', borderBottom: '1px solid var(--line-soft)', marginBottom: 24 }}
+      >
+        {(['group', 'knockout'] as Tab[]).map((tab) => {
+          const active = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              style={{
+                flex: 1,
+                padding: '11px 12px 14px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: active ? 'inset 0 -3px 0 var(--green-500)' : 'none',
+                fontFamily: 'var(--font-ui)',
+                fontSize: 13,
+                fontWeight: 700,
+                color: active ? 'var(--ink)' : 'var(--ink-muted)',
+                transition: 'color .15s',
+              }}
+            >
+              {tab === 'group' ? 'Group Stage' : 'Knockout'}
+            </button>
+          );
+        })}
+      </nav>
 
       {activeTab === 'group' && (
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0,1fr) 280px' }}>
+        <div style={{ display: 'grid', gap: 24 }} className="md:grid-cols-[minmax(0,1fr)_326px]">
           {/* Left: match feed */}
-          <div className="space-y-4">
-            <p
-              className="text-xs font-bold uppercase tracking-wider"
-              style={{ color: 'var(--ink-muted)' }}
-            >
-              Completed group matches
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <SectionLabel icon={<Icon name="ball" size={13} />}>Completed matches</SectionLabel>
             {activeGroup ? (
               <GroupMatchFeed group={activeGroup} />
             ) : (
-              <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                Select a group
-              </p>
+              <p style={{ fontSize: 13, color: 'var(--ink-muted)' }}>Select a group</p>
             )}
           </div>
 
           {/* Right rail: group selector + standings */}
-          <div className="space-y-3">
-            <p
-              className="text-xs font-bold uppercase tracking-wider"
-              style={{ color: 'var(--ink-muted)' }}
-            >
-              Live tables
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <SectionLabel icon={<Icon name="users" size={13} />}>Live tables</SectionLabel>
             {/* Group selector */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {view.groupResults.map((g) => (
                 <button
                   key={g.groupId}
+                  type="button"
                   onClick={() => setActiveGroupId(g.groupId)}
-                  className="font-black cursor-pointer border-none"
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    background: g.groupId === activeGroupId ? 'var(--ink-900)' : 'var(--surface)',
-                    color: g.groupId === activeGroupId ? '#fff' : 'var(--ink-muted)',
-                    boxShadow: g.groupId === activeGroupId ? 'none' : 'inset 0 0 0 1px var(--line)',
+                    width: 38,
+                    height: 38,
+                    borderRadius: 9,
+                    border: 'none',
+                    cursor: 'pointer',
                     fontFamily: 'var(--font-display)',
-                    fontSize: 14,
+                    fontSize: 16,
+                    fontWeight: 400,
+                    background: g.groupId === activeGroupId ? 'var(--ink-900)' : 'var(--surface-2)',
+                    color: g.groupId === activeGroupId ? 'var(--on-dark)' : 'var(--ink-soft)',
+                    boxShadow: g.groupId === activeGroupId ? 'none' : 'inset 0 0 0 1px var(--line)',
+                    transition: 'background .15s',
                   }}
+                  aria-pressed={g.groupId === activeGroupId}
                 >
                   {g.groupId}
                 </button>
@@ -96,7 +104,7 @@ export function ResultsPageClient({ view }: Props): ReactElement {
       )}
 
       {activeTab === 'knockout' && (
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0,1fr) 240px' }}>
+        <div style={{ display: 'grid', gap: 24 }} className="md:grid-cols-[minmax(0,1fr)_240px]">
           <KnockoutBracket rounds={view.bracketRounds} bronzeMatch={view.bronzeMatch} />
           <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
         </div>

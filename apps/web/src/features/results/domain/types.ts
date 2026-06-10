@@ -74,6 +74,7 @@ export type StageProgress = {
   key: StageKey;
   label: string;
   state: 'completed' | 'active' | 'upcoming';
+  startDate: Date | null;
 };
 
 export type UserRankChip = {

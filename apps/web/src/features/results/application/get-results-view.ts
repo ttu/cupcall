@@ -109,12 +109,17 @@ function buildStageProgress(def: Tournament, allMatches: MatchRow[]): StageProgr
 
   const finalCountByStage = new Map<string, number>();
   const totalCountByStage = new Map<string, number>();
+  const startDateByStage = new Map<string, Date>();
 
   for (const m of allMatches) {
     const key = m.stage === 'group' ? 'group' : m.stage;
     totalCountByStage.set(key, (totalCountByStage.get(key) ?? 0) + 1);
     if (m.status === 'final') {
       finalCountByStage.set(key, (finalCountByStage.get(key) ?? 0) + 1);
+    }
+    if (m.kickoff) {
+      const existing = startDateByStage.get(key);
+      if (!existing || m.kickoff < existing) startDateByStage.set(key, m.kickoff);
     }
   }
 
@@ -141,7 +146,7 @@ function buildStageProgress(def: Tournament, allMatches: MatchRow[]): StageProgr
       state = 'upcoming';
     }
 
-    return { key, label: STAGE_LABELS[key], state };
+    return { key, label: STAGE_LABELS[key], state, startDate: startDateByStage.get(key) ?? null };
   });
 }
 

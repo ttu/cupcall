@@ -40,3 +40,4 @@ export { OwnerCardEditor } from './ui/OwnerCardEditor';
 export { AuditLog } from './ui/AuditLog';
 export { OwnerEditBanner } from './ui/OwnerEditBanner';
 export { ExportImportControls } from './ui/ExportImportControls';
+export { CompletionBar } from './ui/CompletionBar';

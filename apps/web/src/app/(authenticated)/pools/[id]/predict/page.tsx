@@ -15,8 +15,10 @@ import {
   PredictStepper,
   ExportImportControls,
   AuditLog,
+  CompletionBar,
 } from '@/features/predictions';
 import type { AuditEntry } from '@/features/predictions';
+import { Chip, Icon } from '@/shared/ui';
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -73,23 +75,53 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
   const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name, team: p.team }));
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <Link
-            href={`/pools/${poolId}`}
-            className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors mb-1 inline-block"
-          >
-            ← {pool.name}
-          </Link>
-          <h1
-            className="text-2xl font-bold text-[var(--ink)]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            My Predictions
-          </h1>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px' }}>
+      {/* Page header */}
+      <div style={{ marginBottom: 20 }}>
+        <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 8 }}>
+          <Link href={`/pools/${poolId}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+            {pool.name}
+          </Link>{' '}
+          · Your card
         </div>
-        <ExportImportControls poolId={poolId} />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
+          }}
+        >
+          <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
+            Make your call
+          </h1>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              minWidth: 160,
+              flex: '0 1 260px',
+            }}
+          >
+            {card.completionPercent === 100 && (
+              <Chip variant="green" dot>
+                Saved
+              </Chip>
+            )}
+            {card.status === 'locked' && (
+              <span className="pill-lock">
+                <Icon name="lock" size={11} />
+                Locked
+              </span>
+            )}
+            <CompletionBar percent={card.completionPercent} />
+          </div>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <ExportImportControls poolId={poolId} />
+        </div>
       </div>
 
       <PredictStepper
@@ -100,6 +132,6 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
       />
 
       {auditEntries.length > 0 && <AuditLog entries={auditEntries} />}
-    </main>
+    </div>
   );
 }

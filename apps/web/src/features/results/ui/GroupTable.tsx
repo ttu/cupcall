@@ -6,83 +6,101 @@ type Props = { standing: GroupStandingRow[] };
 export function GroupTable({ standing }: Props): ReactElement {
   if (standing.length === 0) {
     return (
-      <p className="text-sm py-3 text-center" style={{ color: 'var(--ink-muted)' }}>
+      <p
+        style={{ fontSize: 13, padding: '12px 0', textAlign: 'center', color: 'var(--ink-muted)' }}
+      >
         No matches played yet
       </p>
     );
   }
 
   return (
-    <div
-      className="rounded-[var(--radius)] overflow-hidden"
-      style={{ boxShadow: 'var(--shadow-sm)', border: '1px solid var(--line-soft)' }}
-    >
+    <div className="card" style={{ overflow: 'hidden' }}>
       {/* Header */}
       <div
-        className="grid text-[10px] font-bold uppercase tracking-wider px-3 py-2"
         style={{
-          gridTemplateColumns: '20px 1fr 24px 28px 32px',
+          display: 'grid',
+          gridTemplateColumns: '20px 1fr 26px 26px 36px',
+          padding: '7px 12px',
           background: 'var(--surface-2)',
           borderBottom: '1px solid var(--line)',
-          color: 'var(--ink-muted)',
         }}
       >
         <span />
-        <span>Team</span>
-        <span className="text-center">P</span>
-        <span className="text-center">GD</span>
-        <span className="text-center">Pts</span>
+        <span className="eyebrow" style={{ fontSize: 10, letterSpacing: '0.12em' }}>
+          Team
+        </span>
+        <span
+          className="eyebrow"
+          style={{ fontSize: 10, textAlign: 'center', letterSpacing: '0.12em' }}
+        >
+          P
+        </span>
+        <span
+          className="eyebrow"
+          style={{ fontSize: 10, textAlign: 'center', letterSpacing: '0.12em' }}
+        >
+          GD
+        </span>
+        <span
+          className="eyebrow"
+          style={{ fontSize: 10, textAlign: 'center', letterSpacing: '0.12em' }}
+        >
+          Pts
+        </span>
       </div>
 
       <div className="divide">
         {standing.map((row) => (
           <div
             key={row.teamId}
-            className="grid items-center px-3 py-2"
             style={{
-              gridTemplateColumns: '20px 1fr 24px 28px 32px',
+              display: 'grid',
+              gridTemplateColumns: '20px 1fr 26px 26px 36px',
+              alignItems: 'center',
+              padding: '8px 12px',
               background: row.qualifies !== false ? 'var(--green-050)' : 'var(--surface)',
             }}
           >
             <span
-              className="font-black text-sm"
+              className="display"
               style={{
-                fontFamily: 'var(--font-display)',
+                fontSize: 14,
                 color: row.qualifies !== false ? 'var(--green-600)' : 'var(--ink-muted)',
               }}
             >
               {row.position}
             </span>
-            <span className="flex items-center gap-1.5">
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="badge sm">{row.teamId}</span>
               <span
-                className="inline-flex items-center justify-center rounded text-[9px] font-black"
                 style={{
-                  width: 22,
-                  height: 16,
-                  background: 'var(--surface-2)',
-                  color: 'var(--ink-soft)',
-                  boxShadow: 'inset 0 0 0 1px var(--line)',
-                  fontFamily: 'var(--font-display)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'var(--ink)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                {row.teamId}
-              </span>
-              <span className="text-sm font-bold truncate" style={{ color: 'var(--ink)' }}>
                 {row.teamName}
               </span>
             </span>
             <span
-              className="text-center text-sm tabular-nums"
-              style={{ color: 'var(--ink-muted)' }}
+              className="tnum"
+              style={{ fontSize: 13, textAlign: 'center', color: 'var(--ink-muted)' }}
             >
               {row.played}
             </span>
-            <span className="text-center text-sm tabular-nums" style={{ color: 'var(--ink-soft)' }}>
+            <span
+              className="tnum"
+              style={{ fontSize: 13, textAlign: 'center', color: 'var(--ink-soft)' }}
+            >
               {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
             </span>
             <span
-              className="text-center font-black tabular-nums"
-              style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--ink)' }}
+              className="display tnum"
+              style={{ fontSize: 16, textAlign: 'center', color: 'var(--ink)' }}
             >
               {row.points}
             </span>
@@ -92,11 +110,16 @@ export function GroupTable({ standing }: Props): ReactElement {
 
       {standing.some((r) => r.qualifies !== false) && (
         <div
-          className="flex items-center gap-2 px-3 py-2 text-[11px] font-semibold"
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '7px 12px',
             background: 'var(--surface)',
-            color: 'var(--ink-muted)',
             borderTop: '1px solid var(--line-soft)',
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'var(--ink-muted)',
           }}
         >
           <span
@@ -104,8 +127,7 @@ export function GroupTable({ standing }: Props): ReactElement {
               width: 12,
               height: 12,
               borderRadius: 3,
-              background: 'var(--green-050)',
-              boxShadow: 'inset 0 0 0 1px var(--green-300)',
+              background: 'var(--green-400)',
               flexShrink: 0,
               display: 'inline-block',
             }}

@@ -1,7 +1,8 @@
 import type { UserId, Points, Scoring } from '@cup/engine';
 import type { LeaderboardEntry } from '@cup/db';
+import type { StageProgress } from '@/features/results';
 
-export type { LeaderboardEntry };
+export type { LeaderboardEntry, StageProgress };
 
 export type PoolSummary = {
   id: string;
@@ -25,4 +26,5 @@ export type PoolDetail = {
   memberCount: number;
   lockTime: Date;
   scoring: Scoring | null;
+  stageProgress: StageProgress[];
 };

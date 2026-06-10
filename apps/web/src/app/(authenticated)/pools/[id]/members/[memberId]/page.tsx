@@ -90,19 +90,33 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
   const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name, team: p.team }));
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <main
+      style={{
+        maxWidth: 860,
+        margin: '0 auto',
+        padding: '28px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 20,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
         <div>
-          <Link
-            href={`/pools/${poolId}`}
-            className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors mb-1 inline-block"
-          >
-            ← {pool.name}
-          </Link>
-          <h1
-            className="text-2xl font-bold text-[var(--ink)]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 8 }}>
+            <Link href={`/pools/${poolId}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+              {pool.name}
+            </Link>{' '}
+            · {isSelf ? 'Your card' : `${memberName}'s card`}
+          </div>
+          <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
             {isSelf ? 'My Predictions' : `${memberName}'s Predictions`}
           </h1>
         </div>

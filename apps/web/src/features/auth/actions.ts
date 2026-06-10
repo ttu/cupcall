@@ -14,15 +14,12 @@ const displayNameSchema = z
   .min(1, 'Display name must not be empty')
   .max(64, 'Display name must be at most 64 characters');
 
-/**
- * Server action: update the signed-in user's display name.
- * Validates input, enforces auth, persists, and revalidates /settings.
- *
- * Returns void (form action contract). Throws on auth failure so Next.js
- * can redirect to the sign-in page. Validation errors are silently dropped
- * for now; TODO(design) wire up useFormState for user-visible error feedback.
- */
-export async function updateDisplayNameAction(formData: FormData): Promise<void> {
+export type DisplayNameState = { error: string | null; saved: boolean };
+
+export async function updateDisplayNameAction(
+  _prev: DisplayNameState,
+  formData: FormData,
+): Promise<DisplayNameState> {
   const actor = await getCurrentActor();
   if (!actor) {
     throw new ForbiddenError('Must be signed in to update display name');
@@ -31,22 +28,22 @@ export async function updateDisplayNameAction(formData: FormData): Promise<void>
   const raw = formData.get('displayName');
   const parsed = displayNameSchema.safeParse(raw);
   if (!parsed.success) {
-    // TODO(design): Use useFormState / useActionState to surface validation errors in UI.
     logger.warn(
       { issue: parsed.error.issues[0]?.message },
       'auth:updateDisplayName — validation failed',
     );
-    return;
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid display name', saved: false };
   }
 
   const displayName = parsed.data;
 
-  const updated = await updateDisplayName(db, actor.userId, displayName);
-  if (!updated) {
+  const row = await updateDisplayName(db, actor.userId, displayName);
+  if (!row) {
     logger.error({ userId: actor.userId }, 'auth:updateDisplayName — user not found');
-    return;
+    return { error: 'Could not update display name', saved: false };
   }
 
   logger.info({ userId: actor.userId }, 'auth:updateDisplayName — updated');
   revalidatePath('/settings');
+  return { error: null, saved: true };
 }

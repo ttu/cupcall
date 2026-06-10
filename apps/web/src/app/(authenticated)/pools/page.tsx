@@ -10,6 +10,7 @@ import {
   MyLoginLink,
   generateLoginToken,
 } from '@/features/pools';
+import { SectionLabel, Icon } from '@/shared/ui';
 
 export default async function PoolsPage(): Promise<ReactElement> {
   const actor = await getCurrentActor();
@@ -30,29 +31,39 @@ export default async function PoolsPage(): Promise<ReactElement> {
   const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h1
-          className="text-2xl font-bold text-[var(--ink)]"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          My Pools
+    <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 24px' }}>
+      {/* Page header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 28,
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
+        <h1 className="display" style={{ fontSize: 36, margin: 0 }}>
+          Your Pools
         </h1>
-        <p className="text-sm text-[var(--ink-soft)] mt-0.5">
-          Create or join pools and compete with friends.
-        </p>
+        <a href="#create-pool" className="btn btn-primary sm" style={{ textDecoration: 'none' }}>
+          + New pool
+        </a>
       </div>
 
       {/* Pool list */}
       {pools.length > 0 ? (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 36 }}>
           {pools.map((pool) => (
             <PoolListItem key={pool.id} pool={pool} isOwner={pool.ownerId === actor.userId} />
           ))}
         </div>
       ) : (
-        <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface-2)] px-6 py-8 text-center">
-          <p className="text-sm text-[var(--ink-soft)]">
+        <div
+          className="card"
+          style={{ padding: '32px 24px', textAlign: 'center', marginBottom: 36 }}
+        >
+          <p style={{ color: 'var(--ink-soft)', fontSize: 14, margin: 0 }}>
             You haven&apos;t joined any pools yet. Create one below or use an invite link to join.
           </p>
         </div>
@@ -62,16 +73,14 @@ export default async function PoolsPage(): Promise<ReactElement> {
       {myLoginToken && <MyLoginLink token={myLoginToken} baseUrl={baseUrl} />}
 
       {/* Create a new pool */}
-      <section aria-labelledby="create-pool-heading">
-        <h2
-          id="create-pool-heading"
-          className="text-xs font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-3"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Create a Pool
-        </h2>
+      <div id="create-pool" style={{ marginBottom: 14 }}>
+        <SectionLabel icon={<Icon name="plus" size={13} color="var(--ink-muted)" />}>
+          Create a pool
+        </SectionLabel>
+      </div>
+      <div className="card" style={{ padding: 24 }}>
         <CreatePoolForm />
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

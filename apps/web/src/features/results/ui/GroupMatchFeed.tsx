@@ -1,87 +1,117 @@
 import type { ReactElement } from 'react';
 import type { GroupResultView } from '../domain/types';
 import { HitChip } from './HitChip';
+import { TeamBadge } from '@/shared/ui';
 
 type Props = { group: GroupResultView };
 
 export function GroupMatchFeed({ group }: Props): ReactElement {
   if (group.completedMatches.length === 0) {
     return (
-      <p className="text-sm py-4 text-center" style={{ color: 'var(--ink-muted)' }}>
+      <p
+        style={{ fontSize: 13, padding: '16px 0', textAlign: 'center', color: 'var(--ink-muted)' }}
+      >
         No results yet for Group {group.groupId}
       </p>
     );
   }
 
   return (
-    <div
-      className="rounded-[var(--radius)] overflow-hidden"
-      style={{
-        background: 'var(--surface)',
-        boxShadow: 'var(--shadow-sm)',
-        border: '1px solid var(--line-soft)',
-      }}
-    >
+    <div className="card" style={{ overflow: 'hidden' }}>
       <div className="divide">
         {group.completedMatches.map((m) => (
           <div
             key={m.matchId}
-            className="grid items-center gap-2 px-3 py-3"
-            style={{ gridTemplateColumns: '32px 1fr auto 1fr auto' }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '30px 1fr auto 1fr 116px',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 14px',
+            }}
           >
-            {/* Group badge */}
+            {/* Group chip */}
             <span
-              className="inline-flex items-center justify-center rounded-lg text-[11px] font-bold"
+              className="chip"
               style={{
-                height: 24,
                 width: 28,
-                background: 'var(--surface-2)',
-                color: 'var(--ink-muted)',
-                boxShadow: 'inset 0 0 0 1px var(--line)',
+                height: 24,
+                padding: 0,
+                justifyContent: 'center',
+                fontSize: 10,
               }}
             >
               {m.groupId}
             </span>
 
             {/* Home team */}
-            <div className="flex items-center justify-end gap-2">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: 6,
+                minWidth: 0,
+              }}
+            >
               <span
-                className="text-sm font-bold truncate"
-                style={{ color: m.actualHome > m.actualAway ? 'var(--ink)' : 'var(--ink-muted)' }}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  color: m.actualHome > m.actualAway ? 'var(--ink)' : 'var(--ink-muted)',
+                }}
               >
                 {m.homeTeamName}
               </span>
+              <TeamBadge teamId={m.homeTeamId} size="sm" />
             </div>
 
-            {/* Score + prediction */}
-            <div className="flex flex-col items-center gap-0.5">
-              <span
-                className="font-black tabular-nums"
-                style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)' }}
-              >
-                {m.actualHome}
-                <span style={{ color: 'var(--ink-muted)', margin: '0 3px', fontSize: 14 }}>–</span>
-                {m.actualAway}
-              </span>
-              {m.predictedHome !== null && (
-                <span className="text-[10.5px] font-semibold" style={{ color: 'var(--ink-muted)' }}>
-                  you {m.predictedHome}–{m.predictedAway}
-                </span>
-              )}
-            </div>
+            {/* Score */}
+            <span
+              className="display tnum"
+              style={{ fontSize: 19, color: 'var(--ink)', textAlign: 'center' }}
+            >
+              {m.actualHome}
+              <span style={{ color: 'var(--ink-muted)', margin: '0 2px', fontSize: 14 }}>–</span>
+              {m.actualAway}
+            </span>
 
             {/* Away team */}
-            <div className="flex items-center gap-2">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                minWidth: 0,
+              }}
+            >
+              <TeamBadge teamId={m.awayTeamId} size="sm" />
               <span
-                className="text-sm font-bold truncate"
-                style={{ color: m.actualAway > m.actualHome ? 'var(--ink)' : 'var(--ink-muted)' }}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  color: m.actualAway > m.actualHome ? 'var(--ink)' : 'var(--ink-muted)',
+                }}
               >
                 {m.awayTeamName}
               </span>
             </div>
 
-            {/* Hit chip */}
-            <div className="flex justify-end">
+            {/* Prediction + hit chip */}
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}
+            >
+              {m.predictedHome !== null && (
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--ink-muted)' }}>
+                  you {m.predictedHome}–{m.predictedAway}
+                </span>
+              )}
               <HitChip hit={m.hit} points={m.pointsAwarded} />
             </div>
           </div>

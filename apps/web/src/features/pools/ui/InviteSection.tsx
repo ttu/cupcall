@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { rotateToken, clearInviteLink } from '../api/actions';
 import { buildInviteUrl } from '../domain/invite';
+import { SectionLabel, Icon } from '@/shared/ui';
 
 type Props = {
   poolId: string;
@@ -84,53 +85,74 @@ export function InviteSection({
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] overflow-hidden">
-      <div className="px-4 py-2.5 turf">
-        <span
-          className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Invite Link
-        </span>
-      </div>
+    <div className="card" style={{ padding: 18 }}>
+      <SectionLabel icon={<Icon name="link" size={13} color="var(--ink-muted)" />}>
+        Invite link
+      </SectionLabel>
 
       {token ? (
-        <div className="px-4 py-4 space-y-3">
-          <p className="text-xs text-[var(--ink-soft)]">
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0 }}>
             Share this link — anyone with it can join without an email address.
           </p>
-          <div className="flex gap-2">
-            <input
-              readOnly
-              value={inviteUrl ?? ''}
-              aria-label="Invite link"
-              className="flex-1 rounded-lg border border-[var(--line)] px-3 py-2 text-xs bg-[var(--surface-2)] text-[var(--ink)] font-mono select-all"
-              onFocus={(e) => e.target.select()}
-            />
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="px-3 py-2 rounded-lg bg-[var(--ink-900)] text-[var(--on-dark)] text-xs font-medium hover:bg-[var(--ink-800)] transition-colors shrink-0"
+
+          {/* URL pill + copy */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div
+              style={{
+                flex: 1,
+                height: 36,
+                borderRadius: 9,
+                background: 'var(--surface-2)',
+                boxShadow: 'inset 0 0 0 1px var(--line)',
+                padding: '0 12px',
+                display: 'flex',
+                alignItems: 'center',
+                overflow: 'hidden',
+              }}
             >
+              <span
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: 'var(--ink-soft)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {inviteUrl}
+              </span>
+            </div>
+            <button type="button" onClick={handleCopy} className="btn btn-soft sm">
               {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
+
+          {/* Owner actions */}
           {isOwner && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 items-center">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
               {confirmRotate ? (
                 <>
                   <button
                     type="button"
                     disabled={isPending}
                     onClick={handleRotateClick}
-                    className="text-xs px-2.5 py-1 rounded-md bg-[var(--ink-900)] text-[var(--on-dark)] hover:bg-[var(--ink-800)] transition-colors disabled:opacity-50"
+                    className="btn btn-ghost sm"
+                    style={{ fontSize: 11 }}
                   >
                     Confirm reset
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmRotate(false)}
-                    className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+                    style={{
+                      fontSize: 11,
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--ink-muted)',
+                      cursor: 'pointer',
+                    }}
                   >
                     Cancel
                   </button>
@@ -140,11 +162,19 @@ export function InviteSection({
                   type="button"
                   onClick={handleRotateClick}
                   disabled={isPending}
-                  className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors disabled:opacity-50"
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--ink-muted)',
+                    cursor: 'pointer',
+                  }}
                 >
                   {isPending ? 'Working…' : 'Reset link'}
                 </button>
               )}
+
               {!confirmRotate && (
                 <>
                   {confirmRemove ? (
@@ -153,14 +183,29 @@ export function InviteSection({
                         type="button"
                         disabled={isPending}
                         onClick={handleRemoveClick}
-                        className="text-xs px-2.5 py-1 rounded-md bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90 transition-colors disabled:opacity-50"
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: '4px 10px',
+                          borderRadius: 7,
+                          border: 'none',
+                          background: 'var(--danger)',
+                          color: 'white',
+                          cursor: 'pointer',
+                        }}
                       >
                         Confirm remove
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmRemove(false)}
-                        className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+                        style={{
+                          fontSize: 11,
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--ink-muted)',
+                          cursor: 'pointer',
+                        }}
                       >
                         Cancel
                       </button>
@@ -170,7 +215,14 @@ export function InviteSection({
                       type="button"
                       onClick={handleRemoveClick}
                       disabled={isPending}
-                      className="text-xs text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors disabled:opacity-50"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--ink-muted)',
+                        cursor: 'pointer',
+                      }}
                     >
                       Remove link
                     </button>
@@ -181,8 +233,8 @@ export function InviteSection({
           )}
         </div>
       ) : (
-        <div className="px-4 py-4 space-y-3">
-          <p className="text-xs text-[var(--ink-soft)]">
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0 }}>
             {isOwner
               ? 'Invite link is disabled. Generate one to let people join.'
               : 'Invite link is disabled. Ask the pool owner to generate one.'}
@@ -192,7 +244,7 @@ export function InviteSection({
               type="button"
               onClick={handleGenerate}
               disabled={isPending}
-              className="px-3 py-2 rounded-lg bg-[var(--green-600)] text-white text-xs font-semibold hover:bg-[var(--green-700)] transition-colors disabled:opacity-50"
+              className="btn btn-primary sm"
             >
               {isPending ? 'Generating…' : 'Generate invite link'}
             </button>
@@ -201,7 +253,7 @@ export function InviteSection({
       )}
 
       {error && (
-        <p role="alert" className="px-4 pb-3 text-xs text-[var(--danger)]">
+        <p role="alert" style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>
           {error}
         </p>
       )}

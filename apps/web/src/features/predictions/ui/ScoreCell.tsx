@@ -34,17 +34,61 @@ export function ScoreCell({
     startTransition(() => void onSave(matchId, hn, an));
   }
 
-  const base =
-    'w-10 h-10 text-center text-base font-semibold rounded-lg border transition-colors outline-none' +
-    ' focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20' +
-    (locked
-      ? ' bg-[var(--surface-2)] text-[var(--ink-muted)] cursor-not-allowed border-[var(--line)]'
-      : ' bg-white border-[var(--line)] text-[var(--ink)]');
+  const filled = home !== null && away !== null;
+
+  function inputStyle(focused?: boolean): React.CSSProperties {
+    if (locked) {
+      return {
+        width: 46,
+        height: 52,
+        borderRadius: 10,
+        background: 'var(--surface-2)',
+        border: '1.5px solid var(--line)',
+        display: 'grid',
+        placeItems: 'center',
+        fontFamily: 'var(--font-display)',
+        fontSize: 26,
+        color: 'var(--ink-muted)',
+        textAlign: 'center',
+        outline: 'none',
+        cursor: 'not-allowed',
+        MozAppearance: 'textfield',
+      } as React.CSSProperties;
+    }
+    if (filled) {
+      return {
+        width: 46,
+        height: 52,
+        borderRadius: 10,
+        background: 'var(--green-050)',
+        border: '1.5px solid var(--green-400)',
+        fontFamily: 'var(--font-display)',
+        fontSize: 26,
+        color: 'var(--green-700)',
+        textAlign: 'center',
+        outline: 'none',
+        MozAppearance: 'textfield',
+      } as React.CSSProperties;
+    }
+    return {
+      width: 46,
+      height: 52,
+      borderRadius: 10,
+      background: 'var(--surface)',
+      border: '1.5px solid var(--line)',
+      fontFamily: 'var(--font-display)',
+      fontSize: 26,
+      color: 'var(--ink)',
+      textAlign: 'center',
+      outline: 'none',
+      MozAppearance: 'textfield',
+    } as React.CSSProperties;
+  }
 
   return (
     <span
       data-testid={`score-${matchId}`}
-      className="inline-flex items-center gap-1"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
       aria-label="Score"
     >
       <input
@@ -55,10 +99,16 @@ export function ScoreCell({
         defaultValue={home ?? ''}
         disabled={locked || pending}
         onBlur={handleBlur}
-        className={base}
+        style={inputStyle()}
         aria-label="Home goals"
+        onFocus={(e) => {
+          if (!locked && !filled) {
+            e.currentTarget.style.borderColor = 'var(--green-500)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px var(--green-050)';
+          }
+        }}
       />
-      <span className="text-[var(--ink-muted)] font-bold text-sm select-none">:</span>
+      <span className="score-sep">:</span>
       <input
         ref={awayRef}
         type="number"
@@ -67,8 +117,14 @@ export function ScoreCell({
         defaultValue={away ?? ''}
         disabled={locked || pending}
         onBlur={handleBlur}
-        className={base}
+        style={inputStyle()}
         aria-label="Away goals"
+        onFocus={(e) => {
+          if (!locked && !filled) {
+            e.currentTarget.style.borderColor = 'var(--green-500)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px var(--green-050)';
+          }
+        }}
       />
     </span>
   );

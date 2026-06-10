@@ -20,6 +20,8 @@ import { updateDisplayName } from '@cup/db';
 const mockedGetActor = vi.mocked(getCurrentActor);
 const mockedUpdate = vi.mocked(updateDisplayName);
 
+const prev = { error: null, saved: false };
+
 function form(name: string | null): FormData {
   const f = new FormData();
   if (name !== null) f.set('displayName', name);
@@ -34,15 +36,23 @@ describe('updateDisplayNameAction', () => {
   it('throws ForbiddenError and does not write when not signed in', async () => {
     mockedGetActor.mockResolvedValue(null);
 
-    await expect(updateDisplayNameAction(form('Alice'))).rejects.toThrowError(ForbiddenError);
+    await expect(updateDisplayNameAction(prev, form('Alice'))).rejects.toThrowError(ForbiddenError);
     expect(mockedUpdate).not.toHaveBeenCalled();
   });
 
   it('persists a valid display name for a signed-in user', async () => {
     const uid = userId('user-1');
     mockedGetActor.mockResolvedValue({ userId: uid });
+    mockedUpdate.mockResolvedValue({
+      id: uid,
+      displayName: 'Alice',
+      email: null,
+      name: null,
+      emailVerified: null,
+      image: null,
+    });
 
-    await updateDisplayNameAction(form('Alice'));
+    await updateDisplayNameAction(prev, form('Alice'));
 
     expect(mockedUpdate).toHaveBeenCalledWith(expect.anything(), uid, 'Alice');
   });
@@ -50,7 +60,7 @@ describe('updateDisplayNameAction', () => {
   it('does not write when the name is empty/whitespace (validation drops)', async () => {
     mockedGetActor.mockResolvedValue({ userId: userId('user-1') });
 
-    await updateDisplayNameAction(form('   '));
+    await updateDisplayNameAction(prev, form('   '));
 
     expect(mockedUpdate).not.toHaveBeenCalled();
   });
@@ -58,7 +68,7 @@ describe('updateDisplayNameAction', () => {
   it('does not write when the name exceeds the max length', async () => {
     mockedGetActor.mockResolvedValue({ userId: userId('user-1') });
 
-    await updateDisplayNameAction(form('x'.repeat(65)));
+    await updateDisplayNameAction(prev, form('x'.repeat(65)));
 
     expect(mockedUpdate).not.toHaveBeenCalled();
   });

@@ -180,19 +180,30 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
   - `ui/DevPage.tsx` — client component with Cup Simulator and Login-as-User panels.
 - **`apps/web/src/app/dev/page.tsx`** — server page at `/dev`; `notFound()` in production.
 
+## What exists — Design system
+
+Full visual redesign on branch `design-system` (14 commits, not yet merged to main):
+
+- **`apps/web/src/app/globals.css`** — design-system CSS utilities: `.display`, `.eyebrow`, `.tnum`, `.logo`/`.logo-mark`/`.logo-word`, `.btn` + variants + sizes, `.chip` + variants, `.pill-lock`, `.badge` + sizes + country colours, `.card`, `.section-label`, `.score-cell`/`.score-sep`, `.bar`/`.thin`/`.dark`, `.lb-row`/`.lb-rank`/`.lb-pts`, `.avatar`.
+- **`apps/web/src/shared/ui/`** — `Logo`, `Button` (asChild), `Chip`, `Avatar` (colour-keyed initials), `SectionLabel`, `Icon` (25 SVG paths), `PageSpinner`.
+- **`apps/web/src/app/page.tsx`** — stadium-at-night landing page: turf full-viewport, radial glows, hero grid, guest + email login forms, decorative leaderboard.
+- **`apps/web/src/app/(authenticated)/`** — route group with shared layout: `AppNav` (sticky desktop), `MobileNav` (fixed bottom), `nav-actions.ts` server action for sign-out.
+- **Pools, Leaderboard, Predictions, Results, Join, Settings** — all screens updated to design system; Anton display font, oklch colours, `.card`/`.turf`/`.chip`/`.btn` throughout.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:
 
-1. Playwright E2E for critical flows (sign-in, create pool, join, predict, leaderboard).
-2. Real tournament data (`data/tournaments/`) for a live competition.
-3. Email notifications for pool events (join, kick, lock).
+1. Merge `design-system` branch to `main` (squash into one `feat(design): ...` commit).
+2. Playwright E2E for critical flows (sign-in, create pool, join, predict, leaderboard).
+3. Real tournament data (`data/tournaments/`) for a live competition.
+4. Email notifications for pool events (join, kick, lock).
 
 ## Deferred / known follow-ups
 
 - **Browser e2e** of the magic-link flow → a Playwright pass (the NextAuth HTTP flow is intentionally
   untested in vitest; only injectable seams are unit-tested).
-- **Styled UI / design system** → arrives with the feature slices; auth/settings UI is a placeholder.
+- **Design system merged** — branch `design-system` ready to squash onto `main`.
 - **`makeTestDb` perf** — applies the full migration per test; switch to per-module DB + tx rollbacks
   when the pglite suite exceeds ~120s.
 - Open product/tech questions live in functional-spec §14 and technical-spec §15.

@@ -5,7 +5,24 @@ import { useTransition } from 'react';
 import { saveKnockoutPick, saveFinishScore } from '../api/actions';
 import type { BracketView, TieView, FinishMatchView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
-import { teamFlag } from './teamFlag';
+import { TeamBadge } from '@/shared/ui';
+import { Icon } from '@/shared/ui';
+
+// Approximate height of one TieCard + the gap below it.
+// Used to compute the paddingTop offset that creates the bracket triangle.
+const TIE_H = 68; // px — two PickRows + 4px top/bottom card padding
+const TIE_GAP = 8; // px — gap between tie cards within a column
+const U = TIE_H + TIE_GAP; // "slot unit" height
+
+/** Top offset for column n so its ties center against the column to the left. */
+function columnPaddingTop(n: number): number {
+  return ((Math.pow(2, n) - 1) * U) / 2;
+}
+
+/** Gap between tie cards in column n (grows as the bracket narrows). */
+function columnItemGap(n: number): number {
+  return Math.pow(2, n) * U - TIE_H;
+}
 
 type Props = {
   bracket: BracketView;
@@ -34,7 +51,7 @@ export function BracketSection({
     });
   }
 
-  async function handleFinishSave(match: 'final' | 'bronze', home: number, away: number) {
+  function handleFinishSave(match: 'final' | 'bronze', home: number, away: number) {
     if (onFinishSave) {
       onFinishSave(match, home, away);
       return;
@@ -44,82 +61,113 @@ export function BracketSection({
     });
   }
 
+  const finalColumnIndex = bracket.rounds.length;
+
   return (
     <section
       data-testid="bracket-section"
       aria-label="Knockout bracket predictions"
-      className="space-y-6"
+      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
     >
-      {bracket.rounds.map((round) => (
-        <div
-          key={round.label}
-          data-testid={`bracket-round-${round.label}`}
-          className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]"
-        >
-          <div className="px-4 py-2.5 turf">
-            <span
-              className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              {round.label}
-            </span>
-          </div>
-          <div className="divide">
-            {round.ties.map((tie) => (
-              <TieRow key={tie.bracketMatchKey} tie={tie} locked={locked} onPick={handlePick} />
-            ))}
-          </div>
-        </div>
-      ))}
+      {/* Info banner */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+          padding: '10px 14px',
+          borderRadius: 10,
+          background: 'var(--green-050)',
+          border: '1px solid var(--green-300)',
+          fontSize: 13,
+          color: 'var(--green-700)',
+        }}
+      >
+        <span style={{ fontWeight: 800 }}>⚡</span>
+        <span>
+          Pick the winner of each tie. Your group stage predictions determine who fills each slot.
+        </span>
+      </div>
 
-      {/* Semi-final derived summary */}
-      {bracket.roundOf8.length > 0 && (
-        <div className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]">
-          <div className="px-4 py-2.5 turf">
-            <span
-              className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-              style={{ fontFamily: 'var(--font-display)' }}
+      {/* Bracket columns */}
+      <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+          {/* Round columns */}
+          {bracket.rounds.map((round, i) => (
+            <div
+              key={round.label}
+              data-testid={`bracket-round-${round.label}`}
+              style={{
+                minWidth: 190,
+                paddingTop: columnPaddingTop(i),
+              }}
             >
-              Quarter-Final Teams
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2 px-4 py-3">
-            {bracket.roundOf8.map((t) => (
-              <span
-                key={t.teamId}
-                className="text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--orange-050)] text-[var(--orange-600)] ring-1 ring-[var(--orange-400)]/40"
+              <div
+                className="eyebrow"
+                style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2 }}
               >
-                {teamFlag(t.teamId)} {t.teamName}
-              </span>
-            ))}
+                {round.label}
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: columnItemGap(i),
+                }}
+              >
+                {round.ties.map((tie) => (
+                  <TieCard
+                    key={tie.bracketMatchKey}
+                    tie={tie}
+                    locked={locked}
+                    onPick={handlePick}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Final + Bronze column */}
+          <div
+            style={{
+              minWidth: 220,
+              paddingTop: columnPaddingTop(finalColumnIndex),
+            }}
+          >
+            <div
+              className="eyebrow"
+              style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2 }}
+            >
+              Final
+            </div>
+            <FinalCard
+              match={bracket.final}
+              matchKey="final"
+              poolId={poolId}
+              locked={locked}
+              onSave={handleFinishSave}
+            />
+            <div
+              className="eyebrow"
+              style={{ color: 'var(--ink-muted)', margin: '16px 0 8px', paddingLeft: 2 }}
+            >
+              3rd Place
+            </div>
+            <FinalCard
+              match={bracket.bronze}
+              matchKey="bronze"
+              poolId={poolId}
+              locked={locked}
+              onSave={handleFinishSave}
+            />
           </div>
         </div>
-      )}
-
-      {/* Final */}
-      <FinishMatchSection
-        label="Final"
-        match={bracket.final}
-        matchKey="final"
-        poolId={poolId}
-        locked={locked}
-        onSave={handleFinishSave}
-      />
-
-      {/* Bronze */}
-      <FinishMatchSection
-        label="3rd Place"
-        match={bracket.bronze}
-        matchKey="bronze"
-        poolId={poolId}
-        locked={locked}
-        onSave={handleFinishSave}
-      />
+      </div>
     </section>
   );
 }
 
-function TieRow({
+function TieCard({
   tie,
   locked,
   onPick,
@@ -128,120 +176,225 @@ function TieRow({
   locked: boolean;
   onPick: (key: string, winner: string) => void;
 }) {
-  const { homeTeamId, homeTeamName, awayTeamId, awayTeamName, bracketMatchKey, pickedWinnerId } =
-    tie;
+  const hasPick = tie.pickedWinnerId !== null;
 
   return (
-    <div data-testid="bracket-tie-row" className="flex items-center gap-2 px-4 py-3">
-      <TeamPickButton
-        teamId={homeTeamId}
-        teamName={homeTeamName ?? '?'}
-        picked={pickedWinnerId !== null && pickedWinnerId === homeTeamId}
-        disabled={locked || !homeTeamId}
-        onClick={() => homeTeamId && onPick(bracketMatchKey, homeTeamId)}
-        side="home"
+    <div
+      data-testid="bracket-tie-row"
+      className="card"
+      style={{
+        padding: 4,
+        boxShadow: 'none',
+        border: hasPick ? '1px solid var(--green-300)' : '1px dashed var(--line)',
+      }}
+    >
+      <PickRow
+        teamId={tie.homeTeamId}
+        teamName={tie.homeTeamName ?? '?'}
+        isPick={tie.pickedWinnerId === tie.homeTeamId && hasPick}
+        disabled={locked || !tie.homeTeamId}
+        onClick={() => tie.homeTeamId && onPick(tie.bracketMatchKey, tie.homeTeamId)}
       />
-      <span className="text-[var(--ink-muted)] text-xs font-bold select-none px-1">vs</span>
-      <TeamPickButton
-        teamId={awayTeamId}
-        teamName={awayTeamName ?? '?'}
-        picked={pickedWinnerId !== null && pickedWinnerId === awayTeamId}
-        disabled={locked || !awayTeamId}
-        onClick={() => awayTeamId && onPick(bracketMatchKey, awayTeamId)}
-        side="away"
+      <PickRow
+        teamId={tie.awayTeamId}
+        teamName={tie.awayTeamName ?? '?'}
+        isPick={tie.pickedWinnerId === tie.awayTeamId && hasPick}
+        disabled={locked || !tie.awayTeamId}
+        onClick={() => tie.awayTeamId && onPick(tie.bracketMatchKey, tie.awayTeamId)}
       />
     </div>
   );
 }
 
-function TeamPickButton({
+function PickRow({
   teamId,
   teamName,
-  picked,
+  isPick,
   disabled,
   onClick,
-  side,
 }: {
   teamId: string | null;
   teamName: string;
-  picked: boolean;
+  isPick: boolean;
   disabled: boolean;
   onClick: () => void;
-  side: 'home' | 'away';
 }) {
-  const align = side === 'home' ? 'text-right' : 'text-left';
-  const flag = teamFlag(teamId);
-  const unknown = !teamId;
   return (
     <button
       type="button"
-      data-testid={side === 'home' ? 'pick-home' : 'pick-away'}
       disabled={disabled}
       onClick={onClick}
-      className={
-        'flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ' +
-        align +
-        (picked
-          ? ' bg-[var(--green-500)] text-white shadow-[var(--shadow-sm)] ring-2 ring-[var(--green-400)]/50'
-          : unknown
-            ? ' bg-[var(--surface)] text-[var(--ink-muted)] ring-1 ring-inset ring-[var(--line)] cursor-not-allowed'
-            : disabled
-              ? ' bg-[var(--surface-2)] text-[var(--ink-muted)] cursor-default'
-              : ' bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[var(--green-050)] hover:text-[var(--green-700)] cursor-pointer')
-      }
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '6px 7px',
+        borderRadius: 7,
+        border: 'none',
+        background: isPick ? 'var(--green-050)' : 'transparent',
+        cursor: disabled ? 'default' : 'pointer',
+        transition: 'background .12s',
+        textAlign: 'left',
+      }}
     >
-      {side === 'home' ? `${teamName} ${flag}` : `${flag} ${teamName}`}
+      <TeamBadge teamId={teamId} size="sm" />
+      <span
+        style={{
+          flex: 1,
+          fontSize: 12,
+          fontWeight: 700,
+          color: isPick ? 'var(--green-700)' : teamId ? 'var(--ink)' : 'var(--ink-muted)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {teamName}
+      </span>
+      {isPick && <Icon name="check" size={11} color="var(--green-700)" />}
     </button>
   );
 }
 
-function FinishMatchSection({
-  label,
+function FinalCard({
   match,
   matchKey,
   poolId,
   locked,
   onSave,
 }: {
-  label: string;
   match: FinishMatchView;
   matchKey: 'final' | 'bronze';
   poolId: string;
   locked: boolean;
-  onSave: (match: 'final' | 'bronze', home: number, away: number) => Promise<void>;
+  onSave: (match: 'final' | 'bronze', home: number, away: number) => void | Promise<void>;
 }) {
+  const isFinal = matchKey === 'final';
+
+  const champion =
+    match.predictedHome !== null && match.predictedAway !== null
+      ? match.predictedHome >= match.predictedAway
+        ? { teamId: match.homeTeamId, teamName: match.homeTeamName }
+        : { teamId: match.awayTeamId, teamName: match.awayTeamName }
+      : null;
+
   return (
     <div
       data-testid={`${matchKey}-section`}
-      className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]"
+      style={{
+        borderRadius: 'var(--radius)',
+        overflow: 'hidden',
+        background: isFinal ? 'var(--ink-900)' : 'var(--surface)',
+        border: isFinal ? 'none' : '1px solid var(--line-soft)',
+        boxShadow: 'var(--shadow-sm)',
+      }}
     >
-      <div className="px-4 py-2.5 turf">
-        <span
-          className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-          style={{ fontFamily: 'var(--font-display)' }}
+      {/* Match row: home | score | away */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
+          alignItems: 'center',
+          gap: 6,
+          padding: '10px 10px',
+        }}
+      >
+        {/* Home team */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 5,
+            minWidth: 0,
+          }}
         >
-          {label}
-        </span>
-      </div>
-      <div className="flex items-center gap-3 px-4 py-3">
-        <span
-          data-testid="home-team-name"
-          className="flex-1 text-right text-sm font-medium text-[var(--ink)] truncate"
-        >
-          {match.homeTeamName ?? '—'} {teamFlag(match.homeTeamId)}
-        </span>
+          <span
+            data-testid="home-team-name"
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              textAlign: 'right',
+            }}
+          >
+            {match.homeTeamName ?? '—'}
+          </span>
+          <TeamBadge teamId={match.homeTeamId} size="sm" />
+        </div>
+
+        {/* Score cells */}
         <ScoreCell
           matchId={matchKey}
           poolId={poolId}
           home={match.predictedHome}
           away={match.predictedAway}
           locked={locked}
-          onSave={(_, home, away) => onSave(matchKey, home, away)}
+          onSave={(_, home, away) => Promise.resolve(onSave(matchKey, home, away))}
         />
-        <span className="flex-1 text-left text-sm font-medium text-[var(--ink)] truncate">
-          {teamFlag(match.awayTeamId)} {match.awayTeamName ?? '—'}
-        </span>
+
+        {/* Away team */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            minWidth: 0,
+          }}
+        >
+          <TeamBadge teamId={match.awayTeamId} size="sm" />
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {match.awayTeamName ?? '—'}
+          </span>
+        </div>
       </div>
+
+      {/* Winner pill */}
+      {champion?.teamId && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '2px 8px 10px',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px 4px 6px',
+              borderRadius: 999,
+              background: isFinal ? 'var(--gold)' : 'oklch(0.80 0.06 55)',
+            }}
+          >
+            <TeamBadge teamId={champion.teamId} size="sm" />
+            <span
+              className="display"
+              style={{
+                fontSize: 11,
+                color: isFinal ? 'oklch(0.28 0.06 80)' : 'oklch(0.32 0.06 55)',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {champion.teamName}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

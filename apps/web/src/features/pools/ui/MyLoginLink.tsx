@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { rotateMyLoginToken } from '../api/actions';
 import { buildLoginUrl } from '../domain/invite';
+import { SectionLabel, Icon } from '@/shared/ui';
 
 type Props = { token: string; baseUrl: string };
 
@@ -41,70 +42,100 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-[var(--line)]">
-        <span
-          className="text-xs font-bold tracking-widest uppercase text-[var(--ink-muted)]"
-          style={{ fontFamily: 'var(--font-display)' }}
+    <div className="card" style={{ padding: 18, marginBottom: 24 }}>
+      <SectionLabel icon={<Icon name="link" size={13} color="var(--ink-muted)" />}>
+        Your login link
+      </SectionLabel>
+
+      <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '10px 0 12px', lineHeight: 1.5 }}>
+        Your browser remembers you automatically, but this link lets you sign in from any other
+        device. Store it somewhere safe — anyone with it can access your account.
+      </p>
+
+      {/* URL pill + copy button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div
+          style={{
+            flex: 1,
+            height: 36,
+            borderRadius: 9,
+            background: 'var(--surface-2)',
+            boxShadow: 'inset 0 0 0 1px var(--line)',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 12px',
+            overflow: 'hidden',
+          }}
         >
-          Your Login Link
-        </span>
-      </div>
-      <div className="px-4 py-3 space-y-2">
-        <p className="text-xs text-[var(--ink-soft)]">
-          Your browser remembers you automatically, but this link lets you sign in from any other
-          device. Store it somewhere safe — anyone with it can access your account.
-        </p>
-        <div className="flex items-center gap-2">
-          <input
-            readOnly
-            value={url}
-            aria-label="Login link"
-            className="flex-1 rounded-lg border border-[var(--line)] px-3 py-2 text-xs bg-[var(--surface-2)] text-[var(--ink)] font-mono select-all"
-            onFocus={(e) => e.target.select()}
-          />
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="shrink-0 text-xs px-3 py-1.5 rounded-md text-[var(--ink-muted)] border border-[var(--line)] hover:bg-[var(--surface-2)] transition-colors"
+          <span
+            style={{
+              fontSize: 11,
+              fontFamily: 'monospace',
+              color: 'var(--ink-soft)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
           >
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+            {url}
+          </span>
         </div>
+        <button type="button" onClick={handleCopy} className="btn btn-soft sm">
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+
+      {/* Reset / confirm row */}
+      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
         {confirmReset ? (
-          <div className="flex items-center gap-3">
+          <>
             <button
               type="button"
               disabled={isPending}
               onClick={handleResetClick}
-              className="text-xs px-2.5 py-1 rounded-md bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90 transition-colors disabled:opacity-50"
+              className="btn btn-ghost sm"
+              style={{
+                color: 'var(--danger)',
+                boxShadow: 'inset 0 0 0 1.5px oklch(0.78 0.12 25)',
+                opacity: isPending ? 0.5 : 1,
+              }}
             >
               Confirm reset
             </button>
             <button
               type="button"
               onClick={() => setConfirmReset(false)}
-              className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'var(--ink-muted)',
+                padding: 0,
+              }}
             >
               Cancel
             </button>
-          </div>
+          </>
         ) : (
           <button
             type="button"
             onClick={handleResetClick}
             disabled={isPending}
-            className="text-xs text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors disabled:opacity-50"
+            className="btn btn-ghost sm"
+            style={{ opacity: isPending ? 0.5 : 1 }}
           >
             {isPending ? 'Working…' : 'Reset link'}
           </button>
         )}
-        {error && (
-          <p role="alert" className="text-xs text-[var(--danger)]">
-            {error}
-          </p>
-        )}
       </div>
+
+      {error && (
+        <p role="alert" style={{ fontSize: 12, color: 'var(--danger)', marginTop: 8 }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

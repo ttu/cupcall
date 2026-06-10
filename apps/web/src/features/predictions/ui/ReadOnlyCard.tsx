@@ -2,48 +2,86 @@ import type { ReactElement } from 'react';
 import type { CardView } from '../domain/types';
 import { CompletionBar } from './CompletionBar';
 import { teamFlag } from './teamFlag';
+import { SectionLabel, Icon } from '@/shared/ui';
 
 type Props = { card: CardView };
 
 export function ReadOnlyCard({ card }: Props): ReactElement {
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <CompletionBar percent={card.completionPercent} />
 
       {/* Group stage */}
       <section aria-label="Group stage">
-        <h3
-          className="text-xs font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-3"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Group Stage
-        </h3>
-        <div className="space-y-4">
+        <SectionLabel icon={<Icon name="ball" size={13} />}>Group Stage</SectionLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
           {card.groups.map((group) => (
-            <div
-              key={group.groupId}
-              className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]"
-            >
-              <div className="px-4 py-2 turf">
-                <span
-                  className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-                  style={{ fontFamily: 'var(--font-display)' }}
-                >
+            <div key={group.groupId} className="card" style={{ overflow: 'hidden' }}>
+              <div className="turf" style={{ padding: '8px 16px' }}>
+                <span className="display" style={{ fontSize: 15, color: 'var(--on-dark)' }}>
                   Group {group.groupId}
                 </span>
               </div>
               <div className="divide">
                 {group.matches.map((match) => (
-                  <div key={match.matchId} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="flex-1 text-right text-sm text-[var(--ink)] truncate">
+                  <div
+                    key={match.matchId}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto 1fr',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '10px 16px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        textAlign: 'right',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: 'var(--ink)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {match.homeTeamName} {teamFlag(match.homeTeamId)}
                     </span>
-                    <span className="text-sm font-semibold tabular-nums text-[var(--ink)] min-w-[3.5rem] text-center">
-                      {match.predictedHome !== null
-                        ? `${match.predictedHome} : ${match.predictedAway}`
-                        : '—'}
-                    </span>
-                    <span className="flex-1 text-left text-sm text-[var(--ink)] truncate">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {match.predictedHome !== null ? (
+                        <>
+                          <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
+                            {match.predictedHome}
+                          </span>
+                          <span className="score-sep">:</span>
+                          <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
+                            {match.predictedAway}
+                          </span>
+                        </>
+                      ) : (
+                        <span
+                          className="display"
+                          style={{
+                            fontSize: 20,
+                            color: 'var(--ink-muted)',
+                            minWidth: 58,
+                            textAlign: 'center',
+                          }}
+                        >
+                          –
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: 'var(--ink)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {teamFlag(match.awayTeamId)} {match.awayTeamName}
                     </span>
                   </div>
@@ -56,39 +94,62 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
 
       {/* Bracket */}
       <section aria-label="Bracket picks">
-        <h3
-          className="text-xs font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-3"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Bracket
-        </h3>
-        <div className="space-y-4">
+        <SectionLabel icon={<Icon name="trophy" size={13} />}>Bracket</SectionLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
           {card.bracket.rounds.map((round) => (
-            <div
-              key={round.label}
-              className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]"
-            >
-              <div className="px-4 py-2 turf">
-                <span
-                  className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-                  style={{ fontFamily: 'var(--font-display)' }}
-                >
+            <div key={round.label} className="card" style={{ overflow: 'hidden' }}>
+              <div className="turf" style={{ padding: '8px 16px' }}>
+                <span className="display" style={{ fontSize: 15, color: 'var(--on-dark)' }}>
                   {round.label}
                 </span>
               </div>
               <div className="divide">
                 {round.ties.map((tie) => (
-                  <div key={tie.bracketMatchKey} className="flex items-center gap-2 px-4 py-2.5">
+                  <div
+                    key={tie.bracketMatchKey}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 16px',
+                    }}
+                  >
                     <span
-                      className={`flex-1 text-right text-sm truncate ${tie.pickedWinnerId === tie.homeTeamId ? 'font-semibold text-[var(--green-700)]' : 'text-[var(--ink)]'}`}
+                      style={{
+                        flex: 1,
+                        textAlign: 'right',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color:
+                          tie.pickedWinnerId === tie.homeTeamId ? 'var(--green-700)' : 'var(--ink)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
                     >
                       {tie.homeTeamName ?? '?'} {teamFlag(tie.homeTeamId)}
                     </span>
-                    <span className="text-xs text-[var(--ink-muted)] font-bold select-none px-1">
+                    <span
+                      style={{
+                        color: 'var(--ink-muted)',
+                        fontSize: 11,
+                        fontWeight: 800,
+                        flexShrink: 0,
+                      }}
+                    >
                       vs
                     </span>
                     <span
-                      className={`flex-1 text-left text-sm truncate ${tie.pickedWinnerId === tie.awayTeamId ? 'font-semibold text-[var(--green-700)]' : 'text-[var(--ink)]'}`}
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color:
+                          tie.pickedWinnerId === tie.awayTeamId ? 'var(--green-700)' : 'var(--ink)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
                     >
                       {teamFlag(tie.awayTeamId)} {tie.awayTeamName ?? '?'}
                     </span>
@@ -99,25 +160,60 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
           ))}
 
           {/* Final */}
-          <div className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]">
-            <div className="px-4 py-2 turf">
-              <span
-                className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
+          <div
+            className="card"
+            style={{
+              overflow: 'hidden',
+              background: 'var(--ink-900)',
+              border: 'none',
+            }}
+          >
+            <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <span className="display" style={{ fontSize: 15, color: 'var(--on-dark)' }}>
                 Final
               </span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-2.5">
-              <span className="flex-1 text-right text-sm text-[var(--ink)] truncate">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 16px',
+              }}
+            >
+              <span
+                style={{
+                  flex: 1,
+                  textAlign: 'right',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'var(--on-dark)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {card.bracket.final.homeTeamName ?? '—'} {teamFlag(card.bracket.final.homeTeamId)}
               </span>
-              <span className="text-sm font-semibold tabular-nums text-[var(--ink)] min-w-[3.5rem] text-center">
+              <span
+                className="display tnum"
+                style={{ fontSize: 22, color: 'var(--on-dark)', minWidth: 56, textAlign: 'center' }}
+              >
                 {card.bracket.final.predictedHome !== null
-                  ? `${card.bracket.final.predictedHome} : ${card.bracket.final.predictedAway}`
-                  : '—'}
+                  ? `${card.bracket.final.predictedHome}–${card.bracket.final.predictedAway}`
+                  : '–'}
               </span>
-              <span className="flex-1 text-left text-sm text-[var(--ink)] truncate">
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'var(--on-dark)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {teamFlag(card.bracket.final.awayTeamId)} {card.bracket.final.awayTeamName ?? '—'}
               </span>
             </div>
@@ -128,21 +224,40 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
       {/* Specials */}
       {card.specials.length > 0 && (
         <section aria-label="Special bets">
-          <h3
-            className="text-xs font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-3"
-            style={{ fontFamily: 'var(--font-display)' }}
+          <SectionLabel icon={<Icon name="spark" size={13} />}>Special Bets</SectionLabel>
+          <div
+            className="card"
+            style={{
+              overflow: 'hidden',
+              marginTop: 12,
+            }}
           >
-            Special Bets
-          </h3>
-          <div className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)] divide">
-            {card.specials.map((bet) => (
-              <div key={bet.key} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                <span className="text-sm text-[var(--ink-soft)]">{bet.label}</span>
-                <span className="text-sm font-medium text-[var(--ink)]">
-                  {bet.value !== null ? String(bet.value) : '—'}
-                </span>
-              </div>
-            ))}
+            <div className="divide">
+              {card.specials.map((bet) => (
+                <div
+                  key={bet.key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    padding: '10px 16px',
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: 'var(--ink-soft)', flex: 1 }}>
+                    {bet.label}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                    {bet.value !== null ? String(bet.value) : '—'}
+                  </span>
+                  {bet.points !== undefined && (
+                    <span className="display" style={{ fontSize: 13, color: 'var(--green-600)' }}>
+                      {bet.points}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}

@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import Link from 'next/link';
 import type { LeaderboardEntry } from '../domain/types';
 import type { UserId } from '@cup/engine';
+import { Avatar } from '@/shared/ui';
 
 type Props = {
   entries: LeaderboardEntry[];
@@ -9,11 +10,155 @@ type Props = {
   poolId: string;
   isOwner: boolean;
   locked: boolean;
-  /** When set, card links route through /view/[viewToken]/members/[id] instead of the pool route. */
   viewToken?: string;
 };
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+function cardHref(
+  entry: LeaderboardEntry,
+  poolId: string,
+  currentUserId: UserId | null,
+  viewToken?: string,
+): string {
+  if (viewToken) return `/view/${viewToken}/members/${entry.userId}`;
+  if (currentUserId !== null && entry.userId === currentUserId) return `/pools/${poolId}/predict`;
+  return `/pools/${poolId}/members/${entry.userId}`;
+}
+
+function Podium({
+  entries,
+  currentUserId,
+  poolId,
+  canViewCards,
+  viewToken,
+}: {
+  entries: LeaderboardEntry[];
+  currentUserId: UserId | null;
+  poolId: string;
+  canViewCards: boolean;
+  viewToken?: string;
+}): ReactElement {
+  const top3 = entries.slice(0, 3);
+  // Display order: 2nd, 1st, 3rd
+  const ordered = [top3[1], top3[0], top3[2]].filter(Boolean) as LeaderboardEntry[];
+  const podiumHeights = [96, 130, 74];
+  const podiumColors = [
+    'rgba(255,255,255,.12)',
+    'linear-gradient(180deg, var(--gold), oklch(0.7 0.12 80))',
+    'rgba(255,255,255,.08)',
+  ];
+  const rankColors = ['var(--green-400)', 'var(--on-dark)', 'var(--green-400)'];
+  const avatarSizes = [44, 56, 40];
+
+  return (
+    <div
+      className="turf"
+      style={{
+        borderRadius: 16,
+        padding: '24px 20px 0',
+        position: 'relative',
+        overflow: 'hidden',
+        marginBottom: 0,
+      }}
+    >
+      {/* Glow */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: '-20%',
+          right: '-10%',
+          width: '60%',
+          height: '120%',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, oklch(0.64 0.16 152 / 0.15) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          gap: 8,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        {ordered.map((entry, i) => {
+          const originalRank = [2, 1, 3][i]!;
+          const h = podiumHeights[i] ?? 74;
+          const isSelf = currentUserId !== null && entry.userId === currentUserId;
+          const href = cardHref(entry, poolId, currentUserId, viewToken);
+          const avatarIndex = entries.indexOf(entry);
+
+          const podiumBlock = (
+            <div
+              key={entry.userId}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: 110,
+                gap: 6,
+              }}
+            >
+              <Avatar name={entry.displayName} index={avatarIndex} size={avatarSizes[i] ?? 40} />
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'var(--on-dark-soft)',
+                  maxWidth: 90,
+                  textAlign: 'center',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {entry.displayName}
+                {isSelf && ' (you)'}
+              </div>
+              <div
+                className="display"
+                style={{ fontSize: 18, color: rankColors[i] ?? 'var(--on-dark)' }}
+              >
+                {entry.pointsTotal}
+              </div>
+              {/* Platform */}
+              <div
+                style={{
+                  width: '100%',
+                  height: h,
+                  background: podiumColors[i],
+                  borderRadius: '8px 8px 0 0',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  paddingTop: 12,
+                }}
+              >
+                <span
+                  className="display"
+                  style={{ fontSize: 34, color: rankColors[i] ?? 'var(--on-dark)' }}
+                >
+                  {originalRank}
+                </span>
+              </div>
+            </div>
+          );
+
+          return canViewCards ? (
+            <Link key={entry.userId} href={href} style={{ textDecoration: 'none' }}>
+              {podiumBlock}
+            </Link>
+          ) : (
+            podiumBlock
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function Leaderboard({
   entries,
@@ -25,84 +170,114 @@ export function Leaderboard({
 }: Props): ReactElement {
   const canViewCards = isOwner || locked;
 
-  return (
-    <div className="rounded-[var(--radius)] border border-[var(--line)] overflow-hidden bg-white shadow-[var(--shadow-sm)]">
-      <div className="px-4 py-2.5 turf">
-        <span
-          className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Leaderboard
-        </span>
+  if (entries.length === 0) {
+    return (
+      <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 14, margin: 0 }}>No members yet.</p>
       </div>
+    );
+  }
 
-      {entries.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-[var(--ink-muted)] text-center">No members yet.</p>
-      ) : (
-        <div className="divide">
-          {entries.map((entry, i) => {
-            const isSelf = currentUserId !== null && entry.userId === currentUserId;
-            const rank = i + 1;
-            const medal = MEDALS[i];
-            const cardHref = viewToken
-              ? `/view/${viewToken}/members/${entry.userId}`
-              : isSelf
-                ? `/pools/${poolId}/predict`
-                : `/pools/${poolId}/members/${entry.userId}`;
+  const ranked4plus = entries.slice(3);
 
-            return (
-              <div
-                key={entry.userId}
-                className={`flex items-center gap-3 px-4 py-3 ${isSelf ? 'bg-[var(--green-050)]' : ''}`}
-              >
-                {/* Rank */}
-                <span className="w-7 text-center text-sm font-bold text-[var(--ink-muted)] tabular-nums shrink-0">
-                  {medal ?? `${rank}.`}
-                </span>
+  return (
+    <div>
+      {/* Podium — top 3 */}
+      {entries.length >= 1 && (
+        <Podium
+          entries={entries}
+          currentUserId={currentUserId}
+          poolId={poolId}
+          canViewCards={canViewCards}
+          {...(viewToken !== undefined ? { viewToken } : {})}
+        />
+      )}
 
-                {/* Name */}
-                <span
-                  className={`flex-1 text-sm truncate ${isSelf ? 'font-semibold text-[var(--green-700)]' : 'text-[var(--ink)]'}`}
-                  title={isOwner ? entry.userId : undefined}
+      {/* Ranked list — 4th and below */}
+      {ranked4plus.length > 0 && (
+        <div
+          className="card"
+          style={{ marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
+        >
+          {/* Column headers */}
+          <div
+            className="eyebrow"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '34px 1fr 60px 60px',
+              gap: 8,
+              padding: '10px 16px 8px',
+              color: 'var(--ink-muted)',
+              borderBottom: '1px solid var(--line-soft)',
+            }}
+          >
+            <span>#</span>
+            <span>Player</span>
+            <span style={{ textAlign: 'right' }}>Pts</span>
+            <span style={{ textAlign: 'right' }}>%</span>
+          </div>
+          <div className="divide">
+            {ranked4plus.map((entry, i) => {
+              const rank = i + 4;
+              const isSelf = currentUserId !== null && entry.userId === currentUserId;
+              const href = cardHref(entry, poolId, currentUserId, viewToken);
+              const avatarIndex = entries.indexOf(entry);
+
+              const row = (
+                <div
+                  key={entry.userId}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '34px 1fr 60px 60px',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 16px',
+                    background: isSelf ? 'var(--green-050)' : undefined,
+                  }}
                 >
-                  {entry.displayName}
-                  {isSelf && (
-                    <span className="ml-1.5 text-xs font-normal text-[var(--ink-muted)]">
-                      (you)
-                    </span>
-                  )}
-                </span>
-
-                {/* Score + completion */}
-                <div className="flex flex-col items-end shrink-0 gap-0.5">
-                  <span className="text-sm font-semibold tabular-nums text-[var(--ink)]">
-                    {entry.pointsTotal} pts
+                  <span className="lb-rank" style={{ fontSize: 16 }}>
+                    {rank}
                   </span>
-                  {entry.completionPercent === null && (
-                    <span className="text-[10px] font-medium px-1.5 py-px rounded bg-red-50 text-red-600 border border-red-200 leading-tight">
-                      No prediction
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                    <Avatar name={entry.displayName} index={avatarIndex} size={28} />
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: isSelf ? 700 : 600,
+                        color: isSelf ? 'var(--green-700)' : 'var(--ink)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {entry.displayName}
                     </span>
-                  )}
-                  {entry.completionPercent !== null && entry.completionPercent < 100 && (
-                    <span className="text-[10px] font-medium px-1.5 py-px rounded bg-amber-50 text-amber-700 border border-amber-200 leading-tight">
-                      {entry.completionPercent}% filled
-                    </span>
-                  )}
-                </div>
-
-                {/* Card link */}
-                {canViewCards && (
-                  <Link
-                    href={cardHref}
-                    className="shrink-0 text-xs px-2.5 py-1 rounded-md bg-[var(--surface-2)] text-[var(--ink-soft)] hover:bg-[var(--green-050)] hover:text-[var(--green-700)] transition-colors border border-[var(--line-soft)]"
-                    aria-label={`View ${isSelf ? 'my' : entry.displayName + "'s"} card`}
+                  </div>
+                  <span
+                    className="display tnum"
+                    style={{ fontSize: 16, color: 'var(--ink)', textAlign: 'right' }}
                   >
-                    {isSelf ? 'My card' : 'View card'}
-                  </Link>
-                )}
-              </div>
-            );
-          })}
+                    {entry.pointsTotal}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--ink-muted)', textAlign: 'right' }}>
+                    {entry.completionPercent ?? '–'}%
+                  </span>
+                </div>
+              );
+
+              return canViewCards ? (
+                <Link
+                  key={entry.userId}
+                  href={href}
+                  style={{ textDecoration: 'none', display: 'block' }}
+                >
+                  {row}
+                </Link>
+              ) : (
+                row
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

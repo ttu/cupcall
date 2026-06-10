@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Icon, Chip } from '@/shared/ui';
 
 type Props = {
   memberName: string;
@@ -8,17 +9,27 @@ export function OwnerEditBanner({ memberName }: Props): ReactElement {
   return (
     <div
       role="status"
-      className="rounded-[var(--radius-sm)] border border-[var(--orange-400)]/50 bg-[var(--orange-050)] px-4 py-3 flex items-start gap-3"
+      style={{
+        background: 'var(--ink-900)',
+        color: 'var(--on-dark)',
+        padding: '11px 34px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 12,
+      }}
     >
-      <span className="text-[var(--orange-600)] text-lg leading-none" aria-hidden="true">
-        ✏️
+      <span
+        style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 700 }}
+      >
+        <Icon name="edit" size={15} color="var(--orange-400)" />
+        {`Owner mode — editing ${memberName}'s card. Logged.`}
       </span>
-      <div>
-        <p className="text-sm font-semibold text-[var(--orange-600)]">Owner edit mode</p>
-        <p className="text-xs text-[var(--ink-soft)] mt-0.5">
-          You are editing <strong>{memberName}</strong>&apos;s card. All changes are logged.
-        </p>
-      </div>
+      <Chip variant="dark">
+        <Icon name="history" size={12} />
+        View audit log
+      </Chip>
     </div>
   );
 }

@@ -1,10 +1,19 @@
 'use client';
 
-import type { ReactElement } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { saveSpecialBet } from '../api/actions';
 import type { SpecialBetView } from '../domain/types';
 import { teamFlag } from './teamFlag';
+import { Icon } from '@/shared/ui';
+
+const KIND_ICON = {
+  team: 'flag',
+  player: 'kick',
+  number: 'ball',
+  bool: 'whistle',
+} as const;
 
 type Props = {
   specials: SpecialBetView[];
@@ -24,6 +33,7 @@ export function SpecialsSection({
   onSave,
 }: Props): ReactElement {
   const [, startTransition] = useTransition();
+  const allFilled = specials.every((b) => b.value !== null);
 
   function handleSave(betKey: string, value: string | number | boolean) {
     if (onSave) {
@@ -36,28 +46,150 @@ export function SpecialsSection({
   }
 
   return (
-    <section data-testid="specials-section" aria-label="Special bets" className="space-y-3">
-      {specials.map((bet) => (
+    <section
+      data-testid="specials-section"
+      aria-label="Special bets"
+      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+    >
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: 12,
+        }}
+      >
+        {specials.map((bet) => {
+          const empty = bet.value === null;
+          const icon = KIND_ICON[bet.kind] ?? 'ball';
+          return (
+            <div
+              key={bet.key}
+              data-testid={`special-bet-${bet.key}`}
+              style={{
+                borderRadius: 'var(--radius)',
+                border:
+                  empty && !locked ? '1px dashed var(--orange-400)' : '1px solid var(--line-soft)',
+                background: empty && !locked ? 'var(--orange-050)' : 'var(--surface)',
+                boxShadow: 'var(--shadow-sm)',
+                padding: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}
+            >
+              {/* Icon + label + points row */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 9,
+                    background: 'var(--surface-2)',
+                    boxShadow: 'inset 0 0 0 1px var(--line)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flexShrink: 0,
+                    color: 'var(--ink-muted)',
+                  }}
+                >
+                  <Icon name={icon} size={16} stroke={1.8} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label
+                    htmlFor={`special-${bet.key}`}
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      color: 'var(--ink-soft)',
+                      lineHeight: 1.4,
+                      display: 'block',
+                    }}
+                  >
+                    {bet.label}
+                  </label>
+                  {bet.points !== undefined && (
+                    <span className="display" style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
+                      {bet.points} pts
+                    </span>
+                  )}
+                </div>
+              </div>
+              <SpecialBetInput
+                bet={bet}
+                locked={locked}
+                teams={teams}
+                players={players}
+                onSave={handleSave}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer CTA */}
+      {!locked && (
         <div
-          key={bet.key}
-          data-testid={`special-bet-${bet.key}`}
-          className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] px-4 py-3 flex flex-col gap-1.5"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '14px 16px',
+            borderRadius: 'var(--radius)',
+            background: allFilled ? 'var(--green-050)' : 'var(--surface-2)',
+            boxShadow: allFilled
+              ? 'inset 0 0 0 1px var(--green-300)'
+              : 'inset 0 0 0 1px var(--line)',
+          }}
         >
-          <label htmlFor={`special-${bet.key}`} className="text-sm font-semibold text-[var(--ink)]">
-            {bet.label}
-          </label>
-          <SpecialBetInput
-            bet={bet}
-            locked={locked}
-            teams={teams}
-            players={players}
-            onSave={handleSave}
-          />
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: allFilled ? 'var(--green-700)' : 'var(--ink-muted)',
+            }}
+          >
+            {allFilled
+              ? 'All special bets saved ✓'
+              : 'Fill in all special bets to complete your card'}
+          </span>
+          <Link
+            href={`/pools/${poolId}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              height: 40,
+              padding: '0 18px',
+              borderRadius: 11,
+              background: allFilled ? 'var(--green-500)' : 'var(--ink-900)',
+              color: allFilled ? 'oklch(0.18 0.02 160)' : 'var(--on-dark)',
+              fontFamily: 'var(--font-ui)',
+              fontSize: 13,
+              fontWeight: 700,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Lock in my card
+          </Link>
         </div>
-      ))}
+      )}
     </section>
   );
 }
+
+const selectStyle: CSSProperties = {
+  width: '100%',
+  borderRadius: 9,
+  border: '1px solid var(--line)',
+  padding: '8px 12px',
+  fontSize: 13,
+  background: 'var(--surface)',
+  color: 'var(--ink)',
+  outline: 'none',
+  fontFamily: 'var(--font-ui)',
+};
 
 function SpecialBetInput({
   bet,
@@ -73,7 +205,6 @@ function SpecialBetInput({
   onSave: (key: string, value: string | number | boolean) => void;
 }) {
   const id = `special-${bet.key}`;
-  const disabledClass = locked ? 'opacity-50 pointer-events-none' : '';
 
   if (bet.kind === 'team') {
     return (
@@ -82,7 +213,7 @@ function SpecialBetInput({
         disabled={locked}
         defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
         onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
-        className={`w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20 ${disabledClass}`}
+        style={{ ...selectStyle, opacity: locked ? 0.5 : 1 }}
       >
         <option value="">Select team…</option>
         {teams.map((t) => (
@@ -106,7 +237,7 @@ function SpecialBetInput({
         disabled={locked}
         defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
         onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
-        className={`w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20 ${disabledClass}`}
+        style={{ ...selectStyle, opacity: locked ? 0.5 : 1 }}
       >
         <option value="">Select player…</option>
         {players.map((p) => (
@@ -130,14 +261,25 @@ function SpecialBetInput({
           const v = parseInt(e.target.value, 10);
           if (!isNaN(v)) onSave(bet.key, v);
         }}
-        className={`w-24 rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20 ${disabledClass}`}
+        style={{
+          width: 96,
+          borderRadius: 9,
+          border: '1px solid var(--line)',
+          padding: '8px 12px',
+          fontSize: 13,
+          background: 'var(--surface)',
+          color: 'var(--ink)',
+          outline: 'none',
+          fontFamily: 'var(--font-ui)',
+          opacity: locked ? 0.5 : 1,
+        }}
       />
     );
   }
 
   if (bet.kind === 'bool') {
     return (
-      <div className={`flex gap-3 ${disabledClass}`}>
+      <div style={{ display: 'flex', gap: 8, opacity: locked ? 0.5 : 1 }}>
         {(['Yes', 'No'] as const).map((label) => {
           const boolVal = label === 'Yes';
           const active = bet.value === boolVal;
@@ -147,12 +289,19 @@ function SpecialBetInput({
               type="button"
               disabled={locked}
               onClick={() => onSave(bet.key, boolVal)}
-              className={
-                'px-4 py-1.5 rounded-lg text-sm font-medium transition-all ' +
-                (active
-                  ? 'bg-[var(--green-500)] text-white ring-2 ring-[var(--green-400)]/40'
-                  : 'bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[var(--green-050)] hover:text-[var(--green-700)]')
-              }
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                border: 'none',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: locked ? 'default' : 'pointer',
+                fontFamily: 'var(--font-ui)',
+                background: active ? 'var(--green-500)' : 'var(--surface-2)',
+                color: active ? 'oklch(0.18 0.02 160)' : 'var(--ink)',
+                boxShadow: active ? 'none' : 'inset 0 0 0 1px var(--line)',
+                transition: 'background .12s',
+              }}
             >
               {label}
             </button>
@@ -188,14 +337,9 @@ function PlayerFreeTextInput({
     initialMode === 'custom' ? String(bet.storedValue) : '',
   );
 
-  const selectClass =
-    'w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20';
-  const inputClass =
-    'flex-1 rounded-lg border border-[var(--line)] px-3 py-2 text-sm bg-white text-[var(--ink)] focus:outline-none focus:border-[var(--green-500)] focus:ring-2 focus:ring-[var(--green-500)]/20';
-
   if (locked) {
     return (
-      <span className="text-sm text-[var(--ink)]">
+      <span style={{ fontSize: 13, color: 'var(--ink)' }}>
         {bet.value !== null ? String(bet.value) : '—'}
       </span>
     );
@@ -203,7 +347,7 @@ function PlayerFreeTextInput({
 
   if (mode === 'custom') {
     return (
-      <div className="flex gap-2 items-center">
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input
           id={id}
           type="text"
@@ -215,16 +359,23 @@ function PlayerFreeTextInput({
             if (trimmed) onSave(bet.key, trimmed);
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.currentTarget.blur();
-            }
+            if (e.key === 'Enter') e.currentTarget.blur();
           }}
-          className={inputClass}
+          style={{ ...selectStyle, flex: 1, width: 'auto' }}
         />
         <button
           type="button"
           onClick={() => setMode('select')}
-          className="shrink-0 text-xs text-[var(--green-700)] hover:underline px-1"
+          style={{
+            flexShrink: 0,
+            fontSize: 12,
+            fontWeight: 700,
+            color: 'var(--green-700)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0 4px',
+          }}
         >
           ← List
         </button>
@@ -244,7 +395,7 @@ function PlayerFreeTextInput({
           onSave(bet.key, e.target.value);
         }
       }}
-      className={selectClass}
+      style={selectStyle}
     >
       <option value="">Select player…</option>
       {players.map((p) => (

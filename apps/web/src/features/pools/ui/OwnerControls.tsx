@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { LeaderboardEntry } from '../domain/types';
 import type { UserId } from '@cup/engine';
 import { kickMember, deletePool, generateMemberLoginLink } from '../api/actions';
+import { Avatar, SectionLabel, Icon } from '@/shared/ui';
 
 type Props = {
   poolId: string;
@@ -78,42 +79,63 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
   const otherMembers = members.filter((m) => m.userId !== currentUserId);
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Member management */}
-      <div className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] overflow-hidden">
-        <div className="px-4 py-2.5 turf">
-          <span
-            className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            Manage Members
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="turf" style={{ padding: '8px 16px' }}>
+          <span className="display" style={{ fontSize: 15, color: 'var(--on-dark)' }}>
+            Members
           </span>
         </div>
+
         {otherMembers.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-[var(--ink-muted)]">No other members yet.</p>
+          <p style={{ padding: '14px 16px', fontSize: 13, color: 'var(--ink-muted)' }}>
+            No other members yet.
+          </p>
         ) : (
           <div className="divide">
-            {otherMembers.map((member) => {
+            {otherMembers.map((member, i) => {
               const link = loginLinks[member.userId];
               const pending = loginLinkPending[member.userId] ?? false;
               const linkErr = loginLinkError[member.userId];
               return (
-                <div key={member.userId} className="px-4 py-2.5 space-y-1.5">
-                  <div className="flex items-center gap-3">
+                <div key={member.userId} style={{ padding: '10px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Avatar name={member.displayName} index={i} size={34} />
                     <span
-                      className="flex-1 text-sm text-[var(--ink)] truncate"
-                      title={member.userId}
+                      style={{
+                        flex: 1,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: 'var(--ink)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
                     >
                       {member.displayName}
                     </span>
-                    <span className="text-xs text-[var(--ink-muted)] tabular-nums">
-                      {member.pointsTotal} pts
+                    <span
+                      className="display"
+                      style={{ fontSize: 15, color: 'var(--ink-muted)', flexShrink: 0 }}
+                    >
+                      {member.pointsTotal}
                     </span>
                     <button
                       type="button"
                       disabled={pending}
                       onClick={() => void handleGetLink(member.userId)}
-                      className="text-xs px-2.5 py-1 rounded-md text-[var(--ink-muted)] border border-[var(--line)] hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
+                      style={{
+                        flexShrink: 0,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: '5px 11px',
+                        borderRadius: 8,
+                        border: '1.5px solid var(--line)',
+                        background: 'transparent',
+                        color: 'var(--ink-muted)',
+                        cursor: 'pointer',
+                      }}
                     >
                       {pending ? 'Getting…' : 'Get link'}
                     </button>
@@ -123,14 +145,31 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
                           type="button"
                           disabled={isPendingKick}
                           onClick={() => handleKickClick(member.userId)}
-                          className="text-xs px-2.5 py-1 rounded-md bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90 transition-colors disabled:opacity-50"
+                          style={{
+                            flexShrink: 0,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            padding: '5px 11px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: 'var(--danger)',
+                            color: 'white',
+                            cursor: 'pointer',
+                          }}
                         >
                           Confirm kick
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirmKickId(null)}
-                          className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+                          style={{
+                            flexShrink: 0,
+                            fontSize: 12,
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--ink-muted)',
+                            cursor: 'pointer',
+                          }}
                         >
                           Cancel
                         </button>
@@ -140,28 +179,52 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
                         type="button"
                         disabled={isPendingKick}
                         onClick={() => handleKickClick(member.userId)}
-                        className="text-xs px-2.5 py-1 rounded-md text-[var(--danger)] border border-[var(--danger)]/30 hover:bg-[var(--danger)]/5 transition-colors disabled:opacity-50"
+                        style={{
+                          flexShrink: 0,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          padding: '5px 11px',
+                          borderRadius: 8,
+                          border: '1.5px solid oklch(0.78 0.12 25)',
+                          background: 'transparent',
+                          color: 'var(--danger)',
+                          cursor: 'pointer',
+                        }}
                       >
-                        Kick
+                        <Icon name="kick" size={12} color="var(--danger)" />
                       </button>
                     )}
                   </div>
                   {link && (
-                    <div className="flex items-center gap-2 pl-0">
-                      <span className="flex-1 text-xs text-[var(--ink-soft)] truncate font-mono bg-[var(--surface-2)] rounded px-2 py-1">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                      <span
+                        style={{
+                          flex: 1,
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                          color: 'var(--ink-soft)',
+                          background: 'var(--surface-2)',
+                          borderRadius: 7,
+                          padding: '4px 10px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          boxShadow: 'inset 0 0 0 1px var(--line)',
+                        }}
+                      >
                         {link}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleCopy(member.userId, link)}
-                        className="shrink-0 text-xs px-2.5 py-1 rounded-md text-[var(--ink-muted)] border border-[var(--line)] hover:bg-[var(--surface-2)] transition-colors"
+                        className="btn btn-soft sm"
                       >
                         {copiedId === member.userId ? 'Copied!' : 'Copy'}
                       </button>
                     </div>
                   )}
                   {linkErr && (
-                    <p role="alert" className="text-xs text-[var(--danger)]">
+                    <p role="alert" style={{ marginTop: 4, fontSize: 11, color: 'var(--danger)' }}>
                       {linkErr}
                     </p>
                   )}
@@ -171,28 +234,43 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
           </div>
         )}
         {kickError && (
-          <p role="alert" className="px-4 pb-3 text-xs text-[var(--danger)]">
+          <p role="alert" style={{ padding: '0 16px 12px', fontSize: 12, color: 'var(--danger)' }}>
             {kickError}
           </p>
         )}
       </div>
 
       {/* Danger zone */}
-      <div className="rounded-[var(--radius)] border border-[var(--danger)]/30 bg-white overflow-hidden">
-        <div className="px-4 py-3 space-y-2">
-          <p className="text-sm font-semibold text-[var(--danger)]">Danger zone</p>
-          <p className="text-xs text-[var(--ink-soft)]">
-            Deleting the pool is permanent and removes all members and predictions.
-          </p>
+      <div
+        className="card"
+        style={{
+          padding: 18,
+          border: '1px solid oklch(0.85 0.08 25)',
+          background: 'oklch(0.98 0.015 25)',
+        }}
+      >
+        <SectionLabel icon={<Icon name="trash" size={13} color="var(--danger)" />}>
+          <span style={{ color: 'var(--danger)' }}>Danger zone</span>
+        </SectionLabel>
+        <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '10px 0 14px' }}>
+          Deleting the pool is permanent and removes all members and predictions.
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
             type="button"
             disabled={isPendingDelete}
             onClick={handleDeleteClick}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-              confirmDelete
-                ? 'bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90'
-                : 'border border-[var(--danger)]/40 text-[var(--danger)] hover:bg-[var(--danger)]/5'
-            }`}
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              padding: '8px 16px',
+              borderRadius: 9,
+              border: 'none',
+              cursor: 'pointer',
+              background: confirmDelete ? 'var(--danger)' : 'transparent',
+              color: confirmDelete ? 'white' : 'var(--danger)',
+              boxShadow: confirmDelete ? 'none' : 'inset 0 0 0 1.5px oklch(0.78 0.12 25)',
+            }}
           >
             {isPendingDelete ? 'Deleting…' : confirmDelete ? 'Confirm delete' : 'Delete pool'}
           </button>
@@ -200,17 +278,23 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              className="ml-2 text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+              style={{
+                fontSize: 12,
+                background: 'none',
+                border: 'none',
+                color: 'var(--ink-muted)',
+                cursor: 'pointer',
+              }}
             >
               Cancel
             </button>
           )}
-          {deleteError && (
-            <p role="alert" className="text-xs text-[var(--danger)]">
-              {deleteError}
-            </p>
-          )}
         </div>
+        {deleteError && (
+          <p role="alert" style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>
+            {deleteError}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -8,14 +8,7 @@ export function PickStatusChip({ status }: Props): ReactElement | null {
 
   if (status === 'alive') {
     return (
-      <span
-        className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-bold"
-        style={{
-          background: 'var(--green-050)',
-          color: 'var(--green-700)',
-          boxShadow: 'inset 0 0 0 1px var(--green-300)',
-        }}
-      >
+      <span className="chip green" style={{ height: 18, fontSize: 9.5, padding: '0 7px' }}>
         ✓ pick alive
       </span>
     );
@@ -24,8 +17,15 @@ export function PickStatusChip({ status }: Props): ReactElement | null {
   if (status === 'busted') {
     return (
       <span
-        className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-bold"
-        style={{ background: 'oklch(0.96 0.02 25)', color: 'var(--danger)' }}
+        className="chip"
+        style={{
+          height: 18,
+          fontSize: 9.5,
+          padding: '0 7px',
+          background: 'oklch(0.96 0.02 25)',
+          color: 'var(--danger)',
+          boxShadow: 'inset 0 0 0 1px oklch(0.85 0.08 25)',
+        }}
       >
         ✗ busted
       </span>
@@ -34,10 +34,7 @@ export function PickStatusChip({ status }: Props): ReactElement | null {
 
   // pending
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-bold"
-      style={{ background: 'var(--orange-050)', color: 'var(--orange-600)' }}
-    >
+    <span className="chip orange" style={{ height: 18, fontSize: 9.5, padding: '0 7px' }}>
       · upcoming
     </span>
   );

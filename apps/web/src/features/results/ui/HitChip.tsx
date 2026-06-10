@@ -9,8 +9,14 @@ export function HitChip({ hit, points }: Props): ReactElement | null {
   if (hit === 'exact') {
     return (
       <span
-        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
-        style={{ background: 'var(--green-500)', color: 'oklch(0.2 0.02 160)' }}
+        className="chip"
+        style={{
+          background: 'var(--green-500)',
+          color: 'oklch(0.2 0.02 160)',
+          boxShadow: 'none',
+          height: 24,
+          fontSize: 11,
+        }}
       >
         ✓ Exact +{points}
       </span>
@@ -19,24 +25,14 @@ export function HitChip({ hit, points }: Props): ReactElement | null {
 
   if (hit === 'outcome') {
     return (
-      <span
-        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
-        style={{
-          background: 'var(--green-050)',
-          color: 'var(--green-700)',
-          boxShadow: 'inset 0 0 0 1px var(--green-300)',
-        }}
-      >
+      <span className="chip green" style={{ height: 24, fontSize: 11 }}>
         Outcome +{points}
       </span>
     );
   }
 
   return (
-    <span
-      className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
-      style={{ color: 'var(--ink-muted)' }}
-    >
+    <span className="chip" style={{ height: 24, fontSize: 11, color: 'var(--ink-muted)' }}>
       Missed +0
     </span>
   );
