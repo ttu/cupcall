@@ -49,13 +49,13 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   const firstR32Away = r32Ties.first().locator('[data-testid="pick-away"]');
   await firstR32Away.click();
   await page.waitForLoadState('networkidle');
-  await expect(firstR32Away).toHaveClass(/ring-2/);
+  await expect(firstR32Away).toHaveAttribute('aria-pressed', 'true');
 
   // Pick the away team for the second tie as well.
   const secondR32Away = r32Ties.nth(1).locator('[data-testid="pick-away"]');
   await secondR32Away.click();
   await page.waitForLoadState('networkidle');
-  await expect(secondR32Away).toHaveClass(/ring-2/);
+  await expect(secondR32Away).toHaveAttribute('aria-pressed', 'true');
 
   // ── Fill full bracket (home-first strategy) so R16+ picks exist ───────────
   await fillAllBracketPicks(page);
@@ -67,7 +67,7 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   const r16Ties = r16Card.locator('[data-testid="bracket-tie-row"]');
   // r16m90 = index 1 in the R16 list (r16m89 is index 0)
   const r16m90HomeBtn = r16Ties.nth(1).locator('[data-testid="pick-home"]');
-  await expect(r16m90HomeBtn).toHaveClass(/ring-2/);
+  await expect(r16m90HomeBtn).toHaveAttribute('aria-pressed', 'true');
 
   // Now switch r32m73 to the away team — this changes who advances to R16
   const firstR32Home = r32Ties.first().locator('[data-testid="pick-home"]');
@@ -82,7 +82,7 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
 
   // The R16m90 pick was for the OLD r32m73 winner (home team). Now that r32m73
   // advances the away team instead, the R16m90 pick is invalid and must be cleared.
-  await expect(r16m90HomeBtn).not.toHaveClass(/ring-2/);
+  await expect(r16m90HomeBtn).not.toHaveAttribute('aria-pressed', 'true');
 
   // ── Refill bracket for Final/Bronze check ─────────────────────────────────
   await fillAllBracketPicks(page);

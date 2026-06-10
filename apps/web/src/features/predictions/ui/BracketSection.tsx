@@ -189,6 +189,7 @@ function TieCard({
       }}
     >
       <PickRow
+        testId="pick-home"
         teamId={tie.homeTeamId}
         teamName={tie.homeTeamName ?? '?'}
         isPick={tie.pickedWinnerId === tie.homeTeamId && hasPick}
@@ -196,6 +197,7 @@ function TieCard({
         onClick={() => tie.homeTeamId && onPick(tie.bracketMatchKey, tie.homeTeamId)}
       />
       <PickRow
+        testId="pick-away"
         teamId={tie.awayTeamId}
         teamName={tie.awayTeamName ?? '?'}
         isPick={tie.pickedWinnerId === tie.awayTeamId && hasPick}
@@ -207,12 +209,14 @@ function TieCard({
 }
 
 function PickRow({
+  testId,
   teamId,
   teamName,
   isPick,
   disabled,
   onClick,
 }: {
+  testId: string;
   teamId: string | null;
   teamName: string;
   isPick: boolean;
@@ -222,6 +226,8 @@ function PickRow({
   return (
     <button
       type="button"
+      data-testid={testId}
+      aria-pressed={isPick}
       disabled={disabled}
       onClick={onClick}
       style={{
