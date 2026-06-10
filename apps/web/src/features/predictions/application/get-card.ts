@@ -265,7 +265,10 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     specials.length;
   const filledFields =
     inputs.groupScores.length +
-    inputs.knockoutPicks.length +
+    inputs.knockoutPicks.filter(
+      (kp) =>
+        kp.bracketMatchKey !== bracket.finalMatch && kp.bracketMatchKey !== bracket.bronzeMatch,
+    ).length +
     (inputs.finishScores.final ? 1 : 0) +
     (inputs.finishScores.bronze ? 1 : 0) +
     Object.keys(inputs.specials).length;
