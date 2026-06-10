@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import type { Tournament, ActualResults, GroupId, TeamId } from '@cup/engine';
@@ -362,6 +362,39 @@ export async function upsertTournamentResults(
         set: { value: schema.actualAnswers.value },
       });
   }
+}
+
+/**
+ * Resets all tournament results to a clean state:
+ *  - Group matches reset to scheduled (goals cleared)
+ *  - All knockout match rows deleted
+ *  - All actual group orders deleted
+ *  - All actual answers deleted
+ *
+ * Used by the dev simulator before applying a new checkpoint so that
+ * going backwards in time produces a fully consistent state.
+ */
+export async function resetTournamentResults(db: Database, tournamentId: string): Promise<void> {
+  await db
+    .update(schema.matches)
+    .set({
+      homeGoals: null,
+      awayGoals: null,
+      winnerTeamId: null,
+      decidedBy: null,
+      status: 'scheduled',
+    })
+    .where(and(eq(schema.matches.tournamentId, tournamentId), eq(schema.matches.stage, 'group')));
+
+  await db
+    .delete(schema.matches)
+    .where(and(eq(schema.matches.tournamentId, tournamentId), ne(schema.matches.stage, 'group')));
+
+  await db
+    .delete(schema.actualGroupOrder)
+    .where(eq(schema.actualGroupOrder.tournamentId, tournamentId));
+
+  await db.delete(schema.actualAnswers).where(eq(schema.actualAnswers.tournamentId, tournamentId));
 }
 
 /**

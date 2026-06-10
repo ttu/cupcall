@@ -132,3 +132,8 @@ export async function getLoginTokenByUserId(
   if (!row) return undefined;
   return { userId: userId(row.userId), token: row.token, createdAt: row.createdAt };
 }
+
+export async function listAllUsers(db: Database): Promise<UserRow[]> {
+  const rows = await db.select().from(schema.users).orderBy(schema.users.displayName);
+  return rows.map(toUserRow);
+}

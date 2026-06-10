@@ -164,6 +164,22 @@ Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical
 - **Pool page** — added "Results & standings" link alongside existing pool actions.
 - **Design doc:** [`docs/features/results.md`](./features/results.md).
 
+## What exists — Dev tools additions
+
+- **`scripts/seed-ongoing.ts`** (`pnpm seed:ongoing`) — variant seed that creates the same 6 users
+  and pool as `seed.ts` but applies only groups A–F results (36/72 matches). Useful for testing the
+  mid-tournament experience. Token `dev-ongoing-login` logs in as Alice.
+- **`packages/db`** — `listAllUsers(db)` repository function added.
+- **`apps/web/src/features/dev-tools/`** — dev-only feature slice:
+  - `application/get-dev-state.ts` — `getDevState(db)` queries users + match counts to derive the
+    current `SimulationCheckpoint` and return `DevState`.
+  - `api/dev-actions.ts` — two server actions guarded by `NODE_ENV !== 'production'`:
+    `loginAsUserAction` (log in as any DB user by ID) and `applyCheckpointAction` (advance tournament
+    to a named checkpoint: `groups-half`, `groups-done`, `r32-done`, `r16-done`, `qf-done`,
+    `finals-done`; upserts results + knockout matches + rescores all predictions).
+  - `ui/DevPage.tsx` — client component with Cup Simulator and Login-as-User panels.
+- **`apps/web/src/app/dev/page.tsx`** — server page at `/dev`; `notFound()` in production.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

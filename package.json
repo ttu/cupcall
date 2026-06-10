@@ -17,6 +17,8 @@
     "sync": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/sync.ts",
     "seed": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed.ts",
     "seed:fresh": "bash scripts/db-reset.sh && TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed.ts",
+    "seed:ongoing": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed-ongoing.ts",
+    "seed:fresh:ongoing": "bash scripts/db-reset.sh && TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed-ongoing.ts",
     "db:migrate": "pnpm -C packages/db exec drizzle-kit migrate",
     "db:reset": "bash scripts/db-reset.sh",
     "dev": "bash scripts/dev.sh",
