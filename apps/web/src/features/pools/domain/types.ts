@@ -1,6 +1,6 @@
 import type { UserId, Points, Scoring } from '@cup/engine';
 import type { LeaderboardEntry } from '@cup/db';
-import type { StageProgress } from '@/features/results';
+import type { StageProgress } from '@/shared/stage-progress';
 
 export type { LeaderboardEntry, StageProgress };
 

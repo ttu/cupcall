@@ -68,14 +68,8 @@ export type BracketHealth = {
   bustedPicks: number;
 };
 
-export type StageKey = 'group' | 'R16' | 'QF' | 'SF' | 'Final';
-
-export type StageProgress = {
-  key: StageKey;
-  label: string;
-  state: 'completed' | 'active' | 'upcoming';
-  startDate: Date | null;
-};
+import type { StageKey, StageProgress } from '@/shared/stage-progress';
+export type { StageKey, StageProgress };
 
 export type UserRankChip = {
   rank: number;
