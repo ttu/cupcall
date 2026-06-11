@@ -1,0 +1,80 @@
+'use server';
+
+import { randomBytes } from 'crypto';
+import { getCurrentActor } from './session';
+import { db } from '@/shared/db';
+import { getUserById, getUserByEmail, upsertPendingEmailLink } from '@cup/db';
+import { createResendSender, type EmailSender } from './email-provider';
+import { env } from '@/shared/env';
+
+const LINK_TTL_MS = 24 * 60 * 60 * 1000;
+
+export type LinkEmailResult = { ok: true } | { ok: false; error: string };
+
+// Exported for testing only; production path uses the default.
+export async function requestEmailLinkAction(
+  formData: FormData,
+  sender: EmailSender = createResendSender(env.RESEND_API_KEY),
+): Promise<LinkEmailResult> {
+  const actor = await getCurrentActor();
+  if (!actor) return { ok: false, error: 'Not authenticated.' };
+
+  const user = await getUserById(db, actor.userId);
+  if (!user) return { ok: false, error: 'User not found.' };
+  if (user.email) return { ok: false, error: 'Account already has an email address.' };
+
+  const raw = formData.get('email');
+  if (typeof raw !== 'string' || !raw.trim()) return { ok: false, error: 'Email is required.' };
+  const email = raw.trim().toLowerCase();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: 'Invalid email address.' };
+  }
+
+  const existing = await getUserByEmail(db, email);
+  if (existing) return { ok: false, error: 'That email is already in use by another account.' };
+
+  const token = randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + LINK_TTL_MS);
+  await upsertPendingEmailLink(db, { userId: actor.userId, email, token, expiresAt });
+
+  const baseUrl = env.AUTH_URL.replace(/\/$/, '');
+  const url = `${baseUrl}/link-email/${token}`;
+
+  await sender.send({
+    to: email,
+    from: 'Cup Prediction <noreply@cupp.app>',
+    subject: 'Connect your email to Cup Prediction',
+    html: buildHtml(url),
+    text: buildText(url),
+    url,
+  });
+
+  return { ok: true };
+}
+
+function escapeHtml(raw: string): string {
+  return raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildHtml(url: string): string {
+  const safeUrl = escapeHtml(url);
+  return `<!DOCTYPE html>
+<html>
+  <body>
+    <p>Connect your email to <strong>Cup Prediction</strong></p>
+    <p><a href="${safeUrl}">Click here to connect your email</a></p>
+    <p>If you did not request this, you can safely ignore this email.</p>
+    <p>This link expires in 24 hours.</p>
+  </body>
+</html>`.trim();
+}
+
+function buildText(url: string): string {
+  return `Connect your email to Cup Prediction\n\n${url}\n\nIf you did not request this, you can safely ignore this email.\nThis link expires in 24 hours.`;
+}

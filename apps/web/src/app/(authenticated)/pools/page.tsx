@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentActor } from '@/features/auth';
+import { getCurrentActor, ConnectEmailForm } from '@/features/auth';
 import { db } from '@/shared/db';
 import { getUserById, getLoginTokenByUserId, upsertLoginToken } from '@cup/db';
 import {
@@ -69,7 +69,8 @@ export default async function PoolsPage(): Promise<ReactElement> {
         </div>
       )}
 
-      {/* Personal login link (guests only) */}
+      {/* Guest-only: connect email + personal login link */}
+      {!user?.email && <ConnectEmailForm />}
       {myLoginToken && <MyLoginLink token={myLoginToken} baseUrl={baseUrl} />}
 
       {/* Create a new pool */}

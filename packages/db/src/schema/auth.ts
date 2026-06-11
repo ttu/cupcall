@@ -62,6 +62,18 @@ export const verificationTokens = pgTable(
   (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })],
 );
 
+// Pending email-link requests: guest user has requested to connect an email.
+// One pending link per user; upsert to replace. Expires after 24 h.
+export const pendingEmailLinks = pgTable('pending_email_link', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .$type<UserId>(),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+});
+
 // Personal login tokens for guest users (no email/password).
 // One token per user; upsert to rotate. Stored plaintext like viewToken.
 export const userLoginTokens = pgTable('user_login_token', {
