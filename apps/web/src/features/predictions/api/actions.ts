@@ -21,6 +21,7 @@ import {
 } from '@cup/db';
 import {
   bracketMatchKey as bmk,
+  deriveCard,
   deriveGroupOrders,
   selectQualifiers,
   findInvalidatedPickKeys,
@@ -76,6 +77,32 @@ async function invalidatePicksAfterKnockoutPickChange(
   if (invalidKeys.length > 0) {
     await deleteKnockoutPicks(db, predictionId, invalidKeys);
   }
+}
+
+/**
+ * Derive the implicit winner of a finish match from the predicted scoreline.
+ *
+ * Returns the TeamId of the higher-scoring side using the resolved finalists / bronze pair,
+ * or undefined when:
+ *   - the score is tied (caller should leave any existing pick untouched), or
+ *   - the finalists / bronze pair are not yet resolved (no SF picks).
+ */
+async function deriveFinishWinner(
+  predictionId: string,
+  match: 'final' | 'bronze',
+  home: number,
+  away: number,
+  tournamentDef: Tournament,
+): Promise<TeamId | undefined> {
+  if (home === away) return undefined;
+
+  const inputs = await getPredictionInputs(db, predictionId);
+  const derived = deriveCard(inputs, tournamentDef);
+  const pair = match === 'final' ? derived.finalists : derived.bronzePair;
+  if (pair.length < 2) return undefined;
+
+  const [homeSide, awaySide] = pair as [TeamId, TeamId];
+  return home > away ? homeSide : awaySide;
 }
 
 async function invalidatePicksAfterGroupScoreChange(
@@ -250,6 +277,22 @@ export async function saveFinishScore(
     });
 
     await upsertFinishScore(db, prediction.id, match, home, away);
+
+    const implicitWinner = await deriveFinishWinner(
+      prediction.id,
+      match,
+      home,
+      away,
+      tournament.definition!,
+    );
+    if (implicitWinner !== undefined) {
+      const bracketKey =
+        match === 'final'
+          ? tournament.definition!.bracket.finalMatch
+          : tournament.definition!.bracket.bronzeMatch;
+      await upsertKnockoutPick(db, prediction.id, bracketKey, implicitWinner);
+    }
+
     await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
 
     revalidatePath(`/pools/${poolId}/predict`);
@@ -523,6 +566,22 @@ export async function ownerSaveFinishScore(
     });
 
     await upsertFinishScore(db, prediction.id, match, home, away);
+
+    const implicitWinner = await deriveFinishWinner(
+      prediction.id,
+      match,
+      home,
+      away,
+      tournament.definition!,
+    );
+    if (implicitWinner !== undefined) {
+      const bracketKey =
+        match === 'final'
+          ? tournament.definition!.bracket.finalMatch
+          : tournament.definition!.bracket.bronzeMatch;
+      await upsertKnockoutPick(db, prediction.id, bracketKey, implicitWinner);
+    }
+
     await createPredictionEdit(db, {
       predictionId: prediction.id,
       editorUserId: editorId,

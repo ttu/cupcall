@@ -67,6 +67,8 @@ export type FinishMatchView = {
   awayTeamName: string | null;
   predictedHome: number | null;
   predictedAway: number | null;
+  /** Explicit winner pick (final/bronze knockoutPick). Null when not set. */
+  pickedWinnerId: TeamId | null;
 };
 
 export type BracketView = {

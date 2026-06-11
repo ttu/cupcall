@@ -8,6 +8,9 @@ import {
   getPredictionInputs,
   getOrCreatePrediction,
   addMember,
+  upsertGroupScore as dbUpsertGroupScore,
+  upsertKnockoutPick as dbUpsertKnockoutPick,
+  deleteKnockoutPicks as dbDeleteKnockoutPicks,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
 import { bracketMatchKey } from '@cup/engine';
@@ -25,7 +28,7 @@ vi.mock('@/shared/db', () => ({
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/features/auth', () => ({ getCurrentActor: vi.fn() }));
 
-import { clearAllPredictions } from './actions';
+import { clearAllPredictions, saveFinishScore, ownerSaveFinishScore } from './actions';
 import { getCurrentActor } from '@/features/auth';
 
 const mockedGetActor = vi.mocked(getCurrentActor);
@@ -110,5 +113,194 @@ describe('clearAllPredictions', () => {
   it('returns ok:false for invalid input', async () => {
     const result = await clearAllPredictions({ poolId: 123 });
     expect(result).toMatchObject({ ok: false });
+  });
+});
+
+// Seed enough state on `predictionId` that deriveCard resolves finalists = [A1, B1]
+// and bronzePair = [C1, D1] (group scores 0-0 + home-side QF/SF picks).
+async function seedCompleteGroupsAndQfSf(db: typeof testDb, predictionId: string): Promise<void> {
+  for (const g of ['A', 'B', 'C', 'D'] as const) {
+    const matches = miniTournament.groupMatches.filter((m) => m.group === g);
+    for (const m of matches) {
+      await dbUpsertGroupScore(db, predictionId, m.id, 0, 0);
+    }
+  }
+  await dbUpsertKnockoutPick(db, predictionId, bracketMatchKey('qf1'), 'A1');
+  await dbUpsertKnockoutPick(db, predictionId, bracketMatchKey('qf2'), 'C1');
+  await dbUpsertKnockoutPick(db, predictionId, bracketMatchKey('qf3'), 'B1');
+  await dbUpsertKnockoutPick(db, predictionId, bracketMatchKey('qf4'), 'D1');
+  await dbUpsertKnockoutPick(db, predictionId, bracketMatchKey('sf1'), 'A1');
+  await dbUpsertKnockoutPick(db, predictionId, bracketMatchKey('sf2'), 'B1');
+}
+
+describe('saveFinishScore — implicit winner derivation', () => {
+  let poolId: string;
+  let actorId: UserId;
+  let predictionId: string;
+
+  beforeAll(async () => {
+    if (!testDb) {
+      testDb = await makeTestDb();
+      await upsertTournamentDef(testDb, miniTournament, firstKickoff, emptyKickoffs);
+    }
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    const owner = await createUser(testDb, {
+      email: `owner-${crypto.randomUUID()}@x.com`,
+      displayName: 'Owner',
+    });
+    const member = await createUser(testDb, {
+      email: `member-${crypto.randomUUID()}@x.com`,
+      displayName: 'Alice',
+    });
+    actorId = member.id;
+
+    const pool = await dbCreatePool(testDb, {
+      tournamentId: 'mini-2026',
+      ownerId: owner.id,
+      name: 'Test Pool',
+      inviteTokenHash: `h-${crypto.randomUUID()}`,
+    });
+    poolId = pool.id;
+    await addMember(testDb, poolId, actorId);
+
+    const pred = await getOrCreatePrediction(testDb, {
+      poolId,
+      userId: actorId,
+      tournamentId: 'mini-2026',
+    });
+    predictionId = pred.id;
+    await seedCompleteGroupsAndQfSf(testDb, predictionId);
+
+    mockedGetActor.mockResolvedValue({ userId: actorId });
+  });
+
+  it('upserts a knockoutPicks row for the higher side when final score is non-tied', async () => {
+    const result = await saveFinishScore({ poolId, match: 'final', home: 2, away: 1 });
+    expect(result).toEqual({ ok: true });
+
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    expect(inputs.finishScores.final).toEqual({ home: 2, away: 1 });
+    const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
+    expect(pick?.winner).toBe('A1'); // finalists = [A1, B1]; higher side = home = A1
+  });
+
+  it('upserts a knockoutPicks row for the away side when home loses', async () => {
+    const result = await saveFinishScore({ poolId, match: 'final', home: 0, away: 3 });
+    expect(result).toEqual({ ok: true });
+
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
+    expect(pick?.winner).toBe('B1');
+  });
+
+  it('also derives the implicit winner for the bronze match', async () => {
+    await saveFinishScore({ poolId, match: 'bronze', home: 3, away: 1 });
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'bronze');
+    expect(pick?.winner).toBe('C1'); // bronze pair = [C1, D1] (SF losers)
+  });
+
+  it('does NOT overwrite an existing pick when the score is tied', async () => {
+    await dbUpsertKnockoutPick(testDb, predictionId, bracketMatchKey('final'), 'B1');
+
+    await saveFinishScore({ poolId, match: 'final', home: 1, away: 1 });
+
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    expect(inputs.finishScores.final).toEqual({ home: 1, away: 1 });
+    const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
+    expect(pick?.winner).toBe('B1');
+  });
+
+  it('does not create a pick when finalists are not yet resolved', async () => {
+    await dbDeleteKnockoutPicks(testDb, predictionId, [bracketMatchKey('sf1')]);
+
+    await saveFinishScore({ poolId, match: 'final', home: 2, away: 1 });
+
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    expect(inputs.finishScores.final).toEqual({ home: 2, away: 1 });
+    expect(inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final')).toBeUndefined();
+  });
+});
+
+describe('ownerSaveFinishScore — implicit winner derivation', () => {
+  let poolId: string;
+  let ownerId: UserId;
+  let memberId: UserId;
+  let predictionId: string;
+
+  beforeAll(async () => {
+    if (!testDb) {
+      testDb = await makeTestDb();
+      await upsertTournamentDef(testDb, miniTournament, firstKickoff, emptyKickoffs);
+    }
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    const owner = await createUser(testDb, {
+      email: `o-${crypto.randomUUID()}@x.com`,
+      displayName: 'Owner',
+    });
+    const member = await createUser(testDb, {
+      email: `m-${crypto.randomUUID()}@x.com`,
+      displayName: 'Alice',
+    });
+    ownerId = owner.id;
+    memberId = member.id;
+
+    const pool = await dbCreatePool(testDb, {
+      tournamentId: 'mini-2026',
+      ownerId,
+      name: 'Owner Pool',
+      inviteTokenHash: `h-${crypto.randomUUID()}`,
+    });
+    poolId = pool.id;
+    await addMember(testDb, poolId, memberId);
+
+    const pred = await getOrCreatePrediction(testDb, {
+      poolId,
+      userId: memberId,
+      tournamentId: 'mini-2026',
+    });
+    predictionId = pred.id;
+    await seedCompleteGroupsAndQfSf(testDb, predictionId);
+
+    mockedGetActor.mockResolvedValue({ userId: ownerId });
+  });
+
+  it('upserts implicit winner pick when owner saves a non-tied final score', async () => {
+    const result = await ownerSaveFinishScore({
+      poolId,
+      targetUserId: memberId,
+      match: 'final',
+      home: 3,
+      away: 1,
+    });
+    expect(result).toEqual({ ok: true });
+
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
+    expect(pick?.winner).toBe('A1');
+  });
+
+  it('does not overwrite an existing pick on a tied owner-save', async () => {
+    await dbUpsertKnockoutPick(testDb, predictionId, bracketMatchKey('final'), 'B1');
+
+    await ownerSaveFinishScore({
+      poolId,
+      targetUserId: memberId,
+      match: 'final',
+      home: 2,
+      away: 2,
+    });
+
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
+    expect(pick?.winner).toBe('B1');
   });
 });

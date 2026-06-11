@@ -208,6 +208,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     awayTeamName: finalist2 ? (teamMap.get(finalist2) ?? finalist2) : null,
     predictedHome: finalFinish?.home ?? null,
     predictedAway: finalFinish?.away ?? null,
+    pickedWinnerId: (knockoutPickMap.get(bracket.finalMatch) as TeamId | undefined) ?? null,
   };
 
   const bronzeView: FinishMatchView = {
@@ -217,6 +218,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     awayTeamName: bronze2 ? (teamMap.get(bronze2) ?? bronze2) : null,
     predictedHome: bronzeFinish?.home ?? null,
     predictedAway: bronzeFinish?.away ?? null,
+    pickedWinnerId: (knockoutPickMap.get(bracket.bronzeMatch) as TeamId | undefined) ?? null,
   };
 
   const bracketView: BracketView = {
@@ -255,6 +257,15 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   });
 
   // 8. Completion
+  const finalFilled = isFinishFilled(
+    inputs.finishScores.final,
+    knockoutPickMap.get(bracket.finalMatch),
+  );
+  const bronzeFilled = isFinishFilled(
+    inputs.finishScores.bronze,
+    knockoutPickMap.get(bracket.bronzeMatch),
+  );
+
   const totalFields =
     groups.reduce((acc, g) => acc + g.matches.length, 0) +
     bracket.slots.length +
@@ -269,8 +280,8 @@ export async function getCardView(params: Params): Promise<CardView | null> {
       (kp) =>
         kp.bracketMatchKey !== bracket.finalMatch && kp.bracketMatchKey !== bracket.bronzeMatch,
     ).length +
-    (inputs.finishScores.final ? 1 : 0) +
-    (inputs.finishScores.bronze ? 1 : 0) +
+    (finalFilled ? 1 : 0) +
+    (bronzeFilled ? 1 : 0) +
     Object.keys(inputs.specials).length;
   const completionPercent = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
@@ -341,4 +352,13 @@ function getProgTeam(
   picks: Map<import('@cup/engine').BracketMatchKey, TeamId>,
 ): TeamId | undefined {
   return picks.get(fromKey);
+}
+
+function isFinishFilled(
+  finishScore: { home: number; away: number } | undefined,
+  pickedWinner: TeamId | undefined,
+): boolean {
+  if (!finishScore) return false;
+  if (finishScore.home === finishScore.away) return pickedWinner !== undefined;
+  return true;
 }

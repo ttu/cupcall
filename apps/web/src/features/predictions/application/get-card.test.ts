@@ -9,6 +9,8 @@ import {
   createUser,
   createPool,
   upsertGroupScore,
+  upsertKnockoutPick,
+  upsertFinishScore,
   getOrCreatePrediction,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
@@ -187,5 +189,151 @@ describe('getCardView — bracket slot resolution', () => {
     const qf1 = qfRound.ties.find((t) => t.bracketMatchKey === bracketMatchKey('qf1'))!;
     expect(qf1.homeTeamId).toBe(teamId('A1'));
     expect(qf1.awayTeamId).toBe(teamId('B2'));
+  });
+});
+
+// Helper: seed a complete card up to the SFs so the finalists & bronze pair resolve to
+//   finalists = [A1, B1], bronzePair = [C1, D1].
+// All group scores are 0-0 (declaration-order standings); QF/SF picks send the home side through.
+async function seedThroughSf(db: TestDb, predictionId: string): Promise<void> {
+  for (const g of ['A', 'B', 'C', 'D']) {
+    for (const mid of groupMatchIds(g)) {
+      await upsertGroupScore(db, predictionId, mid, 0, 0);
+    }
+  }
+  await upsertKnockoutPick(db, predictionId, bracketMatchKey('qf1'), teamId('A1'));
+  await upsertKnockoutPick(db, predictionId, bracketMatchKey('qf2'), teamId('C1'));
+  await upsertKnockoutPick(db, predictionId, bracketMatchKey('qf3'), teamId('B1'));
+  await upsertKnockoutPick(db, predictionId, bracketMatchKey('qf4'), teamId('D1'));
+  await upsertKnockoutPick(db, predictionId, bracketMatchKey('sf1'), teamId('A1'));
+  await upsertKnockoutPick(db, predictionId, bracketMatchKey('sf2'), teamId('B1'));
+}
+
+describe('getCardView — final/bronze pickedWinnerId', () => {
+  let db: TestDb;
+  let poolId: string;
+  let userId: UserId;
+
+  beforeEach(async () => {
+    db = await makeTestDb();
+    ({ poolId, userId } = await setupDb(db));
+  });
+
+  it('exposes pickedWinnerId for final and bronze from knockoutPicks', async () => {
+    const prediction = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await seedThroughSf(db, prediction.id);
+    await upsertKnockoutPick(db, prediction.id, bracketMatchKey('final'), teamId('A1'));
+    await upsertKnockoutPick(db, prediction.id, bracketMatchKey('bronze'), teamId('C1'));
+    await upsertFinishScore(db, prediction.id, 'final', 1, 1);
+    await upsertFinishScore(db, prediction.id, 'bronze', 0, 0);
+
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff,
+      now,
+      createIfMissing: false,
+    });
+
+    expect(card!.bracket.final.pickedWinnerId).toBe(teamId('A1'));
+    expect(card!.bracket.bronze.pickedWinnerId).toBe(teamId('C1'));
+  });
+
+  it('returns null pickedWinnerId when no knockoutPick is set for final/bronze', async () => {
+    const prediction = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await seedThroughSf(db, prediction.id);
+    await upsertFinishScore(db, prediction.id, 'final', 1, 1);
+
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff,
+      now,
+      createIfMissing: false,
+    });
+
+    expect(card!.bracket.final.pickedWinnerId).toBeNull();
+    expect(card!.bracket.bronze.pickedWinnerId).toBeNull();
+  });
+});
+
+describe('getCardView — completion math for tied final/bronze', () => {
+  let db: TestDb;
+  let poolId: string;
+
+  beforeEach(async () => {
+    db = await makeTestDb();
+    ({ poolId } = await setupDb(db));
+  });
+
+  async function getPercent(seed: (predictionId: string) => Promise<void>): Promise<number> {
+    // Fresh user (and therefore fresh prediction) per call so we never leak state.
+    const freshUser = await createUser(db, {
+      email: `user-${crypto.randomUUID()}@test.com`,
+      displayName: 'Fresh',
+    });
+    const userId = freshUser.id as UserId;
+    const prediction = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await seedThroughSf(db, prediction.id);
+    await seed(prediction.id);
+
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff,
+      now,
+      createIfMissing: false,
+    });
+    return card!.completionPercent;
+  }
+
+  it('does not count a tied final without a winner pick toward completion', async () => {
+    const percentWithTiedNoPick = await getPercent(async (pid) => {
+      await upsertFinishScore(db, pid, 'final', 1, 1);
+    });
+    const percentWithoutFinal = await getPercent(async () => {
+      // no final score at all
+    });
+    expect(percentWithTiedNoPick).toBe(percentWithoutFinal);
+  });
+
+  it('counts a tied final with an explicit winner pick the same as a non-tied final', async () => {
+    const tiedWithPick = await getPercent(async (pid) => {
+      await upsertFinishScore(db, pid, 'final', 1, 1);
+      await upsertKnockoutPick(db, pid, bracketMatchKey('final'), teamId('A1'));
+    });
+    const nonTied = await getPercent(async (pid) => {
+      await upsertFinishScore(db, pid, 'final', 2, 1);
+    });
+    expect(tiedWithPick).toBe(nonTied);
+  });
+
+  it('counts a non-tied final as a filled field even without an explicit winner pick', async () => {
+    const withFinal = await getPercent(async (pid) => {
+      await upsertFinishScore(db, pid, 'final', 2, 1);
+    });
+    const withoutFinal = await getPercent(async () => {});
+    expect(withFinal).toBeGreaterThan(withoutFinal);
   });
 });

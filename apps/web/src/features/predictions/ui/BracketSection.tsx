@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactElement } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import { useTransition } from 'react';
 import { saveKnockoutPick, saveFinishScore } from '../api/actions';
 import type { BracketView, TieView, FinishMatchView } from '../domain/types';
@@ -146,6 +146,7 @@ export function BracketSection({
               poolId={poolId}
               locked={locked}
               onSave={handleFinishSave}
+              onPickWinner={handlePick}
             />
             <div
               className="eyebrow"
@@ -159,6 +160,7 @@ export function BracketSection({
               poolId={poolId}
               locked={locked}
               onSave={handleFinishSave}
+              onPickWinner={handlePick}
             />
           </div>
         </div>
@@ -263,27 +265,56 @@ function PickRow({
   );
 }
 
+function tieButtonStyle(isPick: boolean, isFinal: boolean): CSSProperties {
+  return {
+    flex: 1,
+    padding: '6px 8px',
+    borderRadius: 7,
+    border: isPick
+      ? '1px solid var(--green-300)'
+      : `1px solid ${isFinal ? 'rgba(255,255,255,.12)' : 'var(--line)'}`,
+    background: isPick ? 'var(--green-050)' : isFinal ? 'rgba(255,255,255,.04)' : 'transparent',
+    color: isPick ? 'var(--green-700)' : isFinal ? 'var(--on-dark)' : 'var(--ink)',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+  };
+}
+
 function FinalCard({
   match,
   matchKey,
   poolId,
   locked,
   onSave,
+  onPickWinner,
 }: {
   match: FinishMatchView;
   matchKey: 'final' | 'bronze';
   poolId: string;
   locked: boolean;
   onSave: (match: 'final' | 'bronze', home: number, away: number) => void | Promise<void>;
+  onPickWinner: (matchKey: 'final' | 'bronze', winner: string) => void;
 }) {
   const isFinal = matchKey === 'final';
 
-  const champion =
-    match.predictedHome !== null && match.predictedAway !== null
-      ? match.predictedHome >= match.predictedAway
-        ? { teamId: match.homeTeamId, teamName: match.homeTeamName }
-        : { teamId: match.awayTeamId, teamName: match.awayTeamName }
-      : null;
+  const champion = (() => {
+    if (match.pickedWinnerId === null) return null;
+    if (match.pickedWinnerId === match.homeTeamId) {
+      return { teamId: match.homeTeamId, teamName: match.homeTeamName };
+    }
+    if (match.pickedWinnerId === match.awayTeamId) {
+      return { teamId: match.awayTeamId, teamName: match.awayTeamName };
+    }
+    return null;
+  })();
+
+  const scoreIsTied =
+    match.predictedHome !== null &&
+    match.predictedAway !== null &&
+    match.predictedHome === match.predictedAway;
+  const bothTeamsResolved = match.homeTeamId !== null && match.awayTeamId !== null;
+  const needsTiebreak = scoreIsTied && bothTeamsResolved;
 
   return (
     <div
@@ -367,6 +398,54 @@ function FinalCard({
           </span>
         </div>
       </div>
+
+      {/* Tiebreak winner picker (tied score, both teams known, unlocked) */}
+      {needsTiebreak && !locked && (
+        <div
+          data-testid={`${matchKey}-winner-picker`}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            padding: '6px 10px 10px',
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
+              textAlign: 'center',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Pick the shootout winner
+          </span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              type="button"
+              data-testid={`${matchKey}-pick-home`}
+              aria-pressed={match.pickedWinnerId === match.homeTeamId}
+              onClick={() => match.homeTeamId && onPickWinner(matchKey, match.homeTeamId)}
+              disabled={!match.homeTeamId}
+              style={tieButtonStyle(match.pickedWinnerId === match.homeTeamId, isFinal)}
+            >
+              {match.homeTeamName ?? '—'}
+            </button>
+            <button
+              type="button"
+              data-testid={`${matchKey}-pick-away`}
+              aria-pressed={match.pickedWinnerId === match.awayTeamId}
+              onClick={() => match.awayTeamId && onPickWinner(matchKey, match.awayTeamId)}
+              disabled={!match.awayTeamId}
+              style={tieButtonStyle(match.pickedWinnerId === match.awayTeamId, isFinal)}
+            >
+              {match.awayTeamName ?? '—'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Winner pill */}
       {champion?.teamId && (
