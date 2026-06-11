@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { GroupStandingRow } from '../domain/types';
+import { TeamBadge } from '@/shared/ui';
 
 type Props = { standing: GroupStandingRow[] };
 
@@ -85,7 +86,7 @@ export function GroupTable({ standing }: Props): ReactElement {
                 {row.position}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="badge sm">{row.teamId}</span>
+                <TeamBadge teamId={row.teamId} size="sm" />
                 <span
                   style={{
                     fontSize: 13,
