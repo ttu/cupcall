@@ -1028,7 +1028,7 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
   );
 
   console.log('\n=== Dev Ongoing Seed Complete ===');
-  console.log(`Creator login:  http://localhost:3000/login/${DEV_ONGOING_TOKEN}`);
+  console.log(`Creator login:  http://localhost:3010/login/${DEV_ONGOING_TOKEN}`);
   console.log(`Pool ID:        ${pool.id}`);
   console.log('State:          Groups A–F done (36/72 group matches), groups G–L not started');
   console.log('Users:');

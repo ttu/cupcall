@@ -1095,7 +1095,7 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
   );
 
   console.log('\n=== Dev Seed Complete ===');
-  console.log(`Creator login:  http://localhost:3000/login/${DEV_CREATOR_TOKEN}`);
+  console.log(`Creator login:  http://localhost:3010/login/${DEV_CREATOR_TOKEN}`);
   console.log(`Pool ID:        ${pool.id}`);
   console.log('Users:');
   for (const [key, uid] of Object.entries(userIds)) {

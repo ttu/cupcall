@@ -27,9 +27,20 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 DB_HOST="${PGHOST:-localhost}"
-DB_PORT="${PGPORT:-5432}"
+DB_PORT="${PGPORT:-5440}"
 
-if command -v docker &>/dev/null; then
+db_reachable() {
+  node -e "
+    const net = require('net');
+    const s = net.createConnection($DB_PORT, '$DB_HOST');
+    s.on('connect', () => { s.destroy(); process.exit(0); });
+    s.on('error', () => { s.destroy(); process.exit(1); });
+  " 2>/dev/null
+}
+
+if db_reachable; then
+  echo "==> Database already running at ${DB_HOST}:${DB_PORT} — leaving it as is."
+elif command -v docker &>/dev/null; then
   echo "==> Starting database..."
   docker compose -f "$ROOT/.devcontainer/docker-compose.yml" up -d db
 else
@@ -37,12 +48,7 @@ else
 fi
 
 echo "==> Waiting for database at ${DB_HOST}:${DB_PORT}..."
-until node -e "
-  const net = require('net');
-  const s = net.createConnection($DB_PORT, '$DB_HOST');
-  s.on('connect', () => { s.destroy(); process.exit(0); });
-  s.on('error', () => { s.destroy(); process.exit(1); });
-" 2>/dev/null; do
+until db_reachable; do
   sleep 1
 done
 echo "==> Database is ready."

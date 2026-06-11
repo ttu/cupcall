@@ -8,15 +8,14 @@
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
   "mounts": ["source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"],
-  "forwardPorts": [3000, 5432],
+  // Postgres is NOT forwarded here: it's a separate compose service exposed to
+  // the host via docker-compose `ports: 5440:5432`. Forwarding it would bind a
+  // dead 127.0.0.1:5440 listener that shadows the real published port.
+  "forwardPorts": [3010],
   "portsAttributes": {
-    "3000": {
+    "3010": {
       "label": "Next.js dev server",
       "onAutoForward": "notify"
-    },
-    "5432": {
-      "label": "PostgreSQL",
-      "onAutoForward": "silent"
     }
   },
   "postCreateCommand": "sudo chown -R node:node /home/node/.claude && ([ -f /home/node/.claude.json ] || echo '{\"hasCompletedOnboarding\":true,\"theme\":\"dark\"}' > /home/node/.claude.json) && sudo corepack enable && sudo corepack prepare pnpm@10.30.3 --activate && pnpm install && npx playwright install --with-deps chromium && npx --yes --package @playwright/mcp@latest -- playwright install chromium",
