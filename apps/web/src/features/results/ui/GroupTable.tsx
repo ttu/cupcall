@@ -51,69 +51,85 @@ export function GroupTable({ standing }: Props): ReactElement {
       </div>
 
       <div className="divide">
-        {standing.map((row) => (
-          <div
-            key={row.teamId}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '20px 1fr 26px 26px 36px',
-              alignItems: 'center',
-              padding: '8px 12px',
-              background: row.qualifies !== false ? 'var(--green-050)' : 'var(--surface)',
-            }}
-          >
-            <span
-              className="display"
+        {standing.map((row) => {
+          const bg =
+            row.qualifies === 'auto'
+              ? 'var(--green-050)'
+              : row.qualifies === 'best-third'
+                ? 'var(--orange-050)'
+                : 'var(--surface)';
+          const positionColor =
+            row.qualifies === 'auto'
+              ? 'var(--green-600)'
+              : row.qualifies === 'best-third'
+                ? 'var(--orange-600)'
+                : 'var(--ink-muted)';
+          return (
+            <div
+              key={row.teamId}
               style={{
-                fontSize: 14,
-                color: row.qualifies !== false ? 'var(--green-600)' : 'var(--ink-muted)',
+                display: 'grid',
+                gridTemplateColumns: '20px 1fr 26px 26px 36px',
+                alignItems: 'center',
+                padding: '8px 12px',
+                background: bg,
               }}
             >
-              {row.position}
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className="badge sm">{row.teamId}</span>
               <span
+                className="display"
                 style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: 'var(--ink)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  fontSize: 14,
+                  color: positionColor,
                 }}
               >
-                {row.teamName}
+                {row.position}
               </span>
-            </span>
-            <span
-              className="tnum"
-              style={{ fontSize: 13, textAlign: 'center', color: 'var(--ink-muted)' }}
-            >
-              {row.played}
-            </span>
-            <span
-              className="tnum"
-              style={{ fontSize: 13, textAlign: 'center', color: 'var(--ink-soft)' }}
-            >
-              {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
-            </span>
-            <span
-              className="display tnum"
-              style={{ fontSize: 16, textAlign: 'center', color: 'var(--ink)' }}
-            >
-              {row.points}
-            </span>
-          </div>
-        ))}
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="badge sm">{row.teamId}</span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--ink)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {row.teamName}
+                </span>
+              </span>
+              <span
+                className="tnum"
+                style={{ fontSize: 13, textAlign: 'center', color: 'var(--ink-muted)' }}
+              >
+                {row.played}
+              </span>
+              <span
+                className="tnum"
+                style={{ fontSize: 13, textAlign: 'center', color: 'var(--ink-soft)' }}
+              >
+                {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+              </span>
+              <span
+                className="display tnum"
+                style={{ fontSize: 16, textAlign: 'center', color: 'var(--ink)' }}
+              >
+                {row.points}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
-      {standing.some((r) => r.qualifies !== false) && (
+      {(standing.some((r) => r.qualifies === 'auto') ||
+        standing.some((r) => r.qualifies === 'best-third')) && (
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 14,
+            flexWrap: 'wrap',
             padding: '7px 12px',
             background: 'var(--surface)',
             borderTop: '1px solid var(--line-soft)',
@@ -122,17 +138,36 @@ export function GroupTable({ standing }: Props): ReactElement {
             color: 'var(--ink-muted)',
           }}
         >
-          <span
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: 3,
-              background: 'var(--green-400)',
-              flexShrink: 0,
-              display: 'inline-block',
-            }}
-          />
-          Through to the knockout round
+          {standing.some((r) => r.qualifies === 'auto') && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 3,
+                  background: 'var(--green-400)',
+                  flexShrink: 0,
+                  display: 'inline-block',
+                }}
+              />
+              Through to the knockout round
+            </span>
+          )}
+          {standing.some((r) => r.qualifies === 'best-third') && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 3,
+                  background: 'var(--orange-400)',
+                  flexShrink: 0,
+                  display: 'inline-block',
+                }}
+              />
+              Best third advances
+            </span>
+          )}
         </div>
       )}
     </div>

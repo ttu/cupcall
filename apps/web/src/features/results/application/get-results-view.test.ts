@@ -19,7 +19,7 @@ import {
 import * as schema from '@cup/db/schema';
 import { miniTournament } from '@cup/engine/testing';
 import { groupId, bracketMatchKey, points } from '@cup/engine';
-import type { UserId, ScoreBreakdown } from '@cup/engine';
+import type { UserId, ScoreBreakdown, Tournament } from '@cup/engine';
 import { getResultsView } from './get-results-view';
 
 const firstKickoff = new Date('2030-06-11T18:00:00Z');
@@ -205,6 +205,67 @@ describe('getResultsView', () => {
         expect(row.qualifies).toBe(false);
       }
     }
+  });
+
+  it('marks best-third qualifier when all groups complete and bestThirdPlaced > 0', async () => {
+    const t: Tournament = {
+      ...miniTournament,
+      qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 1 },
+    };
+    await upsertTournamentDef(db, t, firstKickoff, emptyKickoffs);
+
+    // Group A: A3 finishes 3rd with 3pts, GD=+1, GF=3 (beats A4 3-0)
+    const aScores: [string, number, number][] = [
+      ['mA1', 1, 0], // A1 beats A2
+      ['mA2', 1, 0], // A1 beats A3
+      ['mA3', 1, 0], // A1 beats A4
+      ['mA4', 1, 0], // A2 beats A3
+      ['mA5', 1, 0], // A2 beats A4
+      ['mA6', 3, 0], // A3 beats A4
+    ];
+    // Groups B, C, D: all 0-0 draws → every 3rd-placed team has 3pts but GD=0, worse than A3
+    const drawScores: [string, number, number][] = (['B', 'C', 'D'] as const).flatMap((g) =>
+      [1, 2, 3, 4, 5, 6].map((n) => [`m${g}${n}`, 0, 0] as [string, number, number]),
+    );
+
+    for (const [mid, h, a] of [...aScores, ...drawScores]) {
+      await finalizeMatch(db, miniTournament.id, mid, h, a);
+    }
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    const groupB = view!.groupResults.find((g) => g.groupId === 'B')!;
+    const a3 = groupA.standing.find((r) => r.teamId === 'A3')!;
+    const b3 = groupB.standing.find((r) => r.teamId === 'B3')!;
+    expect(a3.position).toBe(3);
+    expect(a3.qualifies).toBe('best-third');
+    expect(b3.qualifies).toBe(false);
+  });
+
+  it('does not mark best-third while any group is incomplete', async () => {
+    const t: Tournament = {
+      ...miniTournament,
+      qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 1 },
+    };
+    await upsertTournamentDef(db, t, firstKickoff, emptyKickoffs);
+
+    // Finalize only group A — B, C, D remain incomplete
+    const aScores: [string, number, number][] = [
+      ['mA1', 1, 0],
+      ['mA2', 1, 0],
+      ['mA3', 1, 0],
+      ['mA4', 1, 0],
+      ['mA5', 1, 0],
+      ['mA6', 3, 0],
+    ];
+    for (const [mid, h, a] of aScores) {
+      await finalizeMatch(db, miniTournament.id, mid, h, a);
+    }
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    const a3 = groupA.standing.find((r) => r.teamId === 'A3')!;
+    expect(a3.qualifies).toBe(false);
   });
 
   it('sets group stage as active when some matches are final', async () => {

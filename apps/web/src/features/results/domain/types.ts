@@ -28,7 +28,7 @@ export type GroupStandingRow = {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
-  qualifies: 'auto' | false;
+  qualifies: 'auto' | 'best-third' | false;
 };
 
 export type GroupResultView = {

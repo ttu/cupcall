@@ -9,7 +9,8 @@ import {
   getMatchesForTournament,
 } from '@cup/db';
 import type { MatchRow } from '@cup/db';
-import type { Tournament, GroupId, TeamId, BracketMatchKey } from '@cup/engine';
+import { deriveGroupOrders, selectQualifiers, matchId } from '@cup/engine';
+import type { Tournament, GroupId, TeamId, BracketMatchKey, GroupScore } from '@cup/engine';
 import type {
   ResultsView,
   GroupResultView,
@@ -108,6 +109,7 @@ function buildGroupResults(
     (inputs?.groupScores ?? []).map((gs) => [gs.matchId, { home: gs.home, away: gs.away }]),
   );
   const scoring = def.scoring.groupMatch;
+  const bestThirdsSet = computeBestThirds(def, allMatches);
 
   return def.groups.map((group) => {
     const completedMatches: GroupMatchResultRow[] = allMatches
@@ -138,10 +140,41 @@ function buildGroupResults(
         };
       });
 
-    const standing = buildGroupStanding(def, group.id as GroupId, allMatches, teamMap);
+    const standing = buildGroupStanding(
+      def,
+      group.id as GroupId,
+      allMatches,
+      teamMap,
+      bestThirdsSet,
+    );
 
     return { groupId: group.id, completedMatches, standing };
   });
+}
+
+/**
+ * Returns the set of team IDs that qualify as best-third finishers across all groups.
+ * Only resolves once every group-stage match is final and `bestThirdPlaced > 0` —
+ * otherwise the comparison across groups isn't yet meaningful, so the set is empty.
+ */
+function computeBestThirds(def: Tournament, allMatches: MatchRow[]): Set<string> {
+  if (def.qualification.bestThirdPlaced === 0) return new Set();
+
+  const finalsById = new Map<string, MatchRow>(
+    allMatches.filter((m) => m.stage === 'group' && m.status === 'final').map((m) => [m.id, m]),
+  );
+  const allFinal = def.groupMatches.every((gm) => finalsById.has(gm.id));
+  if (!allFinal) return new Set();
+
+  const scores: GroupScore[] = def.groupMatches.map((gm) => {
+    const m = finalsById.get(gm.id)!;
+    return { matchId: matchId(gm.id), home: m.homeGoals!, away: m.awayGoals! };
+  });
+
+  const groupOrders = deriveGroupOrders(def, scores);
+  const qualifiers = selectQualifiers(def, scores, groupOrders);
+  const autoCount = def.groups.length * def.qualification.autoQualifyPerGroup;
+  return new Set(qualifiers.slice(autoCount));
 }
 
 function buildGroupStanding(
@@ -149,6 +182,7 @@ function buildGroupStanding(
   groupId: GroupId,
   allMatches: MatchRow[],
   teamMap: Map<string, string>,
+  bestThirdsSet: Set<string>,
 ): GroupStandingRow[] {
   const group = def.groups.find((g) => g.id === groupId);
   if (!group) return [];
@@ -200,20 +234,28 @@ function buildGroupStanding(
       return a.seed - b.seed;
     });
 
-  return ranked.map(({ tid, s, pts, gd }, i) => ({
-    position: i + 1,
-    teamId: tid,
-    teamName: teamMap.get(tid) ?? tid,
-    played: s.w + s.d + s.l,
-    won: s.w,
-    drawn: s.d,
-    lost: s.l,
-    goalsFor: s.gf,
-    goalsAgainst: s.ga,
-    goalDifference: gd,
-    points: pts,
-    qualifies: i < autoQualify ? 'auto' : false,
-  }));
+  return ranked.map(({ tid, s, pts, gd }, i) => {
+    let qualifies: 'auto' | 'best-third' | false = false;
+    if (i < autoQualify) {
+      qualifies = 'auto';
+    } else if (i === autoQualify && bestThirdsSet.has(tid)) {
+      qualifies = 'best-third';
+    }
+    return {
+      position: i + 1,
+      teamId: tid,
+      teamName: teamMap.get(tid) ?? tid,
+      played: s.w + s.d + s.l,
+      won: s.w,
+      drawn: s.d,
+      lost: s.l,
+      goalsFor: s.gf,
+      goalsAgainst: s.ga,
+      goalDifference: gd,
+      points: pts,
+      qualifies,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

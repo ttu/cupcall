@@ -32,7 +32,7 @@ export function HitChip({ hit, points }: Props): ReactElement | null {
   }
 
   return (
-    <span className="chip" style={{ height: 24, fontSize: 11, color: 'var(--ink-muted)' }}>
+    <span className="chip red" style={{ height: 24, fontSize: 11 }}>
       Missed +0
     </span>
   );
