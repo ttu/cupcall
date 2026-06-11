@@ -289,3 +289,12 @@ body {
   display: grid; place-items: center; flex: 0 0 auto;
   font-weight: 800; font-size: 14px; color: var(--on-dark);
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.page-spinner-wrap { display: flex; align-items: center; justify-content: center; min-height: 50vh; }
+.page-spinner {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid var(--green-300);
+  border-top-color: var(--green-600);
+  animation: spin 0.75s linear infinite;
+}
