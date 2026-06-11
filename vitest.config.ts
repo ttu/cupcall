@@ -44,5 +44,29 @@ export default defineConfig({
   test: {
     include: ['{packages,apps}/**/src/**/*.test.ts', 'scripts/**/*.test.ts'],
     environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'html', 'lcov'],
+      reportsDirectory: 'coverage',
+      include: [
+        'packages/engine/src/**/*.ts',
+        'packages/schemas/src/**/*.ts',
+        'packages/db/src/**/*.ts',
+        'apps/web/src/shared/**/*.ts',
+        'apps/web/src/features/*/domain/**/*.ts',
+        'apps/web/src/features/*/application/**/*.ts',
+        'apps/web/src/features/*/api/**/*.ts',
+        'scripts/**/*.ts',
+      ],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/__fixtures__/**',
+        '**/testing/**',
+        '**/migrations/**',
+        '**/index.ts',
+        '**/*.stories.{ts,tsx}',
+      ],
+    },
   },
 });

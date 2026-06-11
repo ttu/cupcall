@@ -215,6 +215,12 @@ All planned slices are complete. Potential follow-ups:
   `CI=true pnpm install`.
 - **Gate (must stay green):** `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm -C apps/web build`.
   Tests are integration-first against in-memory Postgres (pglite). CI mirrors the gate.
+- **Coverage:** `pnpm test:coverage` runs the Vitest suite with `@vitest/coverage-v8` and
+  writes `coverage/` (HTML, lcov, text-summary). CI runs the same on every PR and uploads
+  `coverage/{lcov.info,index.html}` as a workflow artifact (`actions/upload-artifact@v4`,
+  `if: always()`). No thresholds — measurement only. Scope: domain + application + API +
+  shared + scripts; UI components and `app/` routes are intentionally excluded (see
+  [`docs/superpowers/specs/2026-06-11-coverage-tooling-design.md`](./superpowers/specs/2026-06-11-coverage-tooling-design.md)).
 - **New plan:** use `superpowers:writing-plans` → save under `docs/superpowers/plans/YYYY-MM-DD-<name>.md`.
 - **Execute:** `superpowers:subagent-driven-development` — per chunk: implementer → spec-compliance
   review → code-quality review → apply fixes → commit (Conventional Commits, TDD).
