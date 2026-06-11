@@ -1,11 +1,99 @@
 import type { ReactElement } from 'react';
-import type { GroupResultView } from '../domain/types';
+import type { GroupResultView, GroupUpcomingMatchRow } from '../domain/types';
 import { HitChip } from './HitChip';
 import { TeamBadge } from '@/shared/ui';
 
 type Props = { group: GroupResultView };
 
+function UpcomingMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactElement {
+  const kickoffTime =
+    match.kickoff !== null
+      ? new Date(match.kickoff).toLocaleTimeString(undefined, {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : null;
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr 80px',
+        alignItems: 'center',
+        gap: 8,
+        padding: '10px 14px',
+      }}
+    >
+      {/* Home */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          gap: 6,
+          minWidth: 0,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            color: 'var(--ink)',
+          }}
+        >
+          {match.homeTeamName}
+        </span>
+        <TeamBadge teamId={match.homeTeamId} size="sm" />
+      </div>
+
+      {/* Kickoff time */}
+      <span
+        style={{
+          fontSize: 12,
+          color: 'var(--ink-muted)',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {kickoffTime ?? '–'}
+      </span>
+
+      {/* Away */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+        <TeamBadge teamId={match.awayTeamId} size="sm" />
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            color: 'var(--ink)',
+          }}
+        >
+          {match.awayTeamName}
+        </span>
+      </div>
+
+      {/* User prediction (if any) */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        {match.predictedHome !== null && (
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--ink-muted)' }}>
+            you {match.predictedHome}–{match.predictedAway}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function GroupMatchFeed({ group }: Props): ReactElement {
+  const hasCompleted = group.completedMatches.length > 0;
+  const hasToday = group.todayMatches.length > 0;
+
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
       <div className="turf" style={{ padding: '10px 16px' }}>
@@ -14,7 +102,7 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
         </span>
       </div>
 
-      {group.completedMatches.length === 0 ? (
+      {!hasCompleted && !hasToday && (
         <p
           style={{
             fontSize: 13,
@@ -25,7 +113,9 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
         >
           No results yet
         </p>
-      ) : (
+      )}
+
+      {hasCompleted && (
         <div className="divide">
           {group.completedMatches.map((m) => (
             <div
@@ -116,6 +206,26 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
             </div>
           ))}
         </div>
+      )}
+
+      {hasToday && (
+        <>
+          <div
+            style={{
+              padding: '8px 14px 4px',
+              borderTop: hasCompleted ? '1px solid var(--line-soft)' : undefined,
+            }}
+          >
+            <span className="eyebrow" style={{ fontSize: 10, color: 'var(--ink-muted)' }}>
+              Today
+            </span>
+          </div>
+          <div className="divide">
+            {group.todayMatches.map((m) => (
+              <UpcomingMatchRow key={m.matchId} match={m} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -3,7 +3,7 @@
  * Uses a real in-memory PGlite database — no mocks.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { makeTestDb } from '@cup/db/testing';
+import { makeTestDb, setMatchKickoff } from '@cup/db/testing';
 import {
   upsertTournamentDef,
   createUser,
@@ -413,5 +413,65 @@ describe('getResultsView', () => {
     expect(view!.userRank!.rank).toBe(2);
     expect(view!.userRank!.totalMembers).toBe(2);
     expect(view!.userRank!.points).toBe(200);
+  });
+
+  it('includes today match in todayMatches', async () => {
+    const todayKickoff = new Date('2030-06-15T18:00:00Z'); // same UTC day as NOW
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await setMatchKickoff(db, miniTournament.id, matchId, todayKickoff);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    expect(groupA.todayMatches).toHaveLength(1);
+    expect(groupA.todayMatches[0]!.matchId).toBe(matchId);
+    expect(groupA.todayMatches[0]!.kickoff).toBe(todayKickoff.toISOString());
+  });
+
+  it('excludes tomorrow match from todayMatches', async () => {
+    const tomorrowKickoff = new Date('2030-06-16T18:00:00Z');
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await setMatchKickoff(db, miniTournament.id, matchId, tomorrowKickoff);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    expect(groupA.todayMatches).toHaveLength(0);
+  });
+
+  it('excludes matches with null kickoff from todayMatches', async () => {
+    // setupDb uses emptyKickoffs → all kickoffs remain null
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    for (const gr of view!.groupResults) {
+      expect(gr.todayMatches).toHaveLength(0);
+    }
+  });
+
+  it('does not include completed match in todayMatches', async () => {
+    const todayKickoff = new Date('2030-06-15T18:00:00Z');
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await setMatchKickoff(db, miniTournament.id, matchId, todayKickoff);
+    await finalizeMatch(db, miniTournament.id, matchId, 2, 1);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    expect(groupA.completedMatches).toHaveLength(1);
+    expect(groupA.todayMatches).toHaveLength(0);
+  });
+
+  it('populates prediction fields in todayMatch when user has a prediction', async () => {
+    const todayKickoff = new Date('2030-06-15T18:00:00Z');
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await setMatchKickoff(db, miniTournament.id, matchId, todayKickoff);
+
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, pred.id, matchId, 3, 1);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    expect(groupA.todayMatches[0]!.predictedHome).toBe(3);
+    expect(groupA.todayMatches[0]!.predictedAway).toBe(1);
   });
 });

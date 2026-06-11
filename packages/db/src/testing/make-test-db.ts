@@ -1,6 +1,7 @@
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
+import { eq, and } from 'drizzle-orm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import * as schema from '../schema/index';
@@ -25,4 +26,16 @@ export async function makeTestDb(): Promise<Db<typeof schema>> {
   // The migrate() call requires PgliteDatabase; we recover the underlying type here only.
   await migrate(db as unknown as PgliteDatabase<typeof schema>, { migrationsFolder });
   return db;
+}
+
+export async function setMatchKickoff(
+  db: Db<typeof schema>,
+  tournamentId: string,
+  matchId: string,
+  kickoff: Date | null,
+): Promise<void> {
+  await db
+    .update(schema.matches)
+    .set({ kickoff })
+    .where(and(eq(schema.matches.tournamentId, tournamentId), eq(schema.matches.id, matchId)));
 }

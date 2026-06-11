@@ -31,9 +31,22 @@ export type GroupStandingRow = {
   qualifies: 'auto' | 'best-third' | false;
 };
 
+export type GroupUpcomingMatchRow = {
+  matchId: string;
+  groupId: string;
+  homeTeamId: string;
+  homeTeamName: string;
+  awayTeamId: string;
+  awayTeamName: string;
+  kickoff: string | null;
+  predictedHome: number | null;
+  predictedAway: number | null;
+};
+
 export type GroupResultView = {
   groupId: string;
   completedMatches: GroupMatchResultRow[];
+  todayMatches: GroupUpcomingMatchRow[];
   standing: GroupStandingRow[];
 };
 

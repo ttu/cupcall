@@ -15,6 +15,7 @@ import type {
   ResultsView,
   GroupResultView,
   GroupMatchResultRow,
+  GroupUpcomingMatchRow,
   GroupStandingRow,
   KnockoutMatchView,
   BracketRoundResultView,
@@ -33,7 +34,7 @@ type Params = {
 };
 
 export async function getResultsView(params: Params): Promise<ResultsView | null> {
-  const { db, poolId, userId, now: _now } = params;
+  const { db, poolId, userId, now } = params;
 
   const pool = await getPoolById(db, poolId);
   if (!pool) return null;
@@ -54,7 +55,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   const userRank = buildUserRank(leaderboard, userId);
   const stageProgress = buildStageProgress(def, allMatches);
   const currentStage = deriveCurrentStage(stageProgress);
-  const groupResults = buildGroupResults(def, allMatches, inputs);
+  const groupResults = buildGroupResults(def, allMatches, inputs, now);
   const { bracketRounds, bronzeMatch } = buildBracketRounds(def, allMatches, inputs);
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch);
 
@@ -103,6 +104,7 @@ function buildGroupResults(
   def: Tournament,
   allMatches: MatchRow[],
   inputs: Awaited<ReturnType<typeof getPredictionInputs>> | null,
+  now: Date,
 ): GroupResultView[] {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const predMap = new Map<string, { home: number; away: number }>(
@@ -140,6 +142,27 @@ function buildGroupResults(
         };
       });
 
+    const todayMatches: GroupUpcomingMatchRow[] = allMatches
+      .filter(
+        (m) =>
+          m.stage === 'group' &&
+          m.groupId === group.id &&
+          m.status !== 'final' &&
+          m.kickoff !== null &&
+          isSameUtcDay(m.kickoff, now),
+      )
+      .map((m) => ({
+        matchId: m.id,
+        groupId: group.id,
+        homeTeamId: m.homeTeamId ?? '',
+        homeTeamName: teamMap.get(m.homeTeamId ?? '') ?? m.homeTeamId ?? '',
+        awayTeamId: m.awayTeamId ?? '',
+        awayTeamName: teamMap.get(m.awayTeamId ?? '') ?? m.awayTeamId ?? '',
+        kickoff: m.kickoff!.toISOString(),
+        predictedHome: predMap.get(m.id)?.home ?? null,
+        predictedAway: predMap.get(m.id)?.away ?? null,
+      }));
+
     const standing = buildGroupStanding(
       def,
       group.id as GroupId,
@@ -148,7 +171,7 @@ function buildGroupResults(
       bestThirdsSet,
     );
 
-    return { groupId: group.id, completedMatches, standing };
+    return { groupId: group.id, completedMatches, todayMatches, standing };
   });
 }
 
@@ -389,6 +412,14 @@ function computeHit(
     return { hit: 'outcome', points: scoring.correctOutcome };
   }
   return { hit: 'missed', points: 0 };
+}
+
+function isSameUtcDay(a: Date, b: Date): boolean {
+  return (
+    a.getUTCFullYear() === b.getUTCFullYear() &&
+    a.getUTCMonth() === b.getUTCMonth() &&
+    a.getUTCDate() === b.getUTCDate()
+  );
 }
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {
