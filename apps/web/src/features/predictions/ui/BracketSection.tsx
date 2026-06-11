@@ -70,24 +70,26 @@ export function BracketSection({
       style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
     >
       {/* Info banner */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 10,
-          padding: '10px 14px',
-          borderRadius: 10,
-          background: 'var(--green-050)',
-          border: '1px solid var(--green-300)',
-          fontSize: 13,
-          color: 'var(--green-700)',
-        }}
-      >
-        <span style={{ fontWeight: 800 }}>⚡</span>
-        <span>
-          Pick the winner of each tie. Your group stage predictions determine who fills each slot.
-        </span>
-      </div>
+      {!locked && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            padding: '10px 14px',
+            borderRadius: 10,
+            background: 'var(--green-050)',
+            border: '1px solid var(--green-300)',
+            fontSize: 13,
+            color: 'var(--green-700)',
+          }}
+        >
+          <span style={{ fontWeight: 800 }}>⚡</span>
+          <span>
+            Pick the winner of each tie. Your group stage predictions determine who fills each slot.
+          </span>
+        </div>
+      )}
 
       {/* Bracket columns */}
       <div style={{ overflowX: 'auto', paddingBottom: 8 }}>

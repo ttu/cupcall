@@ -40,7 +40,7 @@ export function PredictStepper({ card, teams, players, isDev }: Props): ReactEle
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Dev controls */}
-      <DevControls poolId={card.poolId} isDev={isDev} />
+      <DevControls poolId={card.poolId} isDev={isDev} locked={locked} />
 
       {/* Step indicator tabs */}
       <nav

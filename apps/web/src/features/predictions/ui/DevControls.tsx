@@ -9,9 +9,10 @@ import { devFillRandomGroupScores } from '../api/dev-actions';
 type Props = {
   poolId: string;
   isDev: boolean;
+  locked: boolean;
 };
 
-export function DevControls({ poolId, isDev }: Props): ReactElement {
+export function DevControls({ poolId, isDev, locked }: Props): ReactElement {
   const router = useRouter();
   const [isClearPending, startClearTransition] = useTransition();
   const [isFillPending, startFillTransition] = useTransition();
@@ -49,14 +50,16 @@ export function DevControls({ poolId, isDev }: Props): ReactElement {
           {isFillPending ? 'Filling…' : 'Fill random scores'}
         </button>
       )}
-      <button
-        type="button"
-        onClick={handleClear}
-        disabled={isClearPending}
-        className="text-xs px-2.5 py-1 rounded border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-40"
-      >
-        {isClearPending ? 'Clearing…' : 'Clear all'}
-      </button>
+      {!locked && (
+        <button
+          type="button"
+          onClick={handleClear}
+          disabled={isClearPending}
+          className="text-xs px-2.5 py-1 rounded border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-40"
+        >
+          {isClearPending ? 'Clearing…' : 'Clear all'}
+        </button>
+      )}
     </div>
   );
 }
