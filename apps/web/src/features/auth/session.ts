@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { auth } from './auth';
 import type { Actor } from '../../shared/authz';
 import { userId } from '@cup/engine';
@@ -8,9 +9,12 @@ import { userId } from '@cup/engine';
  *
  * Call this in Server Components, Server Actions, and Route Handlers — not in
  * client components (the Auth.js `auth()` helper is server-only).
+ *
+ * Wrapped in React.cache() to deduplicate the session fetch within a single
+ * render pass when multiple server components call this in the same request.
  */
-export async function getCurrentActor(): Promise<Actor | null> {
+export const getCurrentActor = cache(async (): Promise<Actor | null> => {
   const session = await auth();
   if (!session?.user?.id) return null;
   return { userId: userId(session.user.id) };
-}
+});

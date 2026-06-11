@@ -28,10 +28,12 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
   const actor = await getCurrentActor();
   if (!actor) redirect('/');
 
-  const pool = await getPoolById(db, poolId);
+  const [pool, member] = await Promise.all([
+    getPoolById(db, poolId),
+    isMember(db, poolId, actor.userId),
+  ]);
   if (!pool) notFound();
-
-  if (!(await isMember(db, poolId, actor.userId))) notFound();
+  if (!member) notFound();
 
   const tournament = await getTournamentById(db, pool.tournamentId);
   if (!tournament?.definition) notFound();
