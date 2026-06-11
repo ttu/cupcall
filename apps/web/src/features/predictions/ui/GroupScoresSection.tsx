@@ -220,7 +220,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
                     )}
                     {entry.qualifies === 'best-third' && (
                       <Chip variant="orange" style={{ height: 18, fontSize: 9, padding: '0 6px' }}>
-                        MAYBE
+                        QUALIFIES
                       </Chip>
                     )}
                   </div>
