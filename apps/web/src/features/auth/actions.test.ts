@@ -11,14 +11,18 @@ vi.mock('../../shared/db', () => ({ db: {} }));
 vi.mock('../../shared/observability/logger', () => ({
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
-vi.mock('@cup/db', () => ({ updateDisplayName: vi.fn() }));
+vi.mock('@cup/db', () => ({ updateDisplayName: vi.fn(), deleteUser: vi.fn() }));
+vi.mock('./auth', () => ({ signOut: vi.fn() }));
 
-import { updateDisplayNameAction } from './actions';
+import { updateDisplayNameAction, deleteAccountAction } from './actions';
 import { getCurrentActor } from './session';
-import { updateDisplayName } from '@cup/db';
+import { updateDisplayName, deleteUser } from '@cup/db';
+import { signOut } from './auth';
 
 const mockedGetActor = vi.mocked(getCurrentActor);
 const mockedUpdate = vi.mocked(updateDisplayName);
+const mockedDelete = vi.mocked(deleteUser);
+const mockedSignOut = vi.mocked(signOut);
 
 const prev = { error: null, saved: false };
 
@@ -27,6 +31,42 @@ function form(name: string | null): FormData {
   if (name !== null) f.set('displayName', name);
   return f;
 }
+
+describe('deleteAccountAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('throws ForbiddenError and does not delete when not signed in', async () => {
+    mockedGetActor.mockResolvedValue(null);
+
+    await expect(deleteAccountAction()).rejects.toThrowError(ForbiddenError);
+    expect(mockedDelete).not.toHaveBeenCalled();
+  });
+
+  it('deletes the user and calls signOut for a signed-in user', async () => {
+    const uid = userId('user-1');
+    mockedGetActor.mockResolvedValue({ userId: uid });
+    mockedDelete.mockResolvedValue(undefined);
+    mockedSignOut.mockResolvedValue(undefined as never);
+
+    await deleteAccountAction();
+
+    expect(mockedDelete).toHaveBeenCalledWith(expect.anything(), uid);
+    expect(mockedSignOut).toHaveBeenCalledWith({ redirectTo: '/' });
+  });
+
+  it('returns an error and does not sign out when deleteUser throws', async () => {
+    const uid = userId('user-2');
+    mockedGetActor.mockResolvedValue({ userId: uid });
+    mockedDelete.mockRejectedValue(new Error('DB error'));
+
+    const result = await deleteAccountAction();
+
+    expect(result).toEqual({ ok: false, error: expect.stringContaining('delete account') });
+    expect(mockedSignOut).not.toHaveBeenCalled();
+  });
+});
 
 describe('updateDisplayNameAction', () => {
   beforeEach(() => {

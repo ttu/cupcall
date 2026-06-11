@@ -8,6 +8,7 @@ import {
   getUserById,
   getUserByEmail,
   updateDisplayName,
+  deleteUser,
   upsertPendingEmailLink,
   getPendingEmailLinkByToken,
   deletePendingEmailLink,
@@ -125,6 +126,19 @@ describe('users repository', () => {
 
       await deletePendingEmailLink(db, 'tok-del');
       expect(await getPendingEmailLinkByToken(db, 'tok-del')).toBeUndefined();
+    });
+  });
+
+  describe('deleteUser', () => {
+    it('removes the user so it can no longer be found', async () => {
+      const user = await createUser(db, { email: 'del@example.com', displayName: 'Delete Me' });
+      await deleteUser(db, user.id);
+      expect(await getUserById(db, user.id)).toBeUndefined();
+    });
+
+    it('is a no-op for a non-existent id', async () => {
+      const { userId } = await import('@cup/engine');
+      await expect(deleteUser(db, userId('ghost-id'))).resolves.toBeUndefined();
     });
   });
 

@@ -8,6 +8,7 @@ export {
   createPool,
   joinPool,
   kickMember,
+  leavePool,
   rotateToken,
   rotateViewToken,
   deletePool,
@@ -25,6 +26,7 @@ export { Leaderboard } from './ui/Leaderboard';
 export { InviteSection } from './ui/InviteSection';
 export { ViewSection } from './ui/ViewSection';
 export { OwnerControls } from './ui/OwnerControls';
+export { MemberControls } from './ui/MemberControls';
 export { PoolBackupControls } from './ui/PoolBackupControls';
 export { ScoringGuide } from './ui/ScoringGuide';
 export { MyLoginLink } from './ui/MyLoginLink';

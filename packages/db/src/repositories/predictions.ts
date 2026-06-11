@@ -144,6 +144,21 @@ export async function deleteKnockoutPicks(
     );
 }
 
+/**
+ * Deletes the prediction row for (poolId, userId), cascading to all sub-rows
+ * (group scores, knockout picks, finish scores, specials, edits). No-op if no
+ * prediction exists.
+ */
+export async function deletePrediction(
+  db: Database,
+  poolId: string,
+  userId: UserId,
+): Promise<void> {
+  await db
+    .delete(schema.predictions)
+    .where(and(eq(schema.predictions.poolId, poolId), eq(schema.predictions.userId, userId)));
+}
+
 /** Removes all prediction sub-rows (group scores, knockout picks, finish scores, specials) for a prediction. */
 export async function clearPredictionInputs(db: Database, predictionId: string): Promise<void> {
   await Promise.all([

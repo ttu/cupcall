@@ -30,6 +30,13 @@ function toScoreRow(raw: typeof schema.scores.$inferSelect): ScoreRow {
   };
 }
 
+/** Deletes the score row for (poolId, userId). No-op if no row exists. */
+export async function deleteScore(db: Database, poolId: string, uid: UserId): Promise<void> {
+  await db
+    .delete(schema.scores)
+    .where(and(eq(schema.scores.poolId, poolId), eq(schema.scores.userId, uid)));
+}
+
 /**
  * Upserts a score row for (poolId, userId). Uses ON CONFLICT DO UPDATE on the
  * composite PK so a second call updates rather than inserting a duplicate row.

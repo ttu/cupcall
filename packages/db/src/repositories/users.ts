@@ -182,6 +182,10 @@ export async function deletePendingEmailLink(db: Database, token: string): Promi
   await db.delete(schema.pendingEmailLinks).where(eq(schema.pendingEmailLinks.token, token));
 }
 
+export async function deleteUser(db: Database, id: UserId): Promise<void> {
+  await db.delete(schema.users).where(eq(schema.users.id, id));
+}
+
 // Updates email + emailVerified only if the user currently has no email (safe against races).
 export async function linkEmailToUser(
   db: Database,

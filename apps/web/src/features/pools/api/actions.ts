@@ -24,7 +24,10 @@ import {
   isMember,
   checkRateLimit,
   RATE_LIMITS,
+  deletePrediction,
+  deleteScore,
 } from '@cup/db';
+import { assertIsMember } from '@/shared/authz';
 import { signInAsExistingGuest } from '@/features/auth';
 import { rescoreCard } from '@/features/predictions';
 import { createPool as appCreatePool } from '../application/create-pool';
@@ -173,6 +176,40 @@ export async function kickMember(
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Leave pool (member self-removal)
+// ---------------------------------------------------------------------------
+
+const LeavePoolSchema = z.object({ poolId: z.string() });
+
+export async function leavePool(
+  raw: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = LeavePoolSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const { poolId } = parsed.data;
+
+  try {
+    const actor = await getActorOrThrow();
+    const pool = await getOwnerPoolOrThrow(poolId);
+
+    if (actor.userId === pool.ownerId) {
+      return { ok: false, error: 'Pool owners cannot leave. Delete the pool instead.' };
+    }
+
+    await assertIsMember(db, poolId, actor.userId);
+    await deletePrediction(db, poolId, actor.userId);
+    await deleteScore(db, poolId, actor.userId);
+    await removeMember(db, poolId, actor.userId);
+
+    revalidatePath('/pools');
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+
+  redirect('/pools');
 }
 
 // ---------------------------------------------------------------------------

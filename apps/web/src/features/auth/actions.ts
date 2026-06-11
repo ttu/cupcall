@@ -2,11 +2,12 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { updateDisplayName } from '@cup/db';
+import { updateDisplayName, deleteUser } from '@cup/db';
 import { ForbiddenError } from '../../shared/authz';
 import { db } from '../../shared/db';
 import { logger } from '../../shared/observability/logger';
 import { getCurrentActor } from './session';
+import { signOut } from './auth';
 
 const displayNameSchema = z
   .string()
@@ -46,4 +47,22 @@ export async function updateDisplayNameAction(
   logger.info({ userId: actor.userId }, 'auth:updateDisplayName — updated');
   revalidatePath('/settings');
   return { error: null, saved: true };
+}
+
+export async function deleteAccountAction(): Promise<{ ok: false; error: string }> {
+  const actor = await getCurrentActor();
+  if (!actor) {
+    throw new ForbiddenError('Must be signed in to delete account');
+  }
+
+  try {
+    await deleteUser(db, actor.userId);
+    logger.info({ userId: actor.userId }, 'auth:deleteAccount — deleted');
+  } catch (e) {
+    logger.error({ userId: actor.userId, err: e }, 'auth:deleteAccount — failed');
+    return { ok: false, error: 'Could not delete account. Please try again.' };
+  }
+
+  await signOut({ redirectTo: '/' });
+  return { ok: false, error: 'Unexpected error.' };
 }

@@ -10,6 +10,7 @@ import {
   InviteSection,
   ViewSection,
   OwnerControls,
+  MemberControls,
   PoolBackupControls,
 } from '@/features/pools';
 import { StageBar } from '@/features/results';
@@ -175,6 +176,9 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
             isOwner={isOwner}
             baseUrl={process.env.AUTH_URL ?? ''}
           />
+
+          {/* Leave pool (non-owners only) */}
+          {!isOwner && <MemberControls poolId={poolId} />}
         </div>
       </div>
 

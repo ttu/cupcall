@@ -12,6 +12,8 @@ import {
   createPool as dbCreatePool,
   addMember,
   recordKick,
+  isMember,
+  isKicked,
   upsertScore,
   tournaments,
 } from '@cup/db';
@@ -313,5 +315,104 @@ describe('getPoolDetail', () => {
     expect(names[0]).toBe('Bob');
     expect(names[1]).toBe('Alice');
     expect(names[2]).toBe('Carol');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// leavePool — member self-removal
+// ---------------------------------------------------------------------------
+
+describe('leavePool (via removeMember / isMember)', () => {
+  let db: Db;
+  let ownerId: UserId;
+  let memberId: UserId;
+  let poolId: string;
+  let poolToken: string;
+
+  beforeEach(async () => {
+    db = await makeTestDb();
+    await seedTournament(db);
+    ownerId = await seedUser(db, 'owner');
+    memberId = await seedUser(db, 'member');
+
+    const result = await createPool(db, { ownerId, name: 'Leave Test Pool', now: NOW });
+    if (!result.ok) throw new Error('setup: pool creation failed');
+    poolId = result.pool.id;
+
+    const detail = await getPoolDetail(db, poolId);
+    if (!detail?.inviteToken) throw new Error('setup: pool has no invite token');
+    poolToken = detail.inviteToken;
+
+    await joinPool(db, { userId: memberId, token: poolToken, now: NOW });
+  });
+
+  it('removes the member from pool_members after leaving', async () => {
+    expect(await isMember(db, poolId, memberId)).toBe(true);
+
+    const { removeMember } = await import('@cup/db');
+    await removeMember(db, poolId, memberId);
+
+    expect(await isMember(db, poolId, memberId)).toBe(false);
+  });
+
+  it('does NOT write a kick record when a member leaves voluntarily', async () => {
+    const { removeMember } = await import('@cup/db');
+    await removeMember(db, poolId, memberId);
+
+    expect(await isKicked(db, poolId, memberId)).toBe(false);
+  });
+
+  it('allows the member to rejoin via invite after leaving (no kick block)', async () => {
+    const { removeMember } = await import('@cup/db');
+    await removeMember(db, poolId, memberId);
+
+    const rejoin = await joinPool(db, { userId: memberId, token: poolToken, now: NOW });
+    expect(rejoin.ok).toBe(true);
+  });
+
+  it('the pool owner remains a member after a non-owner leaves', async () => {
+    const { removeMember } = await import('@cup/db');
+    await removeMember(db, poolId, memberId);
+
+    expect(await isMember(db, poolId, ownerId)).toBe(true);
+  });
+
+  it('deletePrediction removes the leaving member’s prediction and is scoped to their pool/user', async () => {
+    const { deletePrediction, getPrediction, getOrCreatePrediction } = await import('@cup/db');
+
+    // joinPool already created a prediction for memberId; create one for ownerId too.
+    await getOrCreatePrediction(db, { poolId, userId: ownerId, tournamentId: 'wc-test' });
+
+    expect(await getPrediction(db, poolId, memberId)).toBeDefined();
+    expect(await getPrediction(db, poolId, ownerId)).toBeDefined();
+
+    await deletePrediction(db, poolId, memberId);
+
+    expect(await getPrediction(db, poolId, memberId)).toBeUndefined();
+    // Owner's prediction must remain untouched.
+    expect(await getPrediction(db, poolId, ownerId)).toBeDefined();
+  });
+
+  it('deleteScore removes the leaving member’s score row for the pool', async () => {
+    const { deleteScore } = await import('@cup/db');
+
+    await upsertScore(db, {
+      poolId,
+      userId: memberId,
+      pointsTotal: points(42),
+      breakdown: {} as import('@cup/engine').ScoreBreakdown,
+    });
+
+    const detailBefore = await getPoolDetail(db, poolId);
+    expect(detailBefore?.leaderboard.find((e) => e.userId === memberId)?.pointsTotal).toBe(42);
+
+    await deleteScore(db, poolId, memberId);
+
+    // After deleting the score, removing the member should make them disappear from the leaderboard.
+    const { removeMember } = await import('@cup/db');
+    await removeMember(db, poolId, memberId);
+
+    const detailAfter = await getPoolDetail(db, poolId);
+    expect(detailAfter?.leaderboard.find((e) => e.userId === memberId)).toBeUndefined();
   });
 });

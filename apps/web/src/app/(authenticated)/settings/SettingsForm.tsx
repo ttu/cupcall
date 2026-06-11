@@ -1,8 +1,12 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState, useTransition } from 'react';
 import type { ReactElement } from 'react';
-import { updateDisplayNameAction, type DisplayNameState } from '@/features/auth/actions';
+import {
+  updateDisplayNameAction,
+  deleteAccountAction,
+  type DisplayNameState,
+} from '@/features/auth/actions';
 import { Avatar, Chip, Icon, SectionLabel } from '@/shared/ui';
 
 const initial: DisplayNameState = { error: null, saved: false };
@@ -10,10 +14,30 @@ const initial: DisplayNameState = { error: null, saved: false };
 type Props = {
   displayName: string;
   email: string | null;
+  ownedPoolCount: number;
 };
 
-export function SettingsForm({ displayName, email }: Props): ReactElement {
+export function SettingsForm({ displayName, email, ownedPoolCount }: Props): ReactElement {
   const [state, action, pending] = useActionState(updateDisplayNameAction, initial);
+  const [isPendingDelete, startDeleteTransition] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  function handleDeleteClick() {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setDeleteError(null);
+    startDeleteTransition(async () => {
+      const result = await deleteAccountAction();
+      if (!result.ok) {
+        setDeleteError(result.error);
+        setConfirmDelete(false);
+      }
+      // On success, deleteAccountAction redirects to /.
+    });
+  }
 
   return (
     <div className="card" style={{ padding: 24 }}>
@@ -147,6 +171,75 @@ export function SettingsForm({ displayName, email }: Props): ReactElement {
           </div>
         </>
       )}
+
+      {/* Danger zone */}
+      <hr
+        style={{
+          margin: '28px 0 0',
+          border: 'none',
+          borderTop: '1px solid var(--line-soft)',
+          height: 0,
+        }}
+      />
+      <div
+        style={{
+          marginTop: 20,
+          padding: 18,
+          borderRadius: 13,
+          border: '1px solid oklch(0.85 0.08 25)',
+          background: 'oklch(0.98 0.015 25)',
+        }}
+      >
+        <SectionLabel icon={<Icon name="trash" size={13} color="var(--danger)" />}>
+          <span style={{ color: 'var(--danger)' }}>Danger zone</span>
+        </SectionLabel>
+        <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '10px 0 14px' }}>
+          {ownedPoolCount > 0
+            ? `Deleting your account is permanent and will also delete ${ownedPoolCount} pool${ownedPoolCount === 1 ? '' : 's'} you own and all their data.`
+            : 'Deleting your account is permanent and cannot be undone.'}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            data-testid="delete-account-btn"
+            disabled={isPendingDelete}
+            onClick={handleDeleteClick}
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              padding: '8px 16px',
+              borderRadius: 9,
+              border: 'none',
+              cursor: 'pointer',
+              background: confirmDelete ? 'var(--danger)' : 'transparent',
+              color: confirmDelete ? 'white' : 'var(--danger)',
+              boxShadow: confirmDelete ? 'none' : 'inset 0 0 0 1.5px oklch(0.78 0.12 25)',
+            }}
+          >
+            {isPendingDelete ? 'Deleting…' : confirmDelete ? 'Confirm delete' : 'Delete account'}
+          </button>
+          {confirmDelete && !isPendingDelete && (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              style={{
+                fontSize: 12,
+                background: 'none',
+                border: 'none',
+                color: 'var(--ink-muted)',
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+        {deleteError && (
+          <p role="alert" style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>
+            {deleteError}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
