@@ -114,7 +114,7 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
             )}
             {card.status === 'locked' && (
               <span className="pill-lock">
-                <Icon name="lock" size={11} />
+                <Icon name="lock" size={14} />
                 Locked
               </span>
             )}

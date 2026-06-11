@@ -57,21 +57,12 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
             {detail.name}
           </h1>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {locked && (
-              <span className="pill-lock">
-                <Icon name="lock" size={11} />
-                Locked
-              </span>
-            )}
-            <Link
-              href={`/pools/${poolId}/predict`}
-              className="btn btn-primary sm"
-              style={{ textDecoration: 'none' }}
-            >
-              {locked ? 'View my card' : 'My predictions'}
-            </Link>
-          </div>
+          {locked && (
+            <span className="pill-lock">
+              <Icon name="lock" size={14} />
+              Locked
+            </span>
+          )}
         </div>
       </div>
 
@@ -132,26 +123,88 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
             </div>
           )}
 
-          {/* Results shortcut */}
+          {/* Results shortcut — bold accent (top action during tournament) */}
           <Link
             href={`/pools/${poolId}/results`}
-            className="card"
+            data-testid="pool-results-link"
             style={{
-              padding: '14px 16px',
+              padding: '18px 18px',
+              borderRadius: 14,
+              background: 'var(--orange-500)',
+              color: 'oklch(0.22 0.03 50)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              gap: 14,
               textDecoration: 'none',
-              color: 'var(--ink)',
+              boxShadow: '0 10px 30px -16px var(--orange-500)',
             }}
           >
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>Results &amp; standings</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 2 }}>
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: 999,
+                background: 'rgba(0, 0, 0, 0.12)',
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="trophy" size={22} color="currentColor" />
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.005em' }}>
+                Results &amp; standings
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.78, marginTop: 2, fontWeight: 600 }}>
                 Live match feed
               </div>
             </div>
-            <Icon name="arrow" size={18} color="var(--ink-muted)" />
+            <Icon name="arrow" size={18} color="currentColor" />
+          </Link>
+
+          {/* My card / predictions — bold primary (top action pre-lock) */}
+          <Link
+            href={`/pools/${poolId}/predict`}
+            data-testid="pool-predict-link"
+            style={{
+              padding: '18px 18px',
+              borderRadius: 14,
+              background: 'var(--green-500)',
+              color: 'oklch(0.18 0.02 160)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              textDecoration: 'none',
+              boxShadow: '0 10px 30px -16px var(--green-500)',
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: 999,
+                background: 'rgba(0, 0, 0, 0.12)',
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="card" size={22} color="currentColor" />
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.005em' }}>
+                {locked ? 'View my card' : 'My predictions'}
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.78, marginTop: 2, fontWeight: 600 }}>
+                {locked ? 'See your locked picks' : 'Fill in your picks'}
+              </div>
+            </div>
+            <Icon name="arrow" size={18} color="currentColor" />
           </Link>
 
           {/* Tournament timeline */}
@@ -184,7 +237,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
 
       {/* Owner controls — full width below */}
       {isOwner && (
-        <div style={{ marginTop: 32 }}>
+        <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <OwnerControls
             poolId={poolId}
             members={detail.leaderboard}

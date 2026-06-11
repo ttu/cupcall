@@ -1,7 +1,7 @@
 import type { Tournament } from '@cup/engine';
 import type { MatchRow } from '@cup/db';
 
-export type StageKey = 'group' | 'R16' | 'QF' | 'SF' | 'Final';
+export type StageKey = 'group' | 'R32' | 'R16' | 'QF' | 'SF' | 'Final';
 
 export type StageProgress = {
   key: StageKey;
@@ -10,10 +10,11 @@ export type StageProgress = {
   startDate: Date | null;
 };
 
-const STAGE_ORDER: StageKey[] = ['group', 'R16', 'QF', 'SF', 'Final'];
+const STAGE_ORDER: StageKey[] = ['group', 'R32', 'R16', 'QF', 'SF', 'Final'];
 
 const STAGE_LABELS: Record<StageKey, string> = {
   group: 'Group Stage',
+  R32: 'Round of 32',
   R16: 'Round of 16',
   QF: 'Quarter-finals',
   SF: 'Semi-finals',
