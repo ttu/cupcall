@@ -15,6 +15,7 @@ import {
   upsertScore,
   finalizeMatch,
   upsertKnockoutMatch,
+  upsertFinishScore,
 } from '@cup/db';
 import * as schema from '@cup/db/schema';
 import { miniTournament } from '@cup/engine/testing';
@@ -833,5 +834,302 @@ describe('getResultsView', () => {
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
     expect(groupA.todayMatches[0]!.predictedHome).toBe(3);
     expect(groupA.todayMatches[0]!.predictedAway).toBe(1);
+  });
+
+  it('sets hit=outcome on non-final knockout tie when picked winner matches actual', async () => {
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+    await upsertKnockoutMatch(db, {
+      id: 'qf1',
+      tournamentId: miniTournament.id,
+      stage: 'QF',
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      homeGoals: 2,
+      awayGoals: 0,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const match = view!.bracketRounds
+      .find((r) => r.label === 'QF')!
+      .matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(match.hit).toBe('outcome');
+    expect(match.predictedHome).toBeNull();
+    expect(match.predictedAway).toBeNull();
+  });
+
+  it('sets hit=missed on non-final knockout tie when picked winner lost', async () => {
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'B2');
+    await upsertKnockoutMatch(db, {
+      id: 'qf1',
+      tournamentId: miniTournament.id,
+      stage: 'QF',
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      homeGoals: 2,
+      awayGoals: 0,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const match = view!.bracketRounds
+      .find((r) => r.label === 'QF')!
+      .matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(match.hit).toBe('missed');
+  });
+
+  it('sets hit=pending on non-final knockout tie when match has not yet finalized', async () => {
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const match = view!.bracketRounds
+      .find((r) => r.label === 'QF')!
+      .matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(match.hit).toBe('pending');
+  });
+
+  it('sets hit=exact on Final when predicted score matches actual score', async () => {
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('final'), 'A1');
+    await upsertFinishScore(db, pred.id, 'final', 2, 1);
+    await upsertKnockoutMatch(db, {
+      id: 'final',
+      tournamentId: miniTournament.id,
+      stage: 'Final',
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+      homeGoals: 2,
+      awayGoals: 1,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const finalRound = view!.bracketRounds.find((r) => r.label === 'Final');
+    const match = finalRound!.matches[0]!;
+    expect(match.hit).toBe('exact');
+    expect(match.predictedHome).toBe(2);
+    expect(match.predictedAway).toBe(1);
+  });
+
+  it('sets hit=outcome on Final when winner matches but score differs', async () => {
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('final'), 'A1');
+    await upsertFinishScore(db, pred.id, 'final', 3, 0);
+    await upsertKnockoutMatch(db, {
+      id: 'final',
+      tournamentId: miniTournament.id,
+      stage: 'Final',
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+      homeGoals: 2,
+      awayGoals: 1,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const match = view!.bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    expect(match.hit).toBe('outcome');
+    expect(match.predictedHome).toBe(3);
+    expect(match.predictedAway).toBe(0);
+  });
+
+  it('sets hit=missed on Final when winner pick lost', async () => {
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('final'), 'B1');
+    await upsertFinishScore(db, pred.id, 'final', 1, 2);
+    await upsertKnockoutMatch(db, {
+      id: 'final',
+      tournamentId: miniTournament.id,
+      stage: 'Final',
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+      homeGoals: 2,
+      awayGoals: 1,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const match = view!.bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    expect(match.hit).toBe('missed');
+  });
+
+  it('sets hit=pending on Final before match finalizes, while still exposing predicted score', async () => {
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('final'), 'A1');
+    await upsertFinishScore(db, pred.id, 'final', 2, 1);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const match = view!.bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    expect(match.hit).toBe('pending');
+    expect(match.predictedHome).toBe(2);
+    expect(match.predictedAway).toBe(1);
+  });
+
+  it('populates Bronze predictedHome/predictedAway from finish score', async () => {
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertFinishScore(db, pred.id, 'bronze', 1, 0);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.bronzeMatch?.predictedHome).toBe(1);
+    expect(view!.bronzeMatch?.predictedAway).toBe(0);
+    expect(view!.bronzeMatch?.hit).toBe('pending');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Derived participants
+  // ---------------------------------------------------------------------------
+
+  it('fills QF (entry-round) participants from group orders once all group matches are final', async () => {
+    // Finalize all 24 group matches (home always wins 1-0).
+    // With round-robin results where home always wins: rank by win count within group.
+    // Team X1 beats X2,X3,X4 → 9pts (1st), X2 beats X3,X4 → 6pts (2nd), etc.
+    for (const gm of miniTournament.groupMatches) {
+      await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
+    }
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const qfRound = view!.bracketRounds.find((r) => r.label === 'QF');
+    expect(qfRound).toBeTruthy();
+
+    // slot: { match: qf1, home: '1A', away: '2B' } → home='A1', away='B2'
+    const qf1Match = qfRound!.matches.find((m) => m.bracketMatchKey === 'qf1');
+    expect(qf1Match?.homeTeamId).toBe('A1');
+    expect(qf1Match?.awayTeamId).toBe('B2');
+
+    // All QF slots should have both participants resolved
+    const allHaveTeams = qfRound!.matches.every((m) => m.homeTeamId && m.awayTeamId);
+    expect(allHaveTeams).toBe(true);
+  });
+
+  it('fills SF participants from QF winners when QFs are final', async () => {
+    // sf1.from = [qf1, qf2]: finalize both QFs with known winners
+    await upsertKnockoutMatch(db, {
+      id: 'qf1',
+      tournamentId: miniTournament.id,
+      stage: 'QF',
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      homeGoals: 2,
+      awayGoals: 0,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+    await upsertKnockoutMatch(db, {
+      id: 'qf2',
+      tournamentId: miniTournament.id,
+      stage: 'QF',
+      homeTeamId: 'C1',
+      awayTeamId: 'D2',
+      homeGoals: 1,
+      awayGoals: 0,
+      winnerTeamId: 'C1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const sfRound = view!.bracketRounds.find((r) => r.label === 'SF');
+    expect(sfRound).toBeTruthy();
+
+    const sf1Match = sfRound!.matches.find((m) => m.bracketMatchKey === 'sf1');
+    // sf1 participants come from qf1 winner (A1) and qf2 winner (C1)
+    expect(sf1Match?.homeTeamId).toBe('A1');
+    expect(sf1Match?.awayTeamId).toBe('C1');
+  });
+
+  it('exposes the current user breakdown via userBreakdown', async () => {
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(6),
+      breakdown: {
+        groupMatches: points(6),
+        groupOrder: points(0),
+        bronze: points(0),
+        final: points(0),
+        roundOf8: points(0),
+        topFour: points(0),
+        specials: points(0),
+        total: points(6),
+      } as ScoreBreakdown,
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.userBreakdown).not.toBeNull();
+    expect(view!.userBreakdown!.groupMatches).toBe(6);
+    expect(view!.userBreakdown!.total).toBe(6);
+  });
+
+  it('fills bronze participants from SF losers when SFs are final', async () => {
+    // bronze.from = [sf1, sf2]: finalize both SFs with known winners
+    // SF1: A1 vs A2 → A1 wins → A2 is loser
+    await upsertKnockoutMatch(db, {
+      id: 'sf1',
+      tournamentId: miniTournament.id,
+      stage: 'SF',
+      homeTeamId: 'A1',
+      awayTeamId: 'A2',
+      homeGoals: 2,
+      awayGoals: 1,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+    // SF2: B1 vs B2 → B2 wins → B1 is loser
+    await upsertKnockoutMatch(db, {
+      id: 'sf2',
+      tournamentId: miniTournament.id,
+      stage: 'SF',
+      homeTeamId: 'B1',
+      awayTeamId: 'B2',
+      homeGoals: 0,
+      awayGoals: 3,
+      winnerTeamId: 'B2',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    // SF1 loser = A2 (home=A1 won, so away=A2 lost)
+    // SF2 loser = B1 (away=B2 won, so home=B1 lost)
+    expect(view!.bronzeMatch?.homeTeamId).toBe('A2');
+    expect(view!.bronzeMatch?.awayTeamId).toBe('B1');
   });
 });

@@ -15,6 +15,7 @@ import {
   selectQualifiers,
   matchId,
   computeRemainingMaxPoints,
+  resolveSlot,
 } from '@cup/engine';
 import type { Tournament, GroupId, TeamId, BracketMatchKey, GroupScore } from '@cup/engine';
 import type {
@@ -67,6 +68,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   const inputs = prediction != null ? await getPredictionInputs(db, prediction.id) : null;
 
   const userRank = buildUserRank(leaderboard, userId);
+  const userBreakdown = leaderboard.find((e) => e.userId === userId)?.breakdown ?? null;
   const stageProgress = buildStageProgress(def, allMatches);
   const currentStage = deriveCurrentStage(stageProgress);
   const groupResults = buildGroupResults(def, allMatches, inputs, poolGroupScores, now);
@@ -85,6 +87,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     poolName: pool.name,
     tournamentName: tournament.name,
     userRank,
+    userBreakdown,
     stageProgress,
     currentStage,
     groupResults,
@@ -321,13 +324,19 @@ function buildBracketRounds(
   const pickMap = new Map<string, string>(
     (inputs?.knockoutPicks ?? []).map((kp) => [kp.bracketMatchKey, kp.winner]),
   );
+  const derivedParticipants = computeDerivedParticipants(def, allMatches);
+
+  const finishScores = inputs?.finishScores ?? {};
+  const finalMatchKey = def.bracket.finalMatch;
+  const bronzeMatchKey = def.bracket.bronzeMatch;
 
   const buildMatchView = (key: BracketMatchKey, round: string): KnockoutMatchView => {
     const actual = matchByKey.get(key) ?? null;
     const pickedId = pickMap.get(key) ?? null;
 
-    const homeId = actual?.homeTeamId ?? null;
-    const awayId = actual?.awayTeamId ?? null;
+    const derivedPair = derivedParticipants.get(key);
+    const homeId = actual?.homeTeamId ?? derivedPair?.[0] ?? null;
+    const awayId = actual?.awayTeamId ?? derivedPair?.[1] ?? null;
     const winnerId = actual?.winnerTeamId ?? null;
 
     let pickStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
@@ -340,6 +349,27 @@ function buildBracketRounds(
         pickStatus = 'busted';
       }
     }
+
+    // Predicted score: only Final and Bronze have a finish score.
+    let predictedHome: number | null = null;
+    let predictedAway: number | null = null;
+    if (key === finalMatchKey && finishScores.final) {
+      predictedHome = finishScores.final.home;
+      predictedAway = finishScores.final.away;
+    } else if (key === bronzeMatchKey && finishScores.bronze) {
+      predictedHome = finishScores.bronze.home;
+      predictedAway = finishScores.bronze.away;
+    }
+
+    // Per-tie hit
+    const hit = computeKnockoutHit({
+      pickedWinnerId: pickedId,
+      actualWinnerId: winnerId,
+      predictedHome,
+      predictedAway,
+      actualHome: actual?.homeGoals ?? null,
+      actualAway: actual?.awayGoals ?? null,
+    });
 
     return {
       bracketMatchKey: key,
@@ -357,6 +387,9 @@ function buildBracketRounds(
       pickedWinnerId: pickedId,
       pickedWinnerName: pickedId ? (teamMap.get(pickedId) ?? pickedId) : null,
       pickStatus,
+      predictedHome,
+      predictedAway,
+      hit,
     };
   };
 
@@ -373,7 +406,7 @@ function buildBracketRounds(
   }
 
   for (const prog of bracket.progression) {
-    if (prog.match === bracket.finalMatch || prog.match === bracket.bronzeMatch) continue;
+    if (prog.match === finalMatchKey || prog.match === bronzeMatchKey) continue;
     const round = getRoundLabel(prog.match, bracket.rounds);
     if (!keysByRound.has(round)) keysByRound.set(round, []);
     keysByRound.get(round)!.push(prog.match);
@@ -389,11 +422,11 @@ function buildBracketRounds(
   // Final (its own round in the display)
   const finalRound: BracketRoundResultView = {
     label: 'Final',
-    matches: [buildMatchView(bracket.finalMatch, 'Final')],
+    matches: [buildMatchView(finalMatchKey, 'Final')],
   };
   bracketRounds.push(finalRound);
 
-  const bronzeMatch = buildMatchView(bracket.bronzeMatch, 'Bronze');
+  const bronzeMatch = buildMatchView(bronzeMatchKey, 'Bronze');
 
   return { bracketRounds, bronzeMatch };
 }
@@ -649,6 +682,36 @@ function computeHit(
   return { hit: 'missed', points: 0 };
 }
 
+function computeKnockoutHit(args: {
+  pickedWinnerId: string | null;
+  actualWinnerId: string | null;
+  predictedHome: number | null;
+  predictedAway: number | null;
+  actualHome: number | null;
+  actualAway: number | null;
+}): MatchHit {
+  const { pickedWinnerId, actualWinnerId, predictedHome, predictedAway, actualHome, actualAway } =
+    args;
+
+  // Tie not yet decided → pending regardless of pick.
+  if (actualWinnerId === null) return 'pending';
+
+  // Exact requires both predicted and actual scores; only Final/Bronze populate predicted.
+  if (
+    predictedHome !== null &&
+    predictedAway !== null &&
+    actualHome !== null &&
+    actualAway !== null &&
+    predictedHome === actualHome &&
+    predictedAway === actualAway
+  ) {
+    return 'exact';
+  }
+
+  if (pickedWinnerId !== null && pickedWinnerId === actualWinnerId) return 'outcome';
+  return 'missed';
+}
+
 function isWithinNext24h(kickoff: Date, now: Date): boolean {
   return kickoff.getTime() <= now.getTime() + 24 * 60 * 60 * 1000;
 }
@@ -675,6 +738,69 @@ function computeMatchPredictionStats(
     avgAwayGoals: Math.round(avgAway * 10) / 10,
     totalPredictions: total,
   };
+}
+
+function computeDerivedParticipants(
+  def: Tournament,
+  allMatches: MatchRow[],
+): Map<BracketMatchKey, [string, string]> {
+  const participantsByMatch = new Map<BracketMatchKey, [string, string]>();
+  const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
+
+  // 1. Entry-round slots from group orders (only if all group matches are final)
+  const finalGroupMatchIds = new Set(
+    allMatches.filter((m) => m.stage === 'group' && m.status === 'final').map((m) => m.id),
+  );
+  const allGroupsFinal = def.groupMatches.every((gm) => finalGroupMatchIds.has(gm.id));
+  if (allGroupsFinal) {
+    const scores: GroupScore[] = def.groupMatches.map((gm) => {
+      const m = matchByKey.get(gm.id)!;
+      return { matchId: matchId(gm.id), home: m.homeGoals!, away: m.awayGoals! };
+    });
+    const groupOrders = deriveGroupOrders(def, scores);
+    const qualifiers = selectQualifiers(def, scores, groupOrders);
+    const autoCount = def.groups.length * def.qualification.autoQualifyPerGroup;
+    const rankedThirds = qualifiers.slice(autoCount);
+
+    for (const slot of def.bracket.slots) {
+      try {
+        const home = resolveSlot(slot.home, groupOrders, rankedThirds);
+        const away = resolveSlot(slot.away, groupOrders, rankedThirds);
+        participantsByMatch.set(slot.match, [home, away]);
+      } catch {
+        // unresolvable ref — leave unset; downstream just shows TBD
+      }
+    }
+  }
+
+  // 2. Non-bronze progression: participants = winners of `from` matches (when both final)
+  for (const prog of def.bracket.progression) {
+    if (prog.match === def.bracket.bronzeMatch) continue;
+    const winners = prog.from.map((k) => matchByKey.get(k)?.winnerTeamId ?? null);
+    if (winners.length === 2 && winners[0] && winners[1]) {
+      participantsByMatch.set(prog.match, [winners[0], winners[1]]);
+    }
+  }
+
+  // 3. Bronze: SF losers (need both SFs final; participants of SF can be derived or from DB row)
+  const bronzeProg = def.bracket.progression.find((p) => p.match === def.bracket.bronzeMatch);
+  if (bronzeProg) {
+    const losers: (string | null)[] = bronzeProg.from.map((sfKey) => {
+      const sfMatch = matchByKey.get(sfKey);
+      const sfWinner = sfMatch?.winnerTeamId ?? null;
+      if (!sfWinner) return null;
+      const sfParts = participantsByMatch.get(sfKey);
+      const sfHome = sfMatch?.homeTeamId ?? sfParts?.[0] ?? null;
+      const sfAway = sfMatch?.awayTeamId ?? sfParts?.[1] ?? null;
+      if (!sfHome || !sfAway) return null;
+      return sfWinner === sfHome ? sfAway : sfHome;
+    });
+    if (losers.length === 2 && losers[0] && losers[1]) {
+      participantsByMatch.set(def.bracket.bronzeMatch, [losers[0], losers[1]]);
+    }
+  }
+
+  return participantsByMatch;
 }
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {

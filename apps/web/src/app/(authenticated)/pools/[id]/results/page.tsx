@@ -26,7 +26,7 @@ export default async function ResultsPage({ params, searchParams }: Props): Prom
   if (!view) notFound();
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px' }}>
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '28px 20px' }}>
       {/* Page header */}
       <div
         style={{

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import type { MatchHit } from '../domain/types';
 
-type Props = { hit: MatchHit; points: number };
+type Props = { hit: MatchHit; points?: number };
 
 export function HitChip({ hit, points }: Props): ReactElement | null {
   if (hit === 'pending') return null;
@@ -18,7 +18,7 @@ export function HitChip({ hit, points }: Props): ReactElement | null {
           fontSize: 11,
         }}
       >
-        ✓ Exact +{points}
+        {points !== undefined ? `✓ Exact +${points}` : '✓ Exact'}
       </span>
     );
   }
@@ -26,14 +26,14 @@ export function HitChip({ hit, points }: Props): ReactElement | null {
   if (hit === 'outcome') {
     return (
       <span className="chip green" style={{ height: 24, fontSize: 11 }}>
-        Outcome +{points}
+        {points !== undefined ? `Correct +${points}` : 'Correct'}
       </span>
     );
   }
 
   return (
     <span className="chip red" style={{ height: 24, fontSize: 11 }}>
-      Missed +0
+      {points !== undefined ? `Missed +0` : 'Missed'}
     </span>
   );
 }

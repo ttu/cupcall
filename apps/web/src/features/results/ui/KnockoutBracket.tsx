@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 import type { BracketRoundResultView, KnockoutMatchView } from '../domain/types';
 import { BracketMatchCard } from './BracketMatchCard';
+import { FinalResultCard } from './FinalResultCard';
 
-// Approximate height of one BracketMatchCard (header + 2 team rows + borders).
 const TIE_H = 80;
 const TIE_GAP = 8;
 const U = TIE_H + TIE_GAP;
@@ -31,22 +31,37 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
     );
   }
 
+  // Split off the Final round so we can render the special FinalResultCard in
+  // the right-most column alongside the bronze tie.
+  const finalRound = rounds.find((r) => r.label === 'Final') ?? null;
+  const finalMatch = finalRound?.matches[0] ?? null;
+  const mainRounds = rounds.filter((r) => r.label !== 'Final');
+  const finalColumnIndex = mainRounds.length;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Info banner */}
       <div
-        className="card"
         style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+          padding: '10px 14px',
+          borderRadius: 10,
           background: 'var(--green-050)',
           border: '1px solid var(--green-300)',
-          padding: '10px 14px',
+          fontSize: 13,
+          color: 'var(--green-700)',
         }}
       >
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--green-700)', margin: 0 }}>
+        <span style={{ fontWeight: 800 }}>⚡</span>
+        <span>
           Results drop into your bracket as we enter them.{' '}
           <strong>Green = your pick survived, red = it&apos;s out.</strong>
-        </p>
+        </span>
       </div>
 
+      {/* Bracket columns */}
       <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
         <div
           style={{
@@ -56,17 +71,18 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
             minWidth: 'max-content',
           }}
         >
-          {rounds.map((round, i) => (
+          {mainRounds.map((round, i) => (
             <div
               key={round.label}
+              data-testid={`bracket-round-${round.label}`}
               style={{
-                minWidth: 160,
+                minWidth: 190,
                 paddingTop: columnPaddingTop(i),
               }}
             >
               <div
                 className="eyebrow"
-                style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2, fontSize: 10 }}
+                style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2 }}
               >
                 {round.label}
               </div>
@@ -83,20 +99,41 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
               </div>
             </div>
           ))}
+
+          {/* Final + Bronze column */}
+          {(finalMatch || bronzeMatch) && (
+            <div
+              style={{
+                minWidth: 220,
+                paddingTop: columnPaddingTop(finalColumnIndex),
+              }}
+            >
+              {finalMatch && (
+                <>
+                  <div
+                    className="eyebrow"
+                    style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2 }}
+                  >
+                    Final
+                  </div>
+                  <FinalResultCard match={finalMatch} matchKey="final" />
+                </>
+              )}
+              {bronzeMatch && (
+                <>
+                  <div
+                    className="eyebrow"
+                    style={{ color: 'var(--ink-muted)', margin: '16px 0 8px', paddingLeft: 2 }}
+                  >
+                    3rd Place
+                  </div>
+                  <FinalResultCard match={bronzeMatch} matchKey="bronze" />
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      {bronzeMatch && (
-        <div>
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 8, fontSize: 10, color: 'var(--ink-muted)' }}
-          >
-            3rd Place
-          </div>
-          <BracketMatchCard match={bronzeMatch} />
-        </div>
-      )}
     </div>
   );
 }

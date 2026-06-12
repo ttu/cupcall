@@ -8,6 +8,7 @@ import { GroupTable } from './GroupTable';
 import { TodayMatchesFeed } from './TodayMatchesFeed';
 import { KnockoutBracket } from './KnockoutBracket';
 import { BracketHealthPanel } from './BracketHealthPanel';
+import { KnockoutPointsPanel } from './KnockoutPointsPanel';
 import { PointsRaceTab } from './PointsRaceTab';
 
 type Tab = 'group' | 'knockout' | 'race';
@@ -116,7 +117,10 @@ export function ResultsPageClient({ view, initialTab = 'group' }: Props): ReactE
       {activeTab === 'knockout' && (
         <div style={{ display: 'grid', gap: 24 }} className="md:grid-cols-[minmax(0,1fr)_240px]">
           <KnockoutBracket rounds={view.bracketRounds} bronzeMatch={view.bronzeMatch} />
-          <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
+            <KnockoutPointsPanel breakdown={view.userBreakdown} />
+          </div>
         </div>
       )}
 
