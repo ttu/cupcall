@@ -457,6 +457,69 @@ describe('getResultsView', () => {
     expect(groupA.todayMatches).toHaveLength(0);
   });
 
+  it('includes match within 24h window in todayMatches', async () => {
+    // 23h in the future: within 24h window, different UTC day
+    const kickoff = new Date(NOW.getTime() + 23 * 60 * 60 * 1000);
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await setMatchKickoff(db, miniTournament.id, matchId, kickoff);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    expect(groupA.todayMatches).toHaveLength(1);
+  });
+
+  it('excludes match beyond 24h window from todayMatches', async () => {
+    const kickoff = new Date(NOW.getTime() + 25 * 60 * 60 * 1000);
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await setMatchKickoff(db, miniTournament.id, matchId, kickoff);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    expect(groupA.todayMatches).toHaveLength(0);
+  });
+
+  it('computes poolPredictionStats for upcoming match', async () => {
+    const kickoff = new Date('2030-06-15T18:00:00Z');
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await setMatchKickoff(db, miniTournament.id, matchId, kickoff);
+
+    // userId predicts 2-0 (home win), ownerId predicts 1-1 (draw)
+    const userPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, userPred.id, matchId, 2, 0);
+
+    const ownerPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId: ownerId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, ownerPred.id, matchId, 1, 1);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    const stats = groupA.todayMatches[0]!.poolPredictionStats!;
+
+    expect(stats.totalPredictions).toBe(2);
+    expect(stats.homeWinPct).toBe(50);
+    expect(stats.drawPct).toBe(50);
+    expect(stats.awayWinPct).toBe(0);
+    expect(stats.avgHomeGoals).toBe(1.5);
+    expect(stats.avgAwayGoals).toBe(0.5);
+  });
+
+  it('returns null poolPredictionStats when no predictions exist', async () => {
+    const kickoff = new Date('2030-06-15T18:00:00Z');
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await setMatchKickoff(db, miniTournament.id, matchId, kickoff);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    expect(groupA.todayMatches[0]!.poolPredictionStats).toBeNull();
+  });
+
   // ---------------------------------------------------------------------------
   // pointsRaceView
   // ---------------------------------------------------------------------------

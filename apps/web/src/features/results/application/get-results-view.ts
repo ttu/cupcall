@@ -27,6 +27,7 @@ import type {
   BracketRoundResultView,
   BracketHealth,
   MatchHit,
+  MatchPredictionStats,
   UserRankChip,
   PointsRaceView,
   RaceChartPlayer,
@@ -68,7 +69,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   const userRank = buildUserRank(leaderboard, userId);
   const stageProgress = buildStageProgress(def, allMatches);
   const currentStage = deriveCurrentStage(stageProgress);
-  const groupResults = buildGroupResults(def, allMatches, inputs, now);
+  const groupResults = buildGroupResults(def, allMatches, inputs, poolGroupScores, now);
   const { bracketRounds, bronzeMatch } = buildBracketRounds(def, allMatches, inputs);
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch);
 
@@ -127,6 +128,7 @@ function buildGroupResults(
   def: Tournament,
   allMatches: MatchRow[],
   inputs: Awaited<ReturnType<typeof getPredictionInputs>> | null,
+  poolGroupScores: PoolGroupScore[],
   now: Date,
 ): GroupResultView[] {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
@@ -172,7 +174,7 @@ function buildGroupResults(
           m.groupId === group.id &&
           m.status !== 'final' &&
           m.kickoff !== null &&
-          isSameUtcDay(m.kickoff, now),
+          isWithinNext24h(m.kickoff, now),
       )
       .map((m) => ({
         matchId: m.id,
@@ -184,6 +186,7 @@ function buildGroupResults(
         kickoff: m.kickoff!.toISOString(),
         predictedHome: predMap.get(m.id)?.home ?? null,
         predictedAway: predMap.get(m.id)?.away ?? null,
+        poolPredictionStats: computeMatchPredictionStats(m.id, poolGroupScores),
       }));
 
     const standing = buildGroupStanding(
@@ -646,12 +649,32 @@ function computeHit(
   return { hit: 'missed', points: 0 };
 }
 
-function isSameUtcDay(a: Date, b: Date): boolean {
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
-  );
+function isWithinNext24h(kickoff: Date, now: Date): boolean {
+  return kickoff.getTime() <= now.getTime() + 24 * 60 * 60 * 1000;
+}
+
+function computeMatchPredictionStats(
+  matchId: string,
+  poolGroupScores: PoolGroupScore[],
+): MatchPredictionStats | null {
+  const preds = poolGroupScores.filter((s) => s.matchId === matchId);
+  if (preds.length === 0) return null;
+
+  const total = preds.length;
+  const homeWins = preds.filter((s) => s.home > s.away).length;
+  const draws = preds.filter((s) => s.home === s.away).length;
+  const awayWins = preds.filter((s) => s.home < s.away).length;
+  const avgHome = preds.reduce((sum, s) => sum + s.home, 0) / total;
+  const avgAway = preds.reduce((sum, s) => sum + s.away, 0) / total;
+
+  return {
+    homeWinPct: Math.round((homeWins / total) * 100),
+    drawPct: Math.round((draws / total) * 100),
+    awayWinPct: Math.round((awayWins / total) * 100),
+    avgHomeGoals: Math.round(avgHome * 10) / 10,
+    avgAwayGoals: Math.round(avgAway * 10) / 10,
+    totalPredictions: total,
+  };
 }
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {
