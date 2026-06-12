@@ -5,6 +5,7 @@ import type { ReactElement } from 'react';
 import type { ResultsView } from '../domain/types';
 import { GroupMatchFeed } from './GroupMatchFeed';
 import { GroupTable } from './GroupTable';
+import { TodayMatchesFeed } from './TodayMatchesFeed';
 import { KnockoutBracket } from './KnockoutBracket';
 import { BracketHealthPanel } from './BracketHealthPanel';
 import { PointsRaceTab } from './PointsRaceTab';
@@ -68,6 +69,8 @@ export function ResultsPageClient({ view, initialTab = 'group' }: Props): ReactE
           aria-label="Group stage results"
           style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
         >
+          <TodayMatchesFeed groups={view.groupResults} />
+
           {/* Group jump nav */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {view.groupResults.map((g) => (
