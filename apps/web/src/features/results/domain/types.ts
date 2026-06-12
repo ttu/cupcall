@@ -82,12 +82,81 @@ export type BracketHealth = {
 };
 
 import type { StageKey, StageProgress } from '@/shared/stage-progress';
-export type { StageKey, StageProgress };
+import type { LeaderboardEntry } from '@cup/db';
+export type { StageKey, StageProgress, LeaderboardEntry };
 
 export type UserRankChip = {
   rank: number;
   totalMembers: number;
   points: number;
+};
+
+// ---------------------------------------------------------------------------
+// Points race
+// ---------------------------------------------------------------------------
+
+export type MatchMatrixCell = {
+  matchId: string;
+  hit: MatchHit;
+  points: number;
+};
+
+export type MatchMatrixEntry = {
+  userId: string;
+  displayName: string;
+  isCurrentUser: boolean;
+  cells: MatchMatrixCell[];
+  totalPoints: number;
+};
+
+export type MatrixMatch = {
+  matchId: string;
+  homeTeamId: string;
+  homeTeamName: string;
+  awayTeamId: string;
+  awayTeamName: string;
+  actualHome: number;
+  actualAway: number;
+};
+
+export type RaceChartPlayer = {
+  userId: string;
+  displayName: string;
+  isCurrentUser: boolean;
+  color: string;
+  /** Cumulative points at each stage (parallel to PointsRaceView.chartStages). */
+  points: number[];
+};
+
+export type ProjectedEntry = {
+  userId: string;
+  displayName: string;
+  isCurrentUser: boolean;
+  currentPoints: number;
+  currentRank: number;
+  projectedPoints: number;
+  projectedRank: number;
+  /** Positive = moved up in projected standings vs current. */
+  rankDelta: number;
+};
+
+export type PointsRaceView = {
+  /** X-axis labels for the race chart, e.g. ["Start","Group Stage","Now","Projected"]. */
+  chartStages: string[];
+  /** Index of the "Now" stage in chartStages — actual data ends here, dashed after. */
+  chartNowIndex: number;
+  chartPlayers: RaceChartPlayer[];
+  /** Current user's banked (actual) points total. */
+  myBanked: number;
+  /** Approximate additional points still reachable from surviving bracket picks. */
+  myStillLive: number;
+  /** myBanked + myStillLive. */
+  myProjected: number;
+  projectedEntries: ProjectedEntry[];
+  /** Rows of the per-match scoring matrix, sorted by totalPoints DESC. */
+  matchMatrix: MatchMatrixEntry[];
+  /** Completed group-stage matches that form the matrix columns, in kickoff order. */
+  matrixMatches: MatrixMatch[];
 };
 
 export type ResultsView = {
@@ -100,4 +169,6 @@ export type ResultsView = {
   bracketRounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
   bracketHealth: BracketHealth;
+  leaderboard: LeaderboardEntry[];
+  pointsRaceView: PointsRaceView;
 };

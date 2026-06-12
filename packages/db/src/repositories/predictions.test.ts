@@ -6,6 +6,7 @@ import {
   listPredictionsForTournament,
   getPredictionInputs,
   clearPredictionInputs,
+  getGroupScoresByPool,
 } from './predictions';
 import { upsertTournamentDef } from './tournament';
 import { createUser } from './users';
@@ -212,6 +213,56 @@ describe('predictions repository', () => {
       const inputs2 = await getPredictionInputs(db, pred2);
       expect(inputs1.groupScores).toHaveLength(0);
       expect(inputs2.groupScores).toHaveLength(1);
+    });
+  });
+
+  describe('getGroupScoresByPool', () => {
+    it('returns empty array when no predictions exist', async () => {
+      const result = await getGroupScoresByPool(db, poolId);
+      expect(result).toHaveLength(0);
+    });
+
+    it('returns all group scores for all members of the pool', async () => {
+      const user2 = await createUser(db, {
+        email: `u2-${crypto.randomUUID()}@x.com`,
+        displayName: 'Bob',
+      });
+      const pred1 = await seedPrediction(db, poolId, userId1, tournamentId);
+      const pred2 = await seedPrediction(db, poolId, user2.id, tournamentId);
+
+      await db.insert(schema.predictionGroupScores).values([
+        { predictionId: pred1, matchId: 'mA1', homeGoals: 2, awayGoals: 1 },
+        { predictionId: pred1, matchId: 'mA2', homeGoals: 0, awayGoals: 0 },
+        { predictionId: pred2, matchId: 'mA1', homeGoals: 3, awayGoals: 0 },
+      ]);
+
+      const result = await getGroupScoresByPool(db, poolId);
+      expect(result).toHaveLength(3);
+      const user1Scores = result.filter((r) => r.userId === userId1);
+      expect(user1Scores).toHaveLength(2);
+      const u1mA1 = user1Scores.find((r) => r.matchId === 'mA1');
+      expect(u1mA1?.home).toBe(2);
+      expect(u1mA1?.away).toBe(1);
+    });
+
+    it('does not return scores from other pools', async () => {
+      const otherOwner = await createUser(db, {
+        email: `o2-${crypto.randomUUID()}@x.com`,
+        displayName: 'Other Owner',
+      });
+      const otherPool = await createPool(db, {
+        tournamentId,
+        ownerId: otherOwner.id,
+        name: 'Other Pool',
+        inviteTokenHash: `hother-${crypto.randomUUID()}`,
+      });
+      const predOther = await seedPrediction(db, otherPool.id, otherOwner.id, tournamentId);
+      await db
+        .insert(schema.predictionGroupScores)
+        .values([{ predictionId: predOther, matchId: 'mA1', homeGoals: 1, awayGoals: 1 }]);
+
+      const result = await getGroupScoresByPool(db, poolId);
+      expect(result).toHaveLength(0);
     });
   });
 });

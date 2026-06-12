@@ -11,6 +11,13 @@ export type {
   UserRankChip,
   MatchHit,
   PickStatus,
+  PointsRaceView,
+  RaceChartPlayer,
+  ProjectedEntry,
+  MatchMatrixEntry,
+  MatchMatrixCell,
+  MatrixMatch,
+  LeaderboardEntry,
 } from './domain/types';
 
 export { getResultsView } from './application/get-results-view';

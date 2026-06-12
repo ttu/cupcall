@@ -264,6 +264,43 @@ export async function listEditsForPrediction(
     }));
 }
 
+export type PoolGroupScore = {
+  userId: UserId;
+  matchId: string;
+  home: number;
+  away: number;
+};
+
+/**
+ * Returns all group-score predictions for every member of a pool in a single
+ * JOIN query. Used to build the per-match points matrix in the results view.
+ */
+export async function getGroupScoresByPool(
+  db: Database,
+  poolId: string,
+): Promise<PoolGroupScore[]> {
+  const rows = await db
+    .select({
+      userId: schema.predictions.userId,
+      matchId: schema.predictionGroupScores.matchId,
+      home: schema.predictionGroupScores.homeGoals,
+      away: schema.predictionGroupScores.awayGoals,
+    })
+    .from(schema.predictions)
+    .innerJoin(
+      schema.predictionGroupScores,
+      eq(schema.predictionGroupScores.predictionId, schema.predictions.id),
+    )
+    .where(eq(schema.predictions.poolId, poolId));
+
+  return rows.map((r) => ({
+    userId: userId(r.userId),
+    matchId: r.matchId,
+    home: r.home,
+    away: r.away,
+  }));
+}
+
 /**
  * Returns all predictions for a tournament across all pools.
  * Used by the sync pipeline to enumerate cards that need rescoring.

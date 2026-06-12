@@ -7,8 +7,9 @@ import { GroupMatchFeed } from './GroupMatchFeed';
 import { GroupTable } from './GroupTable';
 import { KnockoutBracket } from './KnockoutBracket';
 import { BracketHealthPanel } from './BracketHealthPanel';
+import { PointsRaceTab } from './PointsRaceTab';
 
-type Tab = 'group' | 'knockout';
+type Tab = 'group' | 'knockout' | 'race';
 
 type Props = { view: ResultsView };
 
@@ -31,13 +32,16 @@ export function ResultsPageClient({ view }: Props): ReactElement {
         aria-label="Results sections"
         style={{ display: 'flex', borderBottom: '1px solid var(--line-soft)', marginBottom: 24 }}
       >
-        {(['group', 'knockout'] as Tab[]).map((tab) => {
+        {(['group', 'knockout', 'race'] as Tab[]).map((tab) => {
           const active = activeTab === tab;
+          const label =
+            tab === 'group' ? 'Group Stage' : tab === 'knockout' ? 'Knockout' : 'Points Race';
           return (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
+              data-testid={`results-tab-${tab}`}
               style={{
                 flex: 1,
                 padding: '11px 12px 14px',
@@ -50,9 +54,10 @@ export function ResultsPageClient({ view }: Props): ReactElement {
                 fontWeight: 700,
                 color: active ? 'var(--ink)' : 'var(--ink-muted)',
                 transition: 'color .15s',
+                whiteSpace: 'nowrap',
               }}
             >
-              {tab === 'group' ? 'Group Stage' : 'Knockout'}
+              {label}
             </button>
           );
         })}
@@ -111,6 +116,8 @@ export function ResultsPageClient({ view }: Props): ReactElement {
           <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
         </div>
       )}
+
+      {activeTab === 'race' && <PointsRaceTab race={view.pointsRaceView} />}
     </div>
   );
 }

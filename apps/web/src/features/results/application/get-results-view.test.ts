@@ -457,6 +457,147 @@ describe('getResultsView', () => {
     expect(groupA.todayMatches).toHaveLength(0);
   });
 
+  // ---------------------------------------------------------------------------
+  // pointsRaceView
+  // ---------------------------------------------------------------------------
+
+  it('includes leaderboard in result', async () => {
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(150),
+      breakdown: {} as ScoreBreakdown,
+    });
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.leaderboard).toHaveLength(2); // owner + user
+    const myEntry = view!.leaderboard.find((e) => e.userId === userId);
+    expect(myEntry?.pointsTotal).toBe(150);
+  });
+
+  it('builds match matrix from all pool members group scores', async () => {
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await finalizeMatch(db, miniTournament.id, matchId, 2, 0);
+
+    const userPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, userPred.id, matchId, 2, 0); // exact
+
+    const ownerPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId: ownerId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, ownerPred.id, matchId, 1, 0); // outcome
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const { matchMatrix, matrixMatches } = view!.pointsRaceView;
+
+    expect(matrixMatches).toHaveLength(1);
+    expect(matrixMatches[0]!.matchId).toBe(matchId);
+
+    const myRow = matchMatrix.find((r) => r.userId === userId);
+    expect(myRow?.isCurrentUser).toBe(true);
+    expect(myRow?.cells[0]?.hit).toBe('exact');
+    expect(myRow?.cells[0]?.points).toBe(miniTournament.scoring.groupMatch.exactScore);
+
+    const ownerRow = matchMatrix.find((r) => r.userId === ownerId);
+    expect(ownerRow?.cells[0]?.hit).toBe('outcome');
+  });
+
+  it('sorts matchMatrix by totalPoints descending', async () => {
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await finalizeMatch(db, miniTournament.id, matchId, 2, 0);
+
+    // owner gets exact, user gets missed → owner should rank 1st
+    const userPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, userPred.id, matchId, 0, 2); // missed
+
+    const ownerPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId: ownerId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, ownerPred.id, matchId, 2, 0); // exact
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const { matchMatrix } = view!.pointsRaceView;
+
+    expect(matchMatrix[0]!.userId).toBe(ownerId);
+    expect(matchMatrix[1]!.userId).toBe(userId);
+  });
+
+  it('builds projected standings with current user projected from bracket picks', async () => {
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(100),
+      breakdown: {} as ScoreBreakdown,
+    });
+    await upsertScore(db, {
+      poolId,
+      userId: ownerId,
+      pointsTotal: points(120),
+      breakdown: {} as ScoreBreakdown,
+    });
+
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    // Give user 2 bracket picks (pending → both still live)
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf2'), 'B1');
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const race = view!.pointsRaceView;
+
+    expect(race.myBanked).toBe(100);
+    // 2 still-live picks × roundOf8PerTeam
+    const expectedStillLive = 2 * miniTournament.scoring.roundOf8PerTeam;
+    expect(race.myStillLive).toBe(expectedStillLive);
+    expect(race.myProjected).toBe(100 + expectedStillLive);
+
+    // user projected rank depends on whether projection surpasses owner's 120
+    const me = race.projectedEntries.find((e) => e.isCurrentUser);
+    expect(me?.currentRank).toBe(2);
+  });
+
+  it('chartStages includes Group Stage when group points exist', async () => {
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(50),
+      breakdown: {
+        groupMatches: points(30),
+        groupOrder: points(20),
+        roundOf8: points(0),
+        topFour: points(0),
+        bronze: points(0),
+        final: points(0),
+        specials: points(0),
+        total: points(50),
+      },
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.pointsRaceView.chartStages).toContain('Group Stage');
+    expect(view!.pointsRaceView.chartStages[0]).toBe('Start');
+  });
+
+  it('chartStages omits Group Stage when no group points exist', async () => {
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.pointsRaceView.chartStages).not.toContain('Group Stage');
+    expect(view!.pointsRaceView.chartStages).toContain('Now');
+  });
+
   it('populates prediction fields in todayMatch when user has a prediction', async () => {
     const todayKickoff = new Date('2030-06-15T18:00:00Z');
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;

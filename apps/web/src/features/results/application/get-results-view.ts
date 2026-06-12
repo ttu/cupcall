@@ -7,8 +7,9 @@ import {
   getPrediction,
   getPredictionInputs,
   getMatchesForTournament,
+  getGroupScoresByPool,
 } from '@cup/db';
-import type { MatchRow } from '@cup/db';
+import type { MatchRow, LeaderboardEntry, PoolGroupScore } from '@cup/db';
 import { deriveGroupOrders, selectQualifiers, matchId } from '@cup/engine';
 import type { Tournament, GroupId, TeamId, BracketMatchKey, GroupScore } from '@cup/engine';
 import type {
@@ -22,6 +23,12 @@ import type {
   BracketHealth,
   MatchHit,
   UserRankChip,
+  PointsRaceView,
+  RaceChartPlayer,
+  ProjectedEntry,
+  MatchMatrixEntry,
+  MatrixMatch,
+  MatchMatrixCell,
 } from '../domain/types';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
@@ -44,10 +51,11 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
 
   const def = tournament.definition;
 
-  const [leaderboard, prediction, allMatches] = await Promise.all([
+  const [leaderboard, prediction, allMatches, poolGroupScores] = await Promise.all([
     getLeaderboard(db, poolId),
     getPrediction(db, poolId, userId as import('@cup/engine').UserId),
     getMatchesForTournament(db, pool.tournamentId),
+    getGroupScoresByPool(db, poolId),
   ]);
 
   const inputs = prediction != null ? await getPredictionInputs(db, prediction.id) : null;
@@ -59,6 +67,15 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   const { bracketRounds, bronzeMatch } = buildBracketRounds(def, allMatches, inputs);
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch);
 
+  const pointsRaceView = buildPointsRaceView({
+    leaderboard,
+    userId,
+    bracketHealth,
+    allMatches,
+    poolGroupScores,
+    def,
+  });
+
   return {
     poolName: pool.name,
     tournamentName: tournament.name,
@@ -69,6 +86,8 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     bracketRounds,
     bronzeMatch,
     bracketHealth,
+    leaderboard,
+    pointsRaceView,
   };
 }
 
@@ -389,6 +408,183 @@ function buildBracketHealth(
     alivePicks: allMatches.filter((m) => m.pickStatus === 'alive').length,
     bustedPicks: allMatches.filter((m) => m.pickStatus === 'busted').length,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Points race
+// ---------------------------------------------------------------------------
+
+const RACE_COLORS = [
+  'var(--orange-500)',
+  'oklch(0.55 0.13 250)',
+  'oklch(0.64 0.12 30)',
+  'oklch(0.72 0.02 160)',
+  'oklch(0.65 0.10 60)',
+  'oklch(0.55 0.12 280)',
+  'oklch(0.70 0.10 200)',
+  'oklch(0.60 0.08 100)',
+];
+
+type RaceParams = {
+  leaderboard: LeaderboardEntry[];
+  userId: string;
+  bracketHealth: BracketHealth;
+  allMatches: MatchRow[];
+  poolGroupScores: PoolGroupScore[];
+  def: Tournament;
+};
+
+function buildPointsRaceView(params: RaceParams): PointsRaceView {
+  const { leaderboard, userId, bracketHealth, allMatches, poolGroupScores, def } = params;
+
+  const myEntry = leaderboard.find((e) => e.userId === userId);
+  const myBanked = myEntry?.pointsTotal ?? 0;
+  // Alive + pending picks (i.e. not busted) can still contribute points.
+  const stillLivePicks = bracketHealth.totalPicks - bracketHealth.bustedPicks;
+  const myStillLive = stillLivePicks * def.scoring.roundOf8PerTeam;
+  const myProjected = myBanked + myStillLive;
+
+  // Chart stages
+  const hasGroupStagePoints = leaderboard.some(
+    (e) => e.breakdown && e.breakdown.groupMatches + e.breakdown.groupOrder > 0,
+  );
+  const stages: string[] = ['Start'];
+  if (hasGroupStagePoints) stages.push('Group Stage');
+  stages.push('Now');
+  const nowIndex = stages.length - 1;
+  if (myStillLive > 0) stages.push('Projected');
+
+  let colorIdx = 0;
+  const chartPlayers: RaceChartPlayer[] = leaderboard.map((e) => {
+    const isCurrentUser = e.userId === userId;
+    const color = isCurrentUser
+      ? 'var(--green-500)'
+      : (RACE_COLORS[colorIdx++] ?? 'var(--ink-muted)');
+
+    const pts: number[] = [0]; // Start
+    if (hasGroupStagePoints) {
+      pts.push(e.breakdown ? e.breakdown.groupMatches + e.breakdown.groupOrder : 0);
+    }
+    pts.push(e.pointsTotal); // Now
+    if (myStillLive > 0) {
+      pts.push(isCurrentUser ? myProjected : e.pointsTotal);
+    }
+
+    return { userId: e.userId, displayName: e.displayName, isCurrentUser, color, points: pts };
+  });
+  // Draw current user last (on top in SVG).
+  chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
+
+  const projectedEntries = buildProjectedEntries(leaderboard, userId, myProjected);
+  const { matchMatrix, matrixMatches } = buildMatchMatrix(
+    leaderboard,
+    userId,
+    allMatches,
+    poolGroupScores,
+    def,
+  );
+
+  return {
+    chartStages: stages,
+    chartNowIndex: nowIndex,
+    chartPlayers,
+    myBanked,
+    myStillLive,
+    myProjected,
+    projectedEntries,
+    matchMatrix,
+    matrixMatches,
+  };
+}
+
+function buildProjectedEntries(
+  leaderboard: LeaderboardEntry[],
+  userId: string,
+  myProjected: number,
+): ProjectedEntry[] {
+  const currentRankMap = new Map<string, number>(leaderboard.map((e, i) => [e.userId, i + 1]));
+
+  const withProjected = leaderboard.map((e) => ({
+    userId: e.userId,
+    displayName: e.displayName,
+    isCurrentUser: e.userId === userId,
+    currentPoints: e.pointsTotal,
+    projectedPoints: e.userId === userId ? myProjected : e.pointsTotal,
+  }));
+
+  const sorted = [...withProjected].sort((a, b) => b.projectedPoints - a.projectedPoints);
+
+  return sorted.map((e, i) => {
+    const currentRank = currentRankMap.get(e.userId) ?? 0;
+    const projectedRank = i + 1;
+    return {
+      userId: e.userId,
+      displayName: e.displayName,
+      isCurrentUser: e.isCurrentUser,
+      currentPoints: e.currentPoints,
+      currentRank,
+      projectedPoints: e.projectedPoints,
+      projectedRank,
+      rankDelta: currentRank - projectedRank,
+    };
+  });
+}
+
+function buildMatchMatrix(
+  leaderboard: LeaderboardEntry[],
+  userId: string,
+  allMatches: MatchRow[],
+  poolGroupScores: PoolGroupScore[],
+  def: Tournament,
+): { matchMatrix: MatchMatrixEntry[]; matrixMatches: MatrixMatch[] } {
+  const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
+  const scoring = def.scoring.groupMatch;
+
+  const completedGroupMatches = allMatches
+    .filter((m) => m.stage === 'group' && m.status === 'final')
+    .sort((a, b) => (a.kickoff?.getTime() ?? 0) - (b.kickoff?.getTime() ?? 0));
+
+  const matrixMatches: MatrixMatch[] = completedGroupMatches.map((m) => ({
+    matchId: m.id,
+    homeTeamId: m.homeTeamId ?? '',
+    homeTeamName: teamMap.get(m.homeTeamId ?? '') ?? m.homeTeamId ?? '',
+    awayTeamId: m.awayTeamId ?? '',
+    awayTeamName: teamMap.get(m.awayTeamId ?? '') ?? m.awayTeamId ?? '',
+    actualHome: m.homeGoals!,
+    actualAway: m.awayGoals!,
+  }));
+
+  const predMap = new Map<string, { home: number; away: number }>();
+  for (const gs of poolGroupScores) {
+    predMap.set(`${gs.userId}::${gs.matchId}`, { home: gs.home, away: gs.away });
+  }
+
+  const matchMatrix: MatchMatrixEntry[] = leaderboard.map((e) => {
+    let totalPoints = 0;
+    const cells: MatchMatrixCell[] = completedGroupMatches.map((m) => {
+      const pred = predMap.get(`${e.userId}::${m.id}`) ?? null;
+      const hit = computeHit(
+        m.homeGoals!,
+        m.awayGoals!,
+        pred?.home ?? null,
+        pred?.away ?? null,
+        scoring,
+      );
+      totalPoints += hit.points;
+      return { matchId: m.id, hit: hit.hit, points: hit.points };
+    });
+    return {
+      userId: e.userId,
+      displayName: e.displayName,
+      isCurrentUser: e.userId === userId,
+      cells,
+      totalPoints,
+    };
+  });
+
+  matchMatrix.sort((a, b) => b.totalPoints - a.totalPoints);
+
+  return { matchMatrix, matrixMatches };
 }
 
 // ---------------------------------------------------------------------------
