@@ -54,9 +54,14 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
             flexWrap: 'wrap',
           }}
         >
-          <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
-            {detail.name}
-          </h1>
+          <div>
+            <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
+              {detail.name}
+            </h1>
+            <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginTop: 4 }}>
+              {detail.tournamentName}
+            </div>
+          </div>
           {locked && (
             <span className="pill-lock">
               <Icon name="lock" size={14} />
