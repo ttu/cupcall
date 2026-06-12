@@ -5,17 +5,35 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPool } from '../api/actions';
 
-export function CreatePoolForm(): ReactElement {
+interface Tournament {
+  id: string;
+  name: string;
+}
+
+interface Props {
+  tournaments: Tournament[];
+}
+
+export function CreatePoolForm({ tournaments }: Props): ReactElement {
   const [name, setName] = useState('');
+  const [tournamentId, setTournamentId] = useState(tournaments[0]?.id ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  if (tournaments.length === 0) {
+    return (
+      <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: 0 }}>
+        No tournament available yet.
+      </p>
+    );
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = await createPool({ name });
+      const result = await createPool({ name, tournamentId });
       if (result.ok) {
         router.push(`/pools/${result.poolId}`);
       } else {
@@ -26,6 +44,30 @@ export function CreatePoolForm(): ReactElement {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <select
+        value={tournamentId}
+        onChange={(e) => setTournamentId(e.target.value)}
+        disabled={isPending || tournaments.length === 1}
+        aria-label="Tournament"
+        data-testid="tournament-select"
+        style={{
+          height: 48,
+          borderRadius: 11,
+          border: '1.5px solid var(--line)',
+          background: 'var(--surface)',
+          padding: '0 15px',
+          fontSize: 15,
+          color: 'var(--ink)',
+          fontFamily: 'var(--font-ui)',
+          opacity: isPending ? 0.6 : 1,
+        }}
+      >
+        {tournaments.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
       <div style={{ display: 'flex', gap: 10 }}>
         <input
           id="pool-name"

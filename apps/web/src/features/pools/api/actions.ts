@@ -65,7 +65,10 @@ async function getOwnerPoolOrThrow(poolId: string) {
 // Create pool
 // ---------------------------------------------------------------------------
 
-const CreatePoolSchema = z.object({ name: z.string().min(1).max(100) });
+const CreatePoolSchema = z.object({
+  name: z.string().min(1).max(100),
+  tournamentId: z.string().min(1).optional(),
+});
 
 export async function createPool(
   raw: unknown,
@@ -78,12 +81,14 @@ export async function createPool(
     const result = await appCreatePool(db, {
       ownerId: actor.userId,
       name: parsed.data.name,
+      ...(parsed.data.tournamentId ? { tournamentId: parsed.data.tournamentId } : {}),
       now: new Date(),
     });
 
     if (!result.ok) {
       const { code } = result.error;
       if (code === 'no_tournament') return { ok: false, error: 'No tournament available yet.' };
+      if (code === 'tournament_not_found') return { ok: false, error: 'Tournament not found.' };
       if (code === 'pool_cap_exceeded')
         return { ok: false, error: `You can own at most ${result.error.limit} pools.` };
       if (code === 'rate_limited')

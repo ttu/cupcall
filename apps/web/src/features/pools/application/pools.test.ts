@@ -98,6 +98,32 @@ describe('createPool', () => {
     expect(result.pool.memberCount).toBe(1);
   });
 
+  it('creates a pool for the specified tournamentId', async () => {
+    await seedTournament(db, 'wc-test');
+    await seedTournament(db, 'mini-test');
+    const result = await createPool(db, {
+      ownerId,
+      name: 'Mini Pool',
+      tournamentId: 'mini-test',
+      now: NOW,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.pool.tournamentId).toBe('mini-test');
+  });
+
+  it('returns tournament_not_found when the specified tournamentId does not exist', async () => {
+    const result = await createPool(db, {
+      ownerId,
+      name: 'My Pool',
+      tournamentId: 'nonexistent',
+      now: NOW,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe('tournament_not_found');
+  });
+
   it('returns no_tournament error when no tournaments exist', async () => {
     const result = await createPool(db, { ownerId, name: 'My Pool', now: NOW });
     expect(result.ok).toBe(false);

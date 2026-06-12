@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { redirect } from 'next/navigation';
 import { getCurrentActor, ConnectEmailForm } from '@/features/auth';
 import { db } from '@/shared/db';
-import { getUserById, getLoginTokenByUserId, upsertLoginToken } from '@cup/db';
+import { getUserById, getLoginTokenByUserId, upsertLoginToken, listTournaments } from '@cup/db';
 import {
   getUserPools,
   PoolListItem,
@@ -16,9 +16,10 @@ export default async function PoolsPage(): Promise<ReactElement> {
   const actor = await getCurrentActor();
   if (!actor) redirect('/');
 
-  const [pools, user] = await Promise.all([
+  const [pools, user, allTournaments] = await Promise.all([
     getUserPools(db, actor.userId),
     getUserById(db, actor.userId),
+    listTournaments(db),
   ]);
 
   let myLoginToken: string | null = null;
@@ -80,7 +81,7 @@ export default async function PoolsPage(): Promise<ReactElement> {
         </SectionLabel>
       </div>
       <div className="card" style={{ padding: 24 }}>
-        <CreatePoolForm />
+        <CreatePoolForm tournaments={allTournaments.map((t) => ({ id: t.id, name: t.name }))} />
       </div>
     </div>
   );

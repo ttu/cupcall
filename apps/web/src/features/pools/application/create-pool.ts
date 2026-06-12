@@ -6,6 +6,7 @@ import {
   checkRateLimit,
   RATE_LIMITS,
   listTournaments,
+  getTournamentById,
 } from '@cup/db';
 import type { UserId } from '@cup/engine';
 import { generateInviteToken } from '../domain/invite';
@@ -16,6 +17,7 @@ const MAX_POOLS_PER_USER = 5;
 
 export type CreatePoolError =
   | { code: 'no_tournament' }
+  | { code: 'tournament_not_found' }
   | { code: 'pool_cap_exceeded'; limit: number }
   | { code: 'rate_limited' };
 
@@ -25,16 +27,20 @@ export type CreatePoolResult =
 
 export async function createPool(
   db: Db<import('@/shared/db').AppSchema>,
-  input: { ownerId: UserId; name: string; now: Date },
+  input: { ownerId: UserId; name: string; tournamentId?: string; now: Date },
 ): Promise<CreatePoolResult> {
-  const { ownerId, name, now } = input;
+  const { ownerId, name, tournamentId, now } = input;
 
-  // Pick the first available tournament (v1: single active tournament).
-  const tournaments = await listTournaments(db);
-  if (tournaments.length === 0) {
-    return { ok: false, error: { code: 'no_tournament' } };
+  // Resolve the tournament: use the specified one, or fall back to the first available.
+  let tournament;
+  if (tournamentId) {
+    tournament = await getTournamentById(db, tournamentId);
+    if (!tournament) return { ok: false, error: { code: 'tournament_not_found' } };
+  } else {
+    const available = await listTournaments(db);
+    if (available.length === 0) return { ok: false, error: { code: 'no_tournament' } };
+    tournament = available[0]!;
   }
-  const tournament = tournaments[0]!;
 
   // Pool ownership cap.
   const owned = await countPoolsOwnedBy(db, ownerId);
