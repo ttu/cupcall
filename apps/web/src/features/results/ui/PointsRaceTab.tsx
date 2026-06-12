@@ -15,9 +15,9 @@ import { RaceChart } from './RaceChart';
 
 type RaceSubTab = 'race' | 'by-match';
 
-type Props = { race: PointsRaceView };
+type Props = { race: PointsRaceView; viewerMode?: boolean };
 
-export function PointsRaceTab({ race }: Props): ReactElement {
+export function PointsRaceTab({ race, viewerMode = false }: Props): ReactElement {
   const [subTab, setSubTab] = useState<RaceSubTab>('race');
 
   return (
@@ -52,7 +52,7 @@ export function PointsRaceTab({ race }: Props): ReactElement {
         })}
       </div>
 
-      {subTab === 'race' && <RaceView race={race} />}
+      {subTab === 'race' && <RaceView race={race} viewerMode={viewerMode} />}
       {subTab === 'by-match' && (
         <MatchMatrix entries={race.matchMatrix} matches={race.matrixMatches} />
       )}
@@ -64,7 +64,13 @@ export function PointsRaceTab({ race }: Props): ReactElement {
 // Race sub-view
 // ---------------------------------------------------------------------------
 
-function RaceView({ race }: { race: PointsRaceView }): ReactElement {
+function RaceView({
+  race,
+  viewerMode,
+}: {
+  race: PointsRaceView;
+  viewerMode: boolean;
+}): ReactElement {
   return (
     <div style={{ display: 'grid', gap: 0 }} className="md:grid-cols-[1fr_322px]">
       {/* Left: chart + stat cards */}
@@ -94,26 +100,28 @@ function RaceView({ race }: { race: PointsRaceView }): ReactElement {
         </div>
 
         {/* Stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-          <StatCard
-            label="Banked so far"
-            value={String(race.myBanked)}
-            sub="your actual points scored"
-            color="var(--ink)"
-          />
-          <StatCard
-            label="Still live"
-            value={`+${race.myStillLive}`}
-            sub="if surviving picks hold"
-            color={race.myStillLive > 0 ? 'var(--green-600)' : 'var(--ink-muted)'}
-          />
-          <StatCard
-            label="Projected total"
-            value={String(race.myProjected)}
-            sub={projectedSubLabel(race.projectedEntries)}
-            color={race.myStillLive > 0 ? 'var(--green-600)' : 'var(--ink)'}
-          />
-        </div>
+        {!viewerMode && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <StatCard
+              label="Banked so far"
+              value={String(race.myBanked)}
+              sub="your actual points scored"
+              color="var(--ink)"
+            />
+            <StatCard
+              label="Still live"
+              value={`+${race.myStillLive}`}
+              sub="if surviving picks hold"
+              color={race.myStillLive > 0 ? 'var(--green-600)' : 'var(--ink-muted)'}
+            />
+            <StatCard
+              label="Projected total"
+              value={String(race.myProjected)}
+              sub={projectedSubLabel(race.projectedEntries)}
+              color={race.myStillLive > 0 ? 'var(--green-600)' : 'var(--ink)'}
+            />
+          </div>
+        )}
       </div>
 
       {/* Right rail: projected standings */}
@@ -149,9 +157,11 @@ function RaceView({ race }: { race: PointsRaceView }): ReactElement {
             </p>
           </div>
           <ProjectedStandings entries={race.projectedEntries} />
-          <div style={{ padding: '14px 16px 16px' }}>
-            <SwingCard entries={race.projectedEntries} stillLive={race.myStillLive} />
-          </div>
+          {!viewerMode && (
+            <div style={{ padding: '14px 16px 16px' }}>
+              <SwingCard entries={race.projectedEntries} stillLive={race.myStillLive} />
+            </div>
+          )}
         </div>
       </div>
     </div>

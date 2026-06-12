@@ -43,7 +43,7 @@ import type { StageProgress, StageKey } from '@/shared/stage-progress';
 type Params = {
   db: Db<AppSchema>;
   poolId: string;
-  userId: string;
+  userId?: string;
   now: Date;
 };
 
@@ -60,15 +60,18 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
 
   const [leaderboard, prediction, allMatches, poolGroupScores] = await Promise.all([
     getLeaderboard(db, poolId),
-    getPrediction(db, poolId, userId as import('@cup/engine').UserId),
+    userId !== undefined
+      ? getPrediction(db, poolId, userId as import('@cup/engine').UserId)
+      : Promise.resolve(null),
     getMatchesForTournament(db, pool.tournamentId),
     getGroupScoresByPool(db, poolId),
   ]);
 
   const inputs = prediction != null ? await getPredictionInputs(db, prediction.id) : null;
 
-  const userRank = buildUserRank(leaderboard, userId);
-  const userBreakdown = leaderboard.find((e) => e.userId === userId)?.breakdown ?? null;
+  const userRank = userId !== undefined ? buildUserRank(leaderboard, userId) : null;
+  const userBreakdown =
+    userId !== undefined ? (leaderboard.find((e) => e.userId === userId)?.breakdown ?? null) : null;
   const stageProgress = buildStageProgress(def, allMatches);
   const currentStage = deriveCurrentStage(stageProgress);
   const groupResults = buildGroupResults(def, allMatches, inputs, poolGroupScores, now);
@@ -77,7 +80,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
 
   const pointsRaceView = buildPointsRaceView({
     leaderboard,
-    userId,
+    userId: userId ?? null,
     allMatches,
     poolGroupScores,
     def,
@@ -467,7 +470,7 @@ const RACE_COLORS = [
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
-  userId: string;
+  userId: string | null;
   allMatches: MatchRow[];
   poolGroupScores: PoolGroupScore[];
   def: Tournament;
@@ -511,8 +514,8 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
     ]),
   );
 
-  const myBanked = leaderboard.find((e) => e.userId === userId)?.pointsTotal ?? 0;
-  const myStillLive = stillLiveByUser.get(userId) ?? 0;
+  const myBanked = userId ? (leaderboard.find((e) => e.userId === userId)?.pointsTotal ?? 0) : 0;
+  const myStillLive = userId ? (stillLiveByUser.get(userId) ?? 0) : 0;
   const myProjected = myBanked + myStillLive;
 
   // Chart stages
@@ -528,7 +531,7 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
 
   let colorIdx = 0;
   const chartPlayers: RaceChartPlayer[] = leaderboard.map((e) => {
-    const isCurrentUser = e.userId === userId;
+    const isCurrentUser = userId !== null && e.userId === userId;
     const color = isCurrentUser
       ? 'var(--green-500)'
       : (RACE_COLORS[colorIdx++] ?? 'var(--ink-muted)');
@@ -571,7 +574,7 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
 
 function buildProjectedEntries(
   leaderboard: LeaderboardEntry[],
-  userId: string,
+  userId: string | null,
   stillLiveByUser: Map<string, number>,
 ): ProjectedEntry[] {
   const currentRankMap = new Map<string, number>(leaderboard.map((e, i) => [e.userId, i + 1]));
@@ -579,7 +582,7 @@ function buildProjectedEntries(
   const withProjected = leaderboard.map((e) => ({
     userId: e.userId,
     displayName: e.displayName,
-    isCurrentUser: e.userId === userId,
+    isCurrentUser: userId !== null && e.userId === userId,
     currentPoints: e.pointsTotal,
     projectedPoints: e.pointsTotal + (stillLiveByUser.get(e.userId) ?? 0),
   }));
@@ -604,7 +607,7 @@ function buildProjectedEntries(
 
 function buildMatchMatrix(
   leaderboard: LeaderboardEntry[],
-  userId: string,
+  userId: string | null,
   allMatches: MatchRow[],
   poolGroupScores: PoolGroupScore[],
   def: Tournament,
@@ -648,7 +651,7 @@ function buildMatchMatrix(
     return {
       userId: e.userId,
       displayName: e.displayName,
-      isCurrentUser: e.userId === userId,
+      isCurrentUser: userId !== null && e.userId === userId,
       cells,
       totalPoints,
     };

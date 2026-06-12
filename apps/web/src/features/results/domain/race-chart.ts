@@ -10,7 +10,10 @@ export type RaceChartData = {
 };
 
 /** Builds chart-only race data (actual data, no projection) from leaderboard alone. */
-export function buildRaceChartData(leaderboard: LeaderboardEntry[], userId: UserId): RaceChartData {
+export function buildRaceChartData(
+  leaderboard: LeaderboardEntry[],
+  userId: UserId | null,
+): RaceChartData {
   const hasGroupPoints = leaderboard.some(
     (e) => e.breakdown && e.breakdown.groupMatches + e.breakdown.groupOrder > 0,
   );
@@ -21,7 +24,7 @@ export function buildRaceChartData(leaderboard: LeaderboardEntry[], userId: User
   const chartNowIndex = chartStages.length - 1;
 
   const chartPlayers: RaceChartPlayer[] = leaderboard.map((e, index) => {
-    const isCurrentUser = e.userId === userId;
+    const isCurrentUser = userId !== null && e.userId === userId;
     const color = AVATAR_PALETTE[index % AVATAR_PALETTE.length] ?? 'var(--ink-muted)';
 
     const pts: number[] = [0];

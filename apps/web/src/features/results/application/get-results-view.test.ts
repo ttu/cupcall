@@ -1132,4 +1132,38 @@ describe('getResultsView', () => {
     expect(view!.bronzeMatch?.homeTeamId).toBe('A2');
     expect(view!.bronzeMatch?.awayTeamId).toBe('B1');
   });
+
+  describe('view mode (no userId)', () => {
+    it('returns null userRank and userBreakdown when userId is omitted', async () => {
+      const view = await getResultsView({ db, poolId, now: NOW });
+      expect(view).not.toBeNull();
+      expect(view!.userRank).toBeNull();
+      expect(view!.userBreakdown).toBeNull();
+    });
+
+    it('builds pointsRaceView with no highlighted player when userId is omitted', async () => {
+      const view = await getResultsView({ db, poolId, now: NOW });
+      expect(view!.pointsRaceView.chartPlayers.every((p) => !p.isCurrentUser)).toBe(true);
+    });
+
+    it('builds completed-match rows without a predicted score when userId is omitted', async () => {
+      const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+      await finalizeMatch(db, miniTournament.id, matchId, 2, 1);
+
+      // Seed a prediction for the regular user — view mode should not pick it up.
+      const pred = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertGroupScore(db, pred.id, matchId, 2, 1);
+
+      const view = await getResultsView({ db, poolId, now: NOW });
+      const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+      const row = groupA.completedMatches[0]!;
+      expect(row.predictedHome).toBeNull();
+      expect(row.predictedAway).toBeNull();
+      expect(row.hit).toBe('pending');
+    });
+  });
 });
