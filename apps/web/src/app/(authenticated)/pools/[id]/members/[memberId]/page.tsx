@@ -19,7 +19,8 @@ import {
   AuditLog,
   ExportImportControls,
 } from '@/features/predictions';
-import type { AuditEntry } from '@/features/predictions';
+import type { AuditEntry, MatchScore } from '@/features/predictions';
+import { getResultsView } from '@/features/results';
 import { userId } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string; memberId: string }> };
@@ -89,6 +90,14 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
   const teams = tournamentDef.teams.map((t) => ({ id: t.id, name: t.name }));
   const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name, team: p.team }));
 
+  // Build per-match scoring data from actual results (only available after tournament starts)
+  const resultsView = await getResultsView({ db, poolId, userId: memberUid, now });
+  const matchScores = new Map<string, MatchScore>(
+    resultsView?.groupResults.flatMap((g) =>
+      g.completedMatches.map((m) => [m.matchId, { hit: m.hit, points: m.pointsAwarded }]),
+    ) ?? [],
+  );
+
   return (
     <main
       style={{
@@ -134,7 +143,7 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
           players={players}
         />
       ) : (
-        <ReadOnlyCard card={card} />
+        <ReadOnlyCard card={card} matchScores={matchScores} />
       )}
 
       {auditEntries.length > 0 && <AuditLog entries={auditEntries} />}

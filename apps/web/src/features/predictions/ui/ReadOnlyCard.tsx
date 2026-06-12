@@ -2,10 +2,14 @@ import type { ReactElement } from 'react';
 import type { CardView } from '../domain/types';
 import { CompletionBar } from './CompletionBar';
 import { SectionLabel, Icon, TeamBadge } from '@/shared/ui';
+import type { MatchHit } from '@/features/results';
+import { HitChip } from '@/features/results';
 
-type Props = { card: CardView };
+export type MatchScore = { hit: MatchHit; points: number };
 
-export function ReadOnlyCard({ card }: Props): ReactElement {
+type Props = { card: CardView; matchScores?: ReadonlyMap<string, MatchScore> };
+
+export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <CompletionBar percent={card.completionPercent} />
@@ -22,94 +26,100 @@ export function ReadOnlyCard({ card }: Props): ReactElement {
                 </span>
               </div>
               <div className="divide">
-                {group.matches.map((match) => (
-                  <div
-                    key={match.matchId}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto 1fr',
-                      alignItems: 'center',
-                      gap: 10,
-                      padding: '10px 16px',
-                    }}
-                  >
-                    {/* Home */}
+                {group.matches.map((match) => {
+                  const score = matchScores?.get(match.matchId);
+                  return (
                     <div
+                      key={match.matchId}
                       style={{
-                        display: 'flex',
+                        display: 'grid',
+                        gridTemplateColumns: score ? '1fr auto 1fr auto' : '1fr auto 1fr',
                         alignItems: 'center',
-                        justifyContent: 'flex-end',
-                        gap: 8,
-                        minWidth: 0,
+                        gap: 10,
+                        padding: '10px 16px',
                       }}
                     >
-                      <span
+                      {/* Home */}
+                      <div
                         style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          color: 'var(--ink)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          gap: 8,
+                          minWidth: 0,
                         }}
                       >
-                        {match.homeTeamName}
-                      </span>
-                      <TeamBadge teamId={match.homeTeamId} size="lg" />
-                    </div>
-
-                    {/* Score */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {match.predictedHome !== null ? (
-                        <>
-                          <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
-                            {match.predictedHome}
-                          </span>
-                          <span className="score-sep">:</span>
-                          <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
-                            {match.predictedAway}
-                          </span>
-                        </>
-                      ) : (
                         <span
-                          className="display"
                           style={{
-                            fontSize: 20,
-                            color: 'var(--ink-muted)',
-                            minWidth: 58,
-                            textAlign: 'center',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: 'var(--ink)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
                           }}
                         >
-                          –
+                          {match.homeTeamName}
                         </span>
-                      )}
-                    </div>
+                        <TeamBadge teamId={match.homeTeamId} size="lg" />
+                      </div>
 
-                    {/* Away */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        minWidth: 0,
-                      }}
-                    >
-                      <TeamBadge teamId={match.awayTeamId} size="lg" />
-                      <span
+                      {/* Score */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {match.predictedHome !== null ? (
+                          <>
+                            <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
+                              {match.predictedHome}
+                            </span>
+                            <span className="score-sep">:</span>
+                            <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
+                              {match.predictedAway}
+                            </span>
+                          </>
+                        ) : (
+                          <span
+                            className="display"
+                            style={{
+                              fontSize: 20,
+                              color: 'var(--ink-muted)',
+                              minWidth: 58,
+                              textAlign: 'center',
+                            }}
+                          >
+                            –
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Away */}
+                      <div
                         style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          color: 'var(--ink)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          minWidth: 0,
                         }}
                       >
-                        {match.awayTeamName}
-                      </span>
+                        <TeamBadge teamId={match.awayTeamId} size="lg" />
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: 'var(--ink)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {match.awayTeamName}
+                        </span>
+                      </div>
+
+                      {/* Points (completed matches only) */}
+                      {score && <HitChip hit={score.hit} points={score.points} />}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}

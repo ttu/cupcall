@@ -18,3 +18,4 @@ export { getResultsView } from './application/get-results-view';
 export { StageBar } from './ui/StageBar';
 export { UserScoreChip } from './ui/UserScoreChip';
 export { ResultsPageClient } from './ui/ResultsPageClient';
+export { HitChip } from './ui/HitChip';

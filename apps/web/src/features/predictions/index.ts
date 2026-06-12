@@ -16,6 +16,7 @@ export type {
   CardExport,
   PredictionStatus,
 } from './domain/types';
+export type { MatchScore } from './ui/ReadOnlyCard';
 
 export { getCardView } from './application/get-card';
 export { loadActualResults } from './application/load-actual-results';
