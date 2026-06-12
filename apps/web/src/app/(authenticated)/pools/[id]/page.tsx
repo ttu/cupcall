@@ -271,17 +271,17 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         </div>
       </div>
 
-      {/* Owner controls — full width below */}
-      {isOwner && (
-        <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Owner controls + backup — full width below */}
+      <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {isOwner && (
           <OwnerControls
             poolId={poolId}
             members={detail.leaderboard}
             currentUserId={actor.userId}
           />
-          <PoolBackupControls poolId={poolId} />
-        </div>
-      )}
+        )}
+        <PoolBackupControls poolId={poolId} isOwner={isOwner} />
+      </div>
     </div>
   );
 }

@@ -478,7 +478,7 @@ export async function exportPool(
   try {
     const actor = await getActorOrThrow();
     const pool = await getOwnerPoolOrThrow(poolId);
-    assertIsOwner(pool, actor.userId);
+    await assertIsMember(db, poolId, actor.userId);
 
     const backup = await buildPoolExport(db, poolId, pool.name, pool.tournamentId);
     return { ok: true, data: backup };

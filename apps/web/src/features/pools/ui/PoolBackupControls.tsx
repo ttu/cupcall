@@ -4,9 +4,9 @@ import type { ReactElement } from 'react';
 import { useRef, useTransition, useState } from 'react';
 import { exportPool, importPool } from '../api/actions';
 
-type Props = { poolId: string };
+type Props = { poolId: string; isOwner: boolean };
 
-export function PoolBackupControls({ poolId }: Props): ReactElement {
+export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [, startTransition] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -61,14 +61,14 @@ export function PoolBackupControls({ poolId }: Props): ReactElement {
           className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
           style={{ fontFamily: 'var(--font-display)' }}
         >
-          Backup & Restore
+          {isOwner ? 'Backup & Restore' : 'Backup'}
         </span>
       </div>
       <div className="px-4 py-4 space-y-3">
         <p className="text-xs text-[var(--ink-muted)]">
-          Export a full backup of this pool including all members and their predictions. Import a
-          backup to restore members and predictions (existing members are matched by ID; unknown
-          members are added as guests).
+          {isOwner
+            ? 'Export a full backup of this pool including all members and their predictions. Import a backup to restore members and predictions (existing members are matched by ID; unknown members are added as guests).'
+            : 'Download a full backup of this pool including all members and their predictions. Use it to verify that results are not changed after the tournament.'}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -78,25 +78,29 @@ export function PoolBackupControls({ poolId }: Props): ReactElement {
           >
             Export backup
           </button>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-muted)] transition-colors"
-          >
-            Import backup
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,application/json"
-            className="sr-only"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImportFile(file);
-              e.target.value = '';
-            }}
-            aria-label="Import pool backup JSON file"
-          />
+          {isOwner && (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-muted)] transition-colors"
+              >
+                Import backup
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImportFile(file);
+                  e.target.value = '';
+                }}
+                aria-label="Import pool backup JSON file"
+              />
+            </>
+          )}
         </div>
         {message && (
           <p
