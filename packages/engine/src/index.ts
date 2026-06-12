@@ -35,3 +35,5 @@ export { scoreCard } from './score.js';
 export { deriveGroupOrders } from './standings.js';
 export { selectQualifiers } from './qualifiers.js';
 export { findInvalidatedPickKeys } from './bracket.js';
+export { computeRemainingMaxPoints } from './scoring/remaining-max.js';
+export type { TournamentProgress } from './scoring/remaining-max.js';

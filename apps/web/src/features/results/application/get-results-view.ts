@@ -10,7 +10,12 @@ import {
   getGroupScoresByPool,
 } from '@cup/db';
 import type { MatchRow, LeaderboardEntry, PoolGroupScore } from '@cup/db';
-import { deriveGroupOrders, selectQualifiers, matchId } from '@cup/engine';
+import {
+  deriveGroupOrders,
+  selectQualifiers,
+  matchId,
+  computeRemainingMaxPoints,
+} from '@cup/engine';
 import type { Tournament, GroupId, TeamId, BracketMatchKey, GroupScore } from '@cup/engine';
 import type {
   ResultsView,
@@ -70,7 +75,6 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   const pointsRaceView = buildPointsRaceView({
     leaderboard,
     userId,
-    bracketHealth,
     allMatches,
     poolGroupScores,
     def,
@@ -428,20 +432,24 @@ const RACE_COLORS = [
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
   userId: string;
-  bracketHealth: BracketHealth;
   allMatches: MatchRow[];
   poolGroupScores: PoolGroupScore[];
   def: Tournament;
 };
 
 function buildPointsRaceView(params: RaceParams): PointsRaceView {
-  const { leaderboard, userId, bracketHealth, allMatches, poolGroupScores, def } = params;
+  const { leaderboard, userId, allMatches, poolGroupScores, def } = params;
+
+  // Tournament-wide remaining-max ceiling: the max additional points anyone
+  // could still earn from now until the tournament ends. We apply it to every
+  // member so the projection reflects realistic potential rather than the old
+  // `totalPicks × roundOf8PerTeam` heuristic.
+  const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
+  const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
 
   const myEntry = leaderboard.find((e) => e.userId === userId);
   const myBanked = myEntry?.pointsTotal ?? 0;
-  // Alive + pending picks (i.e. not busted) can still contribute points.
-  const stillLivePicks = bracketHealth.totalPicks - bracketHealth.bustedPicks;
-  const myStillLive = stillLivePicks * def.scoring.roundOf8PerTeam;
+  const myStillLive = remainingMax.total;
   const myProjected = myBanked + myStillLive;
 
   // Chart stages
@@ -467,7 +475,7 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
     }
     pts.push(e.pointsTotal); // Now
     if (myStillLive > 0) {
-      pts.push(isCurrentUser ? myProjected : e.pointsTotal);
+      pts.push(e.pointsTotal + myStillLive);
     }
 
     return { userId: e.userId, displayName: e.displayName, isCurrentUser, color, points: pts };
@@ -475,7 +483,7 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
   // Draw current user last (on top in SVG).
   chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
 
-  const projectedEntries = buildProjectedEntries(leaderboard, userId, myProjected);
+  const projectedEntries = buildProjectedEntries(leaderboard, userId, myStillLive);
   const { matchMatrix, matrixMatches } = buildMatchMatrix(
     leaderboard,
     userId,
@@ -500,7 +508,7 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
 function buildProjectedEntries(
   leaderboard: LeaderboardEntry[],
   userId: string,
-  myProjected: number,
+  stillLive: number,
 ): ProjectedEntry[] {
   const currentRankMap = new Map<string, number>(leaderboard.map((e, i) => [e.userId, i + 1]));
 
@@ -509,7 +517,7 @@ function buildProjectedEntries(
     displayName: e.displayName,
     isCurrentUser: e.userId === userId,
     currentPoints: e.pointsTotal,
-    projectedPoints: e.userId === userId ? myProjected : e.pointsTotal,
+    projectedPoints: e.pointsTotal + stillLive,
   }));
 
   const sorted = [...withProjected].sort((a, b) => b.projectedPoints - a.projectedPoints);

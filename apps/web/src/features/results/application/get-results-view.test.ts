@@ -18,7 +18,7 @@ import {
 } from '@cup/db';
 import * as schema from '@cup/db/schema';
 import { miniTournament } from '@cup/engine/testing';
-import { groupId, bracketMatchKey, points } from '@cup/engine';
+import { groupId, bracketMatchKey, points, computeRemainingMaxPoints } from '@cup/engine';
 import type { UserId, ScoreBreakdown, Tournament } from '@cup/engine';
 import { getResultsView } from './get-results-view';
 
@@ -533,7 +533,127 @@ describe('getResultsView', () => {
     expect(matchMatrix[1]!.userId).toBe(userId);
   });
 
-  it('builds projected standings with current user projected from bracket picks', async () => {
+  it('myStillLive equals the tournament-wide remaining max from the engine', async () => {
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(100),
+      breakdown: {} as ScoreBreakdown,
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const race = view!.pointsRaceView;
+
+    const expectedMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+    expect(race.myStillLive).toBe(expectedMax.total);
+    expect(race.myBanked).toBe(100);
+    expect(race.myProjected).toBe(100 + expectedMax.total);
+  });
+
+  it('myStillLive shrinks as more group matches finalise', async () => {
+    const before = await getResultsView({ db, poolId, userId, now: NOW });
+    const baseline = before!.pointsRaceView.myStillLive;
+
+    const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await finalizeMatch(db, miniTournament.id, oneMatch, 1, 0);
+
+    const after = await getResultsView({ db, poolId, userId, now: NOW });
+    // exactly one exactScore worth of group-match upside has been locked in
+    expect(after!.pointsRaceView.myStillLive).toBe(
+      baseline - miniTournament.scoring.groupMatch.exactScore,
+    );
+  });
+
+  it('myStillLive collapses to zero once every match is final', async () => {
+    // Group stage: finalise all group matches
+    for (const gm of miniTournament.groupMatches) {
+      await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
+    }
+    // Bracket: finalise every QF, SF, bronze, final
+    const allBracketKeys = [
+      ...miniTournament.bracket.roundOf8Matches,
+      ...miniTournament.bracket.semiFinals,
+      miniTournament.bracket.bronzeMatch,
+      miniTournament.bracket.finalMatch,
+    ];
+    for (const key of allBracketKeys) {
+      await upsertKnockoutMatch(db, {
+        id: key,
+        tournamentId: miniTournament.id,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 1,
+        awayGoals: 0,
+        winnerTeamId: 'A1',
+        status: 'final',
+      });
+    }
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.pointsRaceView.myStillLive).toBe(0);
+  });
+
+  it('every member gets the same projected upside (no flat lines)', async () => {
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(40),
+      breakdown: {} as ScoreBreakdown,
+    });
+    await upsertScore(db, {
+      poolId,
+      userId: ownerId,
+      pointsTotal: points(120),
+      breakdown: {} as ScoreBreakdown,
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const race = view!.pointsRaceView;
+
+    // Each member's projected = their banked + tournament-wide upside.
+    for (const entry of race.projectedEntries) {
+      expect(entry.projectedPoints).toBe(entry.currentPoints + race.myStillLive);
+    }
+    // Chart lines must rise (non-flat) for every player while upside > 0.
+    expect(race.myStillLive).toBeGreaterThan(0);
+    for (const player of race.chartPlayers) {
+      const last = player.points[player.points.length - 1]!;
+      const now = player.points[race.chartNowIndex]!;
+      expect(last).toBeGreaterThan(now);
+    }
+  });
+
+  it('chart omits Projected stage when nothing is still live', async () => {
+    // Finalise every match → upside = 0
+    for (const gm of miniTournament.groupMatches) {
+      await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
+    }
+    for (const key of [
+      ...miniTournament.bracket.roundOf8Matches,
+      ...miniTournament.bracket.semiFinals,
+      miniTournament.bracket.bronzeMatch,
+      miniTournament.bracket.finalMatch,
+    ]) {
+      await upsertKnockoutMatch(db, {
+        id: key,
+        tournamentId: miniTournament.id,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 1,
+        awayGoals: 0,
+        winnerTeamId: 'A1',
+        status: 'final',
+      });
+    }
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.pointsRaceView.chartStages).not.toContain('Projected');
+    expect(view!.pointsRaceView.myStillLive).toBe(0);
+  });
+
+  it('projected ranks preserve current order when everyone gets equal upside', async () => {
     await upsertScore(db, {
       poolId,
       userId,
@@ -547,27 +667,12 @@ describe('getResultsView', () => {
       breakdown: {} as ScoreBreakdown,
     });
 
-    const pred = await getOrCreatePrediction(db, {
-      poolId,
-      userId,
-      tournamentId: miniTournament.id,
-    });
-    // Give user 2 bracket picks (pending → both still live)
-    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
-    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf2'), 'B1');
-
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const race = view!.pointsRaceView;
-
-    expect(race.myBanked).toBe(100);
-    // 2 still-live picks × roundOf8PerTeam
-    const expectedStillLive = 2 * miniTournament.scoring.roundOf8PerTeam;
-    expect(race.myStillLive).toBe(expectedStillLive);
-    expect(race.myProjected).toBe(100 + expectedStillLive);
-
-    // user projected rank depends on whether projection surpasses owner's 120
     const me = race.projectedEntries.find((e) => e.isCurrentUser);
     expect(me?.currentRank).toBe(2);
+    expect(me?.projectedRank).toBe(2);
+    expect(me?.rankDelta).toBe(0);
   });
 
   it('chartStages includes Group Stage when group points exist', async () => {
