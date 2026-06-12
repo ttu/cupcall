@@ -195,7 +195,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
                 Results &amp; standings
               </div>
               <div style={{ fontSize: 12, opacity: 0.78, marginTop: 2, fontWeight: 600 }}>
-                Live match feed
+                Scores, groups &amp; knockout
               </div>
             </div>
             <Icon name="arrow" size={18} color="currentColor" />
