@@ -2,8 +2,22 @@ import type { ReactElement } from 'react';
 import Link from 'next/link';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
-import { getPoolByInviteTokenHash, isMember, isKicked } from '@cup/db';
-import { joinPool, joinAsGuest } from '@/features/pools';
+import {
+  getPoolByInviteTokenHash,
+  isMember,
+  isKicked,
+  getUserById,
+  getLoginTokenByUserId,
+  upsertLoginToken,
+} from '@cup/db';
+import {
+  joinPool,
+  joinAsGuest,
+  getUserPools,
+  PoolListItem,
+  MyLoginLink,
+  generateLoginToken,
+} from '@/features/pools';
 import { redirect } from 'next/navigation';
 import { Icon } from '@/shared/ui';
 import { JoinSubmitButton } from './JoinSubmitButton';
@@ -17,9 +31,76 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
   const { token } = await params;
   const { error } = await searchParams;
 
-  const pool = await getPoolByInviteTokenHash(db, token);
+  const [pool, actor] = await Promise.all([getPoolByInviteTokenHash(db, token), getCurrentActor()]);
 
   if (!pool) {
+    if (actor) {
+      let pools: Awaited<ReturnType<typeof getUserPools>> = [];
+      try {
+        pools = await getUserPools(db, actor.userId);
+      } catch {
+        // Non-critical; error card remains useful without the list.
+      }
+
+      let myLoginToken: string | null = null;
+      const user = await getUserById(db, actor.userId);
+      if (user && !user.email) {
+        const existing = await getLoginTokenByUserId(db, actor.userId);
+        const loginToken = existing?.token ?? generateLoginToken();
+        if (!existing) await upsertLoginToken(db, actor.userId, loginToken);
+        myLoginToken = loginToken;
+      }
+
+      const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
+
+      return (
+        <main
+          className="turf min-h-screen"
+          style={{ display: 'grid', placeItems: 'center', padding: '24px 16px' }}
+        >
+          <div
+            style={{ width: 'min(460px, 100%)', display: 'flex', flexDirection: 'column', gap: 16 }}
+          >
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div
+                style={{
+                  background: 'var(--ink-900)',
+                  padding: '26px 30px 22px',
+                  color: 'var(--on-dark)',
+                }}
+              >
+                <h2 className="display" style={{ fontSize: 34, marginBottom: 8 }}>
+                  Invalid Invite
+                </h2>
+                <p style={{ fontSize: 13, color: 'var(--on-dark-soft)', lineHeight: 1.5 }}>
+                  This invite link is invalid or has been removed.
+                </p>
+              </div>
+              <div style={{ padding: 30 }}>
+                <Link
+                  href="/pools"
+                  className="btn btn-dark block"
+                  style={{ textDecoration: 'none' }}
+                >
+                  Go to My Pools
+                </Link>
+              </div>
+            </div>
+
+            {pools.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {pools.map((p) => (
+                  <PoolListItem key={p.id} pool={p} isOwner={p.ownerId === actor.userId} />
+                ))}
+              </div>
+            )}
+
+            {myLoginToken && <MyLoginLink token={myLoginToken} baseUrl={baseUrl} />}
+          </div>
+        </main>
+      );
+    }
+
     return (
       <main
         className="turf min-h-screen"
@@ -49,8 +130,6 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
       </main>
     );
   }
-
-  const actor = await getCurrentActor();
 
   // ── Signed-in path ───────────────────────────────────────────────────────
   if (actor) {
