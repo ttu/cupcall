@@ -54,29 +54,24 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
       const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
 
       return (
-        <main
-          className="turf min-h-screen"
-          style={{ display: 'grid', placeItems: 'center', padding: '24px 16px' }}
-        >
-          <div
-            style={{ width: 'min(460px, 100%)', display: 'flex', flexDirection: 'column', gap: 16 }}
-          >
+        <main className="turf min-h-screen flex flex-col items-center px-4 py-6">
+          <div className="w-full max-w-[460px] my-auto flex flex-col gap-4">
             <div className="card" style={{ overflow: 'hidden' }}>
               <div
                 style={{
                   background: 'var(--ink-900)',
-                  padding: '26px 30px 22px',
+                  padding: '22px 24px 18px',
                   color: 'var(--on-dark)',
                 }}
               >
-                <h2 className="display" style={{ fontSize: 34, marginBottom: 8 }}>
+                <h2 className="display" style={{ fontSize: 30, marginBottom: 8 }}>
                   Invalid Invite
                 </h2>
                 <p style={{ fontSize: 13, color: 'var(--on-dark-soft)', lineHeight: 1.5 }}>
                   This invite link is invalid or has been removed.
                 </p>
               </div>
-              <div style={{ padding: 30 }}>
+              <div style={{ padding: '20px 24px' }}>
                 <Link
                   href="/pools"
                   className="btn btn-dark block"
@@ -102,26 +97,23 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
     }
 
     return (
-      <main
-        className="turf min-h-screen"
-        style={{ display: 'grid', placeItems: 'center', padding: '24px 16px' }}
-      >
-        <div className="card" style={{ width: 'min(460px, 100%)', overflow: 'hidden' }}>
+      <main className="turf min-h-screen flex flex-col items-center justify-center px-4 py-6">
+        <div className="card w-full max-w-[460px]" style={{ overflow: 'hidden' }}>
           <div
             style={{
               background: 'var(--ink-900)',
-              padding: '26px 30px 22px',
+              padding: '22px 24px 18px',
               color: 'var(--on-dark)',
             }}
           >
-            <h2 className="display" style={{ fontSize: 34, marginBottom: 8 }}>
+            <h2 className="display" style={{ fontSize: 30, marginBottom: 8 }}>
               Invalid Invite
             </h2>
             <p style={{ fontSize: 13, color: 'var(--on-dark-soft)', lineHeight: 1.5 }}>
               This invite link is invalid or has been removed.
             </p>
           </div>
-          <div style={{ padding: 30, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Link href="/" className="btn btn-dark block" style={{ textDecoration: 'none' }}>
               Go home
             </Link>
@@ -136,12 +128,12 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
                 gap: 8,
               }}
             >
-              <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
                 <strong style={{ color: 'var(--ink)' }}>Already joined on another device?</strong>{' '}
                 Your personal login link is on your My Pools page. Ask the pool creator to send it
                 to you if you don&apos;t have it saved.
               </p>
-              <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
                 <strong style={{ color: 'var(--ink)' }}>Haven&apos;t joined yet?</strong> The invite
                 link may have been reset or removed. Ask the pool creator to share a new one.
               </p>
