@@ -13,7 +13,7 @@ import {
   MemberControls,
   PoolBackupControls,
 } from '@/features/pools';
-import { StageBar } from '@/features/results';
+import { StageBar, buildRaceChartData, RaceChart } from '@/features/results';
 import { Chip, Icon } from '@/shared/ui';
 
 type Props = { params: Promise<{ id: string }> };
@@ -34,6 +34,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   const locked = now >= detail.lockTime;
   const myEntry = detail.leaderboard.find((e) => e.userId === actor.userId);
   const myRank = myEntry ? detail.leaderboard.indexOf(myEntry) + 1 : null;
+  const raceChart = locked ? buildRaceChartData(detail.leaderboard, actor.userId) : null;
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px' }}>
@@ -80,14 +81,44 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         }}
         className="md:grid-cols-[1fr_300px]"
       >
-        {/* Left: Leaderboard */}
-        <Leaderboard
-          entries={detail.leaderboard}
-          currentUserId={actor.userId}
-          poolId={poolId}
-          isOwner={isOwner}
-          locked={locked}
-        />
+        {/* Left: Leaderboard + Points Race chart */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Leaderboard
+            entries={detail.leaderboard}
+            currentUserId={actor.userId}
+            poolId={poolId}
+            isOwner={isOwner}
+            locked={locked}
+          />
+          {raceChart && (
+            <Link
+              href={`/pools/${poolId}/results?tab=race`}
+              data-testid="pool-race-preview"
+              style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
+            >
+              <div className="card" style={{ padding: '14px 18px 12px', cursor: 'pointer' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 10,
+                  }}
+                >
+                  <span className="section-label">Points Race</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-muted)' }}>
+                    View full →
+                  </span>
+                </div>
+                <RaceChart
+                  stages={raceChart.chartStages}
+                  nowIndex={raceChart.chartNowIndex}
+                  players={raceChart.chartPlayers}
+                />
+              </div>
+            </Link>
+          )}
+        </div>
 
         {/* Right rail */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

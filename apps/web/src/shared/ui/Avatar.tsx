@@ -1,4 +1,4 @@
-const PALETTE = [
+export const AVATAR_PALETTE = [
   'oklch(0.6 0.16 150)',
   'oklch(0.62 0.17 50)',
   'oklch(0.55 0.15 260)',
@@ -22,7 +22,7 @@ type AvatarProps = {
 };
 
 export function Avatar({ name, index = 0, size = 36 }: AvatarProps) {
-  const bg = PALETTE[index % PALETTE.length];
+  const bg = AVATAR_PALETTE[index % AVATAR_PALETTE.length];
   return (
     <span
       className="avatar"

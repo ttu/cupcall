@@ -6,10 +6,11 @@ import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
 import { getResultsView, StageBar, ResultsPageClient } from '@/features/results';
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string>> };
 
-export default async function ResultsPage({ params }: Props): Promise<ReactElement> {
+export default async function ResultsPage({ params, searchParams }: Props): Promise<ReactElement> {
   const { id: poolId } = await params;
+  const { tab } = await searchParams;
 
   const actor = await getCurrentActor();
   if (!actor) redirect('/');
@@ -78,7 +79,10 @@ export default async function ResultsPage({ params }: Props): Promise<ReactEleme
       <StageBar stages={view.stageProgress} />
 
       {/* Main content: tabs + panels */}
-      <ResultsPageClient view={view} />
+      <ResultsPageClient
+        view={view}
+        initialTab={tab === 'race' || tab === 'knockout' ? tab : 'group'}
+      />
     </div>
   );
 }

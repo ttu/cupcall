@@ -11,10 +11,10 @@ import { PointsRaceTab } from './PointsRaceTab';
 
 type Tab = 'group' | 'knockout' | 'race';
 
-type Props = { view: ResultsView };
+type Props = { view: ResultsView; initialTab?: Tab };
 
-export function ResultsPageClient({ view }: Props): ReactElement {
-  const [activeTab, setActiveTab] = useState<Tab>('group');
+export function ResultsPageClient({ view, initialTab = 'group' }: Props): ReactElement {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
   const finalRound = view.bracketRounds.find((r) => r.label === 'Final');
   const finalMatch = finalRound?.matches[0] ?? null;
