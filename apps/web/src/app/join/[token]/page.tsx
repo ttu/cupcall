@@ -121,10 +121,31 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
               This invite link is invalid or has been removed.
             </p>
           </div>
-          <div style={{ padding: 30 }}>
+          <div style={{ padding: 30, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Link href="/" className="btn btn-dark block" style={{ textDecoration: 'none' }}>
               Go home
             </Link>
+            <div
+              style={{
+                borderRadius: 10,
+                background: 'var(--surface-2)',
+                border: '1px solid var(--line)',
+                padding: '12px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+                <strong style={{ color: 'var(--ink)' }}>Already joined on another device?</strong>{' '}
+                Your personal login link is on your My Pools page. Ask the pool creator to send it
+                to you if you don&apos;t have it saved.
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+                <strong style={{ color: 'var(--ink)' }}>Haven&apos;t joined yet?</strong> The invite
+                link may have been reset or removed. Ask the pool creator to share a new one.
+              </p>
+            </div>
           </div>
         </div>
       </main>
