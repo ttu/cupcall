@@ -437,30 +437,58 @@ type RaceParams = {
   def: Tournament;
 };
 
+/**
+ * Per-user still-live projection.
+ *
+ * Formula: `stillLive = hitRate × remainingMax`, where
+ *   hitRate    = banked / maxFromResolved
+ *   resolvedMax = tournament-wide max ceiling − tournament-wide remaining max
+ *
+ * In words: "if the user keeps hitting at the same rate as they have so far,
+ * how many points should they pick up from what's still pendable?"
+ *
+ * Edge cases:
+ *  - `maxFromResolved <= 0` (nothing has resolved yet) → no signal to project
+ *    from, so stillLive = 0. Projection collapses to current points and the
+ *    chart's Projected stage is omitted.
+ *  - `remainingMax <= 0` (tournament complete) → stillLive = 0 by construction.
+ */
+function projectStillLive(banked: number, maxFromResolved: number, remainingMax: number): number {
+  if (maxFromResolved <= 0 || remainingMax <= 0) return 0;
+  const hitRate = banked / maxFromResolved;
+  return Math.round(hitRate * remainingMax);
+}
+
 function buildPointsRaceView(params: RaceParams): PointsRaceView {
   const { leaderboard, userId, allMatches, poolGroupScores, def } = params;
 
-  // Tournament-wide remaining-max ceiling: the max additional points anyone
-  // could still earn from now until the tournament ends. We apply it to every
-  // member so the projection reflects realistic potential rather than the old
-  // `totalPicks × roundOf8PerTeam` heuristic.
   const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
+  const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
   const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
+  const maxFromResolved = totalMax.total - remainingMax.total;
 
-  const myEntry = leaderboard.find((e) => e.userId === userId);
-  const myBanked = myEntry?.pointsTotal ?? 0;
-  const myStillLive = remainingMax.total;
+  // Per-user still-live so each member projects at their own hit rate.
+  const stillLiveByUser = new Map<string, number>(
+    leaderboard.map((e) => [
+      e.userId,
+      projectStillLive(e.pointsTotal, maxFromResolved, remainingMax.total),
+    ]),
+  );
+
+  const myBanked = leaderboard.find((e) => e.userId === userId)?.pointsTotal ?? 0;
+  const myStillLive = stillLiveByUser.get(userId) ?? 0;
   const myProjected = myBanked + myStillLive;
 
   // Chart stages
   const hasGroupStagePoints = leaderboard.some(
     (e) => e.breakdown && e.breakdown.groupMatches + e.breakdown.groupOrder > 0,
   );
+  const anyStillLive = Array.from(stillLiveByUser.values()).some((v) => v > 0);
   const stages: string[] = ['Start'];
   if (hasGroupStagePoints) stages.push('Group Stage');
   stages.push('Now');
   const nowIndex = stages.length - 1;
-  if (myStillLive > 0) stages.push('Projected');
+  if (anyStillLive) stages.push('Projected');
 
   let colorIdx = 0;
   const chartPlayers: RaceChartPlayer[] = leaderboard.map((e) => {
@@ -474,8 +502,8 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
       pts.push(e.breakdown ? e.breakdown.groupMatches + e.breakdown.groupOrder : 0);
     }
     pts.push(e.pointsTotal); // Now
-    if (myStillLive > 0) {
-      pts.push(e.pointsTotal + myStillLive);
+    if (anyStillLive) {
+      pts.push(e.pointsTotal + (stillLiveByUser.get(e.userId) ?? 0));
     }
 
     return { userId: e.userId, displayName: e.displayName, isCurrentUser, color, points: pts };
@@ -483,7 +511,7 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
   // Draw current user last (on top in SVG).
   chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
 
-  const projectedEntries = buildProjectedEntries(leaderboard, userId, myStillLive);
+  const projectedEntries = buildProjectedEntries(leaderboard, userId, stillLiveByUser);
   const { matchMatrix, matrixMatches } = buildMatchMatrix(
     leaderboard,
     userId,
@@ -508,7 +536,7 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
 function buildProjectedEntries(
   leaderboard: LeaderboardEntry[],
   userId: string,
-  stillLive: number,
+  stillLiveByUser: Map<string, number>,
 ): ProjectedEntry[] {
   const currentRankMap = new Map<string, number>(leaderboard.map((e, i) => [e.userId, i + 1]));
 
@@ -517,7 +545,7 @@ function buildProjectedEntries(
     displayName: e.displayName,
     isCurrentUser: e.userId === userId,
     currentPoints: e.pointsTotal,
-    projectedPoints: e.pointsTotal + stillLive,
+    projectedPoints: e.pointsTotal + (stillLiveByUser.get(e.userId) ?? 0),
   }));
 
   const sorted = [...withProjected].sort((a, b) => b.projectedPoints - a.projectedPoints);

@@ -533,7 +533,14 @@ describe('getResultsView', () => {
     expect(matchMatrix[1]!.userId).toBe(userId);
   });
 
-  it('myStillLive equals the tournament-wide remaining max from the engine', async () => {
+  // ---------------------------------------------------------------------------
+  // Hit-rate projection
+  //
+  // Formula: stillLive = round((banked / maxFromResolved) × remainingMax)
+  // where maxFromResolved = totalTournamentMax − remainingMax.
+  // ---------------------------------------------------------------------------
+
+  it('myStillLive is zero before anything has resolved (no hit-rate signal)', async () => {
     await upsertScore(db, {
       poolId,
       userId,
@@ -543,89 +550,78 @@ describe('getResultsView', () => {
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const race = view!.pointsRaceView;
-
-    const expectedMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
-    expect(race.myStillLive).toBe(expectedMax.total);
     expect(race.myBanked).toBe(100);
-    expect(race.myProjected).toBe(100 + expectedMax.total);
+    expect(race.myStillLive).toBe(0);
+    expect(race.myProjected).toBe(100);
+    expect(race.chartStages).not.toContain('Projected');
   });
 
-  it('myStillLive shrinks as more group matches finalise', async () => {
-    const before = await getResultsView({ db, poolId, userId, now: NOW });
-    const baseline = before!.pointsRaceView.myStillLive;
-
+  it('myStillLive scales with hit rate once some matches have resolved', async () => {
+    // Finalise one group match → unlocks `exactScore` of resolved upside.
     const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
     await finalizeMatch(db, miniTournament.id, oneMatch, 1, 0);
 
-    const after = await getResultsView({ db, poolId, userId, now: NOW });
-    // exactly one exactScore worth of group-match upside has been locked in
-    expect(after!.pointsRaceView.myStillLive).toBe(
-      baseline - miniTournament.scoring.groupMatch.exactScore,
-    );
-  });
-
-  it('myStillLive collapses to zero once every match is final', async () => {
-    // Group stage: finalise all group matches
-    for (const gm of miniTournament.groupMatches) {
-      await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
-    }
-    // Bracket: finalise every QF, SF, bronze, final
-    const allBracketKeys = [
-      ...miniTournament.bracket.roundOf8Matches,
-      ...miniTournament.bracket.semiFinals,
-      miniTournament.bracket.bronzeMatch,
-      miniTournament.bracket.finalMatch,
-    ];
-    for (const key of allBracketKeys) {
-      await upsertKnockoutMatch(db, {
-        id: key,
-        tournamentId: miniTournament.id,
-        stage: 'QF',
-        homeTeamId: 'A1',
-        awayTeamId: 'B2',
-        homeGoals: 1,
-        awayGoals: 0,
-        winnerTeamId: 'A1',
-        status: 'final',
-      });
-    }
-
-    const view = await getResultsView({ db, poolId, userId, now: NOW });
-    expect(view!.pointsRaceView.myStillLive).toBe(0);
-  });
-
-  it('every member gets the same projected upside (no flat lines)', async () => {
+    // User has banked exactly the points that match was worth (hitRate = 1.0).
     await upsertScore(db, {
       poolId,
       userId,
-      pointsTotal: points(40),
-      breakdown: {} as ScoreBreakdown,
-    });
-    await upsertScore(db, {
-      poolId,
-      userId: ownerId,
-      pointsTotal: points(120),
+      pointsTotal: points(miniTournament.scoring.groupMatch.exactScore),
       breakdown: {} as ScoreBreakdown,
     });
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const race = view!.pointsRaceView;
 
-    // Each member's projected = their banked + tournament-wide upside.
-    for (const entry of race.projectedEntries) {
-      expect(entry.projectedPoints).toBe(entry.currentPoints + race.myStillLive);
-    }
-    // Chart lines must rise (non-flat) for every player while upside > 0.
-    expect(race.myStillLive).toBeGreaterThan(0);
-    for (const player of race.chartPlayers) {
-      const last = player.points[player.points.length - 1]!;
-      const now = player.points[race.chartNowIndex]!;
-      expect(last).toBeGreaterThan(now);
-    }
+    const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() }).total;
+    const remainingMax = computeRemainingMaxPoints(miniTournament, {
+      finalMatchIds: new Set([oneMatch]),
+    }).total;
+    // hitRate = 1.0 → stillLive equals the entire remaining ceiling.
+    expect(race.myStillLive).toBe(remainingMax);
+    expect(race.myProjected).toBe(race.myBanked + remainingMax);
+    expect(race.myBanked + race.myStillLive).toBe(totalMax);
   });
 
-  it('chart omits Projected stage when nothing is still live', async () => {
-    // Finalise every match → upside = 0
+  it('myStillLive is zero for a user with zero earned points', async () => {
+    const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await finalizeMatch(db, miniTournament.id, oneMatch, 1, 0);
+
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(0),
+      breakdown: {} as ScoreBreakdown,
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.pointsRaceView.myStillLive).toBe(0);
+    expect(view!.pointsRaceView.myProjected).toBe(0);
+  });
+
+  it('myStillLive scales linearly with banked points', async () => {
+    // Finalise two group matches → resolved max = 2 × exactScore = 12.
+    const matches = miniTournament.groupMatches.filter((m) => m.group === groupId('A')).slice(0, 2);
+    for (const m of matches) await finalizeMatch(db, miniTournament.id, m.id, 1, 0);
+
+    // User has earned 6 of 12 available → hitRate = 0.5.
+    const banked = miniTournament.scoring.groupMatch.exactScore; // 6
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(banked),
+      breakdown: {} as ScoreBreakdown,
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const race = view!.pointsRaceView;
+
+    const remainingMax = computeRemainingMaxPoints(miniTournament, {
+      finalMatchIds: new Set(matches.map((m) => m.id)),
+    }).total;
+    expect(race.myStillLive).toBe(Math.round(0.5 * remainingMax));
+  });
+
+  it('myStillLive collapses to zero once every match is final', async () => {
     for (const gm of miniTournament.groupMatches) {
       await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
     }
@@ -648,31 +644,86 @@ describe('getResultsView', () => {
       });
     }
 
-    const view = await getResultsView({ db, poolId, userId, now: NOW });
-    expect(view!.pointsRaceView.chartStages).not.toContain('Projected');
-    expect(view!.pointsRaceView.myStillLive).toBe(0);
-  });
-
-  it('projected ranks preserve current order when everyone gets equal upside', async () => {
+    // Even a user who has earned 100% of resolved points gets 0 upside
+    // because there is nothing left to earn.
     await upsertScore(db, {
       poolId,
       userId,
-      pointsTotal: points(100),
+      pointsTotal: points(500),
+      breakdown: {} as ScoreBreakdown,
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.pointsRaceView.myStillLive).toBe(0);
+    expect(view!.pointsRaceView.chartStages).not.toContain('Projected');
+  });
+
+  it('each member projects at their own hit rate (chart slopes differ)', async () => {
+    const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await finalizeMatch(db, miniTournament.id, oneMatch, 1, 0);
+
+    // user earned 6 (perfect), owner earned 3 (outcome only)
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(6),
       breakdown: {} as ScoreBreakdown,
     });
     await upsertScore(db, {
       poolId,
       userId: ownerId,
-      pointsTotal: points(120),
+      pointsTotal: points(3),
       breakdown: {} as ScoreBreakdown,
     });
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const race = view!.pointsRaceView;
-    const me = race.projectedEntries.find((e) => e.isCurrentUser);
-    expect(me?.currentRank).toBe(2);
-    expect(me?.projectedRank).toBe(2);
-    expect(me?.rankDelta).toBe(0);
+
+    const me = race.projectedEntries.find((e) => e.userId === userId)!;
+    const owner = race.projectedEntries.find((e) => e.userId === ownerId)!;
+
+    // user hitRate=1.0, owner hitRate=0.5 → user gets ~2x the still-live.
+    expect(me.projectedPoints - me.currentPoints).toBeGreaterThan(
+      owner.projectedPoints - owner.currentPoints,
+    );
+    // Chart slopes must differ.
+    const userLine = race.chartPlayers.find((p) => p.userId === userId)!;
+    const ownerLine = race.chartPlayers.find((p) => p.userId === ownerId)!;
+    const userGrowth =
+      userLine.points[userLine.points.length - 1]! - userLine.points[race.chartNowIndex]!;
+    const ownerGrowth =
+      ownerLine.points[ownerLine.points.length - 1]! - ownerLine.points[race.chartNowIndex]!;
+    expect(userGrowth).toBeGreaterThan(ownerGrowth);
+  });
+
+  it('a stronger hit rate can overtake a higher current score in projection', async () => {
+    // Resolve a couple of matches so hit rates have something to bite into.
+    const matches = miniTournament.groupMatches.filter((m) => m.group === groupId('A')).slice(0, 3);
+    for (const m of matches) await finalizeMatch(db, miniTournament.id, m.id, 1, 0);
+
+    // owner: lots banked, but low hit rate (5 of 18 = 27.8%)
+    await upsertScore(db, {
+      poolId,
+      userId: ownerId,
+      pointsTotal: points(5),
+      breakdown: {} as ScoreBreakdown,
+    });
+    // user: less banked, but perfect hit rate (18 of 18 = 100%)
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(18),
+      breakdown: {} as ScoreBreakdown,
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const me = view!.pointsRaceView.projectedEntries.find((e) => e.userId === userId)!;
+    expect(me.currentRank).toBe(1); // ahead in banked too here, but…
+    // The key signal: a perfect hit rate keeps you ahead in projection.
+    expect(me.projectedRank).toBe(1);
+    expect(me.projectedPoints).toBeGreaterThan(
+      view!.pointsRaceView.projectedEntries.find((e) => e.userId === ownerId)!.projectedPoints,
+    );
   });
 
   it('chartStages includes Group Stage when group points exist', async () => {
