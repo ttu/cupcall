@@ -2,10 +2,14 @@ import type { ReactElement } from 'react';
 import { Icon, Chip } from '@/shared/ui';
 
 type Props = {
-  memberName: string;
+  memberName?: string;
 };
 
 export function OwnerEditBanner({ memberName }: Props): ReactElement {
+  const label = memberName
+    ? `Owner mode — editing ${memberName}'s card. Logged.`
+    : 'Owner mode — editing your own card. Logged.';
+
   return (
     <div
       role="status"
@@ -24,7 +28,7 @@ export function OwnerEditBanner({ memberName }: Props): ReactElement {
         style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 700 }}
       >
         <Icon name="edit" size={15} color="var(--orange-400)" />
-        {`Owner mode — editing ${memberName}'s card. Logged.`}
+        {label}
       </span>
       <Chip variant="dark">
         <Icon name="history" size={12} />

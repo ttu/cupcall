@@ -37,6 +37,7 @@ export {
 export { PredictStepper } from './ui/PredictStepper';
 export { ReadOnlyCard } from './ui/ReadOnlyCard';
 export { OwnerCardEditor } from './ui/OwnerCardEditor';
+export { CreatorPredictEdit } from './ui/CreatorPredictEdit';
 export { AuditLog } from './ui/AuditLog';
 export { OwnerEditBanner } from './ui/OwnerEditBanner';
 export { ExportImportControls } from './ui/ExportImportControls';

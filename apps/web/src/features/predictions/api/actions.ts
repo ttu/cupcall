@@ -408,6 +408,7 @@ export async function ownerSaveGroupScore(
     );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
+    revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
@@ -466,6 +467,7 @@ export async function ownerSaveSpecialBet(
     );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
+    revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
@@ -527,6 +529,7 @@ export async function ownerSaveKnockoutPick(
     );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
+    revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
@@ -599,6 +602,7 @@ export async function ownerSaveFinishScore(
     );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
+    revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
@@ -803,10 +807,12 @@ export async function importCard(
 
     await rescoreAfterEdit(prediction.id, poolId, effectiveUserId, tournamentDef);
 
-    const revalidateTarget = isOwnerEdit
-      ? `/pools/${poolId}/members/${targetUserId}`
-      : `/pools/${poolId}/predict`;
-    revalidatePath(revalidateTarget);
+    if (isOwnerEdit) {
+      revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
+      revalidatePath(`/pools/${poolId}/predict`);
+    } else {
+      revalidatePath(`/pools/${poolId}/predict`);
+    }
 
     return { ok: true, imported, skipped };
   } catch (e) {

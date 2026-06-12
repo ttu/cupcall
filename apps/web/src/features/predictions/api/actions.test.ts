@@ -28,13 +28,21 @@ vi.mock('@/shared/db', () => ({
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/features/auth', () => ({ getCurrentActor: vi.fn() }));
 
-import { clearAllPredictions, saveFinishScore, ownerSaveFinishScore } from './actions';
+import {
+  clearAllPredictions,
+  saveFinishScore,
+  ownerSaveFinishScore,
+  ownerSaveGroupScore,
+  importCard,
+} from './actions';
 import { getCurrentActor } from '@/features/auth';
 
 const mockedGetActor = vi.mocked(getCurrentActor);
 
 // firstKickoff far in the future so the card is never locked during tests
 const firstKickoff = new Date('2099-06-11T18:00:00Z');
+// firstKickoff in the past so the card is always locked
+const pastKickoff = new Date('2000-01-01T00:00:00Z');
 const emptyKickoffs = new Map<string, Date | null>();
 
 describe('clearAllPredictions', () => {
@@ -302,5 +310,102 @@ describe('ownerSaveFinishScore — implicit winner derivation', () => {
     const inputs = await getPredictionInputs(testDb, predictionId);
     const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
     expect(pick?.winner).toBe('B1');
+  });
+});
+
+describe('owner editing own card post-lock (creator predict edit)', () => {
+  let poolId: string;
+  let ownerId: UserId;
+  let ownerPredictionId: string;
+
+  beforeAll(async () => {
+    if (!testDb) {
+      testDb = await makeTestDb();
+    }
+    // Use a separate tournament ID with a past kickoff so the card is locked
+    await upsertTournamentDef(
+      testDb,
+      { ...miniTournament, id: 'mini-past' },
+      pastKickoff,
+      emptyKickoffs,
+    );
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    const owner = await createUser(testDb, {
+      email: `op-${crypto.randomUUID()}@x.com`,
+      displayName: 'OwnerPast',
+    });
+    ownerId = owner.id;
+
+    const pool = await dbCreatePool(testDb, {
+      tournamentId: 'mini-past',
+      ownerId,
+      name: 'Past Pool',
+      inviteTokenHash: `h-${crypto.randomUUID()}`,
+    });
+    poolId = pool.id;
+    await addMember(testDb, poolId, ownerId);
+
+    const pred = await getOrCreatePrediction(testDb, {
+      poolId,
+      userId: ownerId,
+      tournamentId: 'mini-past',
+    });
+    ownerPredictionId = pred.id;
+
+    mockedGetActor.mockResolvedValue({ userId: ownerId });
+  });
+
+  it('allows the owner to save their own group score after lock', async () => {
+    const result = await ownerSaveGroupScore({
+      poolId,
+      targetUserId: ownerId,
+      matchId: miniTournament.groupMatches[0]!.id,
+      home: 2,
+      away: 1,
+    });
+
+    expect(result).toEqual({ ok: true });
+    const inputs = await getPredictionInputs(testDb, ownerPredictionId);
+    expect(inputs.groupScores[0]).toMatchObject({ home: 2, away: 1 });
+  });
+
+  it('rejects a regular member trying to save their own card after lock', async () => {
+    const member = await createUser(testDb, {
+      email: `mem-${crypto.randomUUID()}@x.com`,
+      displayName: 'Member',
+    });
+    await addMember(testDb, poolId, member.id);
+    mockedGetActor.mockResolvedValue({ userId: member.id });
+
+    const result = await ownerSaveGroupScore({
+      poolId,
+      targetUserId: member.id,
+      matchId: miniTournament.groupMatches[0]!.id,
+      home: 1,
+      away: 0,
+    });
+
+    expect(result).toMatchObject({ ok: false });
+  });
+
+  it('allows the owner to import their own card after lock via importCard with targetUserId', async () => {
+    const matchId = miniTournament.groupMatches[0]!.id;
+    const result = await importCard({
+      poolId,
+      targetUserId: ownerId,
+      exportData: {
+        tournamentId: 'mini-past',
+        version: 1,
+        groupScores: [{ matchId, home: 3, away: 0 }],
+      },
+    });
+
+    expect(result).toMatchObject({ ok: true });
+    const inputs = await getPredictionInputs(testDb, ownerPredictionId);
+    expect(inputs.groupScores[0]).toMatchObject({ home: 3, away: 0 });
   });
 });

@@ -13,6 +13,7 @@ import { getCurrentActor } from '@/features/auth';
 import {
   getCardView,
   PredictStepper,
+  CreatorPredictEdit,
   ExportImportControls,
   AuditLog,
   CompletionBar,
@@ -73,6 +74,9 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
     }
   }
 
+  const isOwner = actor.userId === pool.ownerId;
+  const creatorLockedEdit = isOwner && card.status === 'locked';
+
   const teams = tournamentDef.teams.map((t) => ({ id: t.id, name: t.name }));
   const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name, team: p.team }));
 
@@ -112,7 +116,8 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
                 Saved
               </Chip>
             )}
-            {card.status === 'locked' && (
+            {/* Locked pill only shown for non-owners; owners get it inside CreatorPredictEdit */}
+            {card.status === 'locked' && !creatorLockedEdit && (
               <span className="pill-lock">
                 <Icon name="lock" size={14} />
                 Locked
@@ -122,16 +127,31 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
           </div>
         </div>
         <div style={{ marginTop: 10 }}>
-          <ExportImportControls poolId={poolId} />
+          {/* Pass targetUserId so import also uses the owner-bypass path after lock */}
+          <ExportImportControls
+            poolId={poolId}
+            {...(creatorLockedEdit ? { targetUserId: actor.userId } : {})}
+          />
         </div>
       </div>
 
-      <PredictStepper
-        card={card}
-        teams={teams}
-        players={players}
-        isDev={process.env.NODE_ENV === 'development'}
-      />
+      {creatorLockedEdit ? (
+        <CreatorPredictEdit
+          card={card}
+          poolId={poolId}
+          targetUserId={actor.userId}
+          teams={teams}
+          players={players}
+          isDev={process.env.NODE_ENV === 'development'}
+        />
+      ) : (
+        <PredictStepper
+          card={card}
+          teams={teams}
+          players={players}
+          isDev={process.env.NODE_ENV === 'development'}
+        />
+      )}
 
       {auditEntries.length > 0 && <AuditLog entries={auditEntries} />}
     </div>
