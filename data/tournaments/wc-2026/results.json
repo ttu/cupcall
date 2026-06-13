@@ -2,7 +2,9 @@
   "tournamentId": "wc-2026",
   "matchResults": [
     { "matchId": "mA1", "home": 2, "away": 0 },
-    { "matchId": "mA2", "home": 2, "away": 1 }
+    { "matchId": "mA2", "home": 2, "away": 1 },
+    { "matchId": "mB1", "home": 1, "away": 1 },
+    { "matchId": "mD1", "home": 4, "away": 1 }
   ],
   "groupOrder": {},
   "answers": {}
