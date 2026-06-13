@@ -8,6 +8,7 @@ import {
   getPredictionInputs,
   getMatchesForTournament,
   getGroupScoresByPool,
+  getActualResults,
 } from '@cup/db';
 import type { MatchRow, LeaderboardEntry, PoolGroupScore } from '@cup/db';
 import {
@@ -17,7 +18,16 @@ import {
   computeRemainingMaxPoints,
   resolveSlot,
 } from '@cup/engine';
-import type { Tournament, GroupId, TeamId, BracketMatchKey, GroupScore } from '@cup/engine';
+import type {
+  Tournament,
+  GroupId,
+  TeamId,
+  BracketMatchKey,
+  GroupScore,
+  ActualResults,
+  SpecialBets,
+} from '@cup/engine';
+import { getSpecialBetDefs } from '@cup/engine';
 import type {
   ResultsView,
   GroupResultView,
@@ -36,6 +46,7 @@ import type {
   MatchMatrixEntry,
   MatrixMatch,
   MatchMatrixCell,
+  SpecialBetResultRow,
 } from '../domain/types';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
@@ -58,13 +69,14 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
 
   const def = tournament.definition;
 
-  const [leaderboard, prediction, allMatches, poolGroupScores] = await Promise.all([
+  const [leaderboard, prediction, allMatches, poolGroupScores, actualResults] = await Promise.all([
     getLeaderboard(db, poolId),
     userId !== undefined
       ? getPrediction(db, poolId, userId as import('@cup/engine').UserId)
       : Promise.resolve(null),
     getMatchesForTournament(db, pool.tournamentId),
     getGroupScoresByPool(db, poolId),
+    getActualResults(db, pool.tournamentId),
   ]);
 
   const inputs = prediction != null ? await getPredictionInputs(db, prediction.id) : null;
@@ -86,6 +98,8 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     def,
   });
 
+  const specialBets = buildSpecialBetResults(def, inputs, actualResults);
+
   return {
     poolName: pool.name,
     tournamentName: tournament.name,
@@ -99,6 +113,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     bracketHealth,
     leaderboard,
     pointsRaceView,
+    specialBets,
   };
 }
 
@@ -660,6 +675,76 @@ function buildMatchMatrix(
   matchMatrix.sort((a, b) => b.totalPoints - a.totalPoints);
 
   return { matchMatrix, matrixMatches };
+}
+
+// ---------------------------------------------------------------------------
+// Special bets
+// ---------------------------------------------------------------------------
+
+function buildSpecialBetResults(
+  def: Tournament,
+  inputs: Awaited<ReturnType<typeof getPredictionInputs>> | null,
+  actual: ActualResults,
+): SpecialBetResultRow[] {
+  const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
+  const playerMap = new Map<string, string>(def.players.map((p) => [p.id, p.name]));
+  const defs = getSpecialBetDefs(def.scoring);
+  const specials: SpecialBets = inputs?.specials ?? {};
+
+  return defs.map((d) => {
+    const userRaw = (specials as Record<string, unknown>)[d.key];
+
+    let actualRaw: unknown;
+    if (d.key === 'finalDecidedByPenalties') {
+      actualRaw =
+        actual.finalMatch !== undefined ? actual.finalMatch.decidedBy === 'penalties' : undefined;
+    } else if (d.key === 'finalDecisiveGoalPlayer') {
+      actualRaw = actual.finalMatch?.decisiveGoalPlayer;
+    } else {
+      actualRaw = (actual.answers as Record<string, unknown>)[d.key];
+    }
+
+    const userPickDisplay = resolveSpecialDisplay(userRaw, d.kind, teamMap, playerMap);
+    const actualAnswerDisplay = resolveSpecialDisplay(actualRaw, d.kind, teamMap, playerMap);
+
+    let hit: SpecialBetResultRow['hit'];
+    let pointsAwarded: number;
+
+    if (actualRaw === undefined || actualRaw === null) {
+      hit = 'pending';
+      pointsAwarded = 0;
+    } else if (userRaw !== undefined && userRaw !== null && userRaw === actualRaw) {
+      hit = 'hit';
+      pointsAwarded = d.points;
+    } else {
+      hit = 'missed';
+      pointsAwarded = 0;
+    }
+
+    return {
+      key: d.key,
+      label: d.label,
+      kind: d.kind,
+      points: d.points,
+      userPickDisplay,
+      actualAnswerDisplay,
+      hit,
+      pointsAwarded,
+    };
+  });
+}
+
+function resolveSpecialDisplay(
+  raw: unknown,
+  kind: 'player' | 'team' | 'number' | 'bool',
+  teamMap: Map<string, string>,
+  playerMap: Map<string, string>,
+): string | number | boolean | null {
+  if (raw === undefined || raw === null) return null;
+  if (kind === 'team') return teamMap.get(String(raw)) ?? String(raw);
+  if (kind === 'player') return playerMap.get(String(raw)) ?? String(raw);
+  if (kind === 'bool') return raw as boolean;
+  return raw as number;
 }
 
 // ---------------------------------------------------------------------------

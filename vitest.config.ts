@@ -39,6 +39,11 @@ export default defineConfig({
         find: /^@\//,
         replacement: join(__dirname, 'apps/web/src/'),
       },
+      // server-only throws in test environments — stub it out since tests run in Node.js
+      {
+        find: 'server-only',
+        replacement: join(__dirname, '__mocks__/server-only.ts'),
+      },
     ],
   },
   test: {

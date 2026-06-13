@@ -16,6 +16,7 @@ export type {
   CardExport,
   PredictionStatus,
 } from './domain/types';
+export { getSpecialBetDefs } from './domain/special-bet-defs';
 export type { MatchScore } from './ui/ReadOnlyCard';
 
 export { getCardView } from './application/get-card';

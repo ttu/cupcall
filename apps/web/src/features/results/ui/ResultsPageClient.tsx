@@ -10,8 +10,9 @@ import { KnockoutBracket } from './KnockoutBracket';
 import { BracketHealthPanel } from './BracketHealthPanel';
 import { KnockoutPointsPanel } from './KnockoutPointsPanel';
 import { PointsRaceTab } from './PointsRaceTab';
+import { SpecialBetsPanel } from './SpecialBetsPanel';
 
-type Tab = 'group' | 'knockout' | 'race';
+type Tab = 'group' | 'knockout' | 'race' | 'specials';
 
 type Props = { view: ResultsView; initialTab?: Tab; viewerMode?: boolean };
 
@@ -38,10 +39,16 @@ export function ResultsPageClient({
         aria-label="Results sections"
         style={{ display: 'flex', borderBottom: '1px solid var(--line-soft)', marginBottom: 24 }}
       >
-        {(['group', 'knockout', 'race'] as Tab[]).map((tab) => {
+        {(['group', 'knockout', 'specials', 'race'] as Tab[]).map((tab) => {
           const active = activeTab === tab;
           const label =
-            tab === 'group' ? 'Group Stage' : tab === 'knockout' ? 'Knockout' : 'Points Race';
+            tab === 'group'
+              ? 'Group Stage'
+              : tab === 'knockout'
+                ? 'Knockout'
+                : tab === 'specials'
+                  ? 'Specials'
+                  : 'Points Race';
           return (
             <button
               key={tab}
@@ -127,6 +134,8 @@ export function ResultsPageClient({
           </div>
         </div>
       )}
+
+      {activeTab === 'specials' && <SpecialBetsPanel specialBets={view.specialBets} />}
 
       {activeTab === 'race' && <PointsRaceTab race={view.pointsRaceView} viewerMode={viewerMode} />}
     </div>

@@ -18,6 +18,7 @@ export type {
   MatchMatrixCell,
   MatrixMatch,
   LeaderboardEntry,
+  SpecialBetResultRow,
 } from './domain/types';
 
 export { getResultsView } from './application/get-results-view';

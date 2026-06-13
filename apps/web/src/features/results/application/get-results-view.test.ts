@@ -16,6 +16,8 @@ import {
   finalizeMatch,
   upsertKnockoutMatch,
   upsertFinishScore,
+  upsertSpecialBet,
+  upsertTournamentResults,
 } from '@cup/db';
 import * as schema from '@cup/db/schema';
 import { miniTournament } from '@cup/engine/testing';
@@ -1131,6 +1133,105 @@ describe('getResultsView', () => {
     // SF2 loser = B1 (away=B2 won, so home=B1 lost)
     expect(view!.bronzeMatch?.homeTeamId).toBe('A2');
     expect(view!.bronzeMatch?.awayTeamId).toBe('B1');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Special bets
+  // ---------------------------------------------------------------------------
+
+  describe('specialBets', () => {
+    it('returns all 11 bet definitions with pending hit when no actual answers exist', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      expect(view!.specialBets).toHaveLength(11);
+      expect(view!.specialBets.every((b) => b.hit === 'pending')).toBe(true);
+      expect(view!.specialBets.every((b) => b.pointsAwarded === 0)).toBe(true);
+    });
+
+    it('marks hit when user pick matches actual team answer', async () => {
+      const pred = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'A1');
+
+      await upsertTournamentResults(db, miniTournament.id, {
+        matchResults: [],
+        groupOrder: {},
+        answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.hit).toBe('hit');
+      expect(bet.pointsAwarded).toBe(miniTournament.scoring.groupTopScoringTeam);
+      expect(bet.userPickDisplay).toBe('Team A1');
+      expect(bet.actualAnswerDisplay).toBe('Team A1');
+    });
+
+    it('marks missed when user pick differs from actual answer', async () => {
+      const pred = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'B1');
+
+      await upsertTournamentResults(db, miniTournament.id, {
+        matchResults: [],
+        groupOrder: {},
+        answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.hit).toBe('missed');
+      expect(bet.pointsAwarded).toBe(0);
+      expect(bet.userPickDisplay).toBe('Team B1');
+      expect(bet.actualAnswerDisplay).toBe('Team A1');
+    });
+
+    it('marks missed when no user pick but actual answer exists', async () => {
+      await upsertTournamentResults(db, miniTournament.id, {
+        matchResults: [],
+        groupOrder: {},
+        answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.hit).toBe('missed');
+      expect(bet.userPickDisplay).toBeNull();
+      expect(bet.actualAnswerDisplay).toBe('Team A1');
+    });
+
+    it('resolves player display name from tournament player list', async () => {
+      const player = miniTournament.players[0]!;
+      const pred = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, pred.id, 'topScorerPlayer', player.id);
+
+      await upsertTournamentResults(db, miniTournament.id, {
+        matchResults: [],
+        groupOrder: {},
+        answers: { topScorerPlayer: player.id as import('@cup/engine').PlayerId },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'topScorerPlayer')!;
+      expect(bet.hit).toBe('hit');
+      expect(bet.userPickDisplay).toBe(player.name);
+      expect(bet.actualAnswerDisplay).toBe(player.name);
+    });
+
+    it('shows all bets as pending in view mode (no userId)', async () => {
+      const view = await getResultsView({ db, poolId, now: NOW });
+      expect(view!.specialBets.every((b) => b.hit === 'pending')).toBe(true);
+      expect(view!.specialBets.every((b) => b.userPickDisplay === null)).toBe(true);
+    });
   });
 
   describe('view mode (no userId)', () => {

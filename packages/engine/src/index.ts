@@ -37,3 +37,5 @@ export { selectQualifiers } from './qualifiers.js';
 export { findInvalidatedPickKeys, resolveSlot } from './bracket.js';
 export { computeRemainingMaxPoints } from './scoring/remaining-max.js';
 export type { TournamentProgress } from './scoring/remaining-max.js';
+export { getSpecialBetDefs } from './scoring/special-bet-defs.js';
+export type { SpecialBetDef, BetInputKind } from './scoring/special-bet-defs.js';

@@ -4,7 +4,17 @@
  * They carry only what the UI needs — no raw DB rows exposed.
  */
 
-import type { TeamId, PlayerId, MatchId, BracketMatchKey, GroupId } from '@cup/engine';
+import type {
+  TeamId,
+  PlayerId,
+  MatchId,
+  BracketMatchKey,
+  GroupId,
+  BetInputKind,
+  SpecialBetDef,
+} from '@cup/engine';
+
+export type { BetInputKind, SpecialBetDef };
 
 // ---------------------------------------------------------------------------
 // Card status
@@ -84,17 +94,6 @@ export type BracketView = {
 // ---------------------------------------------------------------------------
 // Special bets
 // ---------------------------------------------------------------------------
-
-export type BetInputKind = 'player' | 'team' | 'number' | 'bool';
-
-export type SpecialBetDef = {
-  key: string;
-  label: string;
-  kind: BetInputKind;
-  points: number;
-  /** Player bets only: allow typing a name not in the player list */
-  allowFreeText?: boolean;
-};
 
 export type SpecialBetView = SpecialBetDef & {
   /** Human-readable display value (player name, team name, number, bool, or custom text) */

@@ -179,6 +179,17 @@ export type PointsRaceView = {
   matrixMatches: MatrixMatch[];
 };
 
+export type SpecialBetResultRow = {
+  key: string;
+  label: string;
+  kind: 'player' | 'team' | 'number' | 'bool';
+  points: number;
+  userPickDisplay: string | number | boolean | null;
+  actualAnswerDisplay: string | number | boolean | null;
+  hit: 'hit' | 'missed' | 'pending';
+  pointsAwarded: number;
+};
+
 export type ResultsView = {
   poolName: string;
   tournamentName: string;
@@ -193,4 +204,5 @@ export type ResultsView = {
   bracketHealth: BracketHealth;
   leaderboard: LeaderboardEntry[];
   pointsRaceView: PointsRaceView;
+  specialBets: SpecialBetResultRow[];
 };
