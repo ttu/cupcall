@@ -9,6 +9,7 @@ import {
   getMember,
   getKnownResultMatchIds,
   getAnsweredBetKeys,
+  getActualGroupMatchScores,
 } from '@cup/db';
 import { db } from '@/shared/db';
 import { getCurrentActor } from '@/features/auth';
@@ -45,12 +46,13 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
   const now = new Date();
   const isAfterLock = now >= tournament.firstKickoff;
 
-  const [knownResultMatchIds, answeredBetKeys] = isAfterLock
+  const [knownResultMatchIds, answeredBetKeys, actualGroupMatchScores] = isAfterLock
     ? await Promise.all([
         getKnownResultMatchIds(db, pool.tournamentId),
         getAnsweredBetKeys(db, pool.tournamentId),
+        getActualGroupMatchScores(db, pool.tournamentId),
       ])
-    : [new Set<string>(), new Set<string>()];
+    : [new Set<string>(), new Set<string>(), new Map<string, { home: number; away: number }>()];
 
   const card = await getCardView({
     db,
@@ -62,6 +64,7 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
     joinedAt: memberRecord.joinedAt,
     knownResultMatchIds,
     answeredBetKeys,
+    actualGroupMatchScores,
     now,
     createIfMissing: true,
   });

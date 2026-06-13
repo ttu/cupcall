@@ -464,6 +464,37 @@ describe('getCardView — late joiner per-item lock', () => {
     expect(match?.locked).toBe(true);
   });
 
+  it('prefills locked group matches with actual results so groups count as complete', async () => {
+    // All group-A matches have known results but no saved predictions.
+    // With actualGroupMatchScores, group A should be complete and bracket slots should resolve.
+    const groupAMatchIds = groupMatchIds('A');
+    const actualGroupMatchScores = new Map(
+      groupAMatchIds.map((mid) => [mid, { home: 1, away: 0 }]),
+    );
+
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedAfterLock,
+      knownResultMatchIds: new Set(groupAMatchIds),
+      answeredBetKeys: new Set(),
+      actualGroupMatchScores,
+      now: afterLock,
+    });
+
+    const groupA = card!.groups.find((g) => g.groupId === groupId('A'))!;
+    expect(groupA.complete).toBe(true);
+    // Locked matches should display the actual result
+    const firstMatch = groupA.matches.find((m) => m.matchId === groupAMatchIds[0])!;
+    expect(firstMatch.predictedHome).toBe(1);
+    expect(firstMatch.predictedAway).toBe(0);
+    expect(firstMatch.locked).toBe(true);
+  });
+
   it('all items are editable (locked=false) before lock regardless of joinedAt', async () => {
     const matchId = firstGroupMatchId();
     const card = await getCardView({

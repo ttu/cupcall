@@ -204,3 +204,29 @@ export async function getAnsweredBetKeys(db: Database, tournamentId: string): Pr
     .where(eq(schema.actualAnswers.tournamentId, tournamentId));
   return new Set(rows.map((r) => r.betKey));
 }
+
+/**
+ * Returns a map from group match ID to { home, away } goals for all completed group matches.
+ * Used to prefill locked group matches for late joiners so their groups count as complete.
+ */
+export async function getActualGroupMatchScores(
+  db: Database,
+  tournamentId: string,
+): Promise<Map<string, { home: number; away: number }>> {
+  const rows = await db
+    .select({
+      id: schema.matches.id,
+      homeGoals: schema.matches.homeGoals,
+      awayGoals: schema.matches.awayGoals,
+    })
+    .from(schema.matches)
+    .where(
+      and(
+        eq(schema.matches.tournamentId, tournamentId),
+        eq(schema.matches.stage, 'group'),
+        isNotNull(schema.matches.homeGoals),
+        isNotNull(schema.matches.awayGoals),
+      ),
+    );
+  return new Map(rows.map((r) => [r.id, { home: r.homeGoals!, away: r.awayGoals! }]));
+}

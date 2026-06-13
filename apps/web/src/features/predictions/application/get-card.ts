@@ -5,7 +5,7 @@
 import type { AppSchema } from '@/shared/db';
 import type { Db } from '@cup/db';
 import { getPrediction, getOrCreatePrediction, getPredictionInputs } from '@cup/db';
-import { deriveCard, deriveGroupOrders } from '@cup/engine';
+import { deriveCard, deriveGroupOrders, matchId } from '@cup/engine';
 import type { Tournament, GroupId, TeamId } from '@cup/engine';
 import type {
   CardView,
@@ -39,6 +39,11 @@ type Params = {
   knownResultMatchIds?: Set<string>;
   /** Set of special-bet keys that have a recorded answer. */
   answeredBetKeys?: Set<string>;
+  /**
+   * Actual scores for completed group matches. When provided for a late joiner,
+   * locked matches without a saved prediction are prefilled so groups count as complete.
+   */
+  actualGroupMatchScores?: Map<string, { home: number; away: number }>;
 };
 
 /**
@@ -58,6 +63,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     joinedAt,
     knownResultMatchIds = new Set<string>(),
     answeredBetKeys = new Set<string>(),
+    actualGroupMatchScores,
   } = params;
 
   // A late joiner is someone who joined at or after the tournament lock.
@@ -90,15 +96,32 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   // 2. Load stored inputs
   const inputs = await getPredictionInputs(db, prediction.id);
 
-  // 3. Derive the card
-  const derived = deriveCard(inputs, tournament);
+  // 3. For late joiners, overlay actual results for locked group matches not yet saved.
+  // This makes locked-but-unsaved matches count as "complete" for group/bracket derivation.
+  const savedMatchIds = new Set(inputs.groupScores.map((gs) => gs.matchId as string));
+  const augmentedGroupScores =
+    isLateJoiner && actualGroupMatchScores
+      ? [
+          ...inputs.groupScores,
+          ...[...actualGroupMatchScores.entries()]
+            .filter(([mid]) => knownResultMatchIds.has(mid) && !savedMatchIds.has(mid))
+            .map(([mid, result]) => ({
+              matchId: matchId(mid),
+              home: result.home,
+              away: result.away,
+            })),
+        ]
+      : inputs.groupScores;
 
-  // 4. Build team lookup map
+  // 4. Derive the card (using augmented group scores so group orders reflect actual results)
+  const derived = deriveCard({ ...inputs, groupScores: augmentedGroupScores }, tournament);
+
+  // 5. Build team lookup map
   const teamMap = new Map<TeamId, string>(tournament.teams.map((t) => [t.id, t.name]));
   const teamName = (id: TeamId | null) => (id ? (teamMap.get(id) ?? id) : null);
 
-  // 5. Build group score views
-  const groupScoreMap = new Map(inputs.groupScores.map((gs) => [gs.matchId, gs]));
+  // 6. Build group score views
+  const groupScoreMap = new Map(augmentedGroupScores.map((gs) => [gs.matchId, gs]));
 
   const autoQualify = tournament.qualification.autoQualifyPerGroup;
   const autoQualifiedCount = tournament.groups.length * autoQualify;
@@ -315,7 +338,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     2 /* final + bronze scores */ +
     specials.length;
   const filledFields =
-    inputs.groupScores.length +
+    augmentedGroupScores.length +
     inputs.knockoutPicks.filter(
       (kp) =>
         kp.bracketMatchKey !== bracket.finalMatch && kp.bracketMatchKey !== bracket.bronzeMatch,
