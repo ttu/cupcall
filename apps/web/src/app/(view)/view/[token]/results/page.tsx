@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { getPoolByViewToken } from '@cup/db';
 import { db } from '@/shared/db';
 import { getResultsView, StageBar, ResultsPageClient } from '@/features/results';
+import { BackLink } from '@/shared/ui';
 
 type Props = { params: Promise<{ token: string }>; searchParams: Promise<Record<string, string>> };
 
@@ -40,11 +40,18 @@ export default async function ViewResultsPage({
         }}
       >
         <div>
-          <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 8 }}>
-            <Link href={`/view/${token}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-              {view.poolName}
-            </Link>{' '}
-            · Results &amp; standings
+          <div
+            className="eyebrow"
+            style={{
+              color: 'var(--ink-muted)',
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <BackLink href={`/view/${token}`}>{view.poolName}</BackLink>
+            <span>· Results &amp; standings</span>
           </div>
           <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
             The Cup, as it unfolds

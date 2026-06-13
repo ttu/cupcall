@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
-import Link from 'next/link';
 import {
   getPoolById,
   getTournamentById,
@@ -19,7 +18,7 @@ import {
   CompletionBar,
 } from '@/features/predictions';
 import type { AuditEntry } from '@/features/predictions';
-import { Chip, Icon } from '@/shared/ui';
+import { Chip, Icon, BackLink } from '@/shared/ui';
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -84,11 +83,18 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px' }}>
       {/* Page header */}
       <div style={{ marginBottom: 20 }}>
-        <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 8 }}>
-          <Link href={`/pools/${poolId}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-            {pool.name}
-          </Link>{' '}
-          · Your card
+        <div
+          className="eyebrow"
+          style={{
+            color: 'var(--ink-muted)',
+            marginBottom: 8,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <BackLink href={`/pools/${poolId}`}>{pool.name}</BackLink>
+          <span>· Your card</span>
         </div>
         <div
           style={{

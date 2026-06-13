@@ -118,6 +118,18 @@ body {
   letter-spacing: 0.14em;
   font-size: 11px;
 }
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.back-link:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
 .tnum {
   font-variant-numeric: tabular-nums;
 }

@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
-import Link from 'next/link';
 import {
   getPoolById,
   getTournamentById,
@@ -22,6 +21,7 @@ import {
 import type { AuditEntry, MatchScore } from '@/features/predictions';
 import { getResultsView } from '@/features/results';
 import { userId } from '@cup/engine';
+import { BackLink } from '@/shared/ui';
 
 type Props = { params: Promise<{ id: string; memberId: string }> };
 
@@ -119,11 +119,18 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
         }}
       >
         <div>
-          <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 8 }}>
-            <Link href={`/pools/${poolId}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-              {pool.name}
-            </Link>{' '}
-            · {isSelf ? 'Your card' : `${memberName}'s card`}
+          <div
+            className="eyebrow"
+            style={{
+              color: 'var(--ink-muted)',
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <BackLink href={`/pools/${poolId}`}>{pool.name}</BackLink>
+            <span>· {isSelf ? 'Your card' : `${memberName}'s card`}</span>
           </div>
           <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
             {isSelf ? 'My Predictions' : `${memberName}'s Predictions`}

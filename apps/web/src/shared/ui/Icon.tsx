@@ -23,7 +23,8 @@ type IconName =
   | 'card'
   | 'whistle'
   | 'arrow'
-  | 'spark';
+  | 'spark'
+  | 'chevleft';
 
 type IconProps = {
   name: IconName;
@@ -62,6 +63,7 @@ const PATHS: Record<IconName, string> = {
   whistle: 'M6 12a6 6 0 1 0 12 0v-2H6v2zM6 10V6a6 6 0 0 1 6-6h6v4H12a2 2 0 0 0-2 2v4M12 12h.01',
   arrow: 'M5 12h14M12 5l7 7-7 7',
   spark: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
+  chevleft: 'M15 18l-6-6 6-6',
 };
 
 export function Icon({ name, size = 20, stroke = 2, color = 'currentColor' }: IconProps) {

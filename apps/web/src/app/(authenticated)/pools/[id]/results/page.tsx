@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
-import Link from 'next/link';
 import { isMember } from '@cup/db';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
 import { getResultsView, StageBar, ResultsPageClient } from '@/features/results';
+import { BackLink } from '@/shared/ui';
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string>> };
 
@@ -39,11 +39,18 @@ export default async function ResultsPage({ params, searchParams }: Props): Prom
         }}
       >
         <div>
-          <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 8 }}>
-            <Link href={`/pools/${poolId}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-              {view.poolName}
-            </Link>{' '}
-            · Results &amp; standings
+          <div
+            className="eyebrow"
+            style={{
+              color: 'var(--ink-muted)',
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <BackLink href={`/pools/${poolId}`}>{view.poolName}</BackLink>
+            <span>· Results &amp; standings</span>
           </div>
           <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
             The Cup, as it unfolds

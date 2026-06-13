@@ -1,12 +1,12 @@
 import type { ReactElement } from 'react';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { getPoolByViewToken, getTournamentById, getUserById } from '@cup/db';
 import { db } from '@/shared/db';
 import { userId } from '@cup/engine';
 import { getCardView, ReadOnlyCard } from '@/features/predictions';
 import type { MatchScore } from '@/features/predictions';
 import { getResultsView } from '@/features/results';
+import { BackLink } from '@/shared/ui';
 
 type Props = { params: Promise<{ token: string; memberId: string }> };
 
@@ -47,12 +47,9 @@ export default async function ViewMemberCardPage({ params }: Props): Promise<Rea
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <Link
-          href={`/view/${token}`}
-          className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors mb-1 inline-block"
-        >
-          ← {pool.name}
-        </Link>
+        <div className="eyebrow" style={{ marginBottom: 6 }}>
+          <BackLink href={`/view/${token}`}>{pool.name}</BackLink>
+        </div>
         <h1
           className="text-2xl font-bold text-[var(--ink)]"
           style={{ fontFamily: 'var(--font-display)' }}
