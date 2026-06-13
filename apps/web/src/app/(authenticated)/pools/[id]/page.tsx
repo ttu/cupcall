@@ -82,7 +82,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         className="md:grid-cols-[1fr_300px]"
       >
         {/* Left: Leaderboard + Points Race chart */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
           <Leaderboard
             entries={detail.leaderboard}
             currentUserId={actor.userId}
@@ -121,7 +121,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         </div>
 
         {/* Right rail */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
           {/* Your standing */}
           {myEntry && myRank && (
             <div
