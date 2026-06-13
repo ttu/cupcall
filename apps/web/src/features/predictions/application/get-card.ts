@@ -29,6 +29,16 @@ type Params = {
   now: Date;
   /** If true, create an empty prediction row when none exists */
   createIfMissing?: boolean;
+  /**
+   * When set, enables per-item lock computation for late joiners.
+   * A late joiner is someone whose joinedAt >= firstKickoff.
+   * Must be provided alongside knownResultMatchIds / answeredBetKeys.
+   */
+  joinedAt?: Date;
+  /** Set of match IDs (group + knockout) that have a recorded final score. */
+  knownResultMatchIds?: Set<string>;
+  /** Set of special-bet keys that have a recorded answer. */
+  answeredBetKeys?: Set<string>;
 };
 
 /**
@@ -36,8 +46,33 @@ type Params = {
  * Returns null if no prediction exists and createIfMissing is false.
  */
 export async function getCardView(params: Params): Promise<CardView | null> {
-  const { db, poolId, userId, tournamentId, tournament, firstKickoff, now, createIfMissing } =
-    params;
+  const {
+    db,
+    poolId,
+    userId,
+    tournamentId,
+    tournament,
+    firstKickoff,
+    now,
+    createIfMissing,
+    joinedAt,
+    knownResultMatchIds = new Set<string>(),
+    answeredBetKeys = new Set<string>(),
+  } = params;
+
+  // A late joiner is someone who joined at or after the tournament lock.
+  // They get per-item lock state rather than a full card lock.
+  const isLateJoiner = joinedAt !== undefined && now >= firstKickoff && joinedAt >= firstKickoff;
+
+  function itemLocked(matchIdOrKey: string): boolean {
+    if (isLateJoiner) return knownResultMatchIds.has(matchIdOrKey);
+    return now >= firstKickoff;
+  }
+
+  function betLocked(betKey: string): boolean {
+    if (isLateJoiner) return answeredBetKeys.has(betKey);
+    return now >= firstKickoff;
+  }
 
   // 1. Get or create the prediction row
   let prediction: Awaited<ReturnType<typeof getPrediction>> | undefined;
@@ -97,6 +132,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
           kickoff: null,
           predictedHome: saved?.home ?? null,
           predictedAway: saved?.away ?? null,
+          locked: itemLocked(m.id),
         };
       });
 
@@ -164,6 +200,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
       awayTeamId: awayId,
       awayTeamName: awayId ? (teamMap.get(awayId) ?? awayId) : null,
       pickedWinnerId: picked,
+      locked: itemLocked(slot.match),
     });
   }
 
@@ -187,6 +224,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
       awayTeamId: awayId,
       awayTeamName: awayId ? (teamMap.get(awayId) ?? awayId) : null,
       pickedWinnerId: picked,
+      locked: itemLocked(prog.match),
     });
   }
 
@@ -209,6 +247,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     predictedHome: finalFinish?.home ?? null,
     predictedAway: finalFinish?.away ?? null,
     pickedWinnerId: (knockoutPickMap.get(bracket.finalMatch) as TeamId | undefined) ?? null,
+    locked: itemLocked(bracket.finalMatch),
   };
 
   const bronzeView: FinishMatchView = {
@@ -219,6 +258,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     predictedHome: bronzeFinish?.home ?? null,
     predictedAway: bronzeFinish?.away ?? null,
     pickedWinnerId: (knockoutPickMap.get(bracket.bronzeMatch) as TeamId | undefined) ?? null,
+    locked: itemLocked(bracket.bronzeMatch),
   };
 
   const bracketView: BracketView = {
@@ -253,7 +293,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
         displayValue = raw as number | boolean;
       }
     }
-    return { ...def, value: displayValue, storedValue };
+    return { ...def, value: displayValue, storedValue, locked: betLocked(def.key) };
   });
 
   // 8. Completion
@@ -285,7 +325,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     Object.keys(inputs.specials).length;
   const completionPercent = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
-  const status = now >= firstKickoff ? 'locked' : 'editable';
+  const status = now < firstKickoff ? 'editable' : isLateJoiner ? 'partial' : 'locked';
 
   return {
     predictionId: prediction.id,

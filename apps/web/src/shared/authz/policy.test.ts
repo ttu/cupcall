@@ -34,6 +34,12 @@ const BEFORE_LOCK = new Date('2026-06-11T17:59:59Z');
 const AT_LOCK = new Date('2026-06-11T18:00:00Z');
 /** A moment well after lock. */
 const AFTER_LOCK = new Date('2026-06-12T00:00:00Z');
+/** A join time clearly before lock (early joiner). */
+const JOINED_BEFORE_LOCK = new Date('2026-06-10T10:00:00Z');
+/** A join time at lock (late joiner — joined exactly at first kickoff). */
+const JOINED_AT_LOCK = new Date('2026-06-11T18:00:00Z');
+/** A join time after lock (late joiner). */
+const JOINED_AFTER_LOCK = new Date('2026-06-12T00:00:00Z');
 
 function actor(userId: UserId): Actor {
   return { userId };
@@ -47,6 +53,7 @@ describe('authz policy', () => {
   let db: Awaited<ReturnType<typeof makeTestDb>>;
   let ownerId: UserId;
   let memberId: UserId;
+  let lateMemberId: UserId;
   let outsiderId: UserId;
   let poolId: string;
 
@@ -95,6 +102,10 @@ describe('authz policy', () => {
       email: `member-${crypto.randomUUID()}@test.com`,
       displayName: 'Member',
     });
+    const lateMemberUser = await createUser(db, {
+      email: `late-${crypto.randomUUID()}@test.com`,
+      displayName: 'Late Member',
+    });
     const outsiderUser = await createUser(db, {
       email: `outsider-${crypto.randomUUID()}@test.com`,
       displayName: 'Outsider',
@@ -102,6 +113,7 @@ describe('authz policy', () => {
 
     ownerId = ownerUser.id;
     memberId = memberUser.id;
+    lateMemberId = lateMemberUser.id;
     outsiderId = outsiderUser.id;
 
     // Create a pool owned by ownerUser.
@@ -113,8 +125,9 @@ describe('authz policy', () => {
     });
     poolId = pool.id;
 
-    // Add memberId as a pool member.
-    await addMember(db, poolId, memberId);
+    // memberId joined before lock (early joiner); lateMemberId joined after.
+    await addMember(db, poolId, memberId, JOINED_BEFORE_LOCK);
+    await addMember(db, poolId, lateMemberId, JOINED_AFTER_LOCK);
   });
 
   // -------------------------------------------------------------------------
@@ -263,6 +276,75 @@ describe('authz policy', () => {
           now: AFTER_LOCK,
         }),
       ).rejects.toThrowError(ForbiddenError);
+    });
+
+    // -------------------------------------------------------------------------
+    // Late joiner (joined at or after lockTime) — per-item access
+    // -------------------------------------------------------------------------
+
+    it('allows a late joiner to edit an item with no result (itemHasResult: false)', async () => {
+      await expect(
+        assertCanEditOwnCard(db, {
+          actor: actor(lateMemberId),
+          pool: { id: poolId, ownerId },
+          lockTime: LOCK_TIME,
+          now: AFTER_LOCK,
+          itemHasResult: false,
+        }),
+      ).resolves.not.toThrow();
+    });
+
+    it('blocks a late joiner when itemHasResult is true', async () => {
+      await expect(
+        assertCanEditOwnCard(db, {
+          actor: actor(lateMemberId),
+          pool: { id: poolId, ownerId },
+          lockTime: LOCK_TIME,
+          now: AFTER_LOCK,
+          itemHasResult: true,
+        }),
+      ).rejects.toThrowError(LockedError);
+    });
+
+    it('blocks a late joiner when itemHasResult is omitted (safe default)', async () => {
+      await expect(
+        assertCanEditOwnCard(db, {
+          actor: actor(lateMemberId),
+          pool: { id: poolId, ownerId },
+          lockTime: LOCK_TIME,
+          now: AFTER_LOCK,
+        }),
+      ).rejects.toThrowError(LockedError);
+    });
+
+    it('blocks an early joiner after lock even when itemHasResult is false', async () => {
+      await expect(
+        assertCanEditOwnCard(db, {
+          actor: actor(memberId),
+          pool: { id: poolId, ownerId },
+          lockTime: LOCK_TIME,
+          now: AFTER_LOCK,
+          itemHasResult: false,
+        }),
+      ).rejects.toThrowError(LockedError);
+    });
+
+    it('allows a member who joined exactly at lockTime (boundary: late joiner)', async () => {
+      const atLockUser = await createUser(db, {
+        email: `at-lock-${crypto.randomUUID()}@test.com`,
+        displayName: 'At Lock Member',
+      });
+      await addMember(db, poolId, atLockUser.id, JOINED_AT_LOCK);
+
+      await expect(
+        assertCanEditOwnCard(db, {
+          actor: actor(atLockUser.id),
+          pool: { id: poolId, ownerId },
+          lockTime: LOCK_TIME,
+          now: AFTER_LOCK,
+          itemHasResult: false,
+        }),
+      ).resolves.not.toThrow();
     });
   });
 

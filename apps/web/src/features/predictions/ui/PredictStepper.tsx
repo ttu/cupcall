@@ -26,6 +26,7 @@ type Props = {
 
 export function PredictStepper({ card, teams, players, isDev }: Props): ReactElement {
   const [step, setStep] = useState<Step>('groups');
+  // 'partial' cards have per-item locked state; globally lock only for 'locked'
   const locked = card.status === 'locked';
 
   function isStepDone(s: Step): boolean {

@@ -19,10 +19,15 @@ function toMemberRow(raw: typeof schema.poolMembers.$inferSelect): MemberRow {
  * Adds a user to a pool. Idempotent: if the (poolId, userId) pair already exists
  * the conflict is silently ignored (do-nothing on the unique index conflict).
  */
-export async function addMember(db: Database, poolId: string, userId: UserId): Promise<void> {
+export async function addMember(
+  db: Database,
+  poolId: string,
+  userId: UserId,
+  joinedAt?: Date,
+): Promise<void> {
   await db
     .insert(schema.poolMembers)
-    .values({ poolId, userId })
+    .values({ poolId, userId, ...(joinedAt !== undefined ? { joinedAt } : {}) })
     .onConflictDoNothing({ target: [schema.poolMembers.poolId, schema.poolMembers.userId] });
 }
 
@@ -48,10 +53,19 @@ export async function countPoolMembers(db: Database, poolId: string): Promise<nu
   return row?.n ?? 0;
 }
 
-export async function isMember(db: Database, poolId: string, userId: UserId): Promise<boolean> {
+export async function getMember(
+  db: Database,
+  poolId: string,
+  userId: UserId,
+): Promise<MemberRow | null> {
   const [row] = await db
-    .select({ poolId: schema.poolMembers.poolId })
+    .select()
     .from(schema.poolMembers)
     .where(and(eq(schema.poolMembers.poolId, poolId), eq(schema.poolMembers.userId, userId)));
-  return row !== undefined;
+  return row ? toMemberRow(row) : null;
+}
+
+export async function isMember(db: Database, poolId: string, userId: UserId): Promise<boolean> {
+  const member = await getMember(db, poolId, userId);
+  return member !== null;
 }

@@ -140,3 +140,67 @@ export async function getActualResults(db: Database, tournamentId: string): Prom
     },
   };
 }
+
+/** Returns true if the match (group or knockout) has a recorded final score. */
+export async function matchHasResult(
+  db: Database,
+  tournamentId: string,
+  matchId: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: schema.matches.id })
+    .from(schema.matches)
+    .where(
+      and(
+        eq(schema.matches.tournamentId, tournamentId),
+        eq(schema.matches.id, matchId),
+        isNotNull(schema.matches.homeGoals),
+      ),
+    );
+  return row !== undefined;
+}
+
+/** Returns true if the given special bet key has a recorded answer. */
+export async function betKeyHasAnswer(
+  db: Database,
+  tournamentId: string,
+  betKey: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ betKey: schema.actualAnswers.betKey })
+    .from(schema.actualAnswers)
+    .where(
+      and(
+        eq(schema.actualAnswers.tournamentId, tournamentId),
+        eq(schema.actualAnswers.betKey, betKey),
+      ),
+    );
+  return row !== undefined;
+}
+
+/**
+ * Returns the set of match IDs (group + knockout) that have a recorded final score.
+ * Used by getCardView to compute per-item lock state for late joiners.
+ */
+export async function getKnownResultMatchIds(
+  db: Database,
+  tournamentId: string,
+): Promise<Set<string>> {
+  const rows = await db
+    .select({ id: schema.matches.id })
+    .from(schema.matches)
+    .where(and(eq(schema.matches.tournamentId, tournamentId), isNotNull(schema.matches.homeGoals)));
+  return new Set(rows.map((r) => r.id));
+}
+
+/**
+ * Returns the set of bet keys that have a recorded answer in actualAnswers.
+ * Used by getCardView to compute per-item lock state for late joiners.
+ */
+export async function getAnsweredBetKeys(db: Database, tournamentId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ betKey: schema.actualAnswers.betKey })
+    .from(schema.actualAnswers)
+    .where(eq(schema.actualAnswers.tournamentId, tournamentId));
+  return new Set(rows.map((r) => r.betKey));
+}

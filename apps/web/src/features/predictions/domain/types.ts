@@ -20,7 +20,12 @@ export type { BetInputKind, SpecialBetDef };
 // Card status
 // ---------------------------------------------------------------------------
 
-export type PredictionStatus = 'editable' | 'locked';
+/**
+ * 'editable'  — before firstKickoff; all items editable
+ * 'locked'    — after firstKickoff, early joiner; all items locked
+ * 'partial'   — after firstKickoff, late joiner; per-item lock via item.locked
+ */
+export type PredictionStatus = 'editable' | 'locked' | 'partial';
 
 // ---------------------------------------------------------------------------
 // Group scores
@@ -36,6 +41,8 @@ export type GroupMatchView = {
   kickoff: Date | null;
   predictedHome: number | null;
   predictedAway: number | null;
+  /** True when this match's result is known and the item cannot be edited. */
+  locked: boolean;
 };
 
 export type GroupView = {
@@ -63,6 +70,8 @@ export type TieView = {
   awayTeamName: string | null;
   /** The user's current winner pick (null = not yet picked) */
   pickedWinnerId: TeamId | null;
+  /** True when this tie's result is known and the pick cannot be changed. */
+  locked: boolean;
 };
 
 export type BracketRoundView = {
@@ -79,6 +88,8 @@ export type FinishMatchView = {
   predictedAway: number | null;
   /** Explicit winner pick (final/bronze knockoutPick). Null when not set. */
   pickedWinnerId: TeamId | null;
+  /** True when this match's result is known and it cannot be edited. */
+  locked: boolean;
 };
 
 export type BracketView = {
@@ -100,6 +111,8 @@ export type SpecialBetView = SpecialBetDef & {
   value: string | number | boolean | null;
   /** Raw stored value — player/team ID, number, bool, or custom free-text string */
   storedValue: string | number | boolean | null;
+  /** True when this bet's answer is already known and it cannot be changed. */
+  locked: boolean;
 };
 
 // ---------------------------------------------------------------------------

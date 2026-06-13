@@ -6,6 +6,9 @@ import {
   getPrediction,
   listEditsForPrediction,
   isMember,
+  getMember,
+  getKnownResultMatchIds,
+  getAnsweredBetKeys,
 } from '@cup/db';
 import { db } from '@/shared/db';
 import { getCurrentActor } from '@/features/auth';
@@ -28,18 +31,26 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
   const actor = await getCurrentActor();
   if (!actor) redirect('/');
 
-  const [pool, member] = await Promise.all([
+  const [pool, memberRecord] = await Promise.all([
     getPoolById(db, poolId),
-    isMember(db, poolId, actor.userId),
+    getMember(db, poolId, actor.userId),
   ]);
   if (!pool) notFound();
-  if (!member) notFound();
+  if (!memberRecord) notFound();
 
   const tournament = await getTournamentById(db, pool.tournamentId);
   if (!tournament?.definition) notFound();
 
   const tournamentDef = tournament.definition;
   const now = new Date();
+  const isAfterLock = now >= tournament.firstKickoff;
+
+  const [knownResultMatchIds, answeredBetKeys] = isAfterLock
+    ? await Promise.all([
+        getKnownResultMatchIds(db, pool.tournamentId),
+        getAnsweredBetKeys(db, pool.tournamentId),
+      ])
+    : [new Set<string>(), new Set<string>()];
 
   const card = await getCardView({
     db,
@@ -48,6 +59,9 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
     tournamentId: pool.tournamentId,
     tournament: tournamentDef,
     firstKickoff: tournament.firstKickoff,
+    joinedAt: memberRecord.joinedAt,
+    knownResultMatchIds,
+    answeredBetKeys,
     now,
     createIfMissing: true,
   });
@@ -140,6 +154,29 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
           />
         </div>
       </div>
+
+      {card.status === 'partial' && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            padding: '12px 16px',
+            marginBottom: 20,
+            borderRadius: 10,
+            background: 'var(--surface-2)',
+            border: '1px solid var(--line)',
+            fontSize: 13,
+            color: 'var(--ink-soft)',
+          }}
+        >
+          <span style={{ fontWeight: 800, fontSize: 16 }}>⏱</span>
+          <span>
+            You joined after the tournament started. Matches and bets with known results are locked
+            — you can still predict anything that hasn&apos;t been decided yet.
+          </span>
+        </div>
+      )}
 
       {creatorLockedEdit ? (
         <CreatorPredictEdit

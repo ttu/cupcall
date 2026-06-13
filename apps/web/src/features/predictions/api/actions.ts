@@ -18,6 +18,8 @@ import {
   deleteKnockoutPicks,
   getTournamentById,
   clearPredictionInputs,
+  matchHasResult,
+  betKeyHasAnswer,
 } from '@cup/db';
 import {
   bracketMatchKey as bmk,
@@ -158,12 +160,15 @@ export async function saveGroupScore(
   try {
     const { userId } = await getActorOrThrow();
     const { pool, tournament } = await loadPoolAndTournament(poolId);
+    const now = new Date();
 
+    const itemHasResult = await matchHasResult(db, pool.tournamentId, mId);
     await assertCanEditOwnCard(db, {
       actor: { userId },
       pool: { id: pool.id, ownerId: pool.ownerId },
       lockTime: tournament.firstKickoff,
-      now: new Date(),
+      now,
+      itemHasResult,
     });
 
     const prediction = await getOrCreatePrediction(db, {
@@ -211,12 +216,16 @@ export async function saveKnockoutPick(
   try {
     const { userId } = await getActorOrThrow();
     const { pool, tournament } = await loadPoolAndTournament(poolId);
+    const now = new Date();
 
+    // bracketMatchKey IS the match id in the matches table (e.g. "qf-1", "final")
+    const itemHasResult = await matchHasResult(db, pool.tournamentId, key);
     await assertCanEditOwnCard(db, {
       actor: { userId },
       pool: { id: pool.id, ownerId: pool.ownerId },
       lockTime: tournament.firstKickoff,
-      now: new Date(),
+      now,
+      itemHasResult,
     });
 
     const prediction = await getOrCreatePrediction(db, {
@@ -262,12 +271,19 @@ export async function saveFinishScore(
   try {
     const { userId } = await getActorOrThrow();
     const { pool, tournament } = await loadPoolAndTournament(poolId);
+    const now = new Date();
 
+    const matchKey =
+      match === 'final'
+        ? tournament.definition!.bracket.finalMatch
+        : tournament.definition!.bracket.bronzeMatch;
+    const itemHasResult = await matchHasResult(db, pool.tournamentId, matchKey);
     await assertCanEditOwnCard(db, {
       actor: { userId },
       pool: { id: pool.id, ownerId: pool.ownerId },
       lockTime: tournament.firstKickoff,
-      now: new Date(),
+      now,
+      itemHasResult,
     });
 
     const prediction = await getOrCreatePrediction(db, {
@@ -322,12 +338,15 @@ export async function saveSpecialBet(
   try {
     const { userId } = await getActorOrThrow();
     const { pool, tournament } = await loadPoolAndTournament(poolId);
+    const now = new Date();
 
+    const itemHasResult = await betKeyHasAnswer(db, pool.tournamentId, betKey);
     await assertCanEditOwnCard(db, {
       actor: { userId },
       pool: { id: pool.id, ownerId: pool.ownerId },
       lockTime: tournament.firstKickoff,
-      now: new Date(),
+      now,
+      itemHasResult,
     });
 
     const prediction = await getOrCreatePrediction(db, {

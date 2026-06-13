@@ -121,7 +121,7 @@ export function BracketSection({
                   <TieCard
                     key={tie.bracketMatchKey}
                     tie={tie}
-                    locked={locked}
+                    locked={locked || tie.locked}
                     onPick={handlePick}
                   />
                 ))}
@@ -146,7 +146,7 @@ export function BracketSection({
               match={bracket.final}
               matchKey="final"
               poolId={poolId}
-              locked={locked}
+              locked={locked || bracket.final.locked}
               onSave={handleFinishSave}
               onPickWinner={handlePick}
             />
@@ -160,7 +160,7 @@ export function BracketSection({
               match={bracket.bronze}
               matchKey="bronze"
               poolId={poolId}
-              locked={locked}
+              locked={locked || bracket.bronze.locked}
               onSave={handleFinishSave}
               onPickWinner={handlePick}
             />

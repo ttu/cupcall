@@ -88,6 +88,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
             </div>
             <div className="divide">
               {group.matches.map((match) => {
+                const cellLocked = locked || match.locked;
                 const incomplete = match.predictedHome === null;
                 return (
                   <div
@@ -98,7 +99,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
                       alignItems: 'center',
                       gap: 10,
                       padding: '10px 16px',
-                      background: incomplete && !locked ? 'var(--orange-050)' : undefined,
+                      background: incomplete && !cellLocked ? 'var(--orange-050)' : undefined,
                     }}
                   >
                     {/* Home */}
@@ -111,7 +112,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
                         minWidth: 0,
                       }}
                     >
-                      {incomplete && !locked && (
+                      {incomplete && !cellLocked && (
                         <Chip variant="orange" style={{ height: 22, fontSize: 10 }}>
                           Needs a score
                         </Chip>
@@ -137,7 +138,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
                       poolId={poolId}
                       home={match.predictedHome}
                       away={match.predictedAway}
-                      locked={locked}
+                      locked={cellLocked}
                       onSave={handleSave}
                     />
 

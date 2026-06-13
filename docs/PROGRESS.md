@@ -190,6 +190,26 @@ Full visual redesign on branch `design-system` (14 commits, not yet merged to ma
 - **`apps/web/src/app/(authenticated)/`** — route group with shared layout: `AppNav` (sticky desktop), `MobileNav` (fixed bottom), `nav-actions.ts` server action for sign-out.
 - **Pools, Leaderboard, Predictions, Results, Join, Settings** — all screens updated to design system; Anton display font, oklch colours, `.card`/`.turf`/`.chip`/`.btn` throughout.
 
+## Late-joiner partial predictions (2026-06-13)
+
+People who join the pool after `tournament.firstKickoff` can now fill in predictions for
+matches/bets without known results, while items with known results are locked.
+
+**Domain:** `PredictionStatus` gains `'partial'`; `GroupMatchView`, `TieView`, `FinishMatchView`,
+`SpecialBetView` each have a `locked: boolean`; `getCardView` accepts `joinedAt?`,
+`knownResultMatchIds?`, `answeredBetKeys?` for per-item lock computation.
+
+**Policy:** `assertCanEditOwnCard` uses `getMember` (gets `joinedAt` in one call); new
+`itemHasResult?: boolean` param — pass `false` to allow late joiner edits; omit to block (safe default).
+
+**DB layer:** `getMember`, `matchHasResult`, `betKeyHasAnswer`, `getKnownResultMatchIds`,
+`getAnsweredBetKeys` added to `@cup/db`; `addMember` gains optional `joinedAt?` for tests.
+
+**Server actions:** `saveGroupScore/KnockoutPick/FinishScore/SpecialBet` each check `itemHasResult`
+before calling `assertCanEditOwnCard`. Bulk ops (`clearAllPredictions`, `importCard`) remain locked.
+
+**UI:** info banner for `status === 'partial'`; sections use `item.locked || globalLocked`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

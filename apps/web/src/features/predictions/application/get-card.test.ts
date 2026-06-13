@@ -337,3 +337,149 @@ describe('getCardView — completion math for tied final/bronze', () => {
     expect(withFinal).toBeGreaterThan(withoutFinal);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Late joiner — per-item lock state
+// ---------------------------------------------------------------------------
+
+describe('getCardView — late joiner per-item lock', () => {
+  let db: TestDb;
+  let poolId: string;
+  let userId: UserId;
+
+  const lockTime = new Date('2026-06-11T18:00:00Z');
+  const afterLock = new Date('2026-06-13T00:00:00Z');
+  const joinedAfterLock = new Date('2026-06-12T10:00:00Z');
+  const joinedBeforeLock = new Date('2026-06-10T10:00:00Z');
+
+  beforeEach(async () => {
+    db = await makeTestDb();
+    await upsertTournamentDef(db, miniTournament, lockTime, emptyKickoffs);
+    const owner = await createUser(db, {
+      email: `owner-${crypto.randomUUID()}@test.com`,
+      displayName: 'Owner',
+    });
+    const pool = await createPool(db, {
+      tournamentId: miniTournament.id,
+      ownerId: owner.id,
+      name: 'Test Pool',
+      inviteTokenHash: `h-${crypto.randomUUID()}`,
+    });
+    const user = await createUser(db, {
+      email: `user-${crypto.randomUUID()}@test.com`,
+      displayName: 'Late Alice',
+    });
+    poolId = pool.id;
+    userId = user.id as UserId;
+    await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTournament.id });
+  });
+
+  function firstGroupMatchId() {
+    return groupMatchIds('A')[0]!;
+  }
+
+  it('gives status "partial" for a late joiner after lock', async () => {
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedAfterLock,
+      knownResultMatchIds: new Set(),
+      answeredBetKeys: new Set(),
+      now: afterLock,
+    });
+    expect(card?.status).toBe('partial');
+  });
+
+  it('gives status "locked" for an early joiner after lock', async () => {
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedBeforeLock,
+      knownResultMatchIds: new Set(),
+      answeredBetKeys: new Set(),
+      now: afterLock,
+    });
+    expect(card?.status).toBe('locked');
+  });
+
+  it('marks a match as locked when its ID is in knownResultMatchIds', async () => {
+    const matchId = firstGroupMatchId();
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedAfterLock,
+      knownResultMatchIds: new Set([matchId]),
+      answeredBetKeys: new Set(),
+      now: afterLock,
+    });
+    const match = card?.groups.flatMap((g) => g.matches).find((m) => m.matchId === matchId);
+    expect(match?.locked).toBe(true);
+  });
+
+  it('leaves a match editable when it has no result', async () => {
+    const matchId = firstGroupMatchId();
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedAfterLock,
+      knownResultMatchIds: new Set(), // no results known
+      answeredBetKeys: new Set(),
+      now: afterLock,
+    });
+    const match = card?.groups.flatMap((g) => g.matches).find((m) => m.matchId === matchId);
+    expect(match?.locked).toBe(false);
+  });
+
+  it('locks all items for an early joiner regardless of knownResultMatchIds', async () => {
+    const matchId = firstGroupMatchId();
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedBeforeLock,
+      knownResultMatchIds: new Set(), // no results — but doesn't matter for early joiner
+      answeredBetKeys: new Set(),
+      now: afterLock,
+    });
+    const match = card?.groups.flatMap((g) => g.matches).find((m) => m.matchId === matchId);
+    expect(match?.locked).toBe(true);
+  });
+
+  it('all items are editable (locked=false) before lock regardless of joinedAt', async () => {
+    const matchId = firstGroupMatchId();
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedAfterLock,
+      knownResultMatchIds: new Set([matchId]),
+      answeredBetKeys: new Set(),
+      now: new Date('2026-06-11T17:00:00Z'), // before lock
+    });
+    const match = card?.groups.flatMap((g) => g.matches).find((m) => m.matchId === matchId);
+    expect(match?.locked).toBe(false);
+    expect(card?.status).toBe('editable');
+  });
+});

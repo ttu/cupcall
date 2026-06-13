@@ -58,6 +58,7 @@ export function SpecialsSection({
         }}
       >
         {specials.map((bet) => {
+          const betLocked = locked || bet.locked;
           const empty = bet.value === null;
           const icon = KIND_ICON[bet.kind] ?? 'ball';
           return (
@@ -67,8 +68,10 @@ export function SpecialsSection({
               style={{
                 borderRadius: 'var(--radius)',
                 border:
-                  empty && !locked ? '1px dashed var(--orange-400)' : '1px solid var(--line-soft)',
-                background: empty && !locked ? 'var(--orange-050)' : 'var(--surface)',
+                  empty && !betLocked
+                    ? '1px dashed var(--orange-400)'
+                    : '1px solid var(--line-soft)',
+                background: empty && !betLocked ? 'var(--orange-050)' : 'var(--surface)',
                 boxShadow: 'var(--shadow-sm)',
                 padding: 16,
                 display: 'flex',
@@ -115,7 +118,7 @@ export function SpecialsSection({
               </div>
               <SpecialBetInput
                 bet={bet}
-                locked={locked}
+                locked={betLocked}
                 teams={teams}
                 players={players}
                 onSave={handleSave}

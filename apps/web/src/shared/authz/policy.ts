@@ -9,16 +9,15 @@
  */
 
 import type { UserId } from '@cup/engine';
-import { isMember } from '@cup/db';
+import { isMember, getMember } from '@cup/db';
 import type { Actor } from './actor';
 import { ForbiddenError, LockedError } from './errors';
 
 /**
- * The database handle accepted by policy functions. Derived from the
- * isMember repository signature to stay structurally compatible with
- * any Db<schema> variant the repositories expose.
+ * The database handle accepted by policy functions. Structurally compatible
+ * with any Db<schema> variant the repositories expose.
  */
-type PolicyDb = Parameters<typeof isMember>[0];
+type PolicyDb = Parameters<typeof getMember>[0];
 
 // ---------------------------------------------------------------------------
 // Minimal pool shape needed by policy — avoid coupling to full PoolRow.
@@ -81,19 +80,20 @@ export async function assertIsMember(db: PolicyDb, poolId: string, userId: UserI
 // ---------------------------------------------------------------------------
 
 /**
- * Asserts a signed-in member may edit their own card in `pool`.
+ * Asserts a signed-in member may edit a specific item on their own card.
  *
- * Rules (functional-spec §6.5):
+ * Rules (functional-spec §6.5 + late-joiner extension):
  *  - Actor must be signed in.
  *  - Actor must be a current member (not kicked).
- *  - `now` must be strictly before `lockTime` (at/after = locked).
+ *  - Before lockTime: always allowed.
+ *  - After lockTime, early joiner (joinedAt < lockTime): always locked.
+ *  - After lockTime, late joiner (joinedAt >= lockTime): allowed only when
+ *    `itemHasResult` is explicitly `false` (the item has no known result yet).
+ *    When `itemHasResult` is omitted or `true`, late joiners are blocked too —
+ *    this is the safe default for bulk operations (clear, import).
  *
- * Throws `ForbiddenError` when not signed in or not a member.
- * Throws `LockedError` when `now >= lockTime`.
- *
- * Membership is checked BEFORE the lock so a kicked/non-member caller always gets
- * `ForbiddenError` (they have no standing), never a `LockedError` that would leak
- * the pool's lock state to someone with no access.
+ * Membership is checked BEFORE the lock so a non-member/kicked caller always
+ * gets `ForbiddenError`, never a `LockedError` that would leak pool lock state.
  */
 export async function assertCanEditOwnCard(
   db: PolicyDb,
@@ -102,21 +102,38 @@ export async function assertCanEditOwnCard(
     pool,
     lockTime,
     now,
+    itemHasResult,
   }: {
     actor: Actor | null;
     pool: PoolRef;
     lockTime: Date;
     now: Date;
+    /**
+     * Whether the specific item being saved already has a known result.
+     * Pass `false` to allow late joiners to edit this item.
+     * Omit (or pass `true`) to block late joiners — safe default for bulk ops.
+     */
+    itemHasResult?: boolean;
   },
 ): Promise<void> {
   assertSignedIn(actor);
-  await assertIsMember(db, pool.id, actor.userId);
 
-  if (now >= lockTime) {
-    throw new LockedError(
-      `Pool ${pool.id} is locked as of ${lockTime.toISOString()}. Members may not edit their card after lock time. Current time: ${now.toISOString()}.`,
+  const member = await getMember(db, pool.id, actor.userId);
+  if (!member) {
+    throw new ForbiddenError(
+      `User ${actor.userId} is not a current member of pool ${pool.id}. Kicked or non-member users are denied.`,
     );
   }
+
+  if (now < lockTime) return;
+
+  // After lock: late joiners (joined at or after lockTime) get per-item access.
+  const isLateJoiner = member.joinedAt >= lockTime;
+  if (isLateJoiner && itemHasResult === false) return;
+
+  throw new LockedError(
+    `Pool ${pool.id} is locked as of ${lockTime.toISOString()}. Current time: ${now.toISOString()}.`,
+  );
 }
 
 /**
