@@ -25,7 +25,17 @@ export async function rescoreCard(deps: Deps): Promise<void> {
   const { db, predictionId, poolId, tournament, actual } = deps;
 
   const inputs = await getPredictionInputs(db, predictionId);
-  const derived = deriveCard(inputs, tournament);
+
+  // Augment group scores with actual results for matches not saved by the user
+  // (e.g. late joiners who couldn't predict locked matches). This ensures
+  // deriveCard/buildBracket resolves bracket slots correctly.
+  const savedMatchIds = new Set(inputs.groupScores.map((gs) => gs.matchId as string));
+  const augmentedGroupScores = [
+    ...inputs.groupScores,
+    ...actual.matchResults.filter((r) => !savedMatchIds.has(r.matchId as string)),
+  ];
+
+  const derived = deriveCard({ ...inputs, groupScores: augmentedGroupScores }, tournament);
   const breakdown = scoreCard(derived, inputs, actual, tournament.scoring);
 
   await upsertScore(db, {

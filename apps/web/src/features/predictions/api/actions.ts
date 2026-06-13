@@ -20,6 +20,7 @@ import {
   clearPredictionInputs,
   matchHasResult,
   betKeyHasAnswer,
+  getActualGroupMatchScores,
 } from '@cup/db';
 import {
   bracketMatchKey as bmk,
@@ -60,14 +61,26 @@ async function invalidatePicksAfterKnockoutPickChange(
   predictionId: string,
   updatedInputs: Awaited<ReturnType<typeof getPredictionInputs>>,
   tournamentDef: Tournament,
+  actualGroupMatchScores?: Map<string, { home: number; away: number }>,
 ) {
+  const savedMatchIds = new Set(updatedInputs.groupScores.map((gs) => gs.matchId as string));
+  const augmentedScores =
+    actualGroupMatchScores && actualGroupMatchScores.size > 0
+      ? [
+          ...updatedInputs.groupScores,
+          ...[...actualGroupMatchScores.entries()]
+            .filter(([mid]) => !savedMatchIds.has(mid))
+            .map(([mid, result]) => ({ matchId: mid, home: result.home, away: result.away })),
+        ]
+      : updatedInputs.groupScores;
+
   const groupOrders = deriveGroupOrders(
     tournamentDef,
-    updatedInputs.groupScores as Parameters<typeof deriveGroupOrders>[1],
+    augmentedScores as Parameters<typeof deriveGroupOrders>[1],
   );
   const qualifiers = selectQualifiers(
     tournamentDef,
-    updatedInputs.groupScores as Parameters<typeof selectQualifiers>[1],
+    augmentedScores as Parameters<typeof selectQualifiers>[1],
     groupOrders,
   );
   const invalidKeys = findInvalidatedPickKeys(
@@ -114,10 +127,21 @@ async function invalidatePicksAfterGroupScoreChange(
   away: number,
   existingInputs: Awaited<ReturnType<typeof getPredictionInputs>>,
   tournamentDef: Tournament,
+  actualGroupMatchScores?: Map<string, { home: number; away: number }>,
 ) {
+  const savedScores = existingInputs.groupScores.filter((s) => s.matchId !== matchId);
+  const savedMatchIds = new Set(savedScores.map((gs) => gs.matchId as string));
+  savedMatchIds.add(matchId);
+
   const updatedScores = [
-    ...existingInputs.groupScores.filter((s) => s.matchId !== matchId),
+    ...savedScores,
     { matchId, home, away },
+    // Overlay actual scores for locked group matches not covered by user predictions
+    ...(actualGroupMatchScores
+      ? [...actualGroupMatchScores.entries()]
+          .filter(([mid]) => !savedMatchIds.has(mid))
+          .map(([mid, result]) => ({ matchId: mid, home: result.home, away: result.away }))
+      : []),
   ];
   const newGroupOrders = deriveGroupOrders(
     tournamentDef,
@@ -177,7 +201,12 @@ export async function saveGroupScore(
       tournamentId: pool.tournamentId,
     });
 
-    const inputs = await getPredictionInputs(db, prediction.id);
+    const [inputs, actualGroupMatchScores] = await Promise.all([
+      getPredictionInputs(db, prediction.id),
+      now >= tournament.firstKickoff
+        ? getActualGroupMatchScores(db, pool.tournamentId)
+        : Promise.resolve(new Map<string, { home: number; away: number }>()),
+    ]);
     await invalidatePicksAfterGroupScoreChange(
       prediction.id,
       mId,
@@ -185,6 +214,7 @@ export async function saveGroupScore(
       away,
       inputs,
       tournament.definition!,
+      actualGroupMatchScores,
     );
     await upsertGroupScore(db, prediction.id, mId, home, away);
     await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
@@ -234,12 +264,18 @@ export async function saveKnockoutPick(
       tournamentId: pool.tournamentId,
     });
 
+    const actualGroupMatchScores =
+      now >= tournament.firstKickoff
+        ? await getActualGroupMatchScores(db, pool.tournamentId)
+        : new Map<string, { home: number; away: number }>();
+
     await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
     const updatedInputs = await getPredictionInputs(db, prediction.id);
     await invalidatePicksAfterKnockoutPickChange(
       prediction.id,
       updatedInputs,
       tournament.definition!,
+      actualGroupMatchScores,
     );
     await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
 
@@ -398,7 +434,10 @@ export async function ownerSaveGroupScore(
     });
 
     // Capture old value for audit and invalidation
-    const oldInputs = await getPredictionInputs(db, prediction.id);
+    const [oldInputs, actualGroupMatchScores] = await Promise.all([
+      getPredictionInputs(db, prediction.id),
+      getActualGroupMatchScores(db, pool.tournamentId),
+    ]);
     const oldScore = oldInputs.groupScores.find((gs) => gs.matchId === mId);
 
     await invalidatePicksAfterGroupScoreChange(
@@ -408,6 +447,7 @@ export async function ownerSaveGroupScore(
       away,
       oldInputs,
       tournament.definition!,
+      actualGroupMatchScores,
     );
     await upsertGroupScore(db, prediction.id, mId, home, away);
     await createPredictionEdit(db, {
@@ -524,12 +564,14 @@ export async function ownerSaveKnockoutPick(
       tournamentId: pool.tournamentId,
     });
 
+    const actualGroupMatchScores = await getActualGroupMatchScores(db, pool.tournamentId);
     await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
     const updatedInputs = await getPredictionInputs(db, prediction.id);
     await invalidatePicksAfterKnockoutPickChange(
       prediction.id,
       updatedInputs,
       tournament.definition!,
+      actualGroupMatchScores,
     );
     await createPredictionEdit(db, {
       predictionId: prediction.id,

@@ -11,9 +11,10 @@ import {
   upsertGroupScore as dbUpsertGroupScore,
   upsertKnockoutPick as dbUpsertKnockoutPick,
   deleteKnockoutPicks as dbDeleteKnockoutPicks,
+  finalizeMatch,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
-import { bracketMatchKey } from '@cup/engine';
+import { bracketMatchKey, teamId, groupId } from '@cup/engine';
 import type { UserId } from '@cup/engine';
 
 // Mocks — only system boundaries: auth, Next.js cache, and the DB singleton.
@@ -33,6 +34,8 @@ import {
   saveFinishScore,
   ownerSaveFinishScore,
   ownerSaveGroupScore,
+  saveKnockoutPick,
+  saveGroupScore,
   importCard,
 } from './actions';
 import { getCurrentActor } from '@/features/auth';
@@ -407,5 +410,131 @@ describe('owner editing own card post-lock (creator predict edit)', () => {
     expect(result).toMatchObject({ ok: true });
     const inputs = await getPredictionInputs(testDb, ownerPredictionId);
     expect(inputs.groupScores[0]).toMatchObject({ home: 3, away: 0 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helpers shared by the post-lock invalidation tests
+// ---------------------------------------------------------------------------
+
+/**
+ * Seed Group A predictions (all draws) for every match except mA1, which is
+ * left unpredicted because it has an actual locked result in the DB.
+ * Also seed all Group B matches so qf1 slot `2B` resolves (B1 wins when
+ * B1 is a participant; other matches draw).
+ */
+async function seedGroupsForPostLockTest(
+  db: typeof testDb,
+  predictionId: string,
+  tournamentId: string,
+) {
+  const mA1 = miniTournament.groupMatches.find(
+    (m) => m.group === groupId('A') && m.home === teamId('A1') && m.away === teamId('A2'),
+  )!;
+
+  // Group A: predict all matches except mA1 (which has an actual locked result)
+  for (const m of miniTournament.groupMatches.filter(
+    (m) => m.group === groupId('A') && m.id !== mA1.id,
+  )) {
+    await dbUpsertGroupScore(db, predictionId, m.id, 0, 0);
+  }
+
+  // Group B: B1 wins every match it plays; others draw → B1 first, B2 second
+  for (const m of miniTournament.groupMatches.filter((m) => m.group === groupId('B'))) {
+    const b1IsHome = m.home === teamId('B1');
+    const b1IsAway = m.away === teamId('B1');
+    if (b1IsHome) await dbUpsertGroupScore(db, predictionId, m.id, 1, 0);
+    else if (b1IsAway) await dbUpsertGroupScore(db, predictionId, m.id, 0, 1);
+    else await dbUpsertGroupScore(db, predictionId, m.id, 0, 0);
+  }
+
+  // Set actual result for mA1 so getActualGroupMatchScores returns it
+  await finalizeMatch(db, tournamentId, mA1.id, 3, 0); // A1 wins 3-0 → A1 first in Group A
+}
+
+describe('saveKnockoutPick / saveGroupScore — actual group scores used during post-lock invalidation', () => {
+  const lockedTournamentId = 'mini-locked';
+
+  let poolId: string;
+  let actorId: UserId;
+  let predictionId: string;
+
+  beforeAll(async () => {
+    if (!testDb) {
+      testDb = await makeTestDb();
+    }
+    await upsertTournamentDef(
+      testDb,
+      { ...miniTournament, id: lockedTournamentId },
+      pastKickoff,
+      emptyKickoffs,
+    );
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    const owner = await createUser(testDb, {
+      email: `o-lock-${crypto.randomUUID()}@x.com`,
+      displayName: 'Owner',
+    });
+    const member = await createUser(testDb, {
+      email: `m-lock-${crypto.randomUUID()}@x.com`,
+      displayName: 'LateJoiner',
+    });
+    actorId = member.id;
+
+    const pool = await dbCreatePool(testDb, {
+      tournamentId: lockedTournamentId,
+      ownerId: owner.id,
+      name: 'Locked Pool',
+      inviteTokenHash: `h-${crypto.randomUUID()}`,
+    });
+    poolId = pool.id;
+    // Member joins after lock (joinedAt = now > pastKickoff) → late joiner
+    await addMember(testDb, poolId, actorId);
+
+    const pred = await getOrCreatePrediction(testDb, {
+      poolId,
+      userId: actorId,
+      tournamentId: lockedTournamentId,
+    });
+    predictionId = pred.id;
+
+    mockedGetActor.mockResolvedValue({ userId: actorId });
+  });
+
+  it('saveKnockoutPick: retains a pick that is valid under actual locked group match results', async () => {
+    // mA1 (A1 vs A2) has an actual result of 3-0 (A1 wins) — not in user predictions.
+    // User predicts mA2–mA6 as draws. With actual mA1, A1 has 5 pts → 1st in Group A.
+    // Without actual mA1, A1 would only have 2 pts from draws → not 1st.
+    // qf1 slot is `1A` vs `2B` → A1 vs B2. Picking A1 must survive invalidation.
+    await seedGroupsForPostLockTest(testDb, predictionId, lockedTournamentId);
+
+    const result = await saveKnockoutPick({
+      poolId,
+      bracketMatchKey: 'qf1',
+      winner: 'A1',
+    });
+
+    expect(result).toEqual({ ok: true });
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    const pick = inputs.knockoutPicks.find((p) => p.bracketMatchKey === bracketMatchKey('qf1'));
+    expect(pick?.winner).toBe(teamId('A1'));
+  });
+
+  it('saveGroupScore: retains a pick valid under actual group scores when an unrelated group score changes', async () => {
+    // Same setup: mA1 actual 3-0, user predicts mA2-mA6 and all Group B.
+    // A1 pick for qf1 is pre-seeded. Saving a Group D score must not invalidate it.
+    await seedGroupsForPostLockTest(testDb, predictionId, lockedTournamentId);
+    await dbUpsertKnockoutPick(testDb, predictionId, bracketMatchKey('qf1'), teamId('A1'));
+
+    const mD1 = miniTournament.groupMatches.find((m) => m.group === groupId('D'))!;
+    const result = await saveGroupScore({ poolId, matchId: mD1.id, home: 2, away: 1 });
+
+    expect(result).toEqual({ ok: true });
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    const pick = inputs.knockoutPicks.find((p) => p.bracketMatchKey === bracketMatchKey('qf1'));
+    expect(pick?.winner).toBe(teamId('A1'));
   });
 });
