@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import type { SpecialBetResultRow } from '../domain/types';
+import type { SpecialBetResultRow, SpecialBetPoolStats } from '../domain/types';
 import { Icon, TeamBadge } from '@/shared/ui';
 
 const KIND_ICON = {
@@ -127,6 +127,7 @@ function SpecialBetRow({
         {isPending && bet.currentLeader !== null && (
           <CurrentLeaderLine betKey={bet.key} leader={bet.currentLeader} />
         )}
+        {bet.poolStats && <PoolPicksRow stats={bet.poolStats} />}
       </div>
 
       {/* Hit chip + points */}
@@ -202,6 +203,46 @@ function PickDisplay({
         {display}
       </span>
     </span>
+  );
+}
+
+function PoolPicksRow({ stats }: { stats: SpecialBetPoolStats }): ReactElement {
+  const top = stats.topValues.slice(0, 3);
+  const shownCount = top.reduce((sum, v) => sum + v.count, 0);
+  const restCount = stats.totalPredictions - shownCount;
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        flexWrap: 'wrap',
+        marginTop: 2,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: 'var(--ink-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          flexShrink: 0,
+        }}
+      >
+        Pool
+      </span>
+      {top.map((v) => (
+        <span key={v.displayValue} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+          <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{v.displayValue}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink)' }}>{v.pct}%</span>
+        </span>
+      ))}
+      {restCount > 0 && (
+        <span style={{ fontSize: 10, color: 'var(--ink-muted)' }}>+{restCount}</span>
+      )}
+    </div>
   );
 }
 

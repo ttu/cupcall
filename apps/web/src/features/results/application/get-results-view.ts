@@ -8,9 +8,10 @@ import {
   getPredictionInputs,
   getMatchesForTournament,
   getGroupScoresByPool,
+  getSpecialBetsByPool,
   getActualResults,
 } from '@cup/db';
-import type { MatchRow, LeaderboardEntry, PoolGroupScore } from '@cup/db';
+import type { MatchRow, LeaderboardEntry, PoolGroupScore, PoolSpecialBet } from '@cup/db';
 import {
   deriveGroupOrders,
   selectQualifiers,
@@ -46,6 +47,7 @@ import type {
   MatrixMatch,
   MatchMatrixCell,
   SpecialBetResultRow,
+  SpecialBetPoolStats,
   CurrentLeader,
 } from '../domain/types';
 import {
@@ -78,15 +80,17 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
 
   const def = tournament.definition;
 
-  const [leaderboard, prediction, allMatches, poolGroupScores, actualResults] = await Promise.all([
-    getLeaderboard(db, poolId),
-    userId !== undefined
-      ? getPrediction(db, poolId, userId as import('@cup/engine').UserId)
-      : Promise.resolve(null),
-    getMatchesForTournament(db, pool.tournamentId),
-    getGroupScoresByPool(db, poolId),
-    getActualResults(db, pool.tournamentId),
-  ]);
+  const [leaderboard, prediction, allMatches, poolGroupScores, actualResults, poolSpecialBets] =
+    await Promise.all([
+      getLeaderboard(db, poolId),
+      userId !== undefined
+        ? getPrediction(db, poolId, userId as import('@cup/engine').UserId)
+        : Promise.resolve(null),
+      getMatchesForTournament(db, pool.tournamentId),
+      getGroupScoresByPool(db, poolId),
+      getActualResults(db, pool.tournamentId),
+      getSpecialBetsByPool(db, poolId),
+    ]);
 
   const inputs = prediction != null ? await getPredictionInputs(db, prediction.id) : null;
 
@@ -107,7 +111,13 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     def,
   });
 
-  const specialBets = buildSpecialBetResults(def, inputs, actualResults, allMatches);
+  const specialBets = buildSpecialBetResults(
+    def,
+    inputs,
+    actualResults,
+    allMatches,
+    poolSpecialBets,
+  );
 
   return {
     poolName: pool.name,
@@ -713,6 +723,7 @@ function buildSpecialBetResults(
   inputs: Awaited<ReturnType<typeof getPredictionInputs>> | null,
   actual: ActualResults,
   matches: MatchRow[],
+  poolSpecialBets: PoolSpecialBet[],
 ): SpecialBetResultRow[] {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const playerMap = new Map<string, string>(def.players.map((p) => [p.id, p.name]));
@@ -753,6 +764,15 @@ function buildSpecialBetResults(
     const currentLeader: CurrentLeader | null =
       hit === 'pending' ? computeCurrentLeaderFor(d.key, def, matches) : null;
 
+    const poolStats = computeSpecialBetPoolStats(
+      d.key,
+      d.kind,
+      poolSpecialBets,
+      teamMap,
+      playerMap,
+      playerTeamMap,
+    );
+
     return {
       key: d.key,
       label: d.label,
@@ -775,8 +795,52 @@ function buildSpecialBetResults(
       hit,
       pointsAwarded,
       currentLeader,
+      poolStats,
     };
   });
+}
+
+function computeSpecialBetPoolStats(
+  betKey: string,
+  kind: 'player' | 'team' | 'number' | 'bool',
+  poolSpecialBets: PoolSpecialBet[],
+  teamMap: Map<string, string>,
+  playerMap: Map<string, string>,
+  playerTeamMap: Map<string, string>,
+): SpecialBetPoolStats | null {
+  const forKey = poolSpecialBets.filter((s) => s.betKey === betKey);
+  if (forKey.length === 0) return null;
+
+  const total = forKey.length;
+  const counts = new Map<string, number>();
+  for (const s of forKey) {
+    const key = String(s.value);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const sorted = Array.from(counts.entries()).sort(([, a], [, b]) => b - a);
+
+  const topValues = sorted.map(([rawKey, count]) => {
+    const typedVal: unknown =
+      kind === 'bool' ? rawKey === 'true' : kind === 'number' ? Number(rawKey) : rawKey;
+
+    const display = resolveSpecialDisplay(typedVal, kind, teamMap, playerMap);
+    const displayValue =
+      display === null
+        ? '?'
+        : typeof display === 'boolean'
+          ? display
+            ? 'Yes'
+            : 'No'
+          : String(display);
+
+    const teamId =
+      kind === 'team' ? rawKey : kind === 'player' ? (playerTeamMap.get(rawKey) ?? null) : null;
+
+    return { displayValue, count, pct: Math.round((count / total) * 100), teamId };
+  });
+
+  return { totalPredictions: total, topValues };
 }
 
 function computeCurrentLeaderFor(

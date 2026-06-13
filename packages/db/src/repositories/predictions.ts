@@ -271,6 +271,40 @@ export type PoolGroupScore = {
   away: number;
 };
 
+export type PoolSpecialBet = {
+  userId: UserId;
+  betKey: string;
+  value: unknown;
+};
+
+/**
+ * Returns all special bet predictions for every member of a pool in a single
+ * JOIN query. Used to build the per-bet distribution stats in the results view.
+ */
+export async function getSpecialBetsByPool(
+  db: Database,
+  poolId: string,
+): Promise<PoolSpecialBet[]> {
+  const rows = await db
+    .select({
+      userId: schema.predictions.userId,
+      betKey: schema.predictionSpecials.betKey,
+      value: schema.predictionSpecials.value,
+    })
+    .from(schema.predictions)
+    .innerJoin(
+      schema.predictionSpecials,
+      eq(schema.predictionSpecials.predictionId, schema.predictions.id),
+    )
+    .where(eq(schema.predictions.poolId, poolId));
+
+  return rows.map((r) => ({
+    userId: userId(r.userId),
+    betKey: r.betKey,
+    value: r.value,
+  }));
+}
+
 /**
  * Returns all group-score predictions for every member of a pool in a single
  * JOIN query. Used to build the per-match points matrix in the results view.

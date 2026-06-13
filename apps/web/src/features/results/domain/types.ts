@@ -192,6 +192,18 @@ export type CurrentLeader = {
   teamIds: string[];
 };
 
+export type SpecialBetTopValue = {
+  displayValue: string;
+  count: number;
+  pct: number;
+  teamId: string | null;
+};
+
+export type SpecialBetPoolStats = {
+  totalPredictions: number;
+  topValues: SpecialBetTopValue[];
+};
+
 export type SpecialBetResultRow = {
   key: string;
   label: string;
@@ -206,6 +218,8 @@ export type SpecialBetResultRow = {
   pointsAwarded: number;
   /** Informational only — derived from match data when the bet is still pending. Never the final answer. */
   currentLeader: CurrentLeader | null;
+  /** Distribution of what pool members predicted for this bet. */
+  poolStats: SpecialBetPoolStats | null;
 };
 
 export type ResultsView = {

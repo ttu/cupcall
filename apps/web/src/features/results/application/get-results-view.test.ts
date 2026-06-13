@@ -1427,6 +1427,74 @@ describe('getResultsView', () => {
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       expect(view!.specialBets.every((b) => b.currentLeader === null)).toBe(true);
     });
+
+    it('returns null poolStats when no member has made the bet', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      expect(view!.specialBets.every((b) => b.poolStats === null)).toBe(true);
+    });
+
+    it('returns poolStats with correct counts when members have made the same bet', async () => {
+      const pred1 = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, pred1.id, 'groupTopScoringTeam', 'A1');
+
+      const ownerPred = await getOrCreatePrediction(db, {
+        poolId,
+        userId: ownerId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, ownerPred.id, 'groupTopScoringTeam', 'A1');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.poolStats).not.toBeNull();
+      expect(bet.poolStats!.totalPredictions).toBe(2);
+      expect(bet.poolStats!.topValues[0]!.displayValue).toBe('Team A1');
+      expect(bet.poolStats!.topValues[0]!.count).toBe(2);
+      expect(bet.poolStats!.topValues[0]!.pct).toBe(100);
+      expect(bet.poolStats!.topValues[0]!.teamId).toBe('A1');
+    });
+
+    it('returns poolStats sorted by count descending with correct percentages', async () => {
+      const pred1 = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, pred1.id, 'groupTopScoringTeam', 'A1');
+
+      const ownerPred = await getOrCreatePrediction(db, {
+        poolId,
+        userId: ownerId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, ownerPred.id, 'groupTopScoringTeam', 'B1');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.poolStats!.totalPredictions).toBe(2);
+      expect(bet.poolStats!.topValues).toHaveLength(2);
+      expect(bet.poolStats!.topValues[0]!.pct).toBe(50);
+      expect(bet.poolStats!.topValues[1]!.pct).toBe(50);
+    });
+
+    it('returns poolStats with teamId null for number bets', async () => {
+      const pred = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, pred.id, 'highestMatchGoals', 5);
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'highestMatchGoals')!;
+      expect(bet.poolStats!.totalPredictions).toBe(1);
+      expect(bet.poolStats!.topValues[0]!.displayValue).toBe('5');
+      expect(bet.poolStats!.topValues[0]!.teamId).toBeNull();
+    });
   });
 
   describe('view mode (no userId)', () => {
