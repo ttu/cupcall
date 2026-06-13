@@ -820,6 +820,133 @@ describe('getResultsView', () => {
     expect(view!.pointsRaceView.chartStages).toContain('Now');
   });
 
+  // ---------------------------------------------------------------------------
+  // Day-by-day chart
+  // ---------------------------------------------------------------------------
+
+  it('uses date-based stages when completed matches have kickoff dates', async () => {
+    const match = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!;
+    const kickoff = new Date('2030-06-11T18:00:00Z');
+    await setMatchKickoff(db, miniTournament.id, match.id, kickoff);
+    await finalizeMatch(db, miniTournament.id, match.id, 2, 1);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const { chartStages, chartNowIndex } = view!.pointsRaceView;
+
+    expect(chartStages[0]).toBe('Start');
+    expect(chartStages).toContain('Jun 11');
+    expect(chartStages).not.toContain('Group Stage');
+    expect(chartNowIndex).toBe(1); // one event date → nowIndex = 1
+  });
+
+  it('accumulates group match points per event date', async () => {
+    const gAMatches = miniTournament.groupMatches.filter((m) => m.group === groupId('A'));
+
+    // Match 1 on Jun 11: user predicts exact → exact score pts
+    const m1 = gAMatches[0]!;
+    await setMatchKickoff(db, miniTournament.id, m1.id, new Date('2030-06-11T18:00:00Z'));
+    await finalizeMatch(db, miniTournament.id, m1.id, 2, 1);
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, pred.id, m1.id, 2, 1); // exact
+
+    // Match 2 on Jun 12: user predicts outcome only
+    const m2 = gAMatches[1]!;
+    await setMatchKickoff(db, miniTournament.id, m2.id, new Date('2030-06-12T18:00:00Z'));
+    await finalizeMatch(db, miniTournament.id, m2.id, 1, 0);
+    await upsertGroupScore(db, pred.id, m2.id, 3, 0); // outcome
+
+    // Score user properly
+    const exactPts = miniTournament.scoring.groupMatch.exactScore;
+    const outcomePts = miniTournament.scoring.groupMatch.correctOutcome;
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(exactPts + outcomePts),
+      breakdown: {
+        groupMatches: points(exactPts + outcomePts),
+        groupOrder: points(0),
+        roundOf8: points(0),
+        topFour: points(0),
+        bronze: points(0),
+        final: points(0),
+        specials: points(0),
+        total: points(exactPts + outcomePts),
+      },
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const { chartStages, chartPlayers, chartNowIndex } = view!.pointsRaceView;
+
+    expect(chartStages[0]).toBe('Start');
+    expect(chartStages[1]).toBe('Jun 11');
+    expect(chartStages[2]).toBe('Jun 12');
+    expect(chartNowIndex).toBe(2);
+
+    const myLine = chartPlayers.find((p) => p.userId === userId)!;
+    expect(myLine.points[0]).toBe(0); // Start
+    expect(myLine.points[1]).toBe(exactPts); // Jun 11
+    expect(myLine.points[2]).toBe(exactPts + outcomePts); // Jun 12 = Now
+  });
+
+  it('assigns group order points to the last match date of the completed group', async () => {
+    const gAMatches = miniTournament.groupMatches.filter((m) => m.group === groupId('A'));
+
+    // Finalize all 6 group A matches: home always wins 1-0 (seed order = A1,A2,A3,A4)
+    // Last match on Jun 14 → group order revealed on Jun 14
+    const dates = [
+      '2030-06-11',
+      '2030-06-11',
+      '2030-06-12',
+      '2030-06-12',
+      '2030-06-13',
+      '2030-06-14',
+    ];
+    const pred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    for (let i = 0; i < gAMatches.length; i++) {
+      const m = gAMatches[i]!;
+      await setMatchKickoff(db, miniTournament.id, m.id, new Date(`${dates[i]}T18:00:00Z`));
+      await finalizeMatch(db, miniTournament.id, m.id, 1, 0);
+      // User predicts home wins 1-0 for all → derives correct order A1,A2,A3,A4
+      await upsertGroupScore(db, pred.id, m.id, 1, 0);
+    }
+
+    // Score includes groupOrder: all 4 correct
+    const groupOrderAllPts = miniTournament.scoring.groupOrder.allCorrect;
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(groupOrderAllPts),
+      breakdown: {
+        groupMatches: points(0),
+        groupOrder: points(groupOrderAllPts),
+        roundOf8: points(0),
+        topFour: points(0),
+        bronze: points(0),
+        final: points(0),
+        specials: points(0),
+        total: points(groupOrderAllPts),
+      },
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const { chartStages, chartPlayers, chartNowIndex } = view!.pointsRaceView;
+
+    expect(chartStages).toContain('Jun 14');
+    const myLine = chartPlayers.find((p) => p.userId === userId)!;
+    const jun14Idx = chartStages.indexOf('Jun 14');
+    // Group order points appear on Jun 14 (last group A match)
+    expect(myLine.points[jun14Idx]).toBe(groupOrderAllPts);
+    expect(myLine.points[chartNowIndex]).toBe(groupOrderAllPts);
+  });
+
   it('populates prediction fields in todayMatch when user has a prediction', async () => {
     const todayKickoff = new Date('2030-06-15T18:00:00Z');
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;

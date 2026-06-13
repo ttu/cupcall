@@ -521,7 +521,6 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
   const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
   const maxFromResolved = totalMax.total - remainingMax.total;
 
-  // Per-user still-live so each member projects at their own hit rate.
   const stillLiveByUser = new Map<string, number>(
     leaderboard.map((e) => [
       e.userId,
@@ -532,38 +531,57 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
   const myBanked = userId ? (leaderboard.find((e) => e.userId === userId)?.pointsTotal ?? 0) : 0;
   const myStillLive = userId ? (stillLiveByUser.get(userId) ?? 0) : 0;
   const myProjected = myBanked + myStillLive;
-
-  // Chart stages
-  const hasGroupStagePoints = leaderboard.some(
-    (e) => e.breakdown && e.breakdown.groupMatches + e.breakdown.groupOrder > 0,
-  );
   const anyStillLive = Array.from(stillLiveByUser.values()).some((v) => v > 0);
-  const stages: string[] = ['Start'];
-  if (hasGroupStagePoints) stages.push('Group Stage');
-  stages.push('Now');
-  const nowIndex = stages.length - 1;
-  if (anyStillLive) stages.push('Projected');
 
-  let colorIdx = 0;
-  const chartPlayers: RaceChartPlayer[] = leaderboard.map((e) => {
-    const isCurrentUser = userId !== null && e.userId === userId;
-    const color = isCurrentUser
-      ? 'var(--green-500)'
-      : (RACE_COLORS[colorIdx++] ?? 'var(--ink-muted)');
+  // Build event dates: unique UTC dates when at least one match was finalized with a kickoff.
+  const eventDates = buildRaceEventDates(allMatches);
 
-    const pts: number[] = [0]; // Start
-    if (hasGroupStagePoints) {
-      pts.push(e.breakdown ? e.breakdown.groupMatches + e.breakdown.groupOrder : 0);
-    }
-    pts.push(e.pointsTotal); // Now
-    if (anyStillLive) {
-      pts.push(e.pointsTotal + (stillLiveByUser.get(e.userId) ?? 0));
-    }
+  let stages: string[];
+  let nowIndex: number;
+  let chartPlayers: RaceChartPlayer[];
 
-    return { userId: e.userId, displayName: e.displayName, isCurrentUser, color, points: pts };
-  });
-  // Draw current user last (on top in SVG).
-  chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
+  if (eventDates.length > 0) {
+    // Day-by-day chart: one data point per match date.
+    const result = buildDailyChartPlayers({
+      eventDates,
+      leaderboard,
+      userId,
+      allMatches,
+      poolGroupScores,
+      def,
+      anyStillLive,
+      stillLiveByUser,
+    });
+    stages = result.stages;
+    nowIndex = result.nowIndex;
+    chartPlayers = result.chartPlayers;
+  } else {
+    // Fallback: milestone chart (matches exist but no kickoff dates set).
+    const hasGroupStagePoints = leaderboard.some(
+      (e) => e.breakdown && e.breakdown.groupMatches + e.breakdown.groupOrder > 0,
+    );
+    stages = ['Start'];
+    if (hasGroupStagePoints) stages.push('Group Stage');
+    stages.push('Now');
+    nowIndex = stages.length - 1;
+    if (anyStillLive) stages.push('Projected');
+
+    let colorIdx = 0;
+    chartPlayers = leaderboard.map((e) => {
+      const isCurrentUser = userId !== null && e.userId === userId;
+      const color = isCurrentUser
+        ? 'var(--green-500)'
+        : (RACE_COLORS[colorIdx++] ?? 'var(--ink-muted)');
+      const pts: number[] = [0];
+      if (hasGroupStagePoints) {
+        pts.push(e.breakdown ? e.breakdown.groupMatches + e.breakdown.groupOrder : 0);
+      }
+      pts.push(e.pointsTotal);
+      if (anyStillLive) pts.push(e.pointsTotal + (stillLiveByUser.get(e.userId) ?? 0));
+      return { userId: e.userId, displayName: e.displayName, isCurrentUser, color, points: pts };
+    });
+    chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
+  }
 
   const projectedEntries = buildProjectedEntries(leaderboard, userId, stillLiveByUser);
   const { matchMatrix, matrixMatches } = buildMatchMatrix(
@@ -585,6 +603,321 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
     matchMatrix,
     matrixMatches,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Day-by-day chart helpers
+// ---------------------------------------------------------------------------
+
+/** UTC date string from a Date, e.g. "2026-06-11". */
+function utcDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+const MONTH_ABBR = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/** Format "2026-06-11" as "Jun 11". */
+function formatRaceDate(dateStr: string): string {
+  const parts = dateStr.split('-');
+  const month = parseInt(parts[1] ?? '1', 10);
+  const day = parseInt(parts[2] ?? '1', 10);
+  return `${MONTH_ABBR[month - 1] ?? '?'} ${day}`;
+}
+
+/**
+ * Returns sorted unique UTC date strings for all completed matches that have a kickoff set.
+ * Only dates with at least one finalized match appear.
+ */
+function buildRaceEventDates(allMatches: MatchRow[]): string[] {
+  const dates = new Set<string>();
+  for (const m of allMatches) {
+    if (m.status === 'final' && m.kickoff) dates.add(utcDateStr(m.kickoff));
+  }
+  return [...dates].sort();
+}
+
+/**
+ * Per-user, per-date group match point deltas.
+ * Result: Map<userId, Map<dateStr, deltaPoints>>
+ */
+function buildGroupMatchDeltas(
+  poolGroupScores: PoolGroupScore[],
+  allMatches: MatchRow[],
+  scoring: { exactScore: number; correctOutcome: number },
+): Map<string, Map<string, number>> {
+  const predMap = new Map<string, { home: number; away: number }>();
+  for (const gs of poolGroupScores) {
+    predMap.set(`${gs.userId}::${gs.matchId}`, { home: gs.home, away: gs.away });
+  }
+
+  const result = new Map<string, Map<string, number>>();
+  const completedGroup = allMatches.filter(
+    (m) => m.stage === 'group' && m.status === 'final' && m.kickoff !== null,
+  );
+
+  for (const m of completedGroup) {
+    const dateStr = utcDateStr(m.kickoff!);
+    // Collect all user IDs that have a prediction for this match.
+    for (const gs of poolGroupScores) {
+      if (gs.matchId !== m.id) continue;
+      const pred = predMap.get(`${gs.userId}::${m.id}`);
+      const { points: pts } = computeHit(
+        m.homeGoals!,
+        m.awayGoals!,
+        pred?.home ?? null,
+        pred?.away ?? null,
+        scoring,
+      );
+      if (pts === 0) continue;
+      if (!result.has(gs.userId)) result.set(gs.userId, new Map());
+      result.get(gs.userId)!.set(dateStr, (result.get(gs.userId)!.get(dateStr) ?? 0) + pts);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Per-user, per-date group ORDER point deltas.
+ * Group order points are assigned to the date of the last completed match in a group.
+ * Result: Map<userId, Map<dateStr, deltaPoints>>
+ */
+function buildGroupOrderDeltas(
+  poolGroupScores: PoolGroupScore[],
+  allMatches: MatchRow[],
+  def: Tournament,
+  leaderboard: LeaderboardEntry[],
+): Map<string, Map<string, number>> {
+  const result = new Map<string, Map<string, number>>();
+
+  // Actual group orders from all finalized group matches.
+  const actualScores = allMatches
+    .filter((m) => m.stage === 'group' && m.status === 'final')
+    .map((m) => ({ matchId: matchId(m.id), home: m.homeGoals!, away: m.awayGoals! }));
+  const actualGroupOrders = deriveGroupOrders(def, actualScores);
+
+  // Per-user predicted group orders.
+  const userPredScores = new Map<string, typeof actualScores>();
+  for (const gs of poolGroupScores) {
+    if (!userPredScores.has(gs.userId)) userPredScores.set(gs.userId, []);
+    userPredScores
+      .get(gs.userId)!
+      .push({ matchId: matchId(gs.matchId), home: gs.home, away: gs.away });
+  }
+  const userPredOrders = new Map<string, Record<GroupId, TeamId[]>>();
+  for (const entry of leaderboard) {
+    userPredOrders.set(
+      entry.userId,
+      deriveGroupOrders(def, userPredScores.get(entry.userId) ?? []),
+    );
+  }
+
+  // Group → set of match IDs.
+  const groupMatchIds = new Map<string, Set<string>>();
+  for (const gm of def.groupMatches) {
+    if (!groupMatchIds.has(gm.group)) groupMatchIds.set(gm.group, new Set());
+    groupMatchIds.get(gm.group)!.add(gm.id);
+  }
+
+  for (const group of def.groups) {
+    const matchIds = groupMatchIds.get(group.id) ?? new Set();
+    const groupMatches = allMatches.filter((m) => matchIds.has(m.id));
+
+    // Group must be fully complete.
+    if (!groupMatches.every((m) => m.status === 'final')) continue;
+
+    // Need at least one kickoff to assign a date.
+    const withKickoff = groupMatches.filter((m) => m.kickoff !== null);
+    if (withKickoff.length === 0) continue;
+
+    const lastMatch = withKickoff.reduce((a, b) =>
+      b.kickoff!.getTime() > a.kickoff!.getTime() ? b : a,
+    );
+    const groupDate = utcDateStr(lastMatch.kickoff!);
+
+    const actualOrder = actualGroupOrders[group.id];
+    if (!actualOrder) continue;
+
+    for (const entry of leaderboard) {
+      const userOrder = (userPredOrders.get(entry.userId) ?? {})[group.id];
+      if (!userOrder) continue;
+
+      let positionsCorrect = 0;
+      for (let i = 0; i < Math.min(userOrder.length, actualOrder.length); i++) {
+        if (userOrder[i] === actualOrder[i]) positionsCorrect++;
+      }
+
+      const pts = raceGroupOrderPts(positionsCorrect, def.scoring.groupOrder);
+      if (pts === 0) continue;
+
+      if (!result.has(entry.userId)) result.set(entry.userId, new Map());
+      result
+        .get(entry.userId)!
+        .set(groupDate, (result.get(entry.userId)!.get(groupDate) ?? 0) + pts);
+    }
+  }
+
+  return result;
+}
+
+function raceGroupOrderPts(
+  n: number,
+  scoring: { allCorrect: number; twoCorrect: number; oneCorrect: number },
+): number {
+  if (n === 4) return scoring.allCorrect;
+  if (n === 2) return scoring.twoCorrect;
+  if (n === 1) return scoring.oneCorrect;
+  return 0;
+}
+
+/**
+ * Knockout & specials milestone point deltas from leaderboard breakdown.
+ * Each breakdown component is assigned to the date of its scoring milestone.
+ * Result: Map<userId, Map<dateStr, deltaPoints>>
+ */
+function buildKnockoutMilestoneDeltas(
+  leaderboard: LeaderboardEntry[],
+  allMatches: MatchRow[],
+  def: Tournament,
+): Map<string, Map<string, number>> {
+  const result = new Map<string, Map<string, number>>();
+
+  // roundOf8: resolved when all entry-round (roundOf8Matches) are final.
+  const roundOf8Date = raceMilestoneDate(def.bracket.roundOf8Matches, allMatches);
+  // bronze: resolved when bronze match is final.
+  const bronzeDate = raceMilestoneDate([def.bracket.bronzeMatch], allMatches);
+  // final + topFour + specials: resolved when final match is final.
+  const finalDate = raceMilestoneDate([def.bracket.finalMatch], allMatches);
+  // topFour needs full top-4 standings (final + bronze), use later of the two.
+  const topFourDate = maxDateStr(finalDate, bronzeDate);
+
+  for (const entry of leaderboard) {
+    const bd = entry.breakdown;
+    if (!bd) continue;
+
+    const add = (date: string | null, pts: number) => {
+      if (!date || pts === 0) return;
+      if (!result.has(entry.userId)) result.set(entry.userId, new Map());
+      result.get(entry.userId)!.set(date, (result.get(entry.userId)!.get(date) ?? 0) + pts);
+    };
+
+    add(roundOf8Date, bd.roundOf8);
+    add(bronzeDate, bd.bronze);
+    add(topFourDate, bd.topFour);
+    add(finalDate, bd.final);
+    add(finalDate, bd.specials);
+  }
+
+  return result;
+}
+
+/** Date string of the latest kickoff among all-final matches. Null if not all final yet. */
+function raceMilestoneDate(matchKeys: string[], allMatches: MatchRow[]): string | null {
+  const relevant = allMatches.filter(
+    (m) => matchKeys.includes(m.id) && m.status === 'final' && m.kickoff !== null,
+  );
+  if (relevant.length < matchKeys.length) return null;
+  return relevant.reduce<string | null>((latest, m) => {
+    const d = utcDateStr(m.kickoff!);
+    return latest === null || d > latest ? d : latest;
+  }, null);
+}
+
+function maxDateStr(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a >= b ? a : b;
+}
+
+type DailyChartInput = {
+  eventDates: string[];
+  leaderboard: LeaderboardEntry[];
+  userId: string | null;
+  allMatches: MatchRow[];
+  poolGroupScores: PoolGroupScore[];
+  def: Tournament;
+  anyStillLive: boolean;
+  stillLiveByUser: Map<string, number>;
+};
+
+function buildDailyChartPlayers(input: DailyChartInput): {
+  stages: string[];
+  nowIndex: number;
+  chartPlayers: RaceChartPlayer[];
+} {
+  const {
+    eventDates,
+    leaderboard,
+    userId,
+    allMatches,
+    poolGroupScores,
+    def,
+    anyStillLive,
+    stillLiveByUser,
+  } = input;
+
+  const groupMatchDeltas = buildGroupMatchDeltas(
+    poolGroupScores,
+    allMatches,
+    def.scoring.groupMatch,
+  );
+  const groupOrderDeltas = buildGroupOrderDeltas(poolGroupScores, allMatches, def, leaderboard);
+  const knockoutDeltas = buildKnockoutMilestoneDeltas(leaderboard, allMatches, def);
+
+  const nowIndex = eventDates.length; // 0 = Start, 1..N = dates, nowIndex = N
+
+  const stages: string[] = ['Start', ...eventDates.map(formatRaceDate)];
+  if (anyStillLive) stages.push('Projected');
+
+  let colorIdx = 0;
+  const chartPlayers: RaceChartPlayer[] = leaderboard.map((entry) => {
+    const isCurrentUser = userId !== null && entry.userId === userId;
+    const color = isCurrentUser
+      ? 'var(--green-500)'
+      : (RACE_COLORS[colorIdx++] ?? 'var(--ink-muted)');
+
+    let cumulative = 0;
+    const pts: number[] = [0]; // Start
+
+    for (const date of eventDates) {
+      cumulative += groupMatchDeltas.get(entry.userId)?.get(date) ?? 0;
+      cumulative += groupOrderDeltas.get(entry.userId)?.get(date) ?? 0;
+      cumulative += knockoutDeltas.get(entry.userId)?.get(date) ?? 0;
+      pts.push(cumulative);
+    }
+
+    // Anchor the final "now" point to the leaderboard total, absorbing any attribution gap.
+    if (pts.length > 1) pts[pts.length - 1] = entry.pointsTotal;
+
+    if (anyStillLive) {
+      pts.push(entry.pointsTotal + (stillLiveByUser.get(entry.userId) ?? 0));
+    }
+
+    return {
+      userId: entry.userId,
+      displayName: entry.displayName,
+      isCurrentUser,
+      color,
+      points: pts,
+    };
+  });
+
+  chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
+
+  return { stages, nowIndex, chartPlayers };
 }
 
 function buildProjectedEntries(

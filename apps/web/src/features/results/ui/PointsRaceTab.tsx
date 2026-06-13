@@ -284,8 +284,8 @@ function ProjectedStandings({ entries }: { entries: ProjectedEntry[] }): ReactEl
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '58px 1fr 64px 76px',
-          gap: 8,
+          gridTemplateColumns: '44px 1fr 52px 64px',
+          gap: 6,
           padding: '8px 16px',
           background: 'var(--surface-2)',
           borderTop: '1px solid var(--line)',
@@ -307,21 +307,15 @@ function ProjectedStandings({ entries }: { entries: ProjectedEntry[] }): ReactEl
         ))}
       </div>
       <div className="divide">
-        {entries.map((e, idx) => (
-          <ProjectedRow key={e.userId} entry={e} avatarIndex={idx} />
+        {entries.map((e) => (
+          <ProjectedRow key={e.userId} entry={e} />
         ))}
       </div>
     </div>
   );
 }
 
-function ProjectedRow({
-  entry,
-  avatarIndex,
-}: {
-  entry: ProjectedEntry;
-  avatarIndex: number;
-}): ReactElement {
+function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
   const { rankDelta, projectedRank, currentPoints, projectedPoints, displayName, isCurrentUser } =
     entry;
   const isTop3 = projectedRank <= 3;
@@ -330,15 +324,15 @@ function ProjectedRow({
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '58px 1fr 64px 76px',
-        gap: 8,
+        gridTemplateColumns: '44px 1fr 52px 64px',
+        gap: 6,
         padding: '10px 16px',
         alignItems: 'center',
         background: isCurrentUser ? 'var(--green-050)' : 'transparent',
       }}
     >
       {/* Rank + delta */}
-      <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span
           className="display"
           style={{
@@ -373,11 +367,11 @@ function ProjectedRow({
         )}
       </span>
 
-      {/* Name + avatar */}
-      <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
-        <Avatar name={displayName} index={avatarIndex} size={28} />
+      {/* Name */}
+      <span style={{ minWidth: 0 }}>
         <span
           style={{
+            display: 'block',
             fontWeight: 700,
             fontSize: 13,
             whiteSpace: 'nowrap',
@@ -386,8 +380,23 @@ function ProjectedRow({
             color: isCurrentUser ? 'var(--green-700)' : 'var(--ink)',
           }}
         >
-          {displayName}
+          {isCurrentUser ? 'You' : displayName.split(' ')[0]}
         </span>
+        {!isCurrentUser && displayName.split(' ')[1] && (
+          <span
+            style={{
+              display: 'block',
+              fontSize: 11,
+              fontWeight: 500,
+              color: 'var(--ink-muted)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {displayName.split(' ').slice(1).join(' ')}
+          </span>
+        )}
       </span>
 
       {/* Current */}

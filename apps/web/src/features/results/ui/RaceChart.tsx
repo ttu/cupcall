@@ -124,21 +124,24 @@ export function RaceChart({
         </g>
       ))}
 
-      {/* X-axis labels */}
-      {stages.map((s, i) => (
-        <text
-          key={s}
-          x={X(i)}
-          y={VIEW_H - 10}
-          textAnchor="middle"
-          fontFamily="Archivo"
-          fontSize="11"
-          fontWeight={i <= nowIndex ? 800 : 600}
-          fill={i === nowIndex ? 'var(--ink)' : 'var(--ink-muted)'}
-        >
-          {s}
-        </text>
-      ))}
+      {/* X-axis labels — sparse when many stages to avoid overlap */}
+      {stages.map((s, i) => {
+        if (!shouldShowStageLabel(i, stages.length, nowIndex)) return null;
+        return (
+          <text
+            key={s}
+            x={X(i)}
+            y={VIEW_H - 10}
+            textAnchor="middle"
+            fontFamily="Archivo"
+            fontSize="11"
+            fontWeight={i <= nowIndex ? 800 : 600}
+            fill={i === nowIndex ? 'var(--ink)' : 'var(--ink-muted)'}
+          >
+            {s}
+          </text>
+        );
+      })}
 
       {/* Player lines (current user last = on top) */}
       {players.map((p) => {
@@ -219,4 +222,17 @@ function buildGridLines(yMax: number): number[] {
   const lines: number[] = [];
   for (let v = 0; v <= yMax; v += step) lines.push(v);
   return lines;
+}
+
+/**
+ * Decides whether to render the x-axis label at stage index i.
+ * Always shows Start (0), the Now marker, and the Projected tail.
+ * For dense charts (many event dates), skips intermediate labels.
+ */
+function shouldShowStageLabel(i: number, stageCount: number, nowIndex: number): boolean {
+  if (i === 0 || i === nowIndex) return true;
+  if (i === stageCount - 1 && i > nowIndex) return true; // Projected tail
+  const dateCount = nowIndex; // number of event-date stages
+  const step = dateCount <= 8 ? 1 : dateCount <= 14 ? 2 : dateCount <= 21 ? 3 : 5;
+  return i % step === 0;
 }
