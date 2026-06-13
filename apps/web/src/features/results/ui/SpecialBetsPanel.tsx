@@ -112,6 +112,9 @@ function SpecialBetRow({ bet }: { bet: SpecialBetResultRow }): ReactElement {
             </>
           )}
         </div>
+        {isPending && bet.currentLeader !== null && (
+          <CurrentLeaderLine betKey={bet.key} leader={bet.currentLeader} />
+        )}
       </div>
 
       {/* Hit chip + points */}
@@ -187,5 +190,39 @@ function PickDisplay({
         {display}
       </span>
     </span>
+  );
+}
+
+function CurrentLeaderLine({
+  betKey,
+  leader,
+}: {
+  betKey: string;
+  leader: NonNullable<SpecialBetResultRow['currentLeader']>;
+}): ReactElement {
+  const prefix = betKey === 'penaltyShootoutCount' ? 'So far:' : 'Currently leading:';
+  const parenthetical = leader.detail.length > 0 ? ` (${leader.detail})` : '';
+  return (
+    <div
+      data-testid={`special-bet-current-leader-${betKey}`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 5,
+        flexWrap: 'wrap',
+        fontSize: 11,
+        color: 'var(--ink-muted)',
+        marginTop: 2,
+      }}
+    >
+      <span>{prefix}</span>
+      {leader.teamIds.map((tid) => (
+        <TeamBadge key={tid} teamId={tid} size="sm" />
+      ))}
+      <span>
+        {leader.display}
+        {parenthetical}
+      </span>
+    </div>
   );
 }

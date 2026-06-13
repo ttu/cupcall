@@ -1380,6 +1380,53 @@ describe('getResultsView', () => {
       expect(view!.specialBets.every((b) => b.hit === 'pending')).toBe(true);
       expect(view!.specialBets.every((b) => b.userPickDisplay === null)).toBe(true);
     });
+
+    it('populates currentLeader for pending derivable bets with played matches', async () => {
+      // mA1 = A1 vs A2; mA2 = A1 vs A3 — A1 scores 3 goals total across the group stage
+      await finalizeMatch(db, miniTournament.id, 'mA1', 2, 0);
+      await finalizeMatch(db, miniTournament.id, 'mA2', 1, 0);
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const groupScoring = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(groupScoring.hit).toBe('pending');
+      expect(groupScoring.currentLeader).not.toBeNull();
+      expect(groupScoring.currentLeader!.teamIds).toContain('A1');
+      expect(groupScoring.currentLeader!.detail).toBe('3 goals');
+    });
+
+    it('leaves currentLeader null for non-derivable pending bets', async () => {
+      await finalizeMatch(db, miniTournament.id, 'mA1', 3, 0);
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const topScorer = view!.specialBets.find((b) => b.key === 'topScorerPlayer')!;
+      expect(topScorer.hit).toBe('pending');
+      expect(topScorer.currentLeader).toBeNull();
+
+      const yellow = view!.specialBets.find((b) => b.key === 'mostYellowCardsTeam')!;
+      expect(yellow.currentLeader).toBeNull();
+
+      const firstRed = view!.specialBets.find((b) => b.key === 'firstRedCardPlayer')!;
+      expect(firstRed.currentLeader).toBeNull();
+    });
+
+    it('leaves currentLeader null on resolved bets even when matches exist', async () => {
+      await finalizeMatch(db, miniTournament.id, 'mA1', 3, 0);
+      await upsertTournamentResults(db, miniTournament.id, {
+        matchResults: [],
+        groupOrder: {},
+        answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.hit).not.toBe('pending');
+      expect(bet.currentLeader).toBeNull();
+    });
+
+    it('leaves currentLeader null when no matches have been played', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      expect(view!.specialBets.every((b) => b.currentLeader === null)).toBe(true);
+    });
   });
 
   describe('view mode (no userId)', () => {

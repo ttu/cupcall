@@ -46,7 +46,16 @@ import type {
   MatrixMatch,
   MatchMatrixCell,
   SpecialBetResultRow,
+  CurrentLeader,
 } from '../domain/types';
+import {
+  computeGroupTopScoringLeader,
+  computeGroupTopConcedingLeader,
+  computeTournamentTopScoringLeader,
+  computeTournamentTopConcedingLeader,
+  computeHighestMatchGoalsLeader,
+  computePenaltyShootoutCountLeader,
+} from '../domain/special-bet-current';
 import { computeHit, buildRaceEventDates, buildDailyChartPlayers } from '../domain/race-chart';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
@@ -98,7 +107,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     def,
   });
 
-  const specialBets = buildSpecialBetResults(def, inputs, actualResults);
+  const specialBets = buildSpecialBetResults(def, inputs, actualResults, allMatches);
 
   return {
     poolName: pool.name,
@@ -703,6 +712,7 @@ function buildSpecialBetResults(
   def: Tournament,
   inputs: Awaited<ReturnType<typeof getPredictionInputs>> | null,
   actual: ActualResults,
+  matches: MatchRow[],
 ): SpecialBetResultRow[] {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const playerMap = new Map<string, string>(def.players.map((p) => [p.id, p.name]));
@@ -740,6 +750,9 @@ function buildSpecialBetResults(
       pointsAwarded = 0;
     }
 
+    const currentLeader: CurrentLeader | null =
+      hit === 'pending' ? computeCurrentLeaderFor(d.key, def, matches) : null;
+
     return {
       key: d.key,
       label: d.label,
@@ -761,8 +774,32 @@ function buildSpecialBetResults(
             : null,
       hit,
       pointsAwarded,
+      currentLeader,
     };
   });
+}
+
+function computeCurrentLeaderFor(
+  key: string,
+  def: Tournament,
+  matches: MatchRow[],
+): CurrentLeader | null {
+  switch (key) {
+    case 'groupTopScoringTeam':
+      return computeGroupTopScoringLeader(def, matches);
+    case 'groupTopConcedingTeam':
+      return computeGroupTopConcedingLeader(def, matches);
+    case 'tournamentTopScoringTeam':
+      return computeTournamentTopScoringLeader(def, matches);
+    case 'tournamentTopConcedingTeam':
+      return computeTournamentTopConcedingLeader(def, matches);
+    case 'highestMatchGoals':
+      return computeHighestMatchGoalsLeader(matches);
+    case 'penaltyShootoutCount':
+      return computePenaltyShootoutCountLeader(matches);
+    default:
+      return null;
+  }
 }
 
 function resolveSpecialDisplay(

@@ -179,6 +179,19 @@ export type PointsRaceView = {
   matrixMatches: MatrixMatch[];
 };
 
+/**
+ * Informational hint shown under a pending special bet. Derived from match
+ * data — never the final answer (those come from results.json::answers).
+ */
+export type CurrentLeader = {
+  /** Human-readable leader(s). Comma-joined names for team bets; the number itself for number bets. */
+  display: string;
+  /** Quantitative context, e.g. "5 goals", "1 match", "". Empty string => no parenthetical. */
+  detail: string;
+  /** Team IDs for badge rendering when bet kind is 'team'; empty array otherwise. */
+  teamIds: string[];
+};
+
 export type SpecialBetResultRow = {
   key: string;
   label: string;
@@ -191,6 +204,8 @@ export type SpecialBetResultRow = {
   actualAnswerTeamId: string | null;
   hit: 'hit' | 'missed' | 'pending';
   pointsAwarded: number;
+  /** Informational only — derived from match data when the bet is still pending. Never the final answer. */
+  currentLeader: CurrentLeader | null;
 };
 
 export type ResultsView = {
