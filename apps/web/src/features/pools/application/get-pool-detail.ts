@@ -1,7 +1,14 @@
 import type { Db } from '@cup/db';
-import { getPoolById, getLeaderboard, getTournamentById, getMatchesForTournament } from '@cup/db';
+import {
+  getPoolById,
+  getLeaderboard,
+  getTournamentById,
+  getMatchesForTournament,
+  getGroupScoresByPool,
+} from '@cup/db';
 import type { Tournament } from '@cup/engine';
 import type { PoolDetail } from '../domain/types';
+import { buildRaceChartData } from '@/features/results';
 import { buildStageProgress } from '@/shared/stage-progress';
 
 // getSpecialBetDefs always produces 11 bets for any standard tournament scoring config.
@@ -31,12 +38,16 @@ export async function getPoolDetail(
   const tournament = await getTournamentById(db, pool.tournamentId);
   const def = tournament?.definition ?? null;
 
-  const [leaderboard, allMatches] = await Promise.all([
+  const [leaderboard, allMatches, poolGroupScores] = await Promise.all([
     getLeaderboard(db, poolId, computeTotalFields(def)),
     getMatchesForTournament(db, pool.tournamentId),
+    getGroupScoresByPool(db, poolId),
   ]);
 
   const stageProgress = def ? buildStageProgress(def, allMatches) : [];
+  const raceChart = def
+    ? buildRaceChartData(leaderboard, null, { allMatches, poolGroupScores, def })
+    : buildRaceChartData(leaderboard, null);
 
   return {
     id: pool.id,
@@ -51,5 +62,6 @@ export async function getPoolDetail(
     lockTime: tournament?.firstKickoff ?? new Date(0),
     scoring: tournament?.scoringConfig ?? null,
     stageProgress,
+    raceChart,
   } satisfies PoolDetail;
 }

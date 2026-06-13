@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { getPoolByViewToken } from '@cup/db';
 import { db } from '@/shared/db';
 import { getPoolDetail, Leaderboard } from '@/features/pools';
-import { StageBar, buildRaceChartData, RaceChart } from '@/features/results';
+import { StageBar, RaceChart } from '@/features/results';
 import { Icon } from '@/shared/ui';
 
 type Props = { params: Promise<{ token: string }> };
@@ -20,7 +20,7 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
 
   const now = new Date();
   const locked = now >= detail.lockTime;
-  const raceChart = locked ? buildRaceChartData(detail.leaderboard, null) : null;
+  const raceChart = locked ? detail.raceChart : null;
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px' }}>

@@ -13,7 +13,7 @@ import {
   MemberControls,
   PoolBackupControls,
 } from '@/features/pools';
-import { StageBar, buildRaceChartData, RaceChart } from '@/features/results';
+import { StageBar, RaceChart } from '@/features/results';
 import { Chip, Icon } from '@/shared/ui';
 
 type Props = { params: Promise<{ id: string }> };
@@ -34,7 +34,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   const locked = now >= detail.lockTime;
   const myEntry = detail.leaderboard.find((e) => e.userId === actor.userId);
   const myRank = myEntry ? detail.leaderboard.indexOf(myEntry) + 1 : null;
-  const raceChart = locked ? buildRaceChartData(detail.leaderboard, actor.userId) : null;
+  const raceChart = locked ? detail.raceChart : null;
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px' }}>
