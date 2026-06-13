@@ -74,3 +74,37 @@ in the match map. A pick is:
 | Barrel       | `features/results/index.ts`                                                                                      |
 | Page         | `app/pools/[id]/results/page.tsx`                                                                                |
 | DB helpers   | `packages/db/src/repositories/tournament.ts` (`getMatchesForTournament`, `finalizeMatch`, `upsertKnockoutMatch`) |
+
+## Special bets — recording actual answers
+
+Actual answers for special bets live in
+`data/tournaments/<tournamentId>/results.json` under `answers` (or, for the
+final's `decisiveGoalPlayer`, under `finalMatch`). The sync flow
+(`pnpm sync -- <tournamentId>`) reads both `tournament.json` and
+`results.json`, validates them, upserts the DB, and rescores every card.
+
+### When the actual player isn't in the predefined roster
+
+Some player-kind bets (e.g. `firstRedCardPlayer`) are closed-roster: members
+picked from a dropdown of `Tournament.players`. When the real-world answer is
+a player who isn't in that roster:
+
+1. Add the player to `tournament.json` → `players[]`:
+   ```json
+   { "id": "rsa-sithole", "name": "Sithole", "team": "RSA" }
+   ```
+2. Set the bet key in `results.json` → `answers`:
+   ```json
+   "firstRedCardPlayer": "rsa-sithole"
+   ```
+3. Run `pnpm sync -- <tournamentId>`.
+
+This is safe even after predictions lock: predictions are sealed, so growing
+the roster doesn't change anyone's pick. The results view resolves the
+player ID through the updated roster, so the flag + name render correctly.
+No card can match, so every member's special-bet row scores `missed` for
+that bet.
+
+Sync fails fast if a player ID in `results.json` isn't in
+`tournament.json` → `players[]` — see
+`scripts/sync.test.ts` for the canonical happy-path + guardrail examples.

@@ -13,7 +13,7 @@ import { z } from 'zod';
 import pino from 'pino';
 import { tournamentSchema, resultsSchema } from '@cup/schemas';
 import { deriveCard, scoreCard, deriveGroupOrders } from '@cup/engine';
-import type { GroupId, TeamId } from '@cup/engine';
+import type { GroupId, TeamId, Tournament, ActualResults } from '@cup/engine';
 import {
   createDb,
   type Db,
@@ -41,6 +41,35 @@ const rawTournamentMetaSchema = z
   .passthrough();
 
 /**
+ * Verifies that every player ID referenced in `results.json` exists in
+ * `tournament.json`'s players[]. Catches the typical typo / missing-roster-
+ * update failure before any DB write.
+ *
+ * Bet keys covered:
+ *   - answers.firstRedCardPlayer
+ *   - answers.topScorerPlayer
+ *   - finalMatch.decisiveGoalPlayer
+ */
+function assertResultsPlayerIdsKnown(tournament: Tournament, actual: ActualResults): void {
+  const knownPlayerIds = new Set<string>(tournament.players.map((p) => p.id));
+
+  const references: Array<{ betKey: string; playerId: string | undefined }> = [
+    { betKey: 'firstRedCardPlayer', playerId: actual.answers.firstRedCardPlayer },
+    { betKey: 'topScorerPlayer', playerId: actual.answers.topScorerPlayer },
+    { betKey: 'finalMatch.decisiveGoalPlayer', playerId: actual.finalMatch?.decisiveGoalPlayer },
+  ];
+
+  for (const { betKey, playerId: pid } of references) {
+    if (pid !== undefined && !knownPlayerIds.has(pid)) {
+      throw new Error(
+        `results.json references unknown player id "${pid}" in ${betKey}. ` +
+          `Add the player to tournament.json → players[] (with id, name, team), or fix the typo in results.json.`,
+      );
+    }
+  }
+}
+
+/**
  * Core sync logic — separated from CLI wiring so integration tests can call it directly
  * with a pre-built database handle (e.g. a pglite test db).
  */
@@ -58,6 +87,11 @@ export async function syncTournament(
   // 2. Validate — the canonical engine types
   const tournament = tournamentSchema.parse(tournamentRaw);
   const actual = resultsSchema.parse(resultsRaw);
+
+  // 2b. Cross-file validation: any playerId reference in results.json must
+  //     exist in tournament.json's players[] (the per-schema brand cast is
+  //     non-validating).
+  assertResultsPlayerIdsKnown(tournament, actual);
 
   // 3. Extract metadata stripped by tournamentSchema (firstKickoff, per-match kickoffs)
   const rawMeta = rawTournamentMetaSchema.parse(tournamentRaw);
