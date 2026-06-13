@@ -31,6 +31,7 @@ export function SpecialsSection({
   players,
   onSave,
 }: Props): ReactElement {
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const allFilled = specials.every((b) => b.value !== null);
 
@@ -39,8 +40,10 @@ export function SpecialsSection({
       onSave(betKey, value);
       return;
     }
-    startTransition(() => {
-      void saveSpecialBet({ poolId, betKey, value });
+    setPendingKey(betKey);
+    startTransition(async () => {
+      await saveSpecialBet({ poolId, betKey, value });
+      setPendingKey(null);
     });
   }
 
@@ -61,10 +64,12 @@ export function SpecialsSection({
           const betLocked = locked || bet.locked;
           const empty = bet.value === null;
           const icon = KIND_ICON[bet.kind] ?? 'ball';
+          const isPending = pendingKey === bet.key;
           return (
             <div
               key={bet.key}
               data-testid={`special-bet-${bet.key}`}
+              aria-busy={isPending}
               style={{
                 borderRadius: 'var(--radius)',
                 border:
@@ -77,6 +82,7 @@ export function SpecialsSection({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 10,
+                position: 'relative',
               }}
             >
               {/* Icon + label + points row */}
@@ -118,11 +124,36 @@ export function SpecialsSection({
               </div>
               <SpecialBetInput
                 bet={bet}
-                locked={betLocked}
+                locked={betLocked || isPending}
                 teams={teams}
                 players={players}
                 onSave={handleSave}
               />
+              {isPending && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: 'var(--radius)',
+                    background: 'rgba(255,255,255,0.6)',
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                  aria-hidden="true"
+                >
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      border: '2px solid var(--green-300)',
+                      borderTopColor: 'var(--green-600)',
+                      animation: 'spin 0.75s linear infinite',
+                      display: 'block',
+                    }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}

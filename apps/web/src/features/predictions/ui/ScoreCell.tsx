@@ -78,7 +78,9 @@ export function ScoreCell({
     const hn = parseInt(h, 10);
     const an = parseInt(a, 10);
     if (isNaN(hn) || isNaN(an)) return;
-    startTransition(() => void onSave(matchId, hn, an));
+    startTransition(async () => {
+      await onSave(matchId, hn, an);
+    });
   }
 
   const filled = home !== null && away !== null;
@@ -94,8 +96,9 @@ export function ScoreCell({
   return (
     <span
       data-testid={`score-${matchId}`}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, position: 'relative' }}
       aria-label="Score"
+      aria-busy={pending}
     >
       <input
         ref={homeRef}
@@ -122,6 +125,31 @@ export function ScoreCell({
         style={inputStyle('away')}
         aria-label="Away goals"
       />
+      {pending && (
+        <span
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 10,
+            background: 'rgba(255,255,255,0.6)',
+            display: 'grid',
+            placeItems: 'center',
+          }}
+          aria-hidden="true"
+        >
+          <span
+            style={{
+              width: 16,
+              height: 16,
+              borderRadius: '50%',
+              border: '2px solid var(--green-300)',
+              borderTopColor: 'var(--green-600)',
+              animation: 'spin 0.75s linear infinite',
+              display: 'block',
+            }}
+          />
+        </span>
+      )}
     </span>
   );
 }

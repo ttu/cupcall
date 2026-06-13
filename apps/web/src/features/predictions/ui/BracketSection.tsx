@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties, ReactElement } from 'react';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { saveKnockoutPick, saveFinishScore } from '../api/actions';
 import type { BracketView, TieView, FinishMatchView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
@@ -39,6 +39,7 @@ export function BracketSection({
   onPick,
   onFinishSave,
 }: Props): ReactElement {
+  const [pendingMatchKey, setPendingMatchKey] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   function handlePick(bracketMatchKey: string, winner: string) {
@@ -46,8 +47,10 @@ export function BracketSection({
       onPick(bracketMatchKey, winner);
       return;
     }
-    startTransition(() => {
-      void saveKnockoutPick({ poolId, bracketMatchKey, winner });
+    setPendingMatchKey(bracketMatchKey);
+    startTransition(async () => {
+      await saveKnockoutPick({ poolId, bracketMatchKey, winner });
+      setPendingMatchKey(null);
     });
   }
 
@@ -123,6 +126,7 @@ export function BracketSection({
                     tie={tie}
                     locked={locked || tie.locked}
                     onPick={handlePick}
+                    isPending={pendingMatchKey === tie.bracketMatchKey}
                   />
                 ))}
               </div>
@@ -175,10 +179,12 @@ function TieCard({
   tie,
   locked,
   onPick,
+  isPending,
 }: {
   tie: TieView;
   locked: boolean;
   onPick: (key: string, winner: string) => void;
+  isPending: boolean;
 }) {
   const hasPick = tie.pickedWinnerId !== null;
 
@@ -190,14 +196,16 @@ function TieCard({
         padding: 4,
         boxShadow: 'none',
         border: hasPick ? '1px solid var(--green-300)' : '1px dashed var(--line)',
+        position: 'relative',
       }}
+      aria-busy={isPending}
     >
       <PickRow
         testId="pick-home"
         teamId={tie.homeTeamId}
         teamName={tie.homeTeamName ?? '?'}
         isPick={tie.pickedWinnerId === tie.homeTeamId && hasPick}
-        disabled={locked || !tie.homeTeamId}
+        disabled={locked || !tie.homeTeamId || isPending}
         onClick={() => tie.homeTeamId && onPick(tie.bracketMatchKey, tie.homeTeamId)}
       />
       <PickRow
@@ -205,9 +213,34 @@ function TieCard({
         teamId={tie.awayTeamId}
         teamName={tie.awayTeamName ?? '?'}
         isPick={tie.pickedWinnerId === tie.awayTeamId && hasPick}
-        disabled={locked || !tie.awayTeamId}
+        disabled={locked || !tie.awayTeamId || isPending}
         onClick={() => tie.awayTeamId && onPick(tie.bracketMatchKey, tie.awayTeamId)}
       />
+      {isPending && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'var(--radius)',
+            background: 'rgba(255,255,255,0.6)',
+            display: 'grid',
+            placeItems: 'center',
+          }}
+          aria-hidden="true"
+        >
+          <span
+            style={{
+              width: 16,
+              height: 16,
+              borderRadius: '50%',
+              border: '2px solid var(--green-300)',
+              borderTopColor: 'var(--green-600)',
+              animation: 'spin 0.75s linear infinite',
+              display: 'block',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

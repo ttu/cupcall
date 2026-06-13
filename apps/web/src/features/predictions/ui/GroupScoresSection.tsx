@@ -1,7 +1,6 @@
 'use client';
 
 import type { ReactElement } from 'react';
-import { useTransition } from 'react';
 import { saveGroupScore } from '../api/actions';
 import type { GroupView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
@@ -16,16 +15,12 @@ type Props = {
 };
 
 export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): ReactElement {
-  const [, startTransition] = useTransition();
-
-  async function handleSave(matchId: string, home: number, away: number) {
+  async function handleSave(matchId: string, home: number, away: number): Promise<void> {
     if (onSave) {
       onSave(matchId, home, away);
       return;
     }
-    startTransition(() => {
-      void saveGroupScore({ poolId, matchId, home, away });
-    });
+    await saveGroupScore({ poolId, matchId, home, away });
   }
 
   function jumpToGroup(groupId: string) {
