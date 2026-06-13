@@ -85,6 +85,7 @@
     { "id": "rsa-tau", "name": "Percy Tau", "team": "RSA" },
     { "id": "rsa-makgopa", "name": "Evidence Makgopa", "team": "RSA" },
     { "id": "rsa-zungu", "name": "Bongani Zungu", "team": "RSA" },
+    { "id": "rsa-sithole", "name": "Lucas Sithole", "team": "RSA" },
     { "id": "kor-son", "name": "Son Heung-min", "team": "KOR" },
     { "id": "kor-hwang", "name": "Hwang Hee-chan", "team": "KOR" },
     { "id": "kor-lee", "name": "Lee Jae-sung", "team": "KOR" },

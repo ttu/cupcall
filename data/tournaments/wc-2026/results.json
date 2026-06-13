@@ -7,5 +7,7 @@
     { "matchId": "mD1", "home": 4, "away": 1 }
   ],
   "groupOrder": {},
-  "answers": {}
+  "answers": {
+    "firstRedCardPlayer": "rsa-sithole"
+  }
 }
