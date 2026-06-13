@@ -58,8 +58,10 @@ function SpecialBetRow({ bet }: { bet: SpecialBetResultRow }): ReactElement {
           ? '1px solid var(--line-soft)'
           : isHit
             ? '1px solid var(--green-300)'
-            : '1px solid var(--line-soft)',
-        background: isHit ? 'var(--green-050)' : 'var(--surface)',
+            : isMissed
+              ? '1px solid var(--red-300)'
+              : '1px solid var(--line-soft)',
+        background: isHit ? 'var(--green-050)' : isMissed ? 'var(--red-050)' : 'var(--surface)',
         boxShadow: 'var(--shadow-sm)',
         padding: '12px 14px',
         display: 'grid',
