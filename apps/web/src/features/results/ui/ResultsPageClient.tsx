@@ -135,7 +135,9 @@ export function ResultsPageClient({
         </div>
       )}
 
-      {activeTab === 'specials' && <SpecialBetsPanel specialBets={view.specialBets} />}
+      {activeTab === 'specials' && (
+        <SpecialBetsPanel specialBets={view.specialBets} viewerMode={viewerMode} />
+      )}
 
       {activeTab === 'race' && <PointsRaceTab race={view.pointsRaceView} viewerMode={viewerMode} />}
     </div>

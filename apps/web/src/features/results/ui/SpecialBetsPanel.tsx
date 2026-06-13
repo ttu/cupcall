@@ -9,9 +9,9 @@ const KIND_ICON = {
   bool: 'whistle',
 } as const;
 
-type Props = { specialBets: SpecialBetResultRow[] };
+type Props = { specialBets: SpecialBetResultRow[]; viewerMode?: boolean };
 
-export function SpecialBetsPanel({ specialBets }: Props): ReactElement {
+export function SpecialBetsPanel({ specialBets, viewerMode = false }: Props): ReactElement {
   const totalAwarded = specialBets.reduce((sum, b) => sum + b.pointsAwarded, 0);
   const totalPossible = specialBets.reduce((sum, b) => sum + b.points, 0);
 
@@ -36,14 +36,20 @@ export function SpecialBetsPanel({ specialBets }: Props): ReactElement {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {specialBets.map((bet) => (
-          <SpecialBetRow key={bet.key} bet={bet} />
+          <SpecialBetRow key={bet.key} bet={bet} showUserPick={!viewerMode} />
         ))}
       </div>
     </div>
   );
 }
 
-function SpecialBetRow({ bet }: { bet: SpecialBetResultRow }): ReactElement {
+function SpecialBetRow({
+  bet,
+  showUserPick,
+}: {
+  bet: SpecialBetResultRow;
+  showUserPick: boolean;
+}): ReactElement {
   const icon = KIND_ICON[bet.kind] ?? 'ball';
   const isPending = bet.hit === 'pending';
   const isHit = bet.hit === 'hit';
@@ -99,10 +105,16 @@ function SpecialBetRow({ bet }: { bet: SpecialBetResultRow }): ReactElement {
           {bet.label}
         </span>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <PickDisplay value={bet.userPickDisplay} label="Your pick" teamId={bet.userPickTeamId} />
+          {showUserPick && (
+            <PickDisplay
+              value={bet.userPickDisplay}
+              label="Your pick"
+              teamId={bet.userPickTeamId}
+            />
+          )}
           {bet.actualAnswerDisplay !== null && (
             <>
-              <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>→</span>
+              {showUserPick && <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>→</span>}
               <PickDisplay
                 value={bet.actualAnswerDisplay}
                 label="Actual"
