@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
-import Link from 'next/link';
 import type { LeaderboardEntry } from '../domain/types';
 import type { UserId } from '@cup/engine';
-import { Avatar } from '@/shared/ui';
+import { Podium, cardHref } from './Podium';
+import { LeaderboardRow } from './LeaderboardRow';
 
 type Props = {
   entries: LeaderboardEntry[];
@@ -12,153 +12,6 @@ type Props = {
   locked: boolean;
   viewToken?: string;
 };
-
-function cardHref(
-  entry: LeaderboardEntry,
-  poolId: string,
-  currentUserId: UserId | null,
-  viewToken?: string,
-): string {
-  if (viewToken) return `/view/${viewToken}/members/${entry.userId}`;
-  if (currentUserId !== null && entry.userId === currentUserId) return `/pools/${poolId}/predict`;
-  return `/pools/${poolId}/members/${entry.userId}`;
-}
-
-function Podium({
-  entries,
-  currentUserId,
-  poolId,
-  canViewCards,
-  viewToken,
-}: {
-  entries: LeaderboardEntry[];
-  currentUserId: UserId | null;
-  poolId: string;
-  canViewCards: boolean;
-  viewToken?: string;
-}): ReactElement {
-  const top3 = entries.slice(0, 3);
-  // Display order: 2nd, 1st, 3rd
-  const ordered = [top3[1], top3[0], top3[2]].filter(Boolean) as LeaderboardEntry[];
-  const podiumHeights = [96, 130, 74];
-  const podiumColors = [
-    'rgba(255,255,255,.12)',
-    'linear-gradient(180deg, var(--gold), oklch(0.7 0.12 80))',
-    'rgba(255,255,255,.08)',
-  ];
-  const rankColors = ['var(--green-400)', 'var(--on-dark)', 'var(--green-400)'];
-  const avatarSizes = [44, 56, 40];
-
-  return (
-    <div
-      className="turf"
-      style={{
-        borderRadius: 16,
-        padding: '24px 20px 0',
-        position: 'relative',
-        overflow: 'hidden',
-        marginBottom: 0,
-      }}
-    >
-      {/* Glow */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: '-20%',
-          right: '-10%',
-          width: '60%',
-          height: '120%',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, oklch(0.64 0.16 152 / 0.15) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          gap: 8,
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        {ordered.map((entry, i) => {
-          const originalRank = [2, 1, 3][i]!;
-          const h = podiumHeights[i] ?? 74;
-          const isSelf = currentUserId !== null && entry.userId === currentUserId;
-          const href = cardHref(entry, poolId, currentUserId, viewToken);
-          const avatarIndex = entries.indexOf(entry);
-
-          const podiumBlock = (
-            <div
-              key={entry.userId}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                width: 110,
-                gap: 6,
-              }}
-            >
-              <Avatar name={entry.displayName} index={avatarIndex} size={avatarSizes[i] ?? 40} />
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--on-dark-soft)',
-                  maxWidth: 90,
-                  textAlign: 'center',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {entry.displayName}
-                {isSelf && ' (you)'}
-              </div>
-              <div
-                className="display"
-                style={{ fontSize: 18, color: rankColors[i] ?? 'var(--on-dark)' }}
-              >
-                {entry.pointsTotal}
-              </div>
-              {/* Platform */}
-              <div
-                style={{
-                  width: '100%',
-                  height: h,
-                  background: podiumColors[i],
-                  borderRadius: '8px 8px 0 0',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'center',
-                  paddingTop: 12,
-                }}
-              >
-                <span
-                  className="display"
-                  style={{ fontSize: 34, color: rankColors[i] ?? 'var(--on-dark)' }}
-                >
-                  {originalRank}
-                </span>
-              </div>
-            </div>
-          );
-
-          return canViewCards ? (
-            <Link key={entry.userId} href={href} style={{ textDecoration: 'none' }}>
-              {podiumBlock}
-            </Link>
-          ) : (
-            podiumBlock
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 export function Leaderboard({
   entries,
@@ -182,7 +35,6 @@ export function Leaderboard({
 
   return (
     <div>
-      {/* Podium — top 3 */}
       {entries.length >= 1 && (
         <Podium
           entries={entries}
@@ -193,13 +45,11 @@ export function Leaderboard({
         />
       )}
 
-      {/* Ranked list — 4th and below */}
       {ranked4plus.length > 0 && (
         <div
           className="card"
           style={{ marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
         >
-          {/* Column headers */}
           <div
             className="eyebrow"
             style={{
@@ -217,66 +67,17 @@ export function Leaderboard({
             <span style={{ textAlign: 'right' }}>%</span>
           </div>
           <div className="divide">
-            {ranked4plus.map((entry, i) => {
-              const rank = i + 4;
-              const isSelf = currentUserId !== null && entry.userId === currentUserId;
-              const href = cardHref(entry, poolId, currentUserId, viewToken);
-              const avatarIndex = entries.indexOf(entry);
-
-              const row = (
-                <div
-                  key={entry.userId}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '34px 1fr 60px 60px',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '10px 16px',
-                    background: isSelf ? 'var(--green-050)' : undefined,
-                  }}
-                >
-                  <span className="lb-rank" style={{ fontSize: 16 }}>
-                    {rank}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                    <Avatar name={entry.displayName} index={avatarIndex} size={28} />
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: isSelf ? 700 : 600,
-                        color: isSelf ? 'var(--green-700)' : 'var(--ink)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {entry.displayName}
-                    </span>
-                  </div>
-                  <span
-                    className="display tnum"
-                    style={{ fontSize: 16, color: 'var(--ink)', textAlign: 'right' }}
-                  >
-                    {entry.pointsTotal}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--ink-muted)', textAlign: 'right' }}>
-                    {entry.completionPercent ?? '–'}%
-                  </span>
-                </div>
-              );
-
-              return canViewCards ? (
-                <Link
-                  key={entry.userId}
-                  href={href}
-                  style={{ textDecoration: 'none', display: 'block' }}
-                >
-                  {row}
-                </Link>
-              ) : (
-                row
-              );
-            })}
+            {ranked4plus.map((entry, i) => (
+              <LeaderboardRow
+                key={entry.userId}
+                entry={entry}
+                rank={i + 4}
+                avatarIndex={entries.indexOf(entry)}
+                isSelf={currentUserId !== null && entry.userId === currentUserId}
+                href={cardHref(entry, poolId, currentUserId, viewToken)}
+                canViewCards={canViewCards}
+              />
+            ))}
           </div>
         </div>
       )}

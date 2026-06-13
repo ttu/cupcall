@@ -5,6 +5,8 @@ import { useState, useTransition } from 'react';
 import { rotateToken, clearInviteLink } from '../api/actions';
 import { buildInviteUrl } from '../domain/invite';
 import { SectionLabel, Icon } from '@/shared/ui';
+import { InviteLinkDisplay } from './InviteLinkDisplay';
+import { OwnerInviteActions } from './OwnerInviteActions';
 
 type Props = {
   poolId: string;
@@ -90,146 +92,22 @@ export function InviteSection({
         Invite link
       </SectionLabel>
 
-      {token ? (
+      {token && inviteUrl ? (
         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0 }}>
             Share this link — anyone with it can join without an email address.
           </p>
-
-          {/* URL pill + copy */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div
-              style={{
-                flex: 1,
-                height: 36,
-                borderRadius: 9,
-                background: 'var(--surface-2)',
-                boxShadow: 'inset 0 0 0 1px var(--line)',
-                padding: '0 12px',
-                display: 'flex',
-                alignItems: 'center',
-                overflow: 'hidden',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: 'var(--ink-soft)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {inviteUrl}
-              </span>
-            </div>
-            <button type="button" onClick={handleCopy} className="btn btn-soft sm">
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
-
-          {/* Owner actions */}
+          <InviteLinkDisplay inviteUrl={inviteUrl} copied={copied} onCopy={handleCopy} />
           {isOwner && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-              {confirmRotate ? (
-                <>
-                  <button
-                    type="button"
-                    disabled={isPending}
-                    onClick={handleRotateClick}
-                    className="btn btn-ghost sm"
-                    style={{ fontSize: 11 }}
-                  >
-                    Confirm reset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmRotate(false)}
-                    style={{
-                      fontSize: 11,
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--ink-muted)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleRotateClick}
-                  disabled={isPending}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--ink-muted)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {isPending ? 'Working…' : 'Reset link'}
-                </button>
-              )}
-
-              {!confirmRotate && (
-                <>
-                  {confirmRemove ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={handleRemoveClick}
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          padding: '4px 10px',
-                          borderRadius: 7,
-                          border: 'none',
-                          background: 'var(--danger)',
-                          color: 'white',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Confirm remove
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmRemove(false)}
-                        style={{
-                          fontSize: 11,
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--ink-muted)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleRemoveClick}
-                      disabled={isPending}
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--ink-muted)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Remove link
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+            <OwnerInviteActions
+              isPending={isPending}
+              confirmRotate={confirmRotate}
+              confirmRemove={confirmRemove}
+              onRotateClick={handleRotateClick}
+              onRemoveClick={handleRemoveClick}
+              onCancelRotate={() => setConfirmRotate(false)}
+              onCancelRemove={() => setConfirmRemove(false)}
+            />
           )}
         </div>
       ) : (
