@@ -6,3 +6,4 @@ export { SectionLabel } from './SectionLabel';
 export { Icon } from './Icon';
 export { PageSpinner } from './PageSpinner';
 export { TeamBadge } from './TeamBadge';
+export { teamFlag } from './teamFlag';

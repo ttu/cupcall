@@ -746,6 +746,8 @@ function buildSpecialBetResults(
       points: d.points,
       userPickDisplay,
       actualAnswerDisplay,
+      userPickTeamId: d.kind === 'team' && userRaw != null ? String(userRaw) : null,
+      actualAnswerTeamId: d.kind === 'team' && actualRaw != null ? String(actualRaw) : null,
       hit,
       pointsAwarded,
     };

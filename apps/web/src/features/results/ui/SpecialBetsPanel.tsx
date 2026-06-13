@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { SpecialBetResultRow } from '../domain/types';
-import { Icon } from '@/shared/ui';
+import { Icon, TeamBadge } from '@/shared/ui';
 
 const KIND_ICON = {
   team: 'flag',
@@ -99,11 +99,16 @@ function SpecialBetRow({ bet }: { bet: SpecialBetResultRow }): ReactElement {
           {bet.label}
         </span>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <PickDisplay value={bet.userPickDisplay} label="Your pick" />
+          <PickDisplay value={bet.userPickDisplay} label="Your pick" teamId={bet.userPickTeamId} />
           {bet.actualAnswerDisplay !== null && (
             <>
               <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>→</span>
-              <PickDisplay value={bet.actualAnswerDisplay} label="Actual" actual />
+              <PickDisplay
+                value={bet.actualAnswerDisplay}
+                label="Actual"
+                actual
+                teamId={bet.actualAnswerTeamId}
+              />
             </>
           )}
         </div>
@@ -153,24 +158,34 @@ function PickDisplay({
   value,
   label,
   actual = false,
+  teamId = null,
 }: {
   value: string | number | boolean | null;
   label: string;
   actual?: boolean;
+  teamId?: string | null;
 }): ReactElement {
   const display =
     value === null ? '—' : typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
 
+  if (value === null) {
+    return (
+      <span style={{ fontSize: 12, color: 'var(--ink-muted)', fontStyle: 'italic' }}>{label}</span>
+    );
+  }
+
   return (
-    <span
-      style={{
-        fontSize: 12,
-        fontWeight: actual ? 700 : 400,
-        color: value === null ? 'var(--ink-muted)' : actual ? 'var(--ink)' : 'var(--ink-soft)',
-        fontStyle: value === null ? 'italic' : 'normal',
-      }}
-    >
-      {value === null ? label : display}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+      {teamId && <TeamBadge teamId={teamId} size="sm" />}
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: actual ? 700 : 400,
+          color: actual ? 'var(--ink)' : 'var(--ink-soft)',
+        }}
+      >
+        {display}
+      </span>
     </span>
   );
 }

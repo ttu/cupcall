@@ -5,8 +5,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { saveSpecialBet } from '../api/actions';
 import type { SpecialBetView } from '../domain/types';
-import { teamFlag } from './teamFlag';
-import { Icon } from '@/shared/ui';
+import { Icon, teamFlag } from '@/shared/ui';
 
 const KIND_ICON = {
   team: 'flag',
