@@ -706,6 +706,7 @@ function buildSpecialBetResults(
 ): SpecialBetResultRow[] {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const playerMap = new Map<string, string>(def.players.map((p) => [p.id, p.name]));
+  const playerTeamMap = new Map<string, string>(def.players.map((p) => [p.id, p.team]));
   const defs = getSpecialBetDefs(def.scoring);
   const specials: SpecialBets = inputs?.specials ?? {};
 
@@ -746,8 +747,18 @@ function buildSpecialBetResults(
       points: d.points,
       userPickDisplay,
       actualAnswerDisplay,
-      userPickTeamId: d.kind === 'team' && userRaw != null ? String(userRaw) : null,
-      actualAnswerTeamId: d.kind === 'team' && actualRaw != null ? String(actualRaw) : null,
+      userPickTeamId:
+        d.kind === 'team' && userRaw != null
+          ? String(userRaw)
+          : d.kind === 'player' && userRaw != null
+            ? (playerTeamMap.get(String(userRaw)) ?? null)
+            : null,
+      actualAnswerTeamId:
+        d.kind === 'team' && actualRaw != null
+          ? String(actualRaw)
+          : d.kind === 'player' && actualRaw != null
+            ? (playerTeamMap.get(String(actualRaw)) ?? null)
+            : null,
       hit,
       pointsAwarded,
     };

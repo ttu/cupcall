@@ -1354,6 +1354,27 @@ describe('getResultsView', () => {
       expect(bet.actualAnswerDisplay).toBe(player.name);
     });
 
+    it("populates teamId fields with the player's national team for player bets", async () => {
+      const player = miniTournament.players[0]!;
+      const pred = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      await upsertSpecialBet(db, pred.id, 'topScorerPlayer', player.id);
+
+      await upsertTournamentResults(db, miniTournament.id, {
+        matchResults: [],
+        groupOrder: {},
+        answers: { topScorerPlayer: player.id as import('@cup/engine').PlayerId },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'topScorerPlayer')!;
+      expect(bet.userPickTeamId).toBe(player.team);
+      expect(bet.actualAnswerTeamId).toBe(player.team);
+    });
+
     it('shows all bets as pending in view mode (no userId)', async () => {
       const view = await getResultsView({ db, poolId, now: NOW });
       expect(view!.specialBets.every((b) => b.hit === 'pending')).toBe(true);

@@ -186,7 +186,7 @@ export type SpecialBetResultRow = {
   points: number;
   userPickDisplay: string | number | boolean | null;
   actualAnswerDisplay: string | number | boolean | null;
-  /** Raw team ID for `kind === 'team'` bets — used for flag display. */
+  /** Team ID for flag display — populated for `kind === 'team'` bets and for `kind === 'player'` bets (the player's national team). */
   userPickTeamId: string | null;
   actualAnswerTeamId: string | null;
   hit: 'hit' | 'missed' | 'pending';
