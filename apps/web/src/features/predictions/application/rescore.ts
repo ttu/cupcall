@@ -5,7 +5,7 @@
 import { getPredictionInputs, upsertScore } from '@cup/db';
 import type { Db } from '@cup/db';
 import { deriveCard, scoreCard, points } from '@cup/engine';
-import type { Tournament, ActualResults } from '@cup/engine';
+import type { Tournament, ActualResults, CardInputs } from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
 
 type Deps = {
@@ -15,6 +15,8 @@ type Deps = {
   userId: string;
   tournament: Tournament;
   actual: ActualResults;
+  /** Pre-loaded inputs — skips the DB fetch when provided. */
+  inputs?: CardInputs;
 };
 
 /**
@@ -24,7 +26,7 @@ type Deps = {
 export async function rescoreCard(deps: Deps): Promise<void> {
   const { db, predictionId, poolId, tournament, actual } = deps;
 
-  const inputs = await getPredictionInputs(db, predictionId);
+  const inputs = deps.inputs ?? (await getPredictionInputs(db, predictionId));
 
   // Augment group scores with actual results for matches not saved by the user
   // (e.g. late joiners who couldn't predict locked matches). This ensures

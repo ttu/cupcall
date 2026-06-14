@@ -20,7 +20,7 @@ import {
   clearPredictionInputs,
   matchHasResult,
   betKeyHasAnswer,
-  getActualGroupMatchScores,
+  getActualResults,
 } from '@cup/db';
 import {
   bracketMatchKey as bmk,
@@ -29,7 +29,14 @@ import {
   selectQualifiers,
   findInvalidatedPickKeys,
 } from '@cup/engine';
-import type { BracketMatchKey, MatchId, TeamId, Tournament } from '@cup/engine';
+import type {
+  ActualResults,
+  BracketMatchKey,
+  CardInputs,
+  MatchId,
+  TeamId,
+  Tournament,
+} from '@cup/engine';
 import { rescoreAfterEdit } from './rescore-helper';
 
 // ---------------------------------------------------------------------------
@@ -55,6 +62,35 @@ async function getActorOrThrow() {
   const actor = await getCurrentActor();
   if (!actor) throw new Error('Not signed in');
   return actor;
+}
+
+/**
+ * Fetch pool + tournament + actual results in two parallel stages.
+ * Stage 1: pool (need its tournamentId first)
+ * Stage 2: tournament + actual results in parallel (both need tournamentId)
+ */
+async function loadPoolTournamentAndActual(poolId: string) {
+  const pool = await getPoolById(db, poolId);
+  if (!pool) throw new Error(`Pool ${poolId} not found`);
+
+  const [tournament, actual] = await Promise.all([
+    getTournamentById(db, pool.tournamentId),
+    getActualResults(db, pool.tournamentId),
+  ]);
+  if (!tournament) throw new Error(`Tournament ${pool.tournamentId} not found`);
+  if (!tournament.definition)
+    throw new Error(
+      `Tournament definition not loaded for ${pool.tournamentId}. Run pnpm sync first.`,
+    );
+
+  return { pool, tournament, actual };
+}
+
+/** Build the group-scores map from pre-loaded actual results (avoids an extra DB query). */
+function actualGroupScoresMap(actual: ActualResults): Map<string, { home: number; away: number }> {
+  return new Map(
+    actual.matchResults.map((r) => [r.matchId as string, { home: r.home, away: r.away }]),
+  );
 }
 
 async function invalidatePicksAfterKnockoutPickChange(
@@ -182,11 +218,25 @@ export async function saveGroupScore(
   const { poolId, matchId: mId, home, away } = parsed.data;
 
   try {
-    const { userId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): actor + pool
+    const [actor, pool] = await Promise.all([getCurrentActor(), getPoolById(db, poolId)]);
+    if (!actor) throw new Error('Not signed in');
+    if (!pool) throw new Error(`Pool ${poolId} not found`);
+    const { userId } = actor;
     const now = new Date();
 
-    const itemHasResult = await matchHasResult(db, pool.tournamentId, mId);
+    // Stage 2 (parallel): tournament + lock check + actual results
+    const [tournament, itemHasResult, actual] = await Promise.all([
+      getTournamentById(db, pool.tournamentId),
+      matchHasResult(db, pool.tournamentId, mId),
+      getActualResults(db, pool.tournamentId),
+    ]);
+    if (!tournament) throw new Error(`Tournament ${pool.tournamentId} not found`);
+    if (!tournament.definition)
+      throw new Error(
+        `Tournament definition not loaded for ${pool.tournamentId}. Run pnpm sync first.`,
+      );
+
     await assertCanEditOwnCard(db, {
       actor: { userId },
       pool: { id: pool.id, ownerId: pool.ownerId },
@@ -201,23 +251,36 @@ export async function saveGroupScore(
       tournamentId: pool.tournamentId,
     });
 
-    const [inputs, actualGroupMatchScores] = await Promise.all([
-      getPredictionInputs(db, prediction.id),
-      now >= tournament.firstKickoff
-        ? getActualGroupMatchScores(db, pool.tournamentId)
-        : Promise.resolve(new Map<string, { home: number; away: number }>()),
-    ]);
+    const inputs = await getPredictionInputs(db, prediction.id);
+
     await invalidatePicksAfterGroupScoreChange(
       prediction.id,
       mId,
       home,
       away,
       inputs,
-      tournament.definition!,
-      actualGroupMatchScores,
+      tournament.definition,
+      actualGroupScoresMap(actual),
     );
     await upsertGroupScore(db, prediction.id, mId, home, away);
-    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
+
+    // Compute updated inputs without an extra DB round-trip
+    const updatedInputs: CardInputs = {
+      ...inputs,
+      groupScores: [
+        ...inputs.groupScores.filter((s) => s.matchId !== mId),
+        { matchId: mId as MatchId, home, away },
+      ],
+    };
+
+    await rescoreAfterEdit(
+      prediction.id,
+      poolId,
+      userId,
+      tournament.definition,
+      actual,
+      updatedInputs,
+    );
 
     revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
@@ -244,12 +307,26 @@ export async function saveKnockoutPick(
   const { poolId, bracketMatchKey: key, winner } = parsed.data;
 
   try {
-    const { userId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): actor + pool
+    const [actor, pool] = await Promise.all([getCurrentActor(), getPoolById(db, poolId)]);
+    if (!actor) throw new Error('Not signed in');
+    if (!pool) throw new Error(`Pool ${poolId} not found`);
+    const { userId } = actor;
     const now = new Date();
 
+    // Stage 2 (parallel): tournament + lock check + actual results
     // bracketMatchKey IS the match id in the matches table (e.g. "qf-1", "final")
-    const itemHasResult = await matchHasResult(db, pool.tournamentId, key);
+    const [tournament, itemHasResult, actual] = await Promise.all([
+      getTournamentById(db, pool.tournamentId),
+      matchHasResult(db, pool.tournamentId, key),
+      getActualResults(db, pool.tournamentId),
+    ]);
+    if (!tournament) throw new Error(`Tournament ${pool.tournamentId} not found`);
+    if (!tournament.definition)
+      throw new Error(
+        `Tournament definition not loaded for ${pool.tournamentId}. Run pnpm sync first.`,
+      );
+
     await assertCanEditOwnCard(db, {
       actor: { userId },
       pool: { id: pool.id, ownerId: pool.ownerId },
@@ -264,20 +341,23 @@ export async function saveKnockoutPick(
       tournamentId: pool.tournamentId,
     });
 
-    const actualGroupMatchScores =
-      now >= tournament.firstKickoff
-        ? await getActualGroupMatchScores(db, pool.tournamentId)
-        : new Map<string, { home: number; away: number }>();
-
     await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
     const updatedInputs = await getPredictionInputs(db, prediction.id);
     await invalidatePicksAfterKnockoutPickChange(
       prediction.id,
       updatedInputs,
-      tournament.definition!,
-      actualGroupMatchScores,
+      tournament.definition,
+      actualGroupScoresMap(actual),
     );
-    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
+
+    await rescoreAfterEdit(
+      prediction.id,
+      poolId,
+      userId,
+      tournament.definition,
+      actual,
+      updatedInputs,
+    );
 
     revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
@@ -305,8 +385,13 @@ export async function saveFinishScore(
   const { poolId, match, home, away } = parsed.data;
 
   try {
-    const { userId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): actor + pool + actual results
+    const [actor, { pool, tournament, actual }] = await Promise.all([
+      getCurrentActor(),
+      loadPoolTournamentAndActual(poolId),
+    ]);
+    if (!actor) throw new Error('Not signed in');
+    const { userId } = actor;
     const now = new Date();
 
     const matchKey =
@@ -345,7 +430,7 @@ export async function saveFinishScore(
       await upsertKnockoutPick(db, prediction.id, bracketKey, implicitWinner);
     }
 
-    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
+    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!, actual);
 
     revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
@@ -372,8 +457,13 @@ export async function saveSpecialBet(
   const { poolId, betKey, value } = parsed.data;
 
   try {
-    const { userId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): actor + pool + actual results
+    const [actor, { pool, tournament, actual }] = await Promise.all([
+      getCurrentActor(),
+      loadPoolTournamentAndActual(poolId),
+    ]);
+    if (!actor) throw new Error('Not signed in');
+    const { userId } = actor;
     const now = new Date();
 
     const itemHasResult = await betKeyHasAnswer(db, pool.tournamentId, betKey);
@@ -392,7 +482,7 @@ export async function saveSpecialBet(
     });
 
     await upsertSpecialBet(db, prediction.id, betKey, value);
-    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
+    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!, actual);
 
     revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
@@ -422,8 +512,13 @@ export async function ownerSaveGroupScore(
   const { poolId, targetUserId, matchId: mId, home, away, reason } = parsed.data;
 
   try {
-    const { userId: editorId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): editor actor + pool + actual results
+    const [actor, { pool, tournament, actual }] = await Promise.all([
+      getCurrentActor(),
+      loadPoolTournamentAndActual(poolId),
+    ]);
+    if (!actor) throw new Error('Not signed in');
+    const { userId: editorId } = actor;
 
     assertCanOwnerEdit({ userId: editorId }, { id: pool.id, ownerId: pool.ownerId });
 
@@ -433,11 +528,7 @@ export async function ownerSaveGroupScore(
       tournamentId: pool.tournamentId,
     });
 
-    // Capture old value for audit and invalidation
-    const [oldInputs, actualGroupMatchScores] = await Promise.all([
-      getPredictionInputs(db, prediction.id),
-      getActualGroupMatchScores(db, pool.tournamentId),
-    ]);
+    const oldInputs = await getPredictionInputs(db, prediction.id);
     const oldScore = oldInputs.groupScores.find((gs) => gs.matchId === mId);
 
     await invalidatePicksAfterGroupScoreChange(
@@ -447,7 +538,7 @@ export async function ownerSaveGroupScore(
       away,
       oldInputs,
       tournament.definition!,
-      actualGroupMatchScores,
+      actualGroupScoresMap(actual),
     );
     await upsertGroupScore(db, prediction.id, mId, home, away);
     await createPredictionEdit(db, {
@@ -459,11 +550,23 @@ export async function ownerSaveGroupScore(
       ...(reason !== undefined ? { reason } : {}),
       source: 'manual',
     });
+
+    // Compute updated inputs without an extra DB round-trip
+    const updatedInputs: CardInputs = {
+      ...oldInputs,
+      groupScores: [
+        ...oldInputs.groupScores.filter((s) => s.matchId !== mId),
+        { matchId: mId as MatchId, home, away },
+      ],
+    };
+
     await rescoreAfterEdit(
       prediction.id,
       poolId,
       targetUserId as import('@cup/engine').UserId,
       tournament.definition!,
+      actual,
+      updatedInputs,
     );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
@@ -494,8 +597,13 @@ export async function ownerSaveSpecialBet(
   const { poolId, targetUserId, betKey, value, reason } = parsed.data;
 
   try {
-    const { userId: editorId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): editor actor + pool + actual results
+    const [actor, { pool, tournament, actual }] = await Promise.all([
+      getCurrentActor(),
+      loadPoolTournamentAndActual(poolId),
+    ]);
+    if (!actor) throw new Error('Not signed in');
+    const { userId: editorId } = actor;
 
     assertCanOwnerEdit({ userId: editorId }, { id: pool.id, ownerId: pool.ownerId });
 
@@ -523,6 +631,7 @@ export async function ownerSaveSpecialBet(
       poolId,
       targetUserId as import('@cup/engine').UserId,
       tournament.definition!,
+      actual,
     );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
@@ -553,8 +662,13 @@ export async function ownerSaveKnockoutPick(
   const { poolId, targetUserId, bracketMatchKey: key, winner, reason } = parsed.data;
 
   try {
-    const { userId: editorId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): editor actor + pool + actual results
+    const [actor, { pool, tournament, actual }] = await Promise.all([
+      getCurrentActor(),
+      loadPoolTournamentAndActual(poolId),
+    ]);
+    if (!actor) throw new Error('Not signed in');
+    const { userId: editorId } = actor;
 
     assertCanOwnerEdit({ userId: editorId }, { id: pool.id, ownerId: pool.ownerId });
 
@@ -564,14 +678,13 @@ export async function ownerSaveKnockoutPick(
       tournamentId: pool.tournamentId,
     });
 
-    const actualGroupMatchScores = await getActualGroupMatchScores(db, pool.tournamentId);
     await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
     const updatedInputs = await getPredictionInputs(db, prediction.id);
     await invalidatePicksAfterKnockoutPickChange(
       prediction.id,
       updatedInputs,
       tournament.definition!,
-      actualGroupMatchScores,
+      actualGroupScoresMap(actual),
     );
     await createPredictionEdit(db, {
       predictionId: prediction.id,
@@ -587,6 +700,8 @@ export async function ownerSaveKnockoutPick(
       poolId,
       targetUserId as import('@cup/engine').UserId,
       tournament.definition!,
+      actual,
+      updatedInputs,
     );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
@@ -618,8 +733,13 @@ export async function ownerSaveFinishScore(
   const { poolId, targetUserId, match, home, away, reason } = parsed.data;
 
   try {
-    const { userId: editorId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): editor actor + pool + actual results
+    const [actor, { pool, tournament, actual }] = await Promise.all([
+      getCurrentActor(),
+      loadPoolTournamentAndActual(poolId),
+    ]);
+    if (!actor) throw new Error('Not signed in');
+    const { userId: editorId } = actor;
 
     assertCanOwnerEdit({ userId: editorId }, { id: pool.id, ownerId: pool.ownerId });
 
@@ -660,6 +780,7 @@ export async function ownerSaveFinishScore(
       poolId,
       targetUserId as import('@cup/engine').UserId,
       tournament.definition!,
+      actual,
     );
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
@@ -759,8 +880,13 @@ export async function importCard(
   const { poolId, targetUserId, exportData } = parsed.data;
 
   try {
-    const { userId: actorId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): actor + pool + actual results
+    const [actor, { pool, tournament, actual }] = await Promise.all([
+      getCurrentActor(),
+      loadPoolTournamentAndActual(poolId),
+    ]);
+    if (!actor) throw new Error('Not signed in');
+    const { userId: actorId } = actor;
     const tournamentDef = tournament.definition!;
 
     if (exportData.tournamentId !== pool.tournamentId) {
@@ -866,7 +992,7 @@ export async function importCard(
       imported++;
     }
 
-    await rescoreAfterEdit(prediction.id, poolId, effectiveUserId, tournamentDef);
+    await rescoreAfterEdit(prediction.id, poolId, effectiveUserId, tournamentDef, actual);
 
     if (isOwnerEdit) {
       revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
@@ -895,8 +1021,13 @@ export async function clearAllPredictions(
   const { poolId } = parsed.data;
 
   try {
-    const { userId } = await getActorOrThrow();
-    const { pool, tournament } = await loadPoolAndTournament(poolId);
+    // Stage 1 (parallel): actor + pool + actual results
+    const [actor, { pool, tournament, actual }] = await Promise.all([
+      getCurrentActor(),
+      loadPoolTournamentAndActual(poolId),
+    ]);
+    if (!actor) throw new Error('Not signed in');
+    const { userId } = actor;
 
     await assertCanEditOwnCard(db, {
       actor: { userId },
@@ -912,7 +1043,7 @@ export async function clearAllPredictions(
     });
 
     await clearPredictionInputs(db, prediction.id);
-    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!);
+    await rescoreAfterEdit(prediction.id, poolId, userId, tournament.definition!, actual);
 
     revalidatePath(`/pools/${poolId}/predict`);
     return { ok: true };
