@@ -8,6 +8,9 @@
  * `Date.now()` directly; authoritative time flows in from the caller.
  */
 
+/** Late joiners have this many ms from joinedAt to fill in predictions. */
+export const LATE_JOINER_WINDOW_MS = 4 * 60 * 60 * 1000;
+
 import type { UserId } from '@cup/engine';
 import { isMember, getMember } from '@cup/db';
 import type { Actor } from './actor';
@@ -127,9 +130,17 @@ export async function assertCanEditOwnCard(
 
   if (now < lockTime) return;
 
-  // After lock: late joiners (joined at or after lockTime) get per-item access.
+  // After lock: late joiners (joined at or after lockTime) get per-item access
+  // within a 4-hour window from joining.
   const isLateJoiner = member.joinedAt >= lockTime;
-  if (isLateJoiner && itemHasResult === false) return;
+  if (isLateJoiner) {
+    const deadline = new Date(member.joinedAt.getTime() + LATE_JOINER_WINDOW_MS);
+    if (now >= deadline)
+      throw new LockedError(
+        `Late joiner prediction window closed at ${deadline.toISOString()}. Current time: ${now.toISOString()}.`,
+      );
+    if (itemHasResult === false) return;
+  }
 
   throw new LockedError(
     `Pool ${pool.id} is locked as of ${lockTime.toISOString()}. Current time: ${now.toISOString()}.`,

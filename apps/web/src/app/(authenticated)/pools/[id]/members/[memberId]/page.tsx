@@ -6,6 +6,7 @@ import {
   getPrediction,
   listEditsForPrediction,
   getUserById,
+  getMember,
 } from '@cup/db';
 import { db } from '@/shared/db';
 import { getCurrentActor } from '@/features/auth';
@@ -50,6 +51,8 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
   });
   if (!visible) notFound();
 
+  const memberRecord = await getMember(db, poolId, memberUid);
+
   const card = await getCardView({
     db,
     poolId,
@@ -57,6 +60,7 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
     tournamentId: pool.tournamentId,
     tournament: tournamentDef,
     firstKickoff: tournament.firstKickoff,
+    ...(memberRecord ? { joinedAt: memberRecord.joinedAt } : {}),
     now,
     createIfMissing: false,
   });

@@ -351,6 +351,10 @@ describe('getCardView — late joiner per-item lock', () => {
   const afterLock = new Date('2026-06-13T00:00:00Z');
   const joinedAfterLock = new Date('2026-06-12T10:00:00Z');
   const joinedBeforeLock = new Date('2026-06-10T10:00:00Z');
+  // Within the 4-hour late-joiner prediction window (1h after joining)
+  const withinWindow = new Date(joinedAfterLock.getTime() + 60 * 60 * 1000);
+  // After the 4-hour window has expired (5h after joining)
+  const afterWindow = new Date(joinedAfterLock.getTime() + 5 * 60 * 60 * 1000);
 
   beforeEach(async () => {
     db = await makeTestDb();
@@ -378,7 +382,7 @@ describe('getCardView — late joiner per-item lock', () => {
     return groupMatchIds('A')[0]!;
   }
 
-  it('gives status "partial" for a late joiner after lock', async () => {
+  it('gives status "partial" for a late joiner within the 4-hour window', async () => {
     const card = await getCardView({
       db,
       poolId,
@@ -389,9 +393,25 @@ describe('getCardView — late joiner per-item lock', () => {
       joinedAt: joinedAfterLock,
       knownResultMatchIds: new Set(),
       answeredBetKeys: new Set(),
-      now: afterLock,
+      now: withinWindow,
     });
     expect(card?.status).toBe('partial');
+  });
+
+  it('gives status "locked" for a late joiner after the 4-hour window expires', async () => {
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedAfterLock,
+      knownResultMatchIds: new Set(),
+      answeredBetKeys: new Set(),
+      now: afterWindow,
+    });
+    expect(card?.status).toBe('locked');
   });
 
   it('gives status "locked" for an early joiner after lock', async () => {
@@ -410,7 +430,7 @@ describe('getCardView — late joiner per-item lock', () => {
     expect(card?.status).toBe('locked');
   });
 
-  it('marks a match as locked when its ID is in knownResultMatchIds', async () => {
+  it('marks a match as locked when its ID is in knownResultMatchIds (within window)', async () => {
     const matchId = firstGroupMatchId();
     const card = await getCardView({
       db,
@@ -422,13 +442,13 @@ describe('getCardView — late joiner per-item lock', () => {
       joinedAt: joinedAfterLock,
       knownResultMatchIds: new Set([matchId]),
       answeredBetKeys: new Set(),
-      now: afterLock,
+      now: withinWindow,
     });
     const match = card?.groups.flatMap((g) => g.matches).find((m) => m.matchId === matchId);
     expect(match?.locked).toBe(true);
   });
 
-  it('leaves a match editable when it has no result', async () => {
+  it('leaves a match editable when it has no result (within window)', async () => {
     const matchId = firstGroupMatchId();
     const card = await getCardView({
       db,
@@ -440,10 +460,28 @@ describe('getCardView — late joiner per-item lock', () => {
       joinedAt: joinedAfterLock,
       knownResultMatchIds: new Set(), // no results known
       answeredBetKeys: new Set(),
-      now: afterLock,
+      now: withinWindow,
     });
     const match = card?.groups.flatMap((g) => g.matches).find((m) => m.matchId === matchId);
     expect(match?.locked).toBe(false);
+  });
+
+  it('locks all items for a late joiner after the 4-hour window even without known results', async () => {
+    const matchId = firstGroupMatchId();
+    const card = await getCardView({
+      db,
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+      tournament: miniTournament,
+      firstKickoff: lockTime,
+      joinedAt: joinedAfterLock,
+      knownResultMatchIds: new Set(), // no results — window expiry locks everything
+      answeredBetKeys: new Set(),
+      now: afterWindow,
+    });
+    const match = card?.groups.flatMap((g) => g.matches).find((m) => m.matchId === matchId);
+    expect(match?.locked).toBe(true);
   });
 
   it('locks all items for an early joiner regardless of knownResultMatchIds', async () => {

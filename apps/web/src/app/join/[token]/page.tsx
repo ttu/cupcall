@@ -4,6 +4,7 @@ import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
 import {
   getPoolByInviteTokenHash,
+  getTournamentById,
   isMember,
   isKicked,
   getUserById,
@@ -31,7 +32,10 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
   const { token } = await params;
   const { error } = await searchParams;
 
+  const now = new Date();
   const [pool, actor] = await Promise.all([getPoolByInviteTokenHash(db, token), getCurrentActor()]);
+  const tournament = pool ? await getTournamentById(db, pool.tournamentId) : null;
+  const isLateJoin = tournament ? now >= tournament.firstKickoff : false;
 
   if (!pool) {
     if (actor) {
@@ -174,10 +178,7 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
             <h2 className="display text-[38px]">{pool.name}</h2>
           </div>
           <div className="p-[30px] flex flex-col gap-4">
-            <div className="bg-orange-050 rounded-xl p-[12px_14px] flex items-center gap-[10px] text-[13px] text-orange-600 font-bold">
-              <Icon name="lock" size={14} color="var(--orange-500)" />
-              Predictions lock before the tournament starts — join now to get your picks in.
-            </div>
+            <JoinWarning isLateJoin={isLateJoin} />
             <SignedInJoinForm token={token} error={error} />
           </div>
         </div>
@@ -197,10 +198,35 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
           <h2 className="display text-[38px]">{pool.name}</h2>
         </div>
         <div className="p-[30px]">
-          <GuestJoinForm token={token} poolName={pool.name} error={error} />
+          <GuestJoinForm token={token} poolName={pool.name} error={error} isLateJoin={isLateJoin} />
         </div>
       </div>
     </main>
+  );
+}
+
+// ── Join warning banner ────────────────────────────────────────────────────
+
+function JoinWarning({ isLateJoin }: { isLateJoin: boolean }) {
+  if (isLateJoin) {
+    return (
+      <div className="bg-orange-050 rounded-xl p-[12px_14px] flex items-start gap-[10px] text-[13px] text-orange-600 font-bold">
+        <Icon name="clock" size={14} color="var(--orange-500)" />
+        <span>
+          The tournament has already started.{' '}
+          <span className="font-normal">
+            You&apos;ll have <strong>4 hours</strong> from joining to fill in your predictions.
+            Items with known results will be locked.
+          </span>
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="bg-orange-050 rounded-xl p-[12px_14px] flex items-center gap-[10px] text-[13px] text-orange-600 font-bold">
+      <Icon name="lock" size={14} color="var(--orange-500)" />
+      Predictions lock before the tournament starts — join now to get your picks in.
+    </div>
   );
 }
 
@@ -241,10 +267,12 @@ function GuestJoinForm({
   token,
   poolName,
   error,
+  isLateJoin,
 }: {
   token: string;
   poolName: string;
   error?: string | undefined;
+  isLateJoin: boolean;
 }) {
   async function handleGuestJoin(formData: FormData) {
     'use server';
@@ -256,10 +284,7 @@ function GuestJoinForm({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="bg-orange-050 rounded-xl p-[12px_14px] flex items-center gap-[10px] text-[13px] text-orange-600 font-bold">
-        <Icon name="lock" size={14} color="var(--orange-500)" />
-        Predictions lock before the tournament starts — join now to get your picks in.
-      </div>
+      <JoinWarning isLateJoin={isLateJoin} />
 
       <form action={handleGuestJoin} className="flex flex-col gap-[14px]">
         {error && (

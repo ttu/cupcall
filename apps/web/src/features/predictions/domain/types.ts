@@ -128,6 +128,8 @@ export type CardView = {
   groups: GroupView[];
   bracket: BracketView;
   specials: SpecialBetView[];
+  /** Non-null only for late joiners with status 'partial'; the time their window closes. */
+  lateJoinerDeadline: Date | null;
 };
 
 // ---------------------------------------------------------------------------

@@ -329,22 +329,39 @@ describe('authz policy', () => {
       ).rejects.toThrowError(LockedError);
     });
 
-    it('allows a member who joined exactly at lockTime (boundary: late joiner)', async () => {
+    it('allows a member who joined exactly at lockTime (boundary: late joiner, within window)', async () => {
       const atLockUser = await createUser(db, {
         email: `at-lock-${crypto.randomUUID()}@test.com`,
         displayName: 'At Lock Member',
       });
       await addMember(db, poolId, atLockUser.id, JOINED_AT_LOCK);
+      // 1 hour after joining — well within the 4-hour prediction window.
+      const withinWindow = new Date(JOINED_AT_LOCK.getTime() + 60 * 60 * 1000);
 
       await expect(
         assertCanEditOwnCard(db, {
           actor: actor(atLockUser.id),
           pool: { id: poolId, ownerId },
           lockTime: LOCK_TIME,
-          now: AFTER_LOCK,
+          now: withinWindow,
           itemHasResult: false,
         }),
       ).resolves.not.toThrow();
+    });
+
+    it('blocks a late joiner after the 4-hour prediction window closes', async () => {
+      // lateMemberId joined at JOINED_AFTER_LOCK; 5h later the window has expired.
+      const afterWindow = new Date(JOINED_AFTER_LOCK.getTime() + 5 * 60 * 60 * 1000);
+
+      await expect(
+        assertCanEditOwnCard(db, {
+          actor: actor(lateMemberId),
+          pool: { id: poolId, ownerId },
+          lockTime: LOCK_TIME,
+          now: afterWindow,
+          itemHasResult: false,
+        }),
+      ).rejects.toThrowError(LockedError);
     });
   });
 

@@ -67,17 +67,24 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   } = params;
 
   // A late joiner is someone who joined at or after the tournament lock.
-  // They get per-item lock state rather than a full card lock.
+  // They get per-item lock state within a 4-hour window from joining.
+  const LATE_JOINER_WINDOW_MS = 4 * 60 * 60 * 1000;
   const isLateJoiner = joinedAt !== undefined && now >= firstKickoff && joinedAt >= firstKickoff;
+  const lateJoinerDeadline = isLateJoiner
+    ? new Date(joinedAt!.getTime() + LATE_JOINER_WINDOW_MS)
+    : null;
+  const lateJoinerExpired = lateJoinerDeadline !== null && now >= lateJoinerDeadline;
 
   function itemLocked(matchIdOrKey: string): boolean {
-    if (isLateJoiner) return knownResultMatchIds.has(matchIdOrKey);
-    return now >= firstKickoff;
+    if (!isLateJoiner) return now >= firstKickoff;
+    if (lateJoinerExpired) return true;
+    return knownResultMatchIds.has(matchIdOrKey);
   }
 
   function betLocked(betKey: string): boolean {
-    if (isLateJoiner) return answeredBetKeys.has(betKey);
-    return now >= firstKickoff;
+    if (!isLateJoiner) return now >= firstKickoff;
+    if (lateJoinerExpired) return true;
+    return answeredBetKeys.has(betKey);
   }
 
   // 1. Get or create the prediction row
@@ -348,7 +355,8 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     Object.keys(inputs.specials).length;
   const completionPercent = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
-  const status = now < firstKickoff ? 'editable' : isLateJoiner ? 'partial' : 'locked';
+  const status =
+    now < firstKickoff ? 'editable' : isLateJoiner && !lateJoinerExpired ? 'partial' : 'locked';
 
   return {
     predictionId: prediction.id,
@@ -359,6 +367,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     groups,
     bracket: bracketView,
     specials,
+    lateJoinerDeadline: status === 'partial' ? lateJoinerDeadline : null,
   };
 }
 

@@ -131,12 +131,13 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
         </div>
       </div>
 
-      {card.status === 'partial' && (
+      {card.status === 'partial' && card.lateJoinerDeadline && (
         <div className="flex items-start gap-[10px] p-[12px_16px] mb-5 rounded-[10px] bg-surface-2 border border-line text-[13px] text-ink-soft">
           <span className="font-extrabold text-base">⏱</span>
           <span>
-            You joined after the tournament started. Matches and bets with known results are locked
-            — you can still predict anything that hasn&apos;t been decided yet.
+            You joined after the tournament started — you have until{' '}
+            <strong className="text-ink">{formatDeadline(card.lateJoinerDeadline)}</strong> to fill
+            in your predictions. Items with known results are already locked.
           </span>
         </div>
       )}
@@ -162,4 +163,23 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
       {auditEntries.length > 0 && <AuditLog entries={auditEntries} />}
     </div>
   );
+}
+
+function formatDeadline(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return `${months[d.getUTCMonth()]} ${d.getUTCDate()} at ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
 }
