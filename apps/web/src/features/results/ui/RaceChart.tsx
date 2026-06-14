@@ -20,8 +20,9 @@ export function RaceChart({
   if (n === 0 || players.length === 0) return <div className="h-40" />;
 
   const allValues = players.flatMap((p) => p.points);
-  const rawMax = Math.max(...allValues, 50);
-  const yMax = Math.ceil(rawMax / 50) * 50;
+  const rawMax = Math.max(...allValues, 0);
+  const yStep = rawMax < 10 ? 5 : rawMax < 50 ? 10 : 50;
+  const yMax = Math.max(Math.ceil(rawMax / yStep) * yStep, yStep);
 
   const X = (i: number) => PAD.l + (n > 0 ? (i / n) * PLOT_W : 0);
   const Y = (v: number) => PAD.t + (1 - v / yMax) * PLOT_H;
@@ -218,7 +219,7 @@ export function RaceChart({
 }
 
 function buildGridLines(yMax: number): number[] {
-  const step = yMax <= 200 ? 50 : yMax <= 400 ? 100 : 100;
+  const step = yMax <= 10 ? 5 : yMax <= 50 ? 10 : yMax <= 200 ? 50 : 100;
   const lines: number[] = [];
   for (let v = 0; v <= yMax; v += step) lines.push(v);
   return lines;
