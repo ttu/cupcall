@@ -3,6 +3,7 @@ import { drizzle as drizzlePglite } from 'drizzle-orm/pglite';
 import postgres from 'postgres';
 import { PGlite } from '@electric-sql/pglite';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import type { Logger } from 'drizzle-orm';
 
 /**
  * The unified database type used by all repositories. Generic over the schema so that
@@ -18,9 +19,13 @@ export type Db<TSchema extends Record<string, unknown> = Record<string, never>> 
 export function createDb<TSchema extends Record<string, unknown> = Record<string, never>>(
   connectionString: string,
   schema?: TSchema,
+  options?: { logger?: Logger },
 ): Db<TSchema> {
   const client = postgres(connectionString);
-  return drizzlePostgres(client, { schema: schema ?? ({} as TSchema) });
+  return drizzlePostgres(client, {
+    schema: schema ?? ({} as TSchema),
+    ...(options?.logger ? { logger: options.logger } : {}),
+  });
 }
 
 /**

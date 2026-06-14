@@ -23,6 +23,8 @@
     "db:migrate": "pnpm -C packages/db exec drizzle-kit migrate",
     "db:reset": "bash scripts/db-reset.sh",
     "dev": "bash scripts/dev.sh",
+    "dev:trace": "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 bash scripts/dev.sh",
+    "jaeger": "docker compose -f docker-compose.jaeger.yml up",
     "e2e": "pnpm -C apps/web run e2e"
   },
   "devDependencies": {
