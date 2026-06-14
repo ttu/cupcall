@@ -185,10 +185,12 @@ export type PointsRaceView = {
   chartPlayers: RaceChartPlayer[];
   /** Current user's banked (actual) points total. */
   myBanked: number;
-  /** Approximate additional points still reachable from surviving bracket picks. */
+  /** Hit-rate projection: banked/resolvedMax × remainingMax. Used for chart + projected standings. */
   myStillLive: number;
   /** myBanked + myStillLive. */
   myProjected: number;
+  /** True maximum still attainable (sum of canStillGet across all scoring categories). */
+  myTotalCanStillGet: number;
   projectedEntries: ProjectedEntry[];
   /** Rows of the per-match scoring matrix, sorted by totalPoints DESC. */
   matchMatrix: MatchMatrixEntry[];

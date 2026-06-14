@@ -151,6 +151,11 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     actualResults,
   );
   const userSpecialsSummary = buildSpecialsSummary(specialBets, userId);
+  const myTotalCanStillGet =
+    (userGroupSummary?.canStillGet ?? 0) +
+    (userKnockoutSummary?.canStillGet ?? 0) +
+    (userSpecialsSummary?.canStillGet ?? 0);
+  pointsRaceView.myTotalCanStillGet = myTotalCanStillGet;
 
   return {
     poolName: pool.name,
@@ -805,6 +810,7 @@ function buildPointsRaceView(params: RaceParams): PointsRaceView {
     myBanked,
     myStillLive,
     myProjected,
+    myTotalCanStillGet: 0, // overwritten by getResultsView after per-tab summaries are built
     projectedEntries,
     matchMatrix,
     matrixMatches,
