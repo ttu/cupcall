@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import type { PointsRaceView, RaceChartPlayer } from '../domain/types';
 import { RaceChart } from './RaceChart';
 import { StatCard } from './StatCard';
-import { ProjectedStandings } from './ProjectedStandings';
+import { ProjectedStandings, projectedSubLabel } from './ProjectedStandings';
 import { SwingCard } from './SwingCard';
 
 export function RaceView({
@@ -45,10 +45,10 @@ export function RaceView({
               color={race.myTotalCanStillGet > 0 ? 'var(--green-600)' : 'var(--ink-muted)'}
             />
             <StatCard
-              label="Max possible"
-              value={String(race.myBanked + race.myTotalCanStillGet)}
-              sub="if all remaining picks land"
-              color={race.myTotalCanStillGet > 0 ? 'var(--green-600)' : 'var(--ink)'}
+              label="Projected total"
+              value={String(race.myProjected)}
+              sub={projectedSubLabel(race.projectedEntries)}
+              color={race.myStillLive > 0 ? 'var(--green-600)' : 'var(--ink)'}
             />
           </div>
         )}
