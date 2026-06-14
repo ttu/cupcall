@@ -54,7 +54,7 @@ export function RaceView({
         )}
       </div>
 
-      <div className="border-l border-line pb-6 pl-[22px] bg-transparent md:bg-surface-2 md:pl-22">
+      <div className="border-l border-line pb-6 pl-[22px] bg-transparent md:bg-surface-2">
         <div className="bg-surface-2 rounded-xl pt-4 overflow-hidden">
           <div className="px-[18px] pb-3">
             <div className="section-label mb-1">Projected final table</div>
