@@ -1,27 +1,22 @@
 'use client';
 
+import { useActionState } from 'react';
 import type { ReactElement } from 'react';
-import { useFormStatus } from 'react-dom';
-import { guestSignInAction } from '../login-actions';
+import { Button } from '@/shared/ui';
+import { guestSignInAction, type GuestSignInState } from '../login-actions';
 
-function SubmitButton(): ReactElement {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="w-full px-4 py-2.5 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-    >
-      {pending ? 'Creating account…' : 'Get started'}
-    </button>
-  );
-}
+const initial: GuestSignInState = { error: null };
+
+const inputCls =
+  'w-full rounded-lg border border-line px-3 py-2 text-sm bg-white text-ink placeholder:text-ink-muted focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20';
 
 export function GuestLoginForm(): ReactElement {
+  const [state, action, pending] = useActionState(guestSignInAction, initial);
+
   return (
-    <form action={guestSignInAction} aria-labelledby="guest-heading" className="space-y-3">
+    <form action={action} aria-labelledby="guest-heading" className="space-y-3">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor="name" className="block text-sm font-medium text-on-dark-soft mb-1">
           Your name
         </label>
         <input
@@ -33,10 +28,30 @@ export function GuestLoginForm(): ReactElement {
           minLength={2}
           maxLength={50}
           placeholder="e.g. Alex"
-          className="w-full rounded-lg border border-line px-3 py-2 text-sm bg-white text-ink placeholder:text-ink-muted focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+          className={inputCls}
         />
       </div>
-      <SubmitButton />
+      <div>
+        <label htmlFor="betaCode" className="block text-sm font-medium text-on-dark-soft mb-1">
+          Beta code
+        </label>
+        <input
+          id="betaCode"
+          name="betaCode"
+          type="text"
+          autoComplete="off"
+          placeholder="Enter your beta code"
+          className={inputCls}
+        />
+      </div>
+      {state.error && (
+        <p role="alert" className="text-sm text-danger font-semibold">
+          {state.error}
+        </p>
+      )}
+      <Button type="submit" variant="primary" size="lg" block disabled={pending}>
+        {pending ? 'Creating account…' : 'Get started'}
+      </Button>
     </form>
   );
 }

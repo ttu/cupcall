@@ -277,8 +277,9 @@ function GuestJoinForm({
   async function handleGuestJoin(formData: FormData) {
     'use server';
     const displayName = (formData.get('displayName') as string | null)?.trim() ?? '';
+    const betaCode = (formData.get('betaCode') as string | null) ?? '';
     // joinAsGuest only returns when there's an error; success redirects internally.
-    const result = await joinAsGuest({ displayName, token });
+    const result = await joinAsGuest({ displayName, token, betaCode });
     redirect(`/join/${token}?error=${encodeURIComponent(result.error)}`);
   }
 
@@ -313,6 +314,19 @@ function GuestJoinForm({
           <p className="text-xs text-ink-muted mt-1.5">
             Shown on the leaderboard in <strong className="text-ink">{poolName}</strong>.
           </p>
+        </div>
+        <div>
+          <label className="eyebrow text-ink-muted block mb-2" htmlFor="betaCode">
+            Beta code
+          </label>
+          <input
+            id="betaCode"
+            name="betaCode"
+            type="text"
+            autoComplete="off"
+            placeholder="Enter your beta code"
+            className="w-full h-12 rounded-cup-btn border-input border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui box-border"
+          />
         </div>
 
         <JoinSubmitButton />

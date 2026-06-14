@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 import { db } from '@/shared/db';
 import { getCurrentActor } from '@/features/auth';
+import { checkBetaCode } from '@/features/auth/beta-code';
 import { assertIsOwner, assertSignedIn } from '@/shared/authz';
 import {
   getPoolById,
@@ -359,6 +360,7 @@ export async function deletePool(
 const JoinAsGuestSchema = z.object({
   displayName: z.string().trim().min(2, 'Name must be at least 2 characters').max(50),
   token: z.string().min(1),
+  betaCode: z.string().optional(),
 });
 
 /**
@@ -371,7 +373,10 @@ export async function joinAsGuest(raw: unknown): Promise<{ ok: false; error: str
   if (!parsed.success) {
     return { ok: false, error: parsed.error.errors[0]?.message ?? 'Invalid input.' };
   }
-  const { displayName, token } = parsed.data;
+  const { displayName, token, betaCode } = parsed.data;
+
+  const codeError = checkBetaCode(betaCode ?? null);
+  if (codeError) return { ok: false, error: codeError };
 
   const h = await headers();
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? 'unknown';
