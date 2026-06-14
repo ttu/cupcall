@@ -117,7 +117,12 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     }
   }
 
-  const { bracketRounds, bronzeMatch } = buildBracketRounds(def, allMatches, inputs);
+  const { bracketRounds, bronzeMatch } = buildBracketRounds(
+    def,
+    allMatches,
+    inputs,
+    poolGroupScores,
+  );
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch);
 
   const pointsRaceView = buildPointsRaceView({
@@ -435,13 +440,19 @@ function buildBracketRounds(
   def: Tournament,
   allMatches: MatchRow[],
   inputs: Awaited<ReturnType<typeof getPredictionInputs>> | null,
+  poolGroupScores: PoolGroupScore[],
 ): { bracketRounds: BracketRoundResultView[]; bronzeMatch: KnockoutMatchView | null } {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
   const pickMap = new Map<string, string>(
     (inputs?.knockoutPicks ?? []).map((kp) => [kp.bracketMatchKey, kp.winner]),
   );
-  const derivedParticipants = computeDerivedParticipants(def, allMatches);
+  const { participants: derivedParticipants, projectedKeys } = computeDerivedParticipants(
+    def,
+    allMatches,
+  );
+  const entryRoundKeys = new Set(def.bracket.slots.map((s) => s.match as string));
+  const r32PredPcts = computeEntryRoundPredictionPcts(def, poolGroupScores);
 
   const finishScores = inputs?.finishScores ?? {};
   const finalMatchKey = def.bracket.finalMatch;
@@ -488,6 +499,8 @@ function buildBracketRounds(
       actualAway: actual?.awayGoals ?? null,
     });
 
+    const isEntryRound = entryRoundKeys.has(key);
+
     return {
       bracketMatchKey: key,
       round,
@@ -507,6 +520,9 @@ function buildBracketRounds(
       predictedHome,
       predictedAway,
       hit,
+      projected: projectedKeys.has(key),
+      homeTeamR32Pct: isEntryRound && homeId ? (r32PredPcts.get(homeId) ?? null) : null,
+      awayTeamR32Pct: isEntryRound && awayId ? (r32PredPcts.get(awayId) ?? null) : null,
     };
   };
 
@@ -1024,33 +1040,39 @@ function computeMatchPredictionStats(
 function computeDerivedParticipants(
   def: Tournament,
   allMatches: MatchRow[],
-): Map<BracketMatchKey, [string, string]> {
+): { participants: Map<BracketMatchKey, [string, string]>; projectedKeys: Set<BracketMatchKey> } {
   const participantsByMatch = new Map<BracketMatchKey, [string, string]>();
+  const projectedKeys = new Set<BracketMatchKey>();
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
 
-  // 1. Entry-round slots from group orders (only if all group matches are final)
+  // 1. Entry-round slots: derive from live group standings (works with partial data too).
   const finalGroupMatchIds = new Set(
     allMatches.filter((m) => m.stage === 'group' && m.status === 'final').map((m) => m.id),
   );
   const allGroupsFinal = def.groupMatches.every((gm) => finalGroupMatchIds.has(gm.id));
-  if (allGroupsFinal) {
-    const scores: GroupScore[] = def.groupMatches.map((gm) => {
+
+  // Use only finalized matches so partial standings are always valid.
+  const liveScores: GroupScore[] = def.groupMatches
+    .filter((gm) => finalGroupMatchIds.has(gm.id))
+    .map((gm) => {
       const m = matchByKey.get(gm.id)!;
       return { matchId: matchId(gm.id), home: m.homeGoals!, away: m.awayGoals! };
     });
-    const groupOrders = deriveGroupOrders(def, scores);
-    const qualifiers = selectQualifiers(def, scores, groupOrders);
-    const autoCount = def.groups.length * def.qualification.autoQualifyPerGroup;
-    const rankedThirds = qualifiers.slice(autoCount);
 
-    for (const slot of def.bracket.slots) {
-      try {
-        const home = resolveSlot(slot.home, groupOrders, rankedThirds);
-        const away = resolveSlot(slot.away, groupOrders, rankedThirds);
-        participantsByMatch.set(slot.match, [home, away]);
-      } catch {
-        // unresolvable ref — leave unset; downstream just shows TBD
-      }
+  // Always derive: with no matches played the engine falls back to seed order.
+  const groupOrders = deriveGroupOrders(def, liveScores);
+  const qualifiers = selectQualifiers(def, liveScores, groupOrders);
+  const autoCount = def.groups.length * def.qualification.autoQualifyPerGroup;
+  const rankedThirds = qualifiers.slice(autoCount);
+
+  for (const slot of def.bracket.slots) {
+    try {
+      const home = resolveSlot(slot.home, groupOrders, rankedThirds);
+      const away = resolveSlot(slot.away, groupOrders, rankedThirds);
+      participantsByMatch.set(slot.match, [home, away]);
+      if (!allGroupsFinal) projectedKeys.add(slot.match);
+    } catch {
+      // unresolvable ref (e.g. best-third slot not yet rankable) — leave TBD
     }
   }
 
@@ -1081,7 +1103,42 @@ function computeDerivedParticipants(
     }
   }
 
-  return participantsByMatch;
+  return { participants: participantsByMatch, projectedKeys };
+}
+
+/**
+ * For each team, compute the percentage of pool members who predicted it
+ * to qualify to the entry round (R32/QF), derived from their group score predictions.
+ */
+function computeEntryRoundPredictionPcts(
+  def: Tournament,
+  poolGroupScores: PoolGroupScore[],
+): Map<string, number> {
+  const byUser = new Map<string, GroupScore[]>();
+  for (const s of poolGroupScores) {
+    const uid = s.userId as string;
+    if (!byUser.has(uid)) byUser.set(uid, []);
+    byUser.get(uid)!.push({ matchId: matchId(s.matchId), home: s.home, away: s.away });
+  }
+
+  if (byUser.size === 0) return new Map();
+
+  const qualifierCounts = new Map<string, number>();
+  for (const scores of byUser.values()) {
+    const groupOrders = deriveGroupOrders(def, scores);
+    const qualifiers = selectQualifiers(def, scores, groupOrders);
+    for (const tid of qualifiers) {
+      qualifierCounts.set(tid, (qualifierCounts.get(tid) ?? 0) + 1);
+    }
+  }
+
+  const total = byUser.size;
+  return new Map(
+    Array.from(qualifierCounts.entries()).map(([tid, count]) => [
+      tid,
+      Math.round((count / total) * 100),
+    ]),
+  );
 }
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {

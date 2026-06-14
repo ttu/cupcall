@@ -98,6 +98,12 @@ export type KnockoutMatchView = {
    *   - Final/Bronze: any of 'exact' | 'outcome' | 'missed' | 'pending'.
    */
   hit: MatchHit;
+  /** True when participants are derived from live (partial) group standings during the group stage. */
+  projected: boolean;
+  /** % of pool members who predicted the home team to qualify to the entry round. Null when not an entry-round match or no predictions exist. */
+  homeTeamR32Pct: number | null;
+  /** % of pool members who predicted the away team to qualify to the entry round. */
+  awayTeamR32Pct: number | null;
 };
 
 export type BracketRoundResultView = {

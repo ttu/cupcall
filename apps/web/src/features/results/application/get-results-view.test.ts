@@ -508,6 +508,93 @@ describe('getResultsView', () => {
     expect(view!.bracketHealth.totalPicks).toBe(4);
   });
 
+  describe('live entry-round participants and prediction percentages', () => {
+    it('populates entry-round slots from seed order when no group matches played', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const qfRound = view!.bracketRounds.find((r) => r.label === 'QF')!;
+      const qf1 = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+      // Default seed order: A1=1A, B2=2B
+      expect(qf1.homeTeamId).toBe('A1');
+      expect(qf1.awayTeamId).toBe('B2');
+      expect(qf1.projected).toBe(true);
+    });
+
+    it('marks entry-round slots as not projected once all group matches are final', async () => {
+      // Finalize all group matches
+      for (const gm of miniTournament.groupMatches) {
+        await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
+      }
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const qfRound = view!.bracketRounds.find((r) => r.label === 'QF')!;
+      for (const match of qfRound.matches) {
+        expect(match.projected).toBe(false);
+      }
+    });
+
+    it('updates entry-round slots when some group matches have been played', async () => {
+      // A3 beats A1 → A3 now leads group A, so '1A' resolves to A3
+      const mA1 = miniTournament.groupMatches.find(
+        (m) => m.group === groupId('A') && m.home === 'A1' && m.away === 'A2',
+      )!;
+      await finalizeMatch(db, miniTournament.id, mA1.id, 0, 3); // A2 beats A1 3-0
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const qfRound = view!.bracketRounds.find((r) => r.label === 'QF')!;
+      const qf1 = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+      // qf1 slot: home = '1A', away = '2B'
+      // A2 now leads group A with 3pts → '1A' = A2
+      expect(qf1.homeTeamId).toBe('A2');
+      expect(qf1.projected).toBe(true);
+    });
+
+    it('computes r32 prediction percentages from pool group scores', async () => {
+      // Both users predict: A1 wins all, A2 beats A3 and A4 → A1=1A (100%), A2=2A (100%)
+      const aMatches = miniTournament.groupMatches.filter((m) => m.group === groupId('A'));
+      // mA1=A1vsA2, mA2=A1vsA3, mA3=A1vsA4, mA4=A2vsA3, mA5=A2vsA4, mA6=A3vsA4
+      const scores: Record<string, [number, number]> = {};
+      for (const m of aMatches) {
+        if (m.home === 'A1')
+          scores[m.id] = [3, 0]; // A1 wins home
+        else if (m.home === 'A2')
+          scores[m.id] = [2, 0]; // A2 wins home
+        else scores[m.id] = [0, 0]; // draw for A3 vs A4
+      }
+
+      for (const uid of [userId, ownerId]) {
+        const pred = await getOrCreatePrediction(db, {
+          poolId,
+          userId: uid,
+          tournamentId: miniTournament.id,
+        });
+        for (const [mid, [h, a]] of Object.entries(scores)) {
+          await upsertGroupScore(db, pred.id, mid, h, a);
+        }
+      }
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const qfRound = view!.bracketRounds.find((r) => r.label === 'QF')!;
+      // qf1 slot: home='1A' = A1 (both predict A1 as #1 in group A → 100%)
+      const qf1 = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+      expect(qf1.homeTeamId).toBe('A1');
+      expect(qf1.homeTeamR32Pct).toBe(100);
+      // qf3 slot: away='2A' = A2 (both predict A2 as #2 in group A → 100%)
+      const qf3 = qfRound.matches.find((m) => m.bracketMatchKey === 'qf3')!;
+      expect(qf3.awayTeamId).toBe('A2');
+      expect(qf3.awayTeamR32Pct).toBe(100);
+    });
+
+    it('returns null r32 pcts for non-entry-round matches', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF');
+      if (sfRound) {
+        for (const match of sfRound.matches) {
+          expect(match.homeTeamR32Pct).toBeNull();
+          expect(match.awayTeamR32Pct).toBeNull();
+        }
+      }
+    });
+  });
+
   it('derives user rank from leaderboard', async () => {
     await upsertScore(db, {
       poolId,
