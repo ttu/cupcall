@@ -73,16 +73,16 @@ export function ViewSection({
   if (!isOwner && !token) return null;
 
   return (
-    <div className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+    <div className="rounded-cup border border-line bg-white shadow-[var(--shadow-sm)] overflow-hidden">
       <div className="px-4 py-2.5 turf">
-        <span className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)] font-cup-display">
+        <span className="text-sm font-bold tracking-widest uppercase text-on-dark font-cup-display">
           View Link
         </span>
       </div>
 
       {token ? (
         <div className="px-4 py-4 space-y-3">
-          <p className="text-xs text-[var(--ink-soft)]">
+          <p className="text-xs text-ink-soft">
             Share this link — anyone with it can view results without an account.
           </p>
           <div className="flex gap-2">
@@ -90,13 +90,13 @@ export function ViewSection({
               readOnly
               value={viewUrl ?? ''}
               aria-label="View link"
-              className="flex-1 rounded-lg border border-[var(--line)] px-3 py-2 text-xs bg-[var(--surface-2)] text-[var(--ink)] font-mono select-all"
+              className="flex-1 rounded-lg border border-line px-3 py-2 text-xs bg-surface-2 text-ink font-mono select-all"
               onFocus={(e) => e.target.select()}
             />
             <button
               type="button"
               onClick={handleCopy}
-              className="px-3 py-2 rounded-lg bg-[var(--ink-900)] text-[var(--on-dark)] text-xs font-medium hover:bg-[var(--ink-800)] transition-colors shrink-0"
+              className="px-3 py-2 rounded-lg bg-ink-900 text-on-dark text-xs font-medium hover:bg-ink-800 transition-colors shrink-0"
             >
               {copied ? 'Copied!' : 'Copy'}
             </button>
@@ -107,7 +107,7 @@ export function ViewSection({
                 type="button"
                 onClick={handleRotate}
                 disabled={isPending}
-                className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors disabled:opacity-50"
+                className="text-xs text-ink-muted hover:text-ink transition-colors disabled:opacity-50"
               >
                 {isPending ? 'Working…' : 'Reset link'}
               </button>
@@ -115,7 +115,7 @@ export function ViewSection({
                 type="button"
                 onClick={handleRemove}
                 disabled={isPending}
-                className="text-xs text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors disabled:opacity-50"
+                className="text-xs text-ink-muted hover:text-danger transition-colors disabled:opacity-50"
               >
                 Remove link
               </button>
@@ -124,14 +124,14 @@ export function ViewSection({
         </div>
       ) : (
         <div className="px-4 py-4 space-y-3">
-          <p className="text-xs text-[var(--ink-soft)]">
+          <p className="text-xs text-ink-soft">
             View link is disabled. Generate one to let anyone view results without an account.
           </p>
           <button
             type="button"
             onClick={handleGenerate}
             disabled={isPending}
-            className="px-3 py-2 rounded-lg bg-[var(--green-600)] text-white text-xs font-semibold hover:bg-[var(--green-700)] transition-colors disabled:opacity-50"
+            className="px-3 py-2 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             {isPending ? 'Generating…' : 'Generate view link'}
           </button>
@@ -139,7 +139,7 @@ export function ViewSection({
       )}
 
       {error && (
-        <p role="alert" className="px-4 pb-3 text-xs text-[var(--danger)]">
+        <p role="alert" className="px-4 pb-3 text-xs text-danger">
           {error}
         </p>
       )}

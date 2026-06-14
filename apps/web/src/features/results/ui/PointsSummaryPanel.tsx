@@ -13,9 +13,7 @@ export function PointsSummaryPanel({ summary }: Props): ReactElement {
       </div>
       <div className="card p-[14px_16px]">
         <div className="eyebrow text-ink-muted">Missed</div>
-        <div className="display text-[30px] mt-[6px] text-[var(--danger)] tnum">
-          {summary.missed}
-        </div>
+        <div className="display text-[30px] mt-[6px] text-danger tnum">{summary.missed}</div>
         <div className="text-[11.5px] text-ink-muted font-semibold mt-0.5">pts lost</div>
       </div>
       <div className="card p-[14px_16px]">

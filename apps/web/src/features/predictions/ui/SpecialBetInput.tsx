@@ -6,7 +6,7 @@ import type { SpecialBetView } from '../domain/types';
 import { teamFlag, cn } from '@/shared/ui';
 
 const SELECT_CLS =
-  'w-full rounded-[9px] border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui';
+  'w-full rounded-cup-sm border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui';
 
 type Props = {
   bet: SpecialBetView;
@@ -81,7 +81,7 @@ export function SpecialBetInput({
           if (!isNaN(v)) onSave(bet.key, v);
         }}
         className={cn(
-          'w-24 rounded-[9px] border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui',
+          'w-24 rounded-cup-sm border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui',
           locked && 'opacity-50',
         )}
       />
@@ -101,7 +101,7 @@ export function SpecialBetInput({
               disabled={locked}
               onClick={() => onSave(bet.key, boolVal)}
               className={cn(
-                'py-[6px] px-4 rounded-[9px] border-0 text-[13px] font-bold font-cup-ui transition-[background] duration-[120ms]',
+                'py-[6px] px-4 rounded-cup-sm border-0 text-[13px] font-bold font-cup-ui transition-[background] duration-[120ms]',
                 locked ? 'cursor-default' : 'cursor-pointer',
                 active
                   ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'

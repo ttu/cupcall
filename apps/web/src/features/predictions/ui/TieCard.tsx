@@ -42,7 +42,7 @@ export function TieCard({
       />
       {isPending && (
         <div
-          className="absolute inset-0 rounded-[var(--radius)] bg-white/60 grid place-items-center"
+          className="absolute inset-0 rounded-cup bg-white/60 grid place-items-center"
           aria-hidden="true"
         >
           <span className="page-spinner" style={{ width: 16, height: 16 }} />

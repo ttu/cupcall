@@ -22,14 +22,12 @@ export default async function PoolScoringPage({ params }: Props): Promise<ReactE
       <div>
         <Link
           href={`/pools/${poolId}`}
-          className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors mb-2 inline-block"
+          className="text-xs text-ink-muted hover:text-ink transition-colors mb-2 inline-block"
         >
           ← {detail.name}
         </Link>
-        <h1 className="text-2xl font-bold text-[var(--ink)] font-cup-display">
-          How points are calculated
-        </h1>
-        <p className="text-sm text-[var(--ink-soft)] mt-0.5">{detail.tournamentName}</p>
+        <h1 className="text-2xl font-bold text-ink font-cup-display">How points are calculated</h1>
+        <p className="text-sm text-ink-soft mt-0.5">{detail.tournamentName}</p>
       </div>
 
       <ScoringGuide scoring={detail.scoring} />

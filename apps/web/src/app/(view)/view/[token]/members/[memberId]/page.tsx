@@ -50,7 +50,7 @@ export default async function ViewMemberCardPage({ params }: Props): Promise<Rea
         <div className="eyebrow mb-[6px]">
           <BackLink href={`/view/${token}`}>{pool.name}</BackLink>
         </div>
-        <h1 className="text-2xl font-bold text-[var(--ink)] font-cup-display">
+        <h1 className="text-2xl font-bold text-ink font-cup-display">
           {memberName}&apos;s Predictions
         </h1>
       </div>

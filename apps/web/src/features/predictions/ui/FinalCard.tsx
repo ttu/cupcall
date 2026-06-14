@@ -31,7 +31,7 @@ function TieButton({
       className={cn(
         'flex-1 py-[6px] px-2 rounded-[7px] text-xs font-bold cursor-pointer',
         isPick
-          ? 'border border-[var(--green-300)] bg-green-050 text-green-700'
+          ? 'border border-green-300 bg-green-050 text-green-700'
           : isFinal
             ? 'border border-white/[.12] bg-white/[.04] text-on-dark'
             : 'border border-line bg-transparent text-ink',
@@ -83,7 +83,7 @@ export function FinalCard({
     <div
       data-testid={`${matchKey}-section`}
       className={cn(
-        'rounded-[var(--radius)] overflow-hidden shadow-cup-sm',
+        'rounded-cup overflow-hidden shadow-cup-sm',
         isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
       )}
     >
@@ -164,7 +164,7 @@ export function FinalCard({
           <div
             className={cn(
               'inline-flex items-center gap-[6px] py-1 pr-[10px] pl-[6px] rounded-full',
-              isFinal ? 'bg-[var(--gold)]' : 'bg-[oklch(0.80_0.06_55)]',
+              isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]',
             )}
           >
             <TeamBadge teamId={champion.teamId} size="sm" />

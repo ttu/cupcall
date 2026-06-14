@@ -54,7 +54,7 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
 
       {/* URL pill + copy button */}
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-9 rounded-[9px] bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] flex items-center px-3 overflow-hidden">
+        <div className="flex-1 h-9 rounded-cup-sm bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] flex items-center px-3 overflow-hidden">
           <span className="text-[11px] font-mono text-ink-soft truncate">{url}</span>
         </div>
         <button type="button" onClick={handleCopy} className="btn btn-soft sm">

@@ -14,7 +14,7 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
   return (
     <div className="flex flex-col gap-3">
       {/* Health card */}
-      <div className="card bg-green-050 border border-[var(--green-300)] py-[14px] px-4">
+      <div className="card bg-green-050 border border-green-300 py-[14px] px-4">
         <div className="eyebrow text-green-700 mb-[10px]">Bracket health</div>
         <div className="flex items-baseline gap-2 mb-[10px]">
           <span className="display text-green-700 text-[44px] leading-none">

@@ -8,14 +8,14 @@ export function AuditLog({ entries }: Props): ReactElement | null {
 
   return (
     <section aria-label="Edit history">
-      <h3 className="text-sm font-semibold text-[var(--ink-soft)] mb-2">Edit History</h3>
+      <h3 className="text-sm font-semibold text-ink-soft mb-2">Edit History</h3>
       <ol className="space-y-2">
         {entries.map((entry) => (
           <li
             key={entry.id}
-            className="text-xs text-[var(--ink-muted)] rounded-[var(--radius-sm)] border border-[var(--line-soft)] bg-[var(--surface-2)] px-3 py-2 flex flex-col gap-0.5"
+            className="text-xs text-ink-muted rounded-cup-sm border border-line-soft bg-surface-2 px-3 py-2 flex flex-col gap-0.5"
           >
-            <span className="font-medium text-[var(--ink-soft)]">
+            <span className="font-medium text-ink-soft">
               {entry.editorName} edited <code className="font-mono">{entry.fieldPath}</code>
             </span>
             <span>
@@ -24,7 +24,7 @@ export function AuditLog({ entries }: Props): ReactElement | null {
               {JSON.stringify(entry.newValue)}
             </span>
             {entry.reason && <span className="italic">{entry.reason}</span>}
-            <time className="text-[var(--ink-muted)]" dateTime={entry.editedAt.toISOString()}>
+            <time className="text-ink-muted" dateTime={entry.editedAt.toISOString()}>
               {entry.editedAt.toLocaleString()}
             </time>
           </li>

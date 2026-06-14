@@ -48,7 +48,7 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
         aria-label="Tournament"
         data-testid="tournament-select"
         className={cn(
-          'h-12 rounded-[11px] border-[1.5px] border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui',
+          'h-12 rounded-cup-btn border-input border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui',
           isPending && 'opacity-60',
         )}
       >
@@ -70,7 +70,7 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
           disabled={isPending}
           aria-label="Pool name"
           className={cn(
-            'flex-1 h-12 rounded-[11px] border-[1.5px] border-line bg-surface px-[15px] text-[15px] text-ink box-border font-cup-ui',
+            'flex-1 h-12 rounded-cup-btn border-input border-line bg-surface px-[15px] text-[15px] text-ink box-border font-cup-ui',
             isPending && 'opacity-60',
           )}
         />

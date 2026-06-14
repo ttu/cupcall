@@ -308,7 +308,7 @@ function GuestJoinForm({
             minLength={2}
             maxLength={50}
             placeholder="e.g. Alex"
-            className="w-full h-12 rounded-[11px] border-[1.5px] border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui box-border"
+            className="w-full h-12 rounded-cup-btn border-input border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui box-border"
           />
           <p className="text-xs text-ink-muted mt-[6px]">
             Shown on the leaderboard in <strong className="text-ink">{poolName}</strong>.

@@ -12,7 +12,7 @@ export function SpecialsFooter({
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-3 py-[14px] px-4 rounded-[var(--radius)]',
+        'flex items-center justify-between gap-3 py-[14px] px-4 rounded-cup',
         allFilled
           ? 'bg-green-050 shadow-[inset_0_0_0_1px_var(--green-300)]'
           : 'bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)]',
@@ -26,7 +26,7 @@ export function SpecialsFooter({
       <Link
         href={`/pools/${poolId}`}
         className={cn(
-          'inline-flex items-center gap-[6px] h-10 px-[18px] rounded-[11px] font-cup-ui text-[13px] font-bold no-underline whitespace-nowrap',
+          'inline-flex items-center gap-[6px] h-10 px-[18px] rounded-cup-btn font-cup-ui text-[13px] font-bold no-underline whitespace-nowrap',
           allFilled ? 'bg-green-500 text-[oklch(0.18_0.02_160)]' : 'bg-ink-900 text-on-dark',
         )}
       >

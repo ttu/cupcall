@@ -41,7 +41,7 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       {/* Info banner */}
-      <div className="flex items-start gap-[10px] p-[10px_14px] rounded-[10px] bg-green-050 border border-[var(--green-300)] text-[13px] text-green-700">
+      <div className="flex items-start gap-[10px] p-[10px_14px] rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
         <span className="font-extrabold">⚡</span>
         <span>
           Results drop into your bracket as we enter them.{' '}

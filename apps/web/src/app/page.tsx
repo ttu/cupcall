@@ -74,7 +74,7 @@ export default async function HomePage(): Promise<ReactElement> {
           <div className="mb-6">
             <div className="eyebrow text-on-dark-soft mb-[10px]">No password. Just your name.</div>
             <div
-              className="rounded-[14px] p-[18px]"
+              className="rounded-cup p-[18px]"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
@@ -93,7 +93,7 @@ export default async function HomePage(): Promise<ReactElement> {
 
           {/* Email sign-in — coming soon */}
           <div
-            className="rounded-[14px] p-[18px] flex items-center justify-center gap-2 text-on-dark-muted text-sm"
+            className="rounded-cup p-[18px] flex items-center justify-center gap-2 text-on-dark-muted text-sm"
             style={{
               background: 'rgba(255,255,255,0.04)',
               boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',

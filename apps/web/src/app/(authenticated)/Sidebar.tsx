@@ -35,7 +35,7 @@ export function Sidebar({ pools }: Props) {
               key={pool.id}
               href={`/pools/${pool.id}`}
               className={cn(
-                'flex items-center gap-[10px] px-[10px] py-2 rounded-[9px] no-underline mb-0.5 transition-[background]',
+                'flex items-center gap-[10px] px-[10px] py-2 rounded-cup-sm no-underline mb-0.5 transition-[background]',
                 active ? 'bg-[rgba(255,255,255,.1)]' : 'bg-transparent',
               )}
             >
@@ -64,7 +64,7 @@ export function Sidebar({ pools }: Props) {
         {/* New pool link */}
         <Link
           href="/pools"
-          className="flex items-center gap-2 px-[10px] py-[7px] rounded-[9px] no-underline mt-1 text-xs font-bold text-[rgba(255,255,255,.4)]"
+          className="flex items-center gap-2 px-[10px] py-[7px] rounded-cup-sm no-underline mt-1 text-xs font-bold text-[rgba(255,255,255,.4)]"
         >
           <Icon name="plus" size={13} color="rgba(255,255,255,.4)" />
           New pool
@@ -77,7 +77,7 @@ export function Sidebar({ pools }: Props) {
         <form action={signOutAction}>
           <button
             type="submit"
-            className="w-full flex items-center gap-[10px] px-[10px] py-2 rounded-[9px] border-0 bg-transparent cursor-pointer text-[13px] font-bold text-left text-[rgba(255,255,255,.4)]"
+            className="w-full flex items-center gap-[10px] px-[10px] py-2 rounded-cup-sm border-0 bg-transparent cursor-pointer text-[13px] font-bold text-left text-[rgba(255,255,255,.4)]"
           >
             <Icon name="arrow" size={16} color="rgba(255,255,255,.4)" />
             Sign out
@@ -104,7 +104,7 @@ function SidebarLink({
     <Link
       href={href}
       className={cn(
-        'flex items-center gap-[10px] px-[10px] py-2 rounded-[9px] no-underline text-[13px] font-bold',
+        'flex items-center gap-[10px] px-[10px] py-2 rounded-cup-sm no-underline text-[13px] font-bold',
         active ? 'text-on-dark bg-[rgba(255,255,255,.1)]' : 'text-on-dark-soft bg-transparent',
       )}
     >

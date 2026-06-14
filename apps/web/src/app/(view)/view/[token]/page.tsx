@@ -80,7 +80,7 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
           <Link
             href={`/view/${token}/results`}
             data-testid="view-results-link"
-            className="p-[18px] rounded-[14px] bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
+            className="p-[18px] rounded-cup bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
           >
             <span
               aria-hidden

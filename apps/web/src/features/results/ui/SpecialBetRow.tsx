@@ -25,7 +25,7 @@ export function SpecialBetRow({
     <div
       data-testid={`special-bet-result-${bet.key}`}
       className={cn(
-        'rounded-[var(--radius)] shadow-cup-sm p-[12px_14px] grid [grid-template-columns:34px_1fr_auto] gap-[10px] items-start border',
+        'rounded-cup shadow-cup-sm p-[12px_14px] grid [grid-template-columns:34px_1fr_auto] gap-[10px] items-start border',
         isPending || (!isHit && !isMissed)
           ? 'border-line-soft bg-surface'
           : isHit
@@ -33,7 +33,7 @@ export function SpecialBetRow({
             : 'border-red-300 bg-red-050',
       )}
     >
-      <div className="w-[34px] h-[34px] rounded-[9px] bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center text-ink-muted">
+      <div className="w-[34px] h-[34px] rounded-cup-sm bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center text-ink-muted">
         <Icon name={icon} size={16} stroke={1.8} />
       </div>
 

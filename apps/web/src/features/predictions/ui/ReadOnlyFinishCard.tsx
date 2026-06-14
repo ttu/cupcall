@@ -34,7 +34,7 @@ export function ReadOnlyFinishCard({
   return (
     <div
       className={cn(
-        'rounded-[var(--radius)] overflow-hidden shadow-cup-sm',
+        'rounded-cup overflow-hidden shadow-cup-sm',
         isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
       )}
     >

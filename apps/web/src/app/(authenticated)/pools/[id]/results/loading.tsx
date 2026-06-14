@@ -5,7 +5,7 @@ export default function Loading() {
         <div className="h-4 w-32 rounded bg-line" />
         <div className="h-8 w-64 rounded bg-line" />
         <div className="h-6 w-full rounded bg-line" />
-        <div className="h-48 w-full rounded-[var(--radius)] bg-line" />
+        <div className="h-48 w-full rounded-cup bg-line" />
       </div>
     </main>
   );

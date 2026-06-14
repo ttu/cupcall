@@ -120,7 +120,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           <Link
             href={`/pools/${poolId}/results`}
             data-testid="pool-results-link"
-            className="p-[18px] rounded-[14px] bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
+            className="p-[18px] rounded-cup bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
           >
             <span
               aria-hidden
@@ -143,7 +143,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           <Link
             href={`/pools/${poolId}/predict`}
             data-testid="pool-predict-link"
-            className="p-[18px] rounded-[14px] bg-green-500 text-[oklch(0.18_0.02_160)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--green-500)]"
+            className="p-[18px] rounded-cup bg-green-500 text-[oklch(0.18_0.02_160)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--green-500)]"
           >
             <span
               aria-hidden

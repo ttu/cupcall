@@ -59,16 +59,16 @@ export function GroupTable({ standing }: Props): ReactElement {
 
       {(standing.some((r) => r.qualifies === 'auto') ||
         standing.some((r) => r.qualifies === 'best-third')) && (
-        <div className="flex items-center gap-[14px] flex-wrap p-[7px_12px] bg-surface border-t border-[var(--line-soft)] text-[11px] font-semibold text-ink-muted">
+        <div className="flex items-center gap-[14px] flex-wrap p-[7px_12px] bg-surface border-t border-line-soft text-[11px] font-semibold text-ink-muted">
           {standing.some((r) => r.qualifies === 'auto') && (
             <span className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-[3px] bg-[var(--green-400)] shrink-0 inline-block" />
+              <span className="w-3 h-3 rounded-[3px] bg-green-400 shrink-0 inline-block" />
               Through to the knockout round
             </span>
           )}
           {standing.some((r) => r.qualifies === 'best-third') && (
             <span className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-[3px] bg-[var(--orange-400)] shrink-0 inline-block" />
+              <span className="w-3 h-3 rounded-[3px] bg-orange-400 shrink-0 inline-block" />
               Best third advances
             </span>
           )}

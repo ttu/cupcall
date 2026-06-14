@@ -68,7 +68,7 @@ export function BracketSection({
       className="flex flex-col gap-3"
     >
       {!locked && (
-        <div className="flex items-start gap-[10px] py-[10px] px-[14px] rounded-[10px] bg-green-050 border border-[var(--green-300)] text-[13px] text-green-700">
+        <div className="flex items-start gap-[10px] py-[10px] px-[14px] rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
           <span className="font-extrabold">⚡</span>
           <span>
             Pick the winner of each tie. Your group stage predictions determine who fills each slot.

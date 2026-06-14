@@ -64,7 +64,7 @@ export function MemberControls({ poolId }: Props): ReactElement {
             data-testid="leave-pool-btn"
             disabled={isPending}
             onClick={handleLeaveClick}
-            className="text-[11px] font-bold py-1 px-[9px] rounded-[7px] border-[1.5px] border-[oklch(0.78_0.12_25)] bg-transparent text-danger cursor-pointer"
+            className="text-[11px] font-bold py-1 px-[9px] rounded-[7px] border-input border-[oklch(0.78_0.12_25)] bg-transparent text-danger cursor-pointer"
           >
             Leave
           </button>

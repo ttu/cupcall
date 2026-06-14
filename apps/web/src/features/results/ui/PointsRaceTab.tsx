@@ -26,7 +26,7 @@ export function PointsRaceTab({ race, viewerMode = false }: Props): ReactElement
               onClick={() => setSubTab(t)}
               data-testid={`points-race-subtab-${t}`}
               className={cn(
-                'py-[7px] px-4 rounded-[9px] border-0 cursor-pointer font-cup-ui text-[13px] font-extrabold transition-[background]',
+                'py-[7px] px-4 rounded-cup-sm border-0 cursor-pointer font-cup-ui text-[13px] font-extrabold transition-[background]',
                 active
                   ? 'bg-ink-900 text-white shadow-none'
                   : 'bg-surface text-ink-muted shadow-[inset_0_0_0_1px_var(--line)]',

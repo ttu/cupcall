@@ -67,7 +67,7 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
           type="button"
           disabled={loginLinkPending}
           onClick={() => void handleGetLink()}
-          className="shrink-0 text-xs font-bold py-[5px] px-[11px] rounded-lg border-[1.5px] border-line bg-transparent text-ink-muted cursor-pointer"
+          className="shrink-0 text-xs font-bold py-[5px] px-[11px] rounded-lg border-input border-line bg-transparent text-ink-muted cursor-pointer"
         >
           {loginLinkPending ? 'Getting…' : 'Get link'}
         </button>
@@ -94,7 +94,7 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
             type="button"
             disabled={isPendingKick}
             onClick={handleKickClick}
-            className="shrink-0 text-xs font-bold py-[5px] px-[11px] rounded-lg border-[1.5px] border-[oklch(0.78_0.12_25)] bg-transparent text-danger cursor-pointer"
+            className="shrink-0 text-xs font-bold py-[5px] px-[11px] rounded-lg border-input border-[oklch(0.78_0.12_25)] bg-transparent text-danger cursor-pointer"
           >
             <Icon name="kick" size={12} color="var(--danger)" />
           </button>

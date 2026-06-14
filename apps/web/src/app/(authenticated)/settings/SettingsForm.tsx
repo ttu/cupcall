@@ -69,7 +69,7 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
             minLength={1}
             maxLength={64}
             autoComplete="nickname"
-            className="flex-1 h-12 rounded-[11px] border-[1.5px] border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui outline-none"
+            className="flex-1 h-12 rounded-cup-btn border-input border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui outline-none"
             onFocus={(e) => {
               e.currentTarget.style.borderColor = 'var(--green-500)';
               e.currentTarget.style.boxShadow = '0 0 0 3px var(--green-050)';
@@ -98,7 +98,7 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
         <>
           <hr className="my-6 border-none border-t border-line-soft h-0" />
           <label className="eyebrow text-ink-muted block mb-2">Email</label>
-          <div className="h-12 rounded-[11px] bg-surface-2 border border-line px-[15px] flex items-center gap-[10px]">
+          <div className="h-12 rounded-cup-btn bg-surface-2 border border-line px-[15px] flex items-center gap-[10px]">
             <Icon name="mail" size={15} color="var(--ink-muted)" />
             <span className="flex-1 text-[14px] text-ink-soft truncate">{email}</span>
             <Chip variant="green" dot>
@@ -138,7 +138,7 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
             disabled={isPendingDelete}
             onClick={handleDeleteClick}
             className={cn(
-              'text-[13px] font-bold py-2 px-4 rounded-[9px] border-0 cursor-pointer',
+              'text-[13px] font-bold py-2 px-4 rounded-cup-sm border-0 cursor-pointer',
               confirmDelete
                 ? 'bg-danger text-white shadow-none'
                 : 'bg-transparent text-danger shadow-[inset_0_0_0_1.5px_oklch(0.78_0.12_25)]',

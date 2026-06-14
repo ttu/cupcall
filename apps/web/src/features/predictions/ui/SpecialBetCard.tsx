@@ -35,14 +35,14 @@ export function SpecialBetCard({
       data-testid={`special-bet-${bet.key}`}
       aria-busy={isPending}
       className={cn(
-        'rounded-[var(--radius)] shadow-cup-sm p-4 flex flex-col gap-[10px] relative',
+        'rounded-cup shadow-cup-sm p-4 flex flex-col gap-[10px] relative',
         empty && !locked
           ? 'border border-dashed border-orange-400 bg-orange-050'
           : 'border border-line-soft bg-surface',
       )}
     >
       <div className="flex items-start gap-[10px]">
-        <div className="w-[34px] h-[34px] rounded-[9px] bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center shrink-0 text-ink-muted">
+        <div className="w-[34px] h-[34px] rounded-cup-sm bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center shrink-0 text-ink-muted">
           <Icon name={icon} size={16} stroke={1.8} />
         </div>
         <div className="flex-1 min-w-0">
@@ -66,7 +66,7 @@ export function SpecialBetCard({
       />
       {isPending && (
         <div
-          className="absolute inset-0 rounded-[var(--radius)] bg-white/60 grid place-items-center"
+          className="absolute inset-0 rounded-cup bg-white/60 grid place-items-center"
           aria-hidden="true"
         >
           <span className="page-spinner" style={{ width: 20, height: 20 }} />

@@ -32,8 +32,8 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
     <div
       data-testid={`${matchKey}-result-card`}
       className={cn(
-        'rounded-[var(--radius)] overflow-hidden shadow-cup-sm',
-        isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-[var(--line-soft)]',
+        'rounded-cup overflow-hidden shadow-cup-sm',
+        isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
       )}
     >
       {/* Header strip */}

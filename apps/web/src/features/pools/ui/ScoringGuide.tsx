@@ -11,9 +11,9 @@ function SectionCard({
   children: React.ReactNode;
 }): ReactElement {
   return (
-    <div className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+    <div className="rounded-cup border border-line bg-white shadow-[var(--shadow-sm)] overflow-hidden">
       <div className="px-4 py-2.5 turf">
-        <span className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)] font-cup-display">
+        <span className="text-sm font-bold tracking-widest uppercase text-on-dark font-cup-display">
           {title}
         </span>
       </div>
@@ -35,10 +35,10 @@ function Row({
 }): ReactElement {
   return (
     <div className={`flex items-center gap-3 px-4 py-2.5 ${indent ? 'pl-8' : ''}`}>
-      <span className="flex-1 text-sm text-[var(--ink-soft)]">{label}</span>
-      {note && <span className="text-xs text-[var(--ink-muted)] shrink-0">{note}</span>}
+      <span className="flex-1 text-sm text-ink-soft">{label}</span>
+      {note && <span className="text-xs text-ink-muted shrink-0">{note}</span>}
       {pts !== undefined && (
-        <span className="text-sm font-semibold tabular-nums text-[var(--ink)] shrink-0 min-w-[48px] text-right">
+        <span className="text-sm font-semibold tabular-nums text-ink shrink-0 min-w-[48px] text-right">
           {pts} pts
         </span>
       )}
@@ -48,10 +48,8 @@ function Row({
 
 function Divider({ label }: { label: string }): ReactElement {
   return (
-    <div className="px-4 py-1.5 bg-[var(--surface-2)]">
-      <span className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wide">
-        {label}
-      </span>
+    <div className="px-4 py-1.5 bg-surface-2">
+      <span className="text-xs font-medium text-ink-muted uppercase tracking-wide">{label}</span>
     </div>
   );
 }

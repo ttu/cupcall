@@ -60,7 +60,7 @@ export function ExportImportControls({ poolId, targetUserId }: Props): ReactElem
       <button
         type="button"
         onClick={handleExport}
-        className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-muted)] transition-colors"
+        className="text-xs font-medium px-3 py-1.5 rounded-lg border border-line bg-white text-ink-soft hover:text-ink hover:border-ink-muted transition-colors"
       >
         Export JSON
       </button>
@@ -68,7 +68,7 @@ export function ExportImportControls({ poolId, targetUserId }: Props): ReactElem
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-muted)] transition-colors"
+        className="text-xs font-medium px-3 py-1.5 rounded-lg border border-line bg-white text-ink-soft hover:text-ink hover:border-ink-muted transition-colors"
       >
         Import JSON
       </button>
@@ -87,10 +87,7 @@ export function ExportImportControls({ poolId, targetUserId }: Props): ReactElem
       />
 
       {message && (
-        <p
-          role="status"
-          className={`text-xs ${message.ok ? 'text-[var(--green-700)]' : 'text-[var(--danger)]'}`}
-        >
+        <p role="status" className={`text-xs ${message.ok ? 'text-green-700' : 'text-danger'}`}>
           {message.text}
         </p>
       )}

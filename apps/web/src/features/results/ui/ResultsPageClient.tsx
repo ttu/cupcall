@@ -80,7 +80,7 @@ export function ResultsPageClient({
                 key={g.groupId}
                 type="button"
                 onClick={() => jumpToGroup(g.groupId)}
-                className="w-[38px] h-[38px] rounded-[9px] border-0 cursor-pointer font-cup-display text-base font-normal bg-surface-2 text-ink-soft shadow-[inset_0_0_0_1px_var(--line)] transition-[background]"
+                className="w-[38px] h-[38px] rounded-cup-sm border-0 cursor-pointer font-cup-display text-base font-normal bg-surface-2 text-ink-soft shadow-[inset_0_0_0_1px_var(--line)] transition-[background]"
               >
                 {g.groupId}
               </button>

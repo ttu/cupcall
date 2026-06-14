@@ -55,14 +55,14 @@ export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+    <div className="rounded-cup border border-line bg-white shadow-[var(--shadow-sm)] overflow-hidden">
       <div className="px-4 py-2.5 turf">
-        <span className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)] font-cup-display">
+        <span className="text-sm font-bold tracking-widest uppercase text-on-dark font-cup-display">
           {isOwner ? 'Backup & Restore' : 'Backup'}
         </span>
       </div>
       <div className="px-4 py-4 space-y-3">
-        <p className="text-xs text-[var(--ink-muted)]">
+        <p className="text-xs text-ink-muted">
           {isOwner
             ? 'Export a full backup of this pool including all members and their predictions. Import a backup to restore members and predictions (existing members are matched by ID; unknown members are added as guests).'
             : 'Download a full backup of this pool including all members and their predictions. Use it to verify that results are not changed after the tournament.'}
@@ -71,7 +71,7 @@ export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
           <button
             type="button"
             onClick={handleExport}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-muted)] transition-colors"
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-line bg-white text-ink-soft hover:text-ink hover:border-ink-muted transition-colors"
           >
             Export backup
           </button>
@@ -80,7 +80,7 @@ export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-muted)] transition-colors"
+                className="text-xs font-medium px-3 py-1.5 rounded-lg border border-line bg-white text-ink-soft hover:text-ink hover:border-ink-muted transition-colors"
               >
                 Import backup
               </button>
@@ -100,10 +100,7 @@ export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
           )}
         </div>
         {message && (
-          <p
-            role="status"
-            className={`text-xs ${message.ok ? 'text-[var(--green-700)]' : 'text-[var(--danger)]'}`}
-          >
+          <p role="status" className={`text-xs ${message.ok ? 'text-green-700' : 'text-danger'}`}>
             {message.text}
           </p>
         )}

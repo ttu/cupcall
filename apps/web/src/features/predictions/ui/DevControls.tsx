@@ -36,7 +36,7 @@ export function DevControls({ poolId, isDev, locked }: Props): ReactElement {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {isDev && (
-        <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--ink-muted)] border border-[var(--line)] rounded px-1.5 py-0.5 select-none">
+        <span className="text-[10px] font-bold tracking-widest uppercase text-ink-muted border border-line rounded px-1.5 py-0.5 select-none">
           dev
         </span>
       )}
@@ -45,7 +45,7 @@ export function DevControls({ poolId, isDev, locked }: Props): ReactElement {
           type="button"
           onClick={handleFill}
           disabled={isFillPending}
-          className="text-xs px-2.5 py-1 rounded border border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:border-[var(--line-strong)] transition-colors disabled:opacity-40"
+          className="text-xs px-2.5 py-1 rounded border border-line text-ink-muted hover:text-ink hover:border-[var(--line-strong)] transition-colors disabled:opacity-40"
         >
           {isFillPending ? 'Filling…' : 'Fill random scores'}
         </button>

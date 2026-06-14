@@ -50,13 +50,8 @@ export function DevPage({ initialState }: Props): ReactElement {
   return (
     <main className="max-w-2xl mx-auto px-4 py-8 space-y-10">
       <div>
-        <h1
-          className="text-2xl font-bold text-[var(--ink)]"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Dev Tools
-        </h1>
-        <p className="text-sm text-[var(--ink-soft)] mt-1">
+        <h1 className="text-2xl font-bold text-ink font-cup-display">Dev Tools</h1>
+        <p className="text-sm text-ink-soft mt-1">
           Development utilities — not available in production.
         </p>
       </div>
@@ -65,16 +60,15 @@ export function DevPage({ initialState }: Props): ReactElement {
       <section aria-labelledby="simulator-heading">
         <h2
           id="simulator-heading"
-          className="text-xs font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-3"
-          style={{ fontFamily: 'var(--font-display)' }}
+          className="text-xs font-bold tracking-widest uppercase text-ink-muted mb-3 font-cup-display"
         >
           Cup Simulator
         </h2>
-        <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface-2)] p-4 space-y-3">
-          <div className="text-xs text-[var(--ink-soft)] mb-4">
+        <div className="rounded-cup border border-line bg-surface-2 p-4 space-y-3">
+          <div className="text-xs text-ink-soft mb-4">
             Current state:{' '}
-            <span className="font-semibold text-[var(--ink)]">{CHECKPOINT_LABELS[current]}</span>
-            <span className="ml-3 text-[var(--ink-muted)]">
+            <span className="font-semibold text-ink">{CHECKPOINT_LABELS[current]}</span>
+            <span className="ml-3 text-ink-muted">
               ({stats.groupFinal}/{stats.groupTotal} group matches final, {stats.knockoutFinal}{' '}
               knockout final)
             </span>
@@ -90,10 +84,10 @@ export function DevPage({ initialState }: Props): ReactElement {
                     disabled={isPending}
                     onClick={() => handleCheckpoint(cp)}
                     className={[
-                      'flex-1 text-left px-4 py-2 rounded-[var(--radius)] text-sm font-medium transition-colors',
+                      'flex-1 text-left px-4 py-2 rounded-cup text-sm font-medium transition-colors',
                       isCurrent
                         ? 'bg-[var(--brand)] text-white cursor-default'
-                        : 'bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:bg-[var(--surface-2)] disabled:opacity-50',
+                        : 'bg-surface border border-line text-ink hover:bg-surface-2 disabled:opacity-50',
                     ].join(' ')}
                   >
                     {CHECKPOINT_LABELS[cp]}
@@ -104,9 +98,7 @@ export function DevPage({ initialState }: Props): ReactElement {
             })}
           </div>
 
-          {isPending && (
-            <p className="text-xs text-[var(--ink-soft)] animate-pulse">Applying changes...</p>
-          )}
+          {isPending && <p className="text-xs text-ink-soft animate-pulse">Applying changes...</p>}
         </div>
       </section>
 
@@ -114,17 +106,16 @@ export function DevPage({ initialState }: Props): ReactElement {
       <section aria-labelledby="login-heading">
         <h2
           id="login-heading"
-          className="text-xs font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-3"
-          style={{ fontFamily: 'var(--font-display)' }}
+          className="text-xs font-bold tracking-widest uppercase text-ink-muted mb-3 font-cup-display"
         >
           Login as User
         </h2>
-        <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface-2)] p-4">
+        <div className="rounded-cup border border-line bg-surface-2 p-4">
           {users.length === 0 ? (
-            <p className="text-sm text-[var(--ink-soft)]">
+            <p className="text-sm text-ink-soft">
               No users found. Run{' '}
-              <code className="text-xs bg-[var(--surface)] px-1 rounded">pnpm seed:ongoing</code> to
-              create dev users.
+              <code className="text-xs bg-surface px-1 rounded">pnpm seed:ongoing</code> to create
+              dev users.
             </p>
           ) : (
             <div className="space-y-2">
@@ -134,12 +125,10 @@ export function DevPage({ initialState }: Props): ReactElement {
                     type="button"
                     disabled={isPending}
                     onClick={() => handleLogin(user.id)}
-                    className="flex-1 text-left px-4 py-2 rounded-[var(--radius)] text-sm bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:bg-[var(--surface-2)] disabled:opacity-50 transition-colors"
+                    className="flex-1 text-left px-4 py-2 rounded-cup text-sm bg-surface border border-line text-ink hover:bg-surface-2 disabled:opacity-50 transition-colors"
                   >
                     <span className="font-medium">{user.displayName}</span>
-                    <span className="ml-2 text-xs text-[var(--ink-muted)] font-mono">
-                      {user.id}
-                    </span>
+                    <span className="ml-2 text-xs text-ink-muted font-mono">{user.id}</span>
                   </button>
                 </div>
               ))}

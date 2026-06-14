@@ -42,7 +42,7 @@ export function DangerZone({ poolId }: { poolId: string }): ReactElement {
           disabled={isPendingDelete}
           onClick={handleDeleteClick}
           className={cn(
-            'text-[13px] font-bold py-2 px-4 rounded-[9px] border-0 cursor-pointer',
+            'text-[13px] font-bold py-2 px-4 rounded-cup-sm border-0 cursor-pointer',
             confirmDelete
               ? 'bg-danger text-white'
               : 'bg-transparent text-danger shadow-[inset_0_0_0_1.5px_oklch(0.78_0.12_25)]',
