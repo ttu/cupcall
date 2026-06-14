@@ -339,6 +339,17 @@ body {
   color: var(--green-700);
 }
 
+@utility btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+@utility btn-ghost-danger {
+  background: transparent;
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1.5px oklch(0.78 0.12 25);
+}
+
 /* ── Chips & pills ────────────────────────────────────────── */
 @utility chip {
   display: inline-flex;

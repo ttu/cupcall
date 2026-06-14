@@ -3,6 +3,7 @@
 import type { ReactElement } from 'react';
 import { useRef, useTransition, useState } from 'react';
 import { exportPool, importPool } from '../api/actions';
+import { TurfCard } from '@/shared/ui';
 
 type Props = { poolId: string; isOwner: boolean };
 
@@ -55,12 +56,7 @@ export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
   }
 
   return (
-    <div className="rounded-cup border border-line bg-white shadow-[var(--shadow-sm)] overflow-hidden">
-      <div className="px-4 py-2.5 turf">
-        <span className="text-sm font-bold tracking-widest uppercase text-on-dark font-cup-display">
-          {isOwner ? 'Backup & Restore' : 'Backup'}
-        </span>
-      </div>
+    <TurfCard title={isOwner ? 'Backup & Restore' : 'Backup'}>
       <div className="px-4 py-4 space-y-3">
         <p className="text-xs text-ink-muted">
           {isOwner
@@ -105,6 +101,6 @@ export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
           </p>
         )}
       </div>
-    </div>
+    </TurfCard>
   );
 }

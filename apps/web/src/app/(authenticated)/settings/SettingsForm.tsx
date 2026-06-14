@@ -8,7 +8,7 @@ import {
   type DisplayNameState,
 } from '@/features/auth/actions';
 import { signOutAction } from '../nav-actions';
-import { Avatar, Chip, Icon, SectionLabel, cn } from '@/shared/ui';
+import { Avatar, Button, Chip, Icon, SectionLabel } from '@/shared/ui';
 
 const initial: DisplayNameState = { error: null, saved: false };
 
@@ -79,9 +79,9 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
               e.currentTarget.style.boxShadow = 'none';
             }}
           />
-          <button type="submit" disabled={pending} className="btn btn-primary">
+          <Button type="submit" variant="primary" disabled={pending}>
             {pending ? 'Saving…' : 'Save'}
-          </button>
+          </Button>
         </div>
 
         {state.error && (
@@ -132,25 +132,20 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
             : 'Deleting your account is permanent and cannot be undone.'}
         </p>
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            type="button"
+          <Button
+            variant={confirmDelete ? 'danger' : 'ghost-danger'}
+            size="sm"
             data-testid="delete-account-btn"
             disabled={isPendingDelete}
             onClick={handleDeleteClick}
-            className={cn(
-              'text-[13px] font-bold py-2 px-4 rounded-cup-sm border-0 cursor-pointer',
-              confirmDelete
-                ? 'bg-danger text-white shadow-none'
-                : 'bg-transparent text-danger shadow-[inset_0_0_0_1.5px_oklch(0.78_0.12_25)]',
-            )}
           >
             {isPendingDelete ? 'Deleting…' : confirmDelete ? 'Confirm delete' : 'Delete account'}
-          </button>
+          </Button>
           {confirmDelete && !isPendingDelete && (
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              className="text-xs bg-none border-0 text-ink-muted cursor-pointer"
+              className="text-xs bg-transparent border-0 text-ink-muted cursor-pointer"
             >
               Cancel
             </button>

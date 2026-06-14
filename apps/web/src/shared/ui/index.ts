@@ -2,6 +2,8 @@ export { cn } from './cn';
 export { Logo } from './Logo';
 export { Button } from './Button';
 export { Chip } from './Chip';
+export { CopyField } from './CopyField';
+export { TurfCard } from './TurfCard';
 export { Avatar, AVATAR_PALETTE } from './Avatar';
 export { SectionLabel } from './SectionLabel';
 export { Icon } from './Icon';

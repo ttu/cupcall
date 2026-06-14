@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPool } from '../api/actions';
-import { cn } from '@/shared/ui';
+import { Button, cn } from '@/shared/ui';
 
 interface Tournament {
   id: string;
@@ -74,16 +74,14 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
             isPending && 'opacity-60',
           )}
         />
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={isPending || name.trim().length === 0}
-          className={cn(
-            'btn btn-primary',
-            (isPending || name.trim().length === 0) && 'opacity-[0.55]',
-          )}
+          className={isPending || name.trim().length === 0 ? 'opacity-[0.55]' : undefined}
         >
           {isPending ? 'Creating…' : 'Create'}
-        </button>
+        </Button>
       </div>
       {error && (
         <p role="alert" className="text-[13px] text-danger m-0">

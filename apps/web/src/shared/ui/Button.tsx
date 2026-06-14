@@ -1,6 +1,14 @@
 import { cloneElement, type ButtonHTMLAttributes, type ReactElement } from 'react';
 
-type ButtonVariant = 'primary' | 'accent' | 'dark' | 'ghost' | 'ghost-dark' | 'soft';
+type ButtonVariant =
+  | 'primary'
+  | 'accent'
+  | 'dark'
+  | 'ghost'
+  | 'ghost-dark'
+  | 'soft'
+  | 'danger'
+  | 'ghost-danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

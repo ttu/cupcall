@@ -20,7 +20,7 @@ import {
   generateLoginToken,
 } from '@/features/pools';
 import { redirect } from 'next/navigation';
-import { Icon } from '@/shared/ui';
+import { Button, Icon } from '@/shared/ui';
 import { JoinSubmitButton } from './JoinSubmitButton';
 
 type Props = {
@@ -68,9 +68,9 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
                 </p>
               </div>
               <div className="p-[20px_24px]">
-                <Link href="/pools" className="btn btn-dark block no-underline">
-                  Go to My Pools
-                </Link>
+                <Button asChild variant="dark" block>
+                  <Link href="/pools">Go to My Pools</Link>
+                </Button>
               </div>
             </div>
 
@@ -98,9 +98,9 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
             </p>
           </div>
           <div className="p-[20px_24px] flex flex-col gap-4">
-            <Link href="/" className="btn btn-dark block no-underline">
-              Go home
-            </Link>
+            <Button asChild variant="dark" block>
+              <Link href="/">Go home</Link>
+            </Button>
             <div className="rounded-[10px] bg-surface-2 border border-line p-[12px_14px] flex flex-col gap-2">
               <p className="text-[13px] text-ink-soft leading-[1.6]">
                 <strong className="text-ink">Already joined on another device?</strong> Your
@@ -136,9 +136,9 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
               <p className="text-[13px] text-ink-soft mb-5">
                 You&apos;re already a member of this pool.
               </p>
-              <Link href={`/pools/${pool.id}`} className="btn btn-primary lg block no-underline">
-                Go to pool
-              </Link>
+              <Button asChild variant="primary" size="lg" block>
+                <Link href={`/pools/${pool.id}`}>Go to pool</Link>
+              </Button>
             </div>
           </div>
         </main>
@@ -157,9 +157,9 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
               <p className="text-[13px] text-ink-soft mb-5">
                 You have been removed from this pool and cannot rejoin with this link.
               </p>
-              <Link href="/pools" className="btn btn-dark lg block no-underline">
-                Go to My Pools
-              </Link>
+              <Button asChild variant="dark" size="lg" block>
+                <Link href="/pools">Go to My Pools</Link>
+              </Button>
             </div>
           </div>
         </main>

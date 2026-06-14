@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { rotateViewToken, clearViewLink } from '../api/actions';
 import { buildViewUrl } from '../domain/invite';
+import { Button, CopyField, TurfCard } from '@/shared/ui';
 
 type Props = {
   poolId: string;
@@ -19,19 +20,10 @@ export function ViewSection({
   baseUrl,
 }: Props): ReactElement | null {
   const [token, setToken] = useState(initialToken);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const viewUrl = token ? `${baseUrl}${buildViewUrl(token)}` : null;
-
-  function handleCopy() {
-    if (!viewUrl) return;
-    void navigator.clipboard.writeText(viewUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
 
   function handleGenerate() {
     setError(null);
@@ -69,38 +61,16 @@ export function ViewSection({
     });
   }
 
-  // Non-owners only see this section when a view link exists.
   if (!isOwner && !token) return null;
 
   return (
-    <div className="rounded-cup border border-line bg-white shadow-[var(--shadow-sm)] overflow-hidden">
-      <div className="px-4 py-2.5 turf">
-        <span className="text-sm font-bold tracking-widest uppercase text-on-dark font-cup-display">
-          View Link
-        </span>
-      </div>
-
-      {token ? (
+    <TurfCard title="View Link">
+      {viewUrl ? (
         <div className="px-4 py-4 space-y-3">
           <p className="text-xs text-ink-soft">
             Share this link — anyone with it can view results without an account.
           </p>
-          <div className="flex gap-2">
-            <input
-              readOnly
-              value={viewUrl ?? ''}
-              aria-label="View link"
-              className="flex-1 rounded-lg border border-line px-3 py-2 text-xs bg-surface-2 text-ink font-mono select-all"
-              onFocus={(e) => e.target.select()}
-            />
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="px-3 py-2 rounded-lg bg-ink-900 text-on-dark text-xs font-medium hover:bg-ink-800 transition-colors shrink-0"
-            >
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
+          <CopyField value={viewUrl} label="View link" />
           {isOwner && (
             <div className="flex gap-4">
               <button
@@ -127,22 +97,16 @@ export function ViewSection({
           <p className="text-xs text-ink-soft">
             View link is disabled. Generate one to let anyone view results without an account.
           </p>
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={isPending}
-            className="px-3 py-2 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
-          >
+          <Button variant="primary" size="sm" onClick={handleGenerate} disabled={isPending}>
             {isPending ? 'Generating…' : 'Generate view link'}
-          </button>
+          </Button>
         </div>
       )}
-
       {error && (
         <p role="alert" className="px-4 pb-3 text-xs text-danger">
           {error}
         </p>
       )}
-    </div>
+    </TurfCard>
   );
 }

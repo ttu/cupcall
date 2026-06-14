@@ -2,12 +2,13 @@
 
 import { useFormStatus } from 'react-dom';
 import type { ReactElement } from 'react';
+import { Button } from '@/shared/ui';
 
 export function JoinSubmitButton(): ReactElement {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className="btn btn-primary lg block">
+    <Button type="submit" variant="primary" size="lg" block disabled={pending}>
       {pending ? 'Joining…' : 'Join pool & start predicting'}
-    </button>
+    </Button>
   );
 }

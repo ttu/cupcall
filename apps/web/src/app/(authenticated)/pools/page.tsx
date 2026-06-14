@@ -10,7 +10,7 @@ import {
   MyLoginLink,
   generateLoginToken,
 } from '@/features/pools';
-import { SectionLabel, Icon } from '@/shared/ui';
+import { Button, SectionLabel, Icon } from '@/shared/ui';
 
 export default async function PoolsPage(): Promise<ReactElement> {
   const actor = await getCurrentActor();
@@ -36,9 +36,9 @@ export default async function PoolsPage(): Promise<ReactElement> {
       {/* Page header */}
       <div className="flex justify-between items-center mb-7 gap-4 flex-wrap">
         <h1 className="display text-[36px] m-0">Your Pools</h1>
-        <a href="#create-pool" className="btn btn-primary sm no-underline">
-          + New pool
-        </a>
+        <Button asChild variant="primary" size="sm">
+          <a href="#create-pool">+ New pool</a>
+        </Button>
       </div>
 
       {/* Pool list */}

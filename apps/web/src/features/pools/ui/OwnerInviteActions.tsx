@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Button } from '@/shared/ui';
 
 type Props = {
   isPending: boolean;
@@ -23,14 +24,15 @@ export function OwnerInviteActions({
     <div className="flex flex-wrap gap-2.5 items-center">
       {confirmRotate ? (
         <>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             disabled={isPending}
             onClick={onRotateClick}
-            className="btn btn-ghost sm text-[11px]"
+            className="text-[11px]"
           >
             Confirm reset
-          </button>
+          </Button>
           <button
             type="button"
             onClick={onCancelRotate}

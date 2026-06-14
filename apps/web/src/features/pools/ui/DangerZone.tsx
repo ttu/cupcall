@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { deletePool } from '../api/actions';
-import { SectionLabel, Icon, cn } from '@/shared/ui';
+import { Button, SectionLabel, Icon } from '@/shared/ui';
 
 export function DangerZone({ poolId }: { poolId: string }): ReactElement {
   const router = useRouter();
@@ -37,19 +37,14 @@ export function DangerZone({ poolId }: { poolId: string }): ReactElement {
         Deleting the pool is permanent and removes all members and predictions.
       </p>
       <div className="flex items-center gap-2.5 flex-wrap">
-        <button
-          type="button"
+        <Button
+          variant={confirmDelete ? 'danger' : 'ghost-danger'}
+          size="sm"
           disabled={isPendingDelete}
           onClick={handleDeleteClick}
-          className={cn(
-            'text-[13px] font-bold py-2 px-4 rounded-cup-sm border-0 cursor-pointer',
-            confirmDelete
-              ? 'bg-danger text-white'
-              : 'bg-transparent text-danger shadow-[inset_0_0_0_1.5px_oklch(0.78_0.12_25)]',
-          )}
         >
           {isPendingDelete ? 'Deleting…' : confirmDelete ? 'Confirm delete' : 'Delete pool'}
-        </button>
+        </Button>
         {confirmDelete && !isPendingDelete && (
           <button
             type="button"

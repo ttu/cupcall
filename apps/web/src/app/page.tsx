@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '../features/auth/auth';
 import { GuestLoginForm } from '@/features/auth';
-import { Logo, Chip, Avatar } from '@/shared/ui';
+import { Button, Logo, Chip, Avatar } from '@/shared/ui';
 
 export default async function HomePage(): Promise<ReactElement> {
   const session = await auth();
@@ -40,9 +40,9 @@ export default async function HomePage(): Promise<ReactElement> {
       {/* Nav */}
       <nav className="relative z-[1] flex items-center justify-between py-4.5 px-7 max-w-300 mx-auto">
         <Logo dark />
-        <a href="/login" className="btn btn-ghost-dark sm no-underline">
-          Sign in
-        </a>
+        <Button asChild variant="ghost-dark" size="sm">
+          <a href="/login">Sign in</a>
+        </Button>
       </nav>
 
       {/* Hero */}

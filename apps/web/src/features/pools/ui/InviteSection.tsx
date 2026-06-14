@@ -4,8 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { rotateToken, clearInviteLink } from '../api/actions';
 import { buildInviteUrl } from '../domain/invite';
-import { SectionLabel, Icon } from '@/shared/ui';
-import { InviteLinkDisplay } from './InviteLinkDisplay';
+import { Button, CopyField, SectionLabel, Icon } from '@/shared/ui';
 import { OwnerInviteActions } from './OwnerInviteActions';
 
 type Props = {
@@ -22,21 +21,12 @@ export function InviteSection({
   baseUrl,
 }: Props): ReactElement {
   const [token, setToken] = useState(initialToken);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [confirmRotate, setConfirmRotate] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   const inviteUrl = token ? `${baseUrl}${buildInviteUrl(token)}` : null;
-
-  function handleCopy() {
-    if (!inviteUrl) return;
-    void navigator.clipboard.writeText(inviteUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
 
   function handleGenerate() {
     setError(null);
@@ -97,7 +87,7 @@ export function InviteSection({
           <p className="text-xs text-ink-soft m-0">
             Share this link — anyone with it can join without an email address.
           </p>
-          <InviteLinkDisplay inviteUrl={inviteUrl} copied={copied} onCopy={handleCopy} />
+          <CopyField value={inviteUrl} label="Invite link" />
           {isOwner && (
             <OwnerInviteActions
               isPending={isPending}
@@ -118,14 +108,9 @@ export function InviteSection({
               : 'Invite link is disabled. Ask the pool owner to generate one.'}
           </p>
           {isOwner && (
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isPending}
-              className="btn btn-primary sm"
-            >
+            <Button variant="primary" size="sm" onClick={handleGenerate} disabled={isPending}>
               {isPending ? 'Generating…' : 'Generate invite link'}
-            </button>
+            </Button>
           )}
         </div>
       )}
