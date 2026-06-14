@@ -12,112 +12,71 @@ export default async function HomePage(): Promise<ReactElement> {
   }
 
   return (
-    <main
-      className="turf min-h-screen"
-      style={{ color: 'var(--on-dark)', position: 'relative', overflow: 'hidden' }}
-    >
+    <main className="turf min-h-screen text-on-dark relative overflow-hidden">
       {/* Radial glows */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      >
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none z-[0]">
         <div
+          className="absolute rounded-full"
           style={{
-            position: 'absolute',
             top: '-10%',
             right: '-5%',
             width: '50vw',
             height: '50vw',
-            borderRadius: '50%',
             background: 'radial-gradient(circle, oklch(0.64 0.16 152 / 0.18) 0%, transparent 70%)',
           }}
         />
         <div
+          className="absolute rounded-full"
           style={{
-            position: 'absolute',
             bottom: '-10%',
             left: '-5%',
             width: '40vw',
             height: '40vw',
-            borderRadius: '50%',
             background: 'radial-gradient(circle, oklch(0.71 0.175 52 / 0.14) 0%, transparent 70%)',
           }}
         />
       </div>
 
       {/* Nav */}
-      <nav
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '18px 28px',
-          maxWidth: 1200,
-          margin: '0 auto',
-        }}
-      >
+      <nav className="relative z-[1] flex items-center justify-between py-[18px] px-7 max-w-[1200px] mx-auto">
         <Logo dark />
-        <a href="/login" className="btn btn-ghost-dark sm" style={{ textDecoration: 'none' }}>
+        <a href="/login" className="btn btn-ghost-dark sm no-underline">
           Sign in
         </a>
       </nav>
 
       {/* Hero */}
       <div
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: 'clamp(32px, 6vw, 72px) 28px 80px',
-          display: 'grid',
-          gap: 48,
-          alignItems: 'center',
-        }}
-        className="md:grid-cols-[1fr_380px]"
+        className="relative z-[1] max-w-[1200px] mx-auto grid gap-12 items-center md:grid-cols-[1fr_380px]"
+        style={{ padding: 'clamp(32px, 6vw, 72px) 28px 80px' }}
       >
         {/* Left: copy + forms */}
-        <div style={{ maxWidth: 560 }}>
+        <div className="max-w-[560px]">
           <Chip variant="green" dot style={{ marginBottom: 22 }}>
             World Cup 2026 · kicks off June 11
           </Chip>
 
-          <h1 className="display" style={{ fontSize: 'clamp(42px, 7vw, 72px)', marginBottom: 20 }}>
+          <h1 className="display mb-5" style={{ fontSize: 'clamp(42px, 7vw, 72px)' }}>
             Call every match.
             <br />
             Then defend it.
           </h1>
 
           <p
-            style={{
-              fontSize: 17,
-              color: 'var(--on-dark-soft)',
-              lineHeight: 1.6,
-              marginBottom: 36,
-              maxWidth: 440,
-            }}
+            className="text-on-dark-soft mb-9 max-w-[440px]"
+            style={{ fontSize: 17, lineHeight: 1.6 }}
           >
             Predict scores, build your bracket, pick the specials. Compete in private pools with
             friends — one winner when the final whistle blows.
           </p>
 
           {/* Guest form — primary CTA */}
-          <div style={{ marginBottom: 24 }}>
-            <div className="eyebrow" style={{ color: 'var(--on-dark-soft)', marginBottom: 10 }}>
-              No password. Just your name.
-            </div>
+          <div className="mb-6">
+            <div className="eyebrow text-on-dark-soft mb-[10px]">No password. Just your name.</div>
             <div
+              className="rounded-[14px] p-[18px]"
               style={{
                 background: 'rgba(255,255,255,0.06)',
-                borderRadius: 14,
-                padding: 18,
                 boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
               }}
             >
@@ -126,30 +85,17 @@ export default async function HomePage(): Promise<ReactElement> {
           </div>
 
           {/* Divider */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              marginBottom: 20,
-              color: 'var(--on-dark-muted)',
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-            }}
-          >
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+          <div className="flex items-center gap-3 mb-5 text-on-dark-muted text-xs font-bold uppercase tracking-[0.08em]">
+            <div className="flex-1 h-px bg-[rgba(255,255,255,0.1)]" />
             or sign in with email
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+            <div className="flex-1 h-px bg-[rgba(255,255,255,0.1)]" />
           </div>
 
           {/* Email form */}
           <div
+            className="rounded-[14px] p-[18px]"
             style={{
               background: 'rgba(255,255,255,0.04)',
-              borderRadius: 14,
-              padding: 18,
               boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
             }}
           >
@@ -158,27 +104,15 @@ export default async function HomePage(): Promise<ReactElement> {
         </div>
 
         {/* Right: decorative leaderboard (desktop only) */}
-        <div className="hidden md:block" style={{ position: 'relative', paddingBottom: 32 }}>
+        <div className="hidden md:block relative pb-8">
           <div
-            className="card glow-green"
-            style={{
-              transform: 'rotate(1.5deg)',
-              padding: 18,
-              background: 'var(--surface)',
-            }}
+            className="card glow-green p-[18px] bg-surface"
+            style={{ transform: 'rotate(1.5deg)' }}
           >
-            <div
-              className="eyebrow"
-              style={{
-                color: 'var(--ink-muted)',
-                marginBottom: 14,
-                paddingBottom: 10,
-                borderBottom: '1px solid var(--line-soft)',
-              }}
-            >
+            <div className="eyebrow text-ink-muted mb-[14px] pb-[10px] border-b border-line-soft">
               Leaderboard preview
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="flex flex-col gap-1">
               {[
                 { name: 'Sofia Reyes', pts: 147, rank: 1 },
                 { name: 'Marcus K.', pts: 134, rank: 2 },
@@ -192,11 +126,9 @@ export default async function HomePage(): Promise<ReactElement> {
                   >
                     {row.rank}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="flex items-center gap-[10px]">
                     <Avatar name={row.name} index={i} size={30} />
-                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
-                      {row.name}
-                    </span>
+                    <span className="text-sm font-bold text-ink">{row.name}</span>
                   </div>
                   <span className="lb-pts">{row.pts}</span>
                 </div>
@@ -205,29 +137,11 @@ export default async function HomePage(): Promise<ReactElement> {
           </div>
 
           {/* Floating scoreboard chip */}
-          <div
-            className="card"
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: -28,
-              padding: '10px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              minWidth: 180,
-            }}
-          >
+          <div className="card absolute bottom-0 left-[-28px] py-2.5 px-4 flex items-center gap-[10px] min-w-[180px]">
             <span className="badge sm c-arg">ARG</span>
-            <span className="display tnum" style={{ fontSize: 18, color: 'var(--ink)' }}>
-              3
-            </span>
-            <span className="score-sep" style={{ fontSize: 16 }}>
-              –
-            </span>
-            <span className="display tnum" style={{ fontSize: 18, color: 'var(--ink)' }}>
-              2
-            </span>
+            <span className="display tnum text-lg text-ink">3</span>
+            <span className="score-sep text-base">–</span>
+            <span className="display tnum text-lg text-ink">2</span>
             <span className="badge sm c-fra">FRA</span>
             <Chip variant="green" style={{ height: 21, fontSize: 10 }}>
               FT

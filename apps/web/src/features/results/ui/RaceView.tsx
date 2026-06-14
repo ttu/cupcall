@@ -13,21 +13,12 @@ export function RaceView({
   viewerMode: boolean;
 }): ReactElement {
   return (
-    <div style={{ display: 'grid', gap: 0 }} className="md:grid-cols-[1fr_322px]">
-      <div style={{ padding: '0 0 24px' }}>
-        <div className="card" style={{ padding: '18px 20px 8px', marginBottom: 16 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 10,
-              gap: 14,
-              flexWrap: 'wrap',
-            }}
-          >
+    <div className="grid gap-0 md:grid-cols-[1fr_322px]">
+      <div className="pb-6">
+        <div className="card p-[18px_20px_8px] mb-4">
+          <div className="flex items-center justify-between mb-[10px] gap-[14px] flex-wrap">
             <RaceLegend players={race.chartPlayers} />
-            <span style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+            <span className="flex items-center gap-[14px] shrink-0">
               <LegendKey solid label="Actual" />
               <LegendKey solid={false} label="Projected" />
             </span>
@@ -40,7 +31,7 @@ export function RaceView({
         </div>
 
         {!viewerMode && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div className="grid grid-cols-3 gap-3">
             <StatCard
               label="Banked so far"
               value={String(race.myBanked)}
@@ -63,40 +54,17 @@ export function RaceView({
         )}
       </div>
 
-      <div
-        style={{
-          borderLeft: '1px solid var(--line)',
-          padding: '0 0 24px 22px',
-          background: 'transparent',
-        }}
-        className="md:bg-surface-2 md:pl-22"
-      >
-        <div
-          style={{
-            background: 'var(--surface-2)',
-            borderRadius: 12,
-            padding: '16px 0 0',
-            overflow: 'hidden',
-          }}
-        >
-          <div style={{ padding: '0 18px 12px' }}>
-            <div className="section-label" style={{ marginBottom: 4 }}>
-              Projected final table
-            </div>
-            <p
-              style={{
-                fontSize: 12,
-                color: 'var(--ink-muted)',
-                margin: '6px 0 0',
-                lineHeight: 1.5,
-              }}
-            >
+      <div className="border-l border-line pb-6 pl-[22px] bg-transparent md:bg-surface-2 md:pl-22">
+        <div className="bg-surface-2 rounded-xl pt-4 overflow-hidden">
+          <div className="px-[18px] pb-3">
+            <div className="section-label mb-1">Projected final table</div>
+            <p className="text-xs text-ink-muted mt-[6px] leading-[1.5] m-0">
               If every surviving bracket pick lands. Updates after each result.
             </p>
           </div>
           <ProjectedStandings entries={race.projectedEntries} />
           {!viewerMode && (
-            <div style={{ padding: '14px 16px 16px' }}>
+            <div className="p-[14px_16px_16px]">
               <SwingCard entries={race.projectedEntries} stillLive={race.myStillLive} />
             </div>
           )}
@@ -108,27 +76,19 @@ export function RaceView({
 
 function RaceLegend({ players }: { players: RaceChartPlayer[] }): ReactElement {
   return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: 13, flexWrap: 'wrap' }}>
+    <span className="flex items-center gap-[13px] flex-wrap">
       {players.map((p) => (
         <span
           key={p.userId}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 11.5,
-            fontWeight: p.isCurrentUser ? 800 : 700,
-            color: p.isCurrentUser ? 'var(--ink)' : 'var(--ink-soft, var(--ink-muted))',
-          }}
+          className={
+            p.isCurrentUser
+              ? 'flex items-center gap-[6px] text-[11.5px] font-extrabold text-ink'
+              : 'flex items-center gap-[6px] text-[11.5px] font-bold text-ink-soft'
+          }
         >
           <span
-            style={{
-              width: 14,
-              height: p.isCurrentUser ? 4 : 3,
-              borderRadius: 2,
-              background: p.color,
-              flexShrink: 0,
-            }}
+            className="w-[14px] rounded-[2px] shrink-0"
+            style={{ height: p.isCurrentUser ? 4 : 3, background: p.color }}
           />
           {p.isCurrentUser ? 'You' : p.displayName.split(' ')[0]}
         </span>
@@ -139,25 +99,13 @@ function RaceLegend({ players }: { players: RaceChartPlayer[] }): ReactElement {
 
 function LegendKey({ solid, label }: { solid: boolean; label: string }): ReactElement {
   return (
-    <span
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        fontSize: 11.5,
-        fontWeight: 700,
-        color: 'var(--ink-muted)',
-      }}
-    >
+    <span className="flex items-center gap-[6px] text-[11.5px] font-bold text-ink-muted">
       <span
+        className="w-4 h-[3px] rounded-[2px] shrink-0"
         style={{
-          width: 16,
-          height: 3,
-          borderRadius: 2,
           background: solid
             ? 'var(--ink-muted)'
             : 'repeating-linear-gradient(90deg,var(--ink-muted) 0 2px,transparent 2px 6px)',
-          flexShrink: 0,
         }}
       />
       {label}

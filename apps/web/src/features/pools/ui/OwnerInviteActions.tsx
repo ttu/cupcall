@@ -20,28 +20,21 @@ export function OwnerInviteActions({
   onCancelRemove,
 }: Props): ReactElement {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+    <div className="flex flex-wrap gap-[10px] items-center">
       {confirmRotate ? (
         <>
           <button
             type="button"
             disabled={isPending}
             onClick={onRotateClick}
-            className="btn btn-ghost sm"
-            style={{ fontSize: 11 }}
+            className="btn btn-ghost sm text-[11px]"
           >
             Confirm reset
           </button>
           <button
             type="button"
             onClick={onCancelRotate}
-            style={{
-              fontSize: 11,
-              background: 'none',
-              border: 'none',
-              color: 'var(--ink-muted)',
-              cursor: 'pointer',
-            }}
+            className="text-[11px] bg-transparent border-0 text-ink-muted cursor-pointer"
           >
             Cancel
           </button>
@@ -51,14 +44,7 @@ export function OwnerInviteActions({
           type="button"
           onClick={onRotateClick}
           disabled={isPending}
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            background: 'none',
-            border: 'none',
-            color: 'var(--ink-muted)',
-            cursor: 'pointer',
-          }}
+          className="text-[11px] font-bold bg-transparent border-0 text-ink-muted cursor-pointer"
         >
           {isPending ? 'Working…' : 'Reset link'}
         </button>
@@ -72,29 +58,14 @@ export function OwnerInviteActions({
                 type="button"
                 disabled={isPending}
                 onClick={onRemoveClick}
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                  borderRadius: 7,
-                  border: 'none',
-                  background: 'var(--danger)',
-                  color: 'white',
-                  cursor: 'pointer',
-                }}
+                className="text-[11px] font-bold py-1 px-[10px] rounded-[7px] border-0 bg-danger text-white cursor-pointer"
               >
                 Confirm remove
               </button>
               <button
                 type="button"
                 onClick={onCancelRemove}
-                style={{
-                  fontSize: 11,
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--ink-muted)',
-                  cursor: 'pointer',
-                }}
+                className="text-[11px] bg-transparent border-0 text-ink-muted cursor-pointer"
               >
                 Cancel
               </button>
@@ -104,14 +75,7 @@ export function OwnerInviteActions({
               type="button"
               onClick={onRemoveClick}
               disabled={isPending}
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                background: 'none',
-                border: 'none',
-                color: 'var(--ink-muted)',
-                cursor: 'pointer',
-              }}
+              className="text-[11px] font-bold bg-transparent border-0 text-ink-muted cursor-pointer"
             >
               Remove link
             </button>

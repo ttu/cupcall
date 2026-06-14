@@ -56,34 +56,22 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
       return (
         <main className="turf min-h-screen flex flex-col items-center px-4 py-6">
           <div className="w-full max-w-[460px] my-auto flex flex-col gap-4">
-            <div className="card" style={{ overflow: 'hidden' }}>
-              <div
-                style={{
-                  background: 'var(--ink-900)',
-                  padding: '22px 24px 18px',
-                  color: 'var(--on-dark)',
-                }}
-              >
-                <h2 className="display" style={{ fontSize: 30, marginBottom: 8 }}>
-                  Invalid Invite
-                </h2>
-                <p style={{ fontSize: 13, color: 'var(--on-dark-soft)', lineHeight: 1.5 }}>
+            <div className="card overflow-hidden">
+              <div className="bg-ink-900 p-[22px_24px_18px] text-on-dark">
+                <h2 className="display text-[30px] mb-2">Invalid Invite</h2>
+                <p className="text-[13px] text-on-dark-soft leading-[1.5]">
                   This invite link is invalid or has been removed.
                 </p>
               </div>
-              <div style={{ padding: '20px 24px' }}>
-                <Link
-                  href="/pools"
-                  className="btn btn-dark block"
-                  style={{ textDecoration: 'none' }}
-                >
+              <div className="p-[20px_24px]">
+                <Link href="/pools" className="btn btn-dark block no-underline">
                   Go to My Pools
                 </Link>
               </div>
             </div>
 
             {pools.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="flex flex-col gap-[10px]">
                 {pools.map((p) => (
                   <PoolListItem key={p.id} pool={p} isOwner={p.ownerId === actor.userId} />
                 ))}
@@ -98,44 +86,26 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
 
     return (
       <main className="turf min-h-screen flex flex-col items-center justify-center px-4 py-6">
-        <div className="card w-full max-w-[460px]" style={{ overflow: 'hidden' }}>
-          <div
-            style={{
-              background: 'var(--ink-900)',
-              padding: '22px 24px 18px',
-              color: 'var(--on-dark)',
-            }}
-          >
-            <h2 className="display" style={{ fontSize: 30, marginBottom: 8 }}>
-              Invalid Invite
-            </h2>
-            <p style={{ fontSize: 13, color: 'var(--on-dark-soft)', lineHeight: 1.5 }}>
+        <div className="card w-full max-w-[460px] overflow-hidden">
+          <div className="bg-ink-900 p-[22px_24px_18px] text-on-dark">
+            <h2 className="display text-[30px] mb-2">Invalid Invite</h2>
+            <p className="text-[13px] text-on-dark-soft leading-[1.5]">
               This invite link is invalid or has been removed.
             </p>
           </div>
-          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Link href="/" className="btn btn-dark block" style={{ textDecoration: 'none' }}>
+          <div className="p-[20px_24px] flex flex-col gap-4">
+            <Link href="/" className="btn btn-dark block no-underline">
               Go home
             </Link>
-            <div
-              style={{
-                borderRadius: 10,
-                background: 'var(--surface-2)',
-                border: '1px solid var(--line)',
-                padding: '12px 14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-                <strong style={{ color: 'var(--ink)' }}>Already joined on another device?</strong>{' '}
-                Your personal login link is on your My Pools page. Ask the pool creator to send it
-                to you if you don&apos;t have it saved.
+            <div className="rounded-[10px] bg-surface-2 border border-line p-[12px_14px] flex flex-col gap-2">
+              <p className="text-[13px] text-ink-soft leading-[1.6]">
+                <strong className="text-ink">Already joined on another device?</strong> Your
+                personal login link is on your My Pools page. Ask the pool creator to send it to you
+                if you don&apos;t have it saved.
               </p>
-              <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-                <strong style={{ color: 'var(--ink)' }}>Haven&apos;t joined yet?</strong> The invite
-                link may have been reset or removed. Ask the pool creator to share a new one.
+              <p className="text-[13px] text-ink-soft leading-[1.6]">
+                <strong className="text-ink">Haven&apos;t joined yet?</strong> The invite link may
+                have been reset or removed. Ask the pool creator to share a new one.
               </p>
             </div>
           </div>
@@ -149,35 +119,20 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
     const alreadyMember = await isMember(db, pool.id, actor.userId);
     if (alreadyMember) {
       return (
-        <main
-          className="turf min-h-screen"
-          style={{ display: 'grid', placeItems: 'center', padding: '24px 16px' }}
-        >
-          <div className="card" style={{ width: 'min(460px, 100%)', overflow: 'hidden' }}>
-            <div
-              style={{
-                background: 'var(--green-500)',
-                padding: '26px 30px 22px',
-                color: 'oklch(0.2 0.02 160)',
-              }}
-            >
-              <div className="eyebrow" style={{ marginBottom: 8, display: 'flex', gap: 8 }}>
+        <main className="turf min-h-screen grid place-items-center p-[24px_16px]">
+          <div className="card w-[min(460px,100%)] overflow-hidden">
+            <div className="bg-green-500 p-[26px_30px_22px] text-[oklch(0.2_0.02_160)]">
+              <div className="eyebrow mb-2 flex gap-2">
                 <Icon name="users" size={13} />
                 Already a member
               </div>
-              <h2 className="display" style={{ fontSize: 38 }}>
-                {pool.name}
-              </h2>
+              <h2 className="display text-[38px]">{pool.name}</h2>
             </div>
-            <div style={{ padding: 30 }}>
-              <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 20 }}>
+            <div className="p-[30px]">
+              <p className="text-[13px] text-ink-soft mb-5">
                 You&apos;re already a member of this pool.
               </p>
-              <Link
-                href={`/pools/${pool.id}`}
-                className="btn btn-primary lg block"
-                style={{ textDecoration: 'none' }}
-              >
+              <Link href={`/pools/${pool.id}`} className="btn btn-primary lg block no-underline">
                 Go to pool
               </Link>
             </div>
@@ -189,31 +144,16 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
     const kicked = await isKicked(db, pool.id, actor.userId);
     if (kicked) {
       return (
-        <main
-          className="turf min-h-screen"
-          style={{ display: 'grid', placeItems: 'center', padding: '24px 16px' }}
-        >
-          <div className="card" style={{ width: 'min(460px, 100%)', overflow: 'hidden' }}>
-            <div
-              style={{
-                background: 'var(--ink-900)',
-                padding: '26px 30px 22px',
-                color: 'var(--on-dark)',
-              }}
-            >
-              <h2 className="display" style={{ fontSize: 34, marginBottom: 8 }}>
-                {pool.name}
-              </h2>
+        <main className="turf min-h-screen grid place-items-center p-[24px_16px]">
+          <div className="card w-[min(460px,100%)] overflow-hidden">
+            <div className="bg-ink-900 p-[26px_30px_22px] text-on-dark">
+              <h2 className="display text-[34px] mb-2">{pool.name}</h2>
             </div>
-            <div style={{ padding: 30 }}>
-              <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 20 }}>
+            <div className="p-[30px]">
+              <p className="text-[13px] text-ink-soft mb-5">
                 You have been removed from this pool and cannot rejoin with this link.
               </p>
-              <Link
-                href="/pools"
-                className="btn btn-dark lg block"
-                style={{ textDecoration: 'none' }}
-              >
+              <Link href="/pools" className="btn btn-dark lg block no-underline">
                 Go to My Pools
               </Link>
             </div>
@@ -224,43 +164,17 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
 
     // Signed-in, not yet a member — show join button.
     return (
-      <main
-        className="turf min-h-screen"
-        style={{ display: 'grid', placeItems: 'center', padding: '24px 16px' }}
-      >
-        <div className="card" style={{ width: 'min(460px, 100%)', overflow: 'hidden' }}>
-          <div
-            style={{
-              background: 'var(--green-500)',
-              padding: '26px 30px 22px',
-              color: 'oklch(0.2 0.02 160)',
-            }}
-          >
-            <div
-              className="eyebrow"
-              style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}
-            >
+      <main className="turf min-h-screen grid place-items-center p-[24px_16px]">
+        <div className="card w-[min(460px,100%)] overflow-hidden">
+          <div className="bg-green-500 p-[26px_30px_22px] text-[oklch(0.2_0.02_160)]">
+            <div className="eyebrow mb-[10px] flex items-center gap-2">
               <Icon name="users" size={13} />
               You&apos;re invited to a pool
             </div>
-            <h2 className="display" style={{ fontSize: 38 }}>
-              {pool.name}
-            </h2>
+            <h2 className="display text-[38px]">{pool.name}</h2>
           </div>
-          <div style={{ padding: 30, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div
-              style={{
-                background: 'var(--orange-050)',
-                borderRadius: 12,
-                padding: '12px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                fontSize: 13,
-                color: 'var(--orange-600)',
-                fontWeight: 700,
-              }}
-            >
+          <div className="p-[30px] flex flex-col gap-4">
+            <div className="bg-orange-050 rounded-xl p-[12px_14px] flex items-center gap-[10px] text-[13px] text-orange-600 font-bold">
               <Icon name="lock" size={14} color="var(--orange-500)" />
               Predictions lock before the tournament starts — join now to get your picks in.
             </div>
@@ -273,30 +187,16 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
 
   // ── Guest path — no account required ────────────────────────────────────
   return (
-    <main
-      className="turf min-h-screen"
-      style={{ display: 'grid', placeItems: 'center', padding: '24px 16px' }}
-    >
-      <div className="card" style={{ width: 'min(460px, 100%)', overflow: 'hidden' }}>
-        <div
-          style={{
-            background: 'var(--green-500)',
-            padding: '26px 30px 22px',
-            color: 'oklch(0.2 0.02 160)',
-          }}
-        >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}
-          >
+    <main className="turf min-h-screen grid place-items-center p-[24px_16px]">
+      <div className="card w-[min(460px,100%)] overflow-hidden">
+        <div className="bg-green-500 p-[26px_30px_22px] text-[oklch(0.2_0.02_160)]">
+          <div className="eyebrow mb-[10px] flex items-center gap-2">
             <Icon name="users" size={13} />
             You&apos;re invited to a pool
           </div>
-          <h2 className="display" style={{ fontSize: 38 }}>
-            {pool.name}
-          </h2>
+          <h2 className="display text-[38px]">{pool.name}</h2>
         </div>
-        <div style={{ padding: 30 }}>
+        <div className="p-[30px]">
           <GuestJoinForm token={token} poolName={pool.name} error={error} />
         </div>
       </div>
@@ -321,18 +221,11 @@ function SignedInJoinForm({ token, error }: { token: string; error?: string | un
   }
 
   return (
-    <form action={handleJoin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <form action={handleJoin} className="flex flex-col gap-3">
       {error && (
         <div
           role="alert"
-          style={{
-            borderRadius: 10,
-            border: '1px solid oklch(0.85 0.08 25)',
-            background: 'oklch(0.98 0.015 25)',
-            padding: '10px 14px',
-            fontSize: 13,
-            color: 'var(--danger)',
-          }}
+          className="rounded-[10px] border border-[oklch(0.85_0.08_25)] bg-[oklch(0.98_0.015_25)] p-[10px_14px] text-[13px] text-danger"
         >
           {error}
         </div>
@@ -362,46 +255,23 @@ function GuestJoinForm({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div
-        style={{
-          background: 'var(--orange-050)',
-          borderRadius: 12,
-          padding: '12px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          fontSize: 13,
-          color: 'var(--orange-600)',
-          fontWeight: 700,
-        }}
-      >
+    <div className="flex flex-col gap-5">
+      <div className="bg-orange-050 rounded-xl p-[12px_14px] flex items-center gap-[10px] text-[13px] text-orange-600 font-bold">
         <Icon name="lock" size={14} color="var(--orange-500)" />
         Predictions lock before the tournament starts — join now to get your picks in.
       </div>
 
-      <form action={handleGuestJoin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <form action={handleGuestJoin} className="flex flex-col gap-[14px]">
         {error && (
           <div
             role="alert"
-            style={{
-              borderRadius: 10,
-              border: '1px solid oklch(0.85 0.08 25)',
-              background: 'oklch(0.98 0.015 25)',
-              padding: '10px 14px',
-              fontSize: 13,
-              color: 'var(--danger)',
-            }}
+            className="rounded-[10px] border border-[oklch(0.85_0.08_25)] bg-[oklch(0.98_0.015_25)] p-[10px_14px] text-[13px] text-danger"
           >
             {error}
           </div>
         )}
         <div>
-          <label
-            className="eyebrow"
-            htmlFor="displayName"
-            style={{ color: 'var(--ink-muted)', display: 'block', marginBottom: 8 }}
-          >
+          <label className="eyebrow text-ink-muted block mb-2" htmlFor="displayName">
             Your display name
           </label>
           <input
@@ -413,50 +283,30 @@ function GuestJoinForm({
             minLength={2}
             maxLength={50}
             placeholder="e.g. Alex"
-            style={{
-              width: '100%',
-              height: 48,
-              borderRadius: 11,
-              border: '1.5px solid var(--line)',
-              background: 'var(--surface)',
-              padding: '0 15px',
-              fontSize: 15,
-              color: 'var(--ink)',
-              fontFamily: 'var(--font-ui)',
-              boxSizing: 'border-box',
-            }}
+            className="w-full h-12 rounded-[11px] border-[1.5px] border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui box-border"
           />
-          <p style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 6 }}>
-            Shown on the leaderboard in <strong style={{ color: 'var(--ink)' }}>{poolName}</strong>.
+          <p className="text-xs text-ink-muted mt-[6px]">
+            Shown on the leaderboard in <strong className="text-ink">{poolName}</strong>.
           </p>
         </div>
 
         <JoinSubmitButton />
       </form>
 
-      <div
-        style={{
-          borderRadius: 10,
-          background: 'var(--surface-2)',
-          border: '1px solid var(--line)',
-          padding: '12px 14px',
-        }}
-      >
-        <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>
-          How sign-in works
-        </p>
-        <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+      <div className="rounded-[10px] bg-surface-2 border border-line p-[12px_14px]">
+        <p className="text-xs font-bold text-ink mb-1">How sign-in works</p>
+        <p className="text-xs text-ink-soft leading-[1.5]">
           This browser will remember you automatically. If you ever want to continue from a
           different device, you&apos;ll find a personal login link on your{' '}
-          <strong style={{ color: 'var(--ink)' }}>My Pools</strong> page — save it somewhere safe.
+          <strong className="text-ink">My Pools</strong> page — save it somewhere safe.
         </p>
       </div>
 
-      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-muted)' }}>
+      <p className="text-center text-xs text-ink-muted">
         Already have an account?{' '}
         <Link
           href={`/?callbackUrl=${encodeURIComponent(`/join/${token}`)}`}
-          style={{ color: 'var(--green-700)', textDecoration: 'underline' }}
+          className="text-green-700 underline"
         >
           Sign in with email
         </Link>

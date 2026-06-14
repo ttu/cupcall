@@ -25,7 +25,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }): ReactNode {
   return (
     <html lang="en" className={`${anton.variable} ${archivo.variable}`}>
-      <body style={{ fontFamily: 'var(--font-ui, system-ui, sans-serif)' }}>
+      <body className="font-cup-ui">
         {children}
         <Analytics />
         <SpeedInsights />

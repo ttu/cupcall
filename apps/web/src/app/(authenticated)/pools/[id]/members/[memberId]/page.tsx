@@ -99,40 +99,14 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
   );
 
   return (
-    <main
-      style={{
-        maxWidth: 860,
-        margin: '0 auto',
-        padding: '28px 20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 20,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
+    <main className="max-w-[860px] mx-auto p-[28px_20px] flex flex-col gap-5">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div
-            className="eyebrow"
-            style={{
-              color: 'var(--ink-muted)',
-              marginBottom: 8,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
+          <div className="eyebrow text-ink-muted mb-2 flex items-center gap-[6px]">
             <BackLink href={`/pools/${poolId}`}>{pool.name}</BackLink>
             <span>· {isSelf ? 'Your card' : `${memberName}'s card`}</span>
           </div>
-          <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
+          <h1 className="display text-[34px] m-0">
             {isSelf ? 'My Predictions' : `${memberName}'s Predictions`}
           </h1>
         </div>

@@ -13,20 +13,9 @@ export function OwnerEditBanner({ memberName }: Props): ReactElement {
   return (
     <div
       role="status"
-      style={{
-        background: 'var(--ink-900)',
-        color: 'var(--on-dark)',
-        padding: '11px 34px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 12,
-      }}
+      className="bg-ink-900 text-on-dark py-[11px] px-[34px] flex items-center justify-between flex-wrap gap-3"
     >
-      <span
-        style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 700 }}
-      >
+      <span className="flex items-center gap-[10px] text-[13px] font-bold">
         <Icon name="edit" size={15} color="var(--orange-400)" />
         {label}
       </span>

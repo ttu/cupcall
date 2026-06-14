@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { rotateMyLoginToken } from '../api/actions';
 import { buildLoginUrl } from '../domain/invite';
-import { SectionLabel, Icon } from '@/shared/ui';
+import { SectionLabel, Icon, cn } from '@/shared/ui';
 
 type Props = { token: string; baseUrl: string };
 
@@ -42,43 +42,20 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
   }
 
   return (
-    <div className="card" style={{ padding: 18, marginBottom: 24 }}>
+    <div className="card p-[18px] mb-6">
       <SectionLabel icon={<Icon name="link" size={13} color="var(--ink-muted)" />}>
         Your login link
       </SectionLabel>
 
-      <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '10px 0 12px', lineHeight: 1.5 }}>
+      <p className="text-xs text-ink-soft mt-[10px] mb-3 leading-[1.5]">
         Your browser remembers you automatically, but this link lets you sign in from any other
         device. Store it somewhere safe — anyone with it can access your account.
       </p>
 
       {/* URL pill + copy button */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div
-          style={{
-            flex: 1,
-            height: 36,
-            borderRadius: 9,
-            background: 'var(--surface-2)',
-            boxShadow: 'inset 0 0 0 1px var(--line)',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 12px',
-            overflow: 'hidden',
-          }}
-        >
-          <span
-            style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: 'var(--ink-soft)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {url}
-          </span>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-9 rounded-[9px] bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] flex items-center px-3 overflow-hidden">
+          <span className="text-[11px] font-mono text-ink-soft truncate">{url}</span>
         </div>
         <button type="button" onClick={handleCopy} className="btn btn-soft sm">
           {copied ? 'Copied!' : 'Copy'}
@@ -86,34 +63,24 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
       </div>
 
       {/* Reset / confirm row */}
-      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="mt-[10px] flex items-center gap-[10px]">
         {confirmReset ? (
           <>
             <button
               type="button"
               disabled={isPending}
               onClick={handleResetClick}
-              className="btn btn-ghost sm"
-              style={{
-                color: 'var(--danger)',
-                boxShadow: 'inset 0 0 0 1.5px oklch(0.78 0.12 25)',
-                opacity: isPending ? 0.5 : 1,
-              }}
+              className={cn(
+                'btn btn-ghost sm text-danger shadow-[inset_0_0_0_1.5px_oklch(0.78_0.12_25)]',
+                isPending && 'opacity-50',
+              )}
             >
               Confirm reset
             </button>
             <button
               type="button"
               onClick={() => setConfirmReset(false)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 12,
-                fontWeight: 700,
-                color: 'var(--ink-muted)',
-                padding: 0,
-              }}
+              className="bg-transparent border-0 cursor-pointer text-xs font-bold text-ink-muted p-0"
             >
               Cancel
             </button>
@@ -123,8 +90,7 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
             type="button"
             onClick={handleResetClick}
             disabled={isPending}
-            className="btn btn-ghost sm"
-            style={{ opacity: isPending ? 0.5 : 1 }}
+            className={cn('btn btn-ghost sm', isPending && 'opacity-50')}
           >
             {isPending ? 'Working…' : 'Reset link'}
           </button>
@@ -132,7 +98,7 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
       </div>
 
       {error && (
-        <p role="alert" style={{ fontSize: 12, color: 'var(--danger)', marginTop: 8 }}>
+        <p role="alert" className="text-xs text-danger mt-2">
           {error}
         </p>
       )}

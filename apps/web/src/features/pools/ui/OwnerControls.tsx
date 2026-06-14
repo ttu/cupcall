@@ -16,18 +16,14 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
   const otherMembers = members.filter((m) => m.userId !== currentUserId);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <div className="turf" style={{ padding: '8px 16px' }}>
-          <span className="display" style={{ fontSize: 15, color: 'var(--on-dark)' }}>
-            Members
-          </span>
+    <div className="flex flex-col gap-4">
+      <div className="card overflow-hidden">
+        <div className="turf py-2 px-4">
+          <span className="display text-[15px] text-on-dark">Members</span>
         </div>
 
         {otherMembers.length === 0 ? (
-          <p style={{ padding: '14px 16px', fontSize: 13, color: 'var(--ink-muted)' }}>
-            No other members yet.
-          </p>
+          <p className="py-[14px] px-4 text-[13px] text-ink-muted">No other members yet.</p>
         ) : (
           <div className="divide">
             {otherMembers.map((member, i) => (

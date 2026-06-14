@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import type { ResultsView } from '../domain/types';
+import { cn } from '@/shared/ui';
 import { GroupMatchFeed } from './GroupMatchFeed';
 import { GroupTable } from './GroupTable';
 import { TodayMatchesFeed } from './TodayMatchesFeed';
@@ -35,10 +36,7 @@ export function ResultsPageClient({
   return (
     <div>
       {/* Tabs */}
-      <nav
-        aria-label="Results sections"
-        style={{ display: 'flex', borderBottom: '1px solid var(--line-soft)', marginBottom: 24 }}
-      >
+      <nav aria-label="Results sections" className="flex border-b border-line-soft mb-6">
         {(['group', 'knockout', 'specials', 'race'] as Tab[]).map((tab) => {
           const active = activeTab === tab;
           const label =
@@ -55,20 +53,12 @@ export function ResultsPageClient({
               type="button"
               onClick={() => setActiveTab(tab)}
               data-testid={`results-tab-${tab}`}
-              style={{
-                flex: 1,
-                padding: '11px 12px 14px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                boxShadow: active ? 'inset 0 -3px 0 var(--green-500)' : 'none',
-                fontFamily: 'var(--font-ui)',
-                fontSize: 13,
-                fontWeight: 700,
-                color: active ? 'var(--ink)' : 'var(--ink-muted)',
-                transition: 'color .15s',
-                whiteSpace: 'nowrap',
-              }}
+              className={cn(
+                'flex-1 p-[11px_12px_14px] bg-none border-0 cursor-pointer font-cup-ui text-[13px] font-bold transition-colors whitespace-nowrap',
+                active
+                  ? 'shadow-[inset_0_-3px_0_var(--green-500)] text-ink'
+                  : 'shadow-none text-ink-muted',
+              )}
             >
               {label}
             </button>
@@ -77,33 +67,17 @@ export function ResultsPageClient({
       </nav>
 
       {activeTab === 'group' && (
-        <section
-          aria-label="Group stage results"
-          style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
-        >
+        <section aria-label="Group stage results" className="flex flex-col gap-6">
           <TodayMatchesFeed groups={view.groupResults} />
 
           {/* Group jump nav */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="flex gap-[6px] flex-wrap">
             {view.groupResults.map((g) => (
               <button
                 key={g.groupId}
                 type="button"
                 onClick={() => jumpToGroup(g.groupId)}
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 9,
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 16,
-                  fontWeight: 400,
-                  background: 'var(--surface-2)',
-                  color: 'var(--ink-soft)',
-                  boxShadow: 'inset 0 0 0 1px var(--line)',
-                  transition: 'background .15s',
-                }}
+                className="w-[38px] h-[38px] rounded-[9px] border-0 cursor-pointer font-cup-display text-base font-normal bg-surface-2 text-ink-soft shadow-[inset_0_0_0_1px_var(--line)] transition-[background]"
               >
                 {g.groupId}
               </button>
@@ -115,8 +89,7 @@ export function ResultsPageClient({
             <div
               key={group.groupId}
               id={`results-group-${group.groupId}`}
-              style={{ display: 'grid', gap: 12, alignItems: 'start' }}
-              className="md:grid-cols-[minmax(0,1fr)_326px]"
+              className="grid gap-3 items-start md:grid-cols-[minmax(0,1fr)_326px]"
             >
               <GroupMatchFeed group={group} />
               <GroupTable standing={group.standing} />
@@ -126,9 +99,9 @@ export function ResultsPageClient({
       )}
 
       {activeTab === 'knockout' && (
-        <div style={{ display: 'grid', gap: 24 }} className="md:grid-cols-[minmax(0,1fr)_240px]">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_240px]">
           <KnockoutBracket rounds={view.bracketRounds} bronzeMatch={view.bronzeMatch} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="flex flex-col gap-4">
             <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
             <KnockoutPointsPanel breakdown={view.userBreakdown} />
           </div>

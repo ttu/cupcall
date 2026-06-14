@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import Link from 'next/link';
+import { cn } from '@/shared/ui';
 
 export function SpecialsFooter({
   poolId,
@@ -10,43 +11,24 @@ export function SpecialsFooter({
 }): ReactElement {
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-        padding: '14px 16px',
-        borderRadius: 'var(--radius)',
-        background: allFilled ? 'var(--green-050)' : 'var(--surface-2)',
-        boxShadow: allFilled ? 'inset 0 0 0 1px var(--green-300)' : 'inset 0 0 0 1px var(--line)',
-      }}
+      className={cn(
+        'flex items-center justify-between gap-3 py-[14px] px-4 rounded-[var(--radius)]',
+        allFilled
+          ? 'bg-green-050 shadow-[inset_0_0_0_1px_var(--green-300)]'
+          : 'bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)]',
+      )}
     >
       <span
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: allFilled ? 'var(--green-700)' : 'var(--ink-muted)',
-        }}
+        className={cn('text-[13px] font-bold', allFilled ? 'text-green-700' : 'text-ink-muted')}
       >
         {allFilled ? 'All special bets saved ✓' : 'Fill in all special bets to complete your card'}
       </span>
       <Link
         href={`/pools/${poolId}`}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          height: 40,
-          padding: '0 18px',
-          borderRadius: 11,
-          background: allFilled ? 'var(--green-500)' : 'var(--ink-900)',
-          color: allFilled ? 'oklch(0.18 0.02 160)' : 'var(--on-dark)',
-          fontFamily: 'var(--font-ui)',
-          fontSize: 13,
-          fontWeight: 700,
-          textDecoration: 'none',
-          whiteSpace: 'nowrap',
-        }}
+        className={cn(
+          'inline-flex items-center gap-[6px] h-10 px-[18px] rounded-[11px] font-cup-ui text-[13px] font-bold no-underline whitespace-nowrap',
+          allFilled ? 'bg-green-500 text-[oklch(0.18_0.02_160)]' : 'bg-ink-900 text-on-dark',
+        )}
       >
         Lock in my card
       </Link>

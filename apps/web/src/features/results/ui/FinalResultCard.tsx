@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import type { KnockoutMatchView } from '../domain/types';
 import { HitChip } from './HitChip';
-import { TeamBadge, Icon } from '@/shared/ui';
+import { TeamBadge, Icon, cn } from '@/shared/ui';
 
 type Props = {
   match: KnockoutMatchView;
@@ -25,48 +25,31 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         ? (match.pickedWinnerName ?? match.pickedWinnerId)
         : null) ?? null;
 
-  const pillBackground = isFinal ? 'var(--gold)' : 'oklch(0.80 0.06 55)';
-  const pillTextColor = isFinal ? 'oklch(0.28 0.06 80)' : 'oklch(0.32 0.06 55)';
+  const pillBgClass = isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]';
+  const pillTextClass = isFinal ? 'text-[oklch(0.28_0.06_80)]' : 'text-[oklch(0.32_0.06_55)]';
 
   return (
     <div
       data-testid={`${matchKey}-result-card`}
-      style={{
-        borderRadius: 'var(--radius)',
-        overflow: 'hidden',
-        background: isFinal ? 'var(--ink-900)' : 'var(--surface)',
-        border: isFinal ? 'none' : '1px solid var(--line-soft)',
-        boxShadow: 'var(--shadow-sm)',
-      }}
+      className={cn(
+        'rounded-[var(--radius)] overflow-hidden shadow-cup-sm',
+        isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-[var(--line-soft)]',
+      )}
     >
       {/* Header strip */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 6,
-          padding: '8px 10px 6px',
-        }}
-      >
+      <div className="flex items-center justify-between gap-[6px] p-[8px_10px_6px]">
         {hasActualScore ? (
           <span
-            className="tnum"
-            style={{
-              fontSize: 16,
-              fontWeight: 800,
-              color: isFinal ? 'var(--on-dark)' : 'var(--ink)',
-            }}
+            className={cn('tnum text-base font-extrabold', isFinal ? 'text-on-dark' : 'text-ink')}
           >
             {match.actualHome}–{match.actualAway}
           </span>
         ) : match.kickoff ? (
           <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-            }}
+            className={cn(
+              'text-[11px] font-bold',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             {new Date(match.kickoff).toLocaleDateString('en-GB', {
               month: 'short',
@@ -75,11 +58,10 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
           </span>
         ) : (
           <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-            }}
+            className={cn(
+              'text-[11px] font-bold',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             {isFinal ? 'Final' : '3rd Place'}
           </span>
@@ -90,48 +72,24 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
       {/* Predicted-score line (only when the user predicted) */}
       {hasPredictedScore && (
         <div
-          style={{
-            padding: '0 10px 6px',
-            fontSize: 11,
-            fontWeight: 700,
-            color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-            letterSpacing: '0.02em',
-          }}
+          className={cn(
+            'px-[10px] pb-[6px] text-[11px] font-bold tracking-[0.02em]',
+            isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+          )}
         >
           Your pick: {match.predictedHome}–{match.predictedAway}
         </div>
       )}
 
       {/* Teams */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 10px 10px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 5,
-            minWidth: 0,
-          }}
-        >
+      <div className="grid [grid-template-columns:1fr_auto_1fr] items-center gap-[6px] p-[6px_10px_10px]">
+        <div className="flex items-center justify-end gap-[5px] min-w-0">
           <span
             data-testid="home-team-name"
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              textAlign: 'right',
-            }}
+            className={cn(
+              'text-[11px] font-bold truncate text-right',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             {teamLabel(match.homeTeamName, match.homeTeamId)}
           </span>
@@ -142,28 +100,22 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         </div>
 
         <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-            letterSpacing: '0.04em',
-          }}
+          className={cn(
+            'text-[10px] font-bold tracking-[0.04em]',
+            isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+          )}
         >
           vs
         </span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+        <div className="flex items-center gap-[5px] min-w-0">
           <TeamBadge teamId={match.awayTeamId} size="sm" />
           <span
             data-testid="away-team-name"
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
+            className={cn(
+              'text-[11px] font-bold truncate',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             {teamLabel(match.awayTeamName, match.awayTeamId)}
           </span>
@@ -175,22 +127,15 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
 
       {/* Champion pill */}
       {championId !== null && championName !== null && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '0 8px 10px' }}>
+        <div className="flex justify-center px-2 pb-[10px]">
           <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px 4px 6px',
-              borderRadius: 999,
-              background: pillBackground,
-            }}
+            className={cn(
+              'inline-flex items-center gap-[6px] py-1 pr-[10px] pl-[6px] rounded-full',
+              pillBgClass,
+            )}
           >
             <TeamBadge teamId={championId} size="sm" />
-            <span
-              className="display"
-              style={{ fontSize: 11, color: pillTextColor, letterSpacing: '0.04em' }}
-            >
+            <span className={cn('display text-[11px] tracking-[0.04em]', pillTextClass)}>
               {championName}
             </span>
           </div>

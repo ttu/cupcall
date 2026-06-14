@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { SpecialBetView } from '../domain/types';
-import { Icon } from '@/shared/ui';
+import { Icon, cn } from '@/shared/ui';
 import { SpecialBetInput } from './SpecialBetInput';
 
 const KIND_ICON = {
@@ -34,51 +34,26 @@ export function SpecialBetCard({
     <div
       data-testid={`special-bet-${bet.key}`}
       aria-busy={isPending}
-      style={{
-        borderRadius: 'var(--radius)',
-        border: empty && !locked ? '1px dashed var(--orange-400)' : '1px solid var(--line-soft)',
-        background: empty && !locked ? 'var(--orange-050)' : 'var(--surface)',
-        boxShadow: 'var(--shadow-sm)',
-        padding: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-        position: 'relative',
-      }}
+      className={cn(
+        'rounded-[var(--radius)] shadow-cup-sm p-4 flex flex-col gap-[10px] relative',
+        empty && !locked
+          ? 'border border-dashed border-orange-400 bg-orange-050'
+          : 'border border-line-soft bg-surface',
+      )}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <div
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 9,
-            background: 'var(--surface-2)',
-            boxShadow: 'inset 0 0 0 1px var(--line)',
-            display: 'grid',
-            placeItems: 'center',
-            flexShrink: 0,
-            color: 'var(--ink-muted)',
-          }}
-        >
+      <div className="flex items-start gap-[10px]">
+        <div className="w-[34px] h-[34px] rounded-[9px] bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center shrink-0 text-ink-muted">
           <Icon name={icon} size={16} stroke={1.8} />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="flex-1 min-w-0">
           <label
             htmlFor={`special-${bet.key}`}
-            style={{
-              fontSize: 12.5,
-              fontWeight: 700,
-              color: 'var(--ink-soft)',
-              lineHeight: 1.4,
-              display: 'block',
-            }}
+            className="text-[12.5px] font-bold text-ink-soft leading-[1.4] block"
           >
             {bet.label}
           </label>
           {bet.points !== undefined && (
-            <span className="display" style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
-              {bet.points} pts
-            </span>
+            <span className="display text-xs text-ink-muted">{bet.points} pts</span>
           )}
         </div>
       </div>
@@ -91,27 +66,10 @@ export function SpecialBetCard({
       />
       {isPending && (
         <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 'var(--radius)',
-            background: 'rgba(255,255,255,0.6)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
+          className="absolute inset-0 rounded-[var(--radius)] bg-white/60 grid place-items-center"
           aria-hidden="true"
         >
-          <span
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              border: '2px solid var(--green-300)',
-              borderTopColor: 'var(--green-600)',
-              animation: 'spin 0.75s linear infinite',
-              display: 'block',
-            }}
-          />
+          <span className="page-spinner" style={{ width: 20, height: 20 }} />
         </div>
       )}
     </div>

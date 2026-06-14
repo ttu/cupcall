@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { TieView } from '../domain/types';
-import { TeamBadge, Icon } from '@/shared/ui';
+import { TeamBadge, Icon, cn } from '@/shared/ui';
 
 export function TieCard({
   tie,
@@ -18,14 +18,11 @@ export function TieCard({
   return (
     <div
       data-testid="bracket-tie-row"
-      className="card"
-      style={{
-        padding: 4,
-        boxShadow: 'none',
-        border: hasPick ? '1px solid var(--green-300)' : '1px dashed var(--line)',
-        position: 'relative',
-      }}
       aria-busy={isPending}
+      className={cn(
+        'card p-1 shadow-none relative',
+        hasPick ? 'border border-green-300' : 'border border-dashed border-line',
+      )}
     >
       <PickRow
         testId="pick-home"
@@ -45,27 +42,10 @@ export function TieCard({
       />
       {isPending && (
         <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 'var(--radius)',
-            background: 'rgba(255,255,255,0.6)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
+          className="absolute inset-0 rounded-[var(--radius)] bg-white/60 grid place-items-center"
           aria-hidden="true"
         >
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              border: '2px solid var(--green-300)',
-              borderTopColor: 'var(--green-600)',
-              animation: 'spin 0.75s linear infinite',
-              display: 'block',
-            }}
-          />
+          <span className="page-spinner" style={{ width: 16, height: 16 }} />
         </div>
       )}
     </div>
@@ -94,31 +74,18 @@ function PickRow({
       aria-pressed={isPick}
       disabled={disabled}
       onClick={onClick}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '6px 7px',
-        borderRadius: 7,
-        border: 'none',
-        background: isPick ? 'var(--green-050)' : 'transparent',
-        cursor: disabled ? 'default' : 'pointer',
-        transition: 'background .12s',
-        textAlign: 'left',
-      }}
+      className={cn(
+        'w-full flex items-center gap-[6px] py-[6px] px-[7px] rounded-[7px] border-0 text-left transition-[background] duration-[120ms]',
+        isPick ? 'bg-green-050' : 'bg-transparent',
+        disabled ? 'cursor-default' : 'cursor-pointer',
+      )}
     >
       <TeamBadge teamId={teamId} size="sm" />
       <span
-        style={{
-          flex: 1,
-          fontSize: 12,
-          fontWeight: 700,
-          color: isPick ? 'var(--green-700)' : teamId ? 'var(--ink)' : 'var(--ink-muted)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
+        className={cn(
+          'flex-1 text-xs font-bold truncate',
+          isPick ? 'text-green-700' : teamId ? 'text-ink' : 'text-ink-muted',
+        )}
       >
         {teamName}
       </span>

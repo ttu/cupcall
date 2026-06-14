@@ -75,10 +75,7 @@ export function ViewSection({
   return (
     <div className="rounded-[var(--radius)] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)] overflow-hidden">
       <div className="px-4 py-2.5 turf">
-        <span
-          className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)]"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
+        <span className="text-sm font-bold tracking-widest uppercase text-[var(--on-dark)] font-cup-display">
           View Link
         </span>
       </div>

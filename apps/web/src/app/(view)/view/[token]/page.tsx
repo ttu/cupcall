@@ -23,28 +23,14 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
   const raceChart = locked ? detail.raceChart : null;
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px' }}>
+    <div className="max-w-[1100px] mx-auto p-[28px_20px]">
       {/* Page header */}
-      <div style={{ marginBottom: 24 }}>
-        <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 10 }}>
-          Leaderboard
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 16,
-            flexWrap: 'wrap',
-          }}
-        >
+      <div className="mb-6">
+        <div className="eyebrow text-ink-muted mb-[10px]">Leaderboard</div>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
-              {detail.name}
-            </h1>
-            <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginTop: 4 }}>
-              {detail.tournamentName}
-            </div>
+            <h1 className="display text-[34px] m-0">{detail.name}</h1>
+            <div className="eyebrow text-ink-muted mt-1">{detail.tournamentName}</div>
           </div>
           {locked && (
             <span className="pill-lock">
@@ -56,12 +42,9 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
       </div>
 
       {/* Two-column layout */}
-      <div
-        style={{ display: 'grid', gap: 24, alignItems: 'start' }}
-        className="md:grid-cols-[1fr_300px]"
-      >
+      <div className="grid gap-6 items-start md:grid-cols-[1fr_300px]">
         {/* Left: Leaderboard + Points Race chart */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="flex flex-col gap-4">
           <Leaderboard
             entries={detail.leaderboard}
             currentUserId={null}
@@ -74,21 +57,12 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
             <Link
               href={`/view/${token}/results?tab=race`}
               data-testid="view-race-preview"
-              style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
+              className="block no-underline text-inherit"
             >
-              <div className="card" style={{ padding: '14px 18px 12px', cursor: 'pointer' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: 10,
-                  }}
-                >
+              <div className="card p-[14px_18px_12px] cursor-pointer">
+                <div className="flex items-center justify-between mb-[10px]">
                   <span className="section-label">Points Race</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-muted)' }}>
-                    View full →
-                  </span>
+                  <span className="text-xs font-bold text-ink-muted">View full →</span>
                 </div>
                 <RaceChart
                   stages={raceChart.chartStages}
@@ -101,43 +75,24 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
         </div>
 
         {/* Right rail */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="flex flex-col gap-4">
           {/* Results shortcut */}
           <Link
             href={`/view/${token}/results`}
             data-testid="view-results-link"
-            style={{
-              padding: '18px 18px',
-              borderRadius: 14,
-              background: 'var(--orange-500)',
-              color: 'oklch(0.22 0.03 50)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              textDecoration: 'none',
-              boxShadow: '0 10px 30px -16px var(--orange-500)',
-            }}
+            className="p-[18px] rounded-[14px] bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
           >
             <span
               aria-hidden
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                borderRadius: 999,
-                background: 'rgba(0, 0, 0, 0.12)',
-                flexShrink: 0,
-              }}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(0,0,0,0.12)] shrink-0"
             >
               <Icon name="trophy" size={22} color="currentColor" />
             </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.005em' }}>
+            <div className="flex-1 min-w-0">
+              <div className="font-extrabold text-base tracking-[-0.005em]">
                 Results &amp; standings
               </div>
-              <div style={{ fontSize: 12, opacity: 0.78, marginTop: 2, fontWeight: 600 }}>
+              <div className="text-xs opacity-[0.78] mt-0.5 font-semibold">
                 Scores, groups &amp; knockout
               </div>
             </div>
@@ -146,7 +101,7 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
 
           {/* Tournament timeline */}
           {detail.stageProgress.length > 0 && (
-            <div className="card" style={{ padding: '14px 16px 0', overflowX: 'auto' }}>
+            <div className="card p-[14px_16px_0] overflow-x-auto">
               <StageBar stages={detail.stageProgress} />
             </div>
           )}

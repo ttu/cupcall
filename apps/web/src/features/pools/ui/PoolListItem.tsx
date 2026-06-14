@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import Link from 'next/link';
 import type { PoolSummary } from '../domain/types';
-import { Chip } from '@/shared/ui';
+import { Chip, cn } from '@/shared/ui';
 
 const ACCENT_PALETTE = [
   'oklch(0.6 0.16 150)',
@@ -37,62 +37,32 @@ export function PoolListItem({ pool, isOwner }: Props): ReactElement {
   return (
     <Link
       href={`/pools/${pool.id}`}
-      className="card"
-      style={{
-        display: 'flex',
-        overflow: 'hidden',
-        padding: 0,
-        textDecoration: 'none',
-        color: 'inherit',
-      }}
+      className="card flex overflow-hidden p-0 no-underline text-inherit"
     >
       {/* Left accent bar */}
-      <div style={{ width: 6, background: accent, flexShrink: 0 }} />
+      <div className="w-[6px] shrink-0" style={{ background: accent }} />
 
-      <div
-        style={{
-          flex: 1,
-          padding: '18px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          minWidth: 0,
-        }}
-      >
+      <div className="flex-1 py-[18px] px-5 flex items-center justify-between gap-3 min-w-0">
         {/* Pool identity */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+        <div className="flex items-center gap-[14px] min-w-0">
           {/* Initials square */}
           <span
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: accent,
-              color: 'var(--on-dark)',
-              display: 'grid',
-              placeItems: 'center',
-              fontFamily: 'var(--font-display)',
-              fontSize: 17,
-              letterSpacing: '0.02em',
-              flexShrink: 0,
-            }}
+            className="w-12 h-12 rounded-xl grid place-items-center font-cup-display text-[17px] tracking-[0.02em] text-on-dark shrink-0"
+            style={{ background: accent }}
           >
             {initials(pool.name)}
           </span>
 
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--ink)', margin: 0 }}>
-                {pool.name}
-              </h2>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-[17px] font-extrabold text-ink m-0">{pool.name}</h2>
               {isOwner && (
                 <Chip variant="green" style={{ height: 22, fontSize: 10 }}>
                   Owner
                 </Chip>
               )}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 3, fontWeight: 600 }}>
+            <div className="text-xs text-ink-muted mt-[3px] font-semibold">
               {pool.tournamentName} · {pool.memberCount}{' '}
               {pool.memberCount === 1 ? 'member' : 'members'}
             </div>
@@ -100,25 +70,14 @@ export function PoolListItem({ pool, isOwner }: Props): ReactElement {
         </div>
 
         {/* Score + chevron */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 20,
-            flexShrink: 0,
-          }}
-        >
+        <div className="flex items-center gap-5 shrink-0">
           {pool.myScore !== null && (
-            <div style={{ textAlign: 'right' }}>
-              <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 2 }}>
-                Points
-              </div>
-              <span className="display" style={{ fontSize: 22, color: 'var(--ink)' }}>
-                {pool.myScore}
-              </span>
+            <div className="text-right">
+              <div className="eyebrow text-ink-muted mb-[2px]">Points</div>
+              <span className="display text-[22px] text-ink">{pool.myScore}</span>
             </div>
           )}
-          <span style={{ color: 'var(--ink-muted)', fontSize: 18, lineHeight: 1 }}>›</span>
+          <span className="text-ink-muted text-lg leading-none">›</span>
         </div>
       </div>
     </Link>

@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { TeamBadge, Icon } from '@/shared/ui';
+import { TeamBadge, Icon, cn } from '@/shared/ui';
 
 export function ReadOnlyPickRow({
   teamId,
@@ -12,26 +12,17 @@ export function ReadOnlyPickRow({
 }): ReactElement {
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '5px 7px',
-        borderRadius: 7,
-        background: isPick ? 'var(--green-050)' : 'transparent',
-      }}
+      className={cn(
+        'flex items-center gap-[6px] py-[5px] px-[7px] rounded-[7px]',
+        isPick ? 'bg-green-050' : 'bg-transparent',
+      )}
     >
       <TeamBadge teamId={teamId} size="sm" />
       <span
-        style={{
-          flex: 1,
-          fontSize: 12,
-          fontWeight: 700,
-          color: isPick ? 'var(--green-700)' : teamId ? 'var(--ink)' : 'var(--ink-muted)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
+        className={cn(
+          'flex-1 text-xs font-bold truncate',
+          isPick ? 'text-green-700' : teamId ? 'text-ink' : 'text-ink-muted',
+        )}
       >
         {teamName}
       </span>

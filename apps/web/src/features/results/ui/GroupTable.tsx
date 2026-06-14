@@ -1,123 +1,57 @@
 import type { ReactElement } from 'react';
 import type { GroupStandingRow } from '../domain/types';
-import { TeamBadge } from '@/shared/ui';
+import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = { standing: GroupStandingRow[] };
 
 export function GroupTable({ standing }: Props): ReactElement {
   if (standing.length === 0) {
-    return (
-      <p
-        style={{ fontSize: 13, padding: '12px 0', textAlign: 'center', color: 'var(--ink-muted)' }}
-      >
-        No matches played yet
-      </p>
-    );
+    return <p className="text-[13px] py-3 text-center text-ink-muted">No matches played yet</p>;
   }
 
   return (
-    <div className="card" style={{ overflow: 'hidden' }}>
+    <div className="card overflow-hidden">
       {/* Header */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '20px 1fr 26px 26px 36px',
-          padding: '7px 12px',
-          background: 'var(--surface-2)',
-          borderBottom: '1px solid var(--line)',
-        }}
-      >
+      <div className="grid [grid-template-columns:20px_1fr_26px_26px_36px] p-[7px_12px] bg-surface-2 border-b border-line">
         <span />
-        <span className="eyebrow" style={{ fontSize: 10, letterSpacing: '0.12em' }}>
-          Team
-        </span>
-        <span
-          className="eyebrow"
-          style={{ fontSize: 10, textAlign: 'center', letterSpacing: '0.12em' }}
-        >
-          P
-        </span>
-        <span
-          className="eyebrow"
-          style={{ fontSize: 10, textAlign: 'center', letterSpacing: '0.12em' }}
-        >
-          GD
-        </span>
-        <span
-          className="eyebrow"
-          style={{ fontSize: 10, textAlign: 'center', letterSpacing: '0.12em' }}
-        >
-          Pts
-        </span>
+        <span className="eyebrow text-[10px] tracking-[0.12em]">Team</span>
+        <span className="eyebrow text-[10px] text-center tracking-[0.12em]">P</span>
+        <span className="eyebrow text-[10px] text-center tracking-[0.12em]">GD</span>
+        <span className="eyebrow text-[10px] text-center tracking-[0.12em]">Pts</span>
       </div>
 
       <div className="divide">
         {standing.map((row) => {
           const bg =
             row.qualifies === 'auto'
-              ? 'var(--green-050)'
+              ? 'bg-green-050'
               : row.qualifies === 'best-third'
-                ? 'var(--orange-050)'
-                : 'var(--surface)';
+                ? 'bg-orange-050'
+                : 'bg-surface';
           const positionColor =
             row.qualifies === 'auto'
-              ? 'var(--green-600)'
+              ? 'text-green-600'
               : row.qualifies === 'best-third'
-                ? 'var(--orange-600)'
-                : 'var(--ink-muted)';
+                ? 'text-orange-600'
+                : 'text-ink-muted';
           return (
             <div
               key={row.teamId}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '20px 1fr 26px 26px 36px',
-                alignItems: 'center',
-                padding: '8px 12px',
-                background: bg,
-              }}
+              className={cn(
+                'grid [grid-template-columns:20px_1fr_26px_26px_36px] items-center p-[8px_12px]',
+                bg,
+              )}
             >
-              <span
-                className="display"
-                style={{
-                  fontSize: 14,
-                  color: positionColor,
-                }}
-              >
-                {row.position}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className={cn('display text-sm', positionColor)}>{row.position}</span>
+              <span className="flex items-center gap-[6px]">
                 <TeamBadge teamId={row.teamId} size="sm" />
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--ink)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {row.teamName}
-                </span>
+                <span className="text-[13px] font-bold text-ink truncate">{row.teamName}</span>
               </span>
-              <span
-                className="tnum"
-                style={{ fontSize: 13, textAlign: 'center', color: 'var(--ink-muted)' }}
-              >
-                {row.played}
-              </span>
-              <span
-                className="tnum"
-                style={{ fontSize: 13, textAlign: 'center', color: 'var(--ink-soft)' }}
-              >
+              <span className="tnum text-[13px] text-center text-ink-muted">{row.played}</span>
+              <span className="tnum text-[13px] text-center text-ink-soft">
                 {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
               </span>
-              <span
-                className="display tnum"
-                style={{ fontSize: 16, textAlign: 'center', color: 'var(--ink)' }}
-              >
-                {row.points}
-              </span>
+              <span className="display tnum text-base text-center text-ink">{row.points}</span>
             </div>
           );
         })}
@@ -125,47 +59,16 @@ export function GroupTable({ standing }: Props): ReactElement {
 
       {(standing.some((r) => r.qualifies === 'auto') ||
         standing.some((r) => r.qualifies === 'best-third')) && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            flexWrap: 'wrap',
-            padding: '7px 12px',
-            background: 'var(--surface)',
-            borderTop: '1px solid var(--line-soft)',
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'var(--ink-muted)',
-          }}
-        >
+        <div className="flex items-center gap-[14px] flex-wrap p-[7px_12px] bg-surface border-t border-[var(--line-soft)] text-[11px] font-semibold text-ink-muted">
           {standing.some((r) => r.qualifies === 'auto') && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 3,
-                  background: 'var(--green-400)',
-                  flexShrink: 0,
-                  display: 'inline-block',
-                }}
-              />
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-[3px] bg-[var(--green-400)] shrink-0 inline-block" />
               Through to the knockout round
             </span>
           )}
           {standing.some((r) => r.qualifies === 'best-third') && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 3,
-                  background: 'var(--orange-400)',
-                  flexShrink: 0,
-                  display: 'inline-block',
-                }}
-              />
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-[3px] bg-[var(--orange-400)] shrink-0 inline-block" />
               Best third advances
             </span>
           )}

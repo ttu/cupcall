@@ -43,39 +43,15 @@ export function Podium({
   const ordered = [top3[1], top3[0], top3[2]].filter(Boolean) as LeaderboardEntry[];
 
   return (
-    <div
-      className="turf"
-      style={{
-        borderRadius: 16,
-        padding: '24px 20px 0',
-        position: 'relative',
-        overflow: 'hidden',
-        marginBottom: 0,
-      }}
-    >
+    <div className="turf rounded-2xl pt-6 px-5 pb-0 relative overflow-hidden mb-0">
       <div
         aria-hidden="true"
+        className="absolute top-[-20%] right-[-10%] w-[60%] h-[120%] rounded-full pointer-events-none"
         style={{
-          position: 'absolute',
-          top: '-20%',
-          right: '-10%',
-          width: '60%',
-          height: '120%',
-          borderRadius: '50%',
           background: 'radial-gradient(circle, oklch(0.64 0.16 152 / 0.15) 0%, transparent 70%)',
-          pointerEvents: 'none',
         }}
       />
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          gap: 8,
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
+      <div className="flex items-end justify-center gap-2 relative z-[1]">
         {ordered.map((entry, i) => {
           const originalRank = [2, 1, 3][i]!;
           const h = podiumHeights[i] ?? 74;
@@ -84,53 +60,22 @@ export function Podium({
           const avatarIndex = entries.indexOf(entry);
 
           const podiumBlock = (
-            <div
-              key={entry.userId}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                width: 110,
-                gap: 6,
-              }}
-            >
+            <div key={entry.userId} className="flex flex-col items-center w-[110px] gap-[6px]">
               <Avatar name={entry.displayName} index={avatarIndex} size={avatarSizes[i] ?? 40} />
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--on-dark-soft)',
-                  maxWidth: 90,
-                  textAlign: 'center',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
+              <div className="text-[11px] font-bold text-on-dark-soft max-w-[90px] text-center truncate">
                 {entry.displayName}
                 {isSelf && ' (you)'}
               </div>
-              <div
-                className="display"
-                style={{ fontSize: 18, color: rankColors[i] ?? 'var(--on-dark)' }}
-              >
+              <div className="display text-lg" style={{ color: rankColors[i] ?? 'var(--on-dark)' }}>
                 {entry.pointsTotal}
               </div>
               <div
-                style={{
-                  width: '100%',
-                  height: h,
-                  background: podiumColors[i],
-                  borderRadius: '8px 8px 0 0',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'center',
-                  paddingTop: 12,
-                }}
+                className="w-full flex items-start justify-center pt-3 rounded-t-lg"
+                style={{ height: h, background: podiumColors[i] }}
               >
                 <span
-                  className="display"
-                  style={{ fontSize: 34, color: rankColors[i] ?? 'var(--on-dark)' }}
+                  className="display text-[34px]"
+                  style={{ color: rankColors[i] ?? 'var(--on-dark)' }}
                 >
                   {originalRank}
                 </span>
@@ -139,7 +84,7 @@ export function Podium({
           );
 
           return canViewCards ? (
-            <Link key={entry.userId} href={href} style={{ textDecoration: 'none' }}>
+            <Link key={entry.userId} href={href} className="no-underline">
               {podiumBlock}
             </Link>
           ) : (

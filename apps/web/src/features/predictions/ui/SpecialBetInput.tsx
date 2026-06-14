@@ -1,21 +1,12 @@
 'use client';
 
-import type { CSSProperties, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useState } from 'react';
 import type { SpecialBetView } from '../domain/types';
-import { teamFlag } from '@/shared/ui';
+import { teamFlag, cn } from '@/shared/ui';
 
-const selectStyle: CSSProperties = {
-  width: '100%',
-  borderRadius: 9,
-  border: '1px solid var(--line)',
-  padding: '8px 12px',
-  fontSize: 13,
-  background: 'var(--surface)',
-  color: 'var(--ink)',
-  outline: 'none',
-  fontFamily: 'var(--font-ui)',
-};
+const SELECT_CLS =
+  'w-full rounded-[9px] border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui';
 
 type Props = {
   bet: SpecialBetView;
@@ -41,7 +32,7 @@ export function SpecialBetInput({
         disabled={locked}
         defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
         onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
-        style={{ ...selectStyle, opacity: locked ? 0.5 : 1 }}
+        className={cn(SELECT_CLS, locked && 'opacity-50')}
       >
         <option value="">Select team…</option>
         {teams.map((t) => (
@@ -65,7 +56,7 @@ export function SpecialBetInput({
         disabled={locked}
         defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
         onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
-        style={{ ...selectStyle, opacity: locked ? 0.5 : 1 }}
+        className={cn(SELECT_CLS, locked && 'opacity-50')}
       >
         <option value="">Select player…</option>
         {players.map((p) => (
@@ -89,25 +80,17 @@ export function SpecialBetInput({
           const v = parseInt(e.target.value, 10);
           if (!isNaN(v)) onSave(bet.key, v);
         }}
-        style={{
-          width: 96,
-          borderRadius: 9,
-          border: '1px solid var(--line)',
-          padding: '8px 12px',
-          fontSize: 13,
-          background: 'var(--surface)',
-          color: 'var(--ink)',
-          outline: 'none',
-          fontFamily: 'var(--font-ui)',
-          opacity: locked ? 0.5 : 1,
-        }}
+        className={cn(
+          'w-24 rounded-[9px] border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui',
+          locked && 'opacity-50',
+        )}
       />
     );
   }
 
   if (bet.kind === 'bool') {
     return (
-      <div style={{ display: 'flex', gap: 8, opacity: locked ? 0.5 : 1 }}>
+      <div className={cn('flex gap-2', locked && 'opacity-50')}>
         {(['Yes', 'No'] as const).map((label) => {
           const boolVal = label === 'Yes';
           const active = bet.value === boolVal;
@@ -117,19 +100,13 @@ export function SpecialBetInput({
               type="button"
               disabled={locked}
               onClick={() => onSave(bet.key, boolVal)}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                border: 'none',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: locked ? 'default' : 'pointer',
-                fontFamily: 'var(--font-ui)',
-                background: active ? 'var(--green-500)' : 'var(--surface-2)',
-                color: active ? 'oklch(0.18 0.02 160)' : 'var(--ink)',
-                boxShadow: active ? 'none' : 'inset 0 0 0 1px var(--line)',
-                transition: 'background .12s',
-              }}
+              className={cn(
+                'py-[6px] px-4 rounded-[9px] border-0 text-[13px] font-bold font-cup-ui transition-[background] duration-[120ms]',
+                locked ? 'cursor-default' : 'cursor-pointer',
+                active
+                  ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
+                  : 'bg-surface-2 text-ink shadow-[inset_0_0_0_1px_var(--line)]',
+              )}
             >
               {label}
             </button>
@@ -167,15 +144,13 @@ function PlayerFreeTextInput({
 
   if (locked) {
     return (
-      <span style={{ fontSize: 13, color: 'var(--ink)' }}>
-        {bet.value !== null ? String(bet.value) : '—'}
-      </span>
+      <span className="text-[13px] text-ink">{bet.value !== null ? String(bet.value) : '—'}</span>
     );
   }
 
   if (mode === 'custom') {
     return (
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className="flex gap-2 items-center">
         <input
           id={id}
           type="text"
@@ -189,21 +164,12 @@ function PlayerFreeTextInput({
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.currentTarget.blur();
           }}
-          style={{ ...selectStyle, flex: 1, width: 'auto' }}
+          className={cn(SELECT_CLS, 'flex-1 w-auto')}
         />
         <button
           type="button"
           onClick={() => setMode('select')}
-          style={{
-            flexShrink: 0,
-            fontSize: 12,
-            fontWeight: 700,
-            color: 'var(--green-700)',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '0 4px',
-          }}
+          className="shrink-0 text-xs font-bold text-green-700 bg-transparent border-0 cursor-pointer px-1 py-0"
         >
           ← List
         </button>
@@ -223,7 +189,7 @@ function PlayerFreeTextInput({
           onSave(bet.key, e.target.value);
         }
       }}
-      style={selectStyle}
+      className={SELECT_CLS}
     >
       <option value="">Select player…</option>
       {players.map((p) => (

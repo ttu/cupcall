@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Icon } from '@/shared/ui';
+import { cn, Icon } from '@/shared/ui';
 
 type Tab = {
   label: string;
@@ -36,39 +36,23 @@ export function MobileNav() {
   const tabs = poolId ? poolTabs(poolId) : TOP_LEVEL_TABS;
 
   return (
-    <nav
-      className="md:hidden"
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 40,
-        borderTop: '1px solid var(--line)',
-        background: 'var(--surface)',
-        padding: '8px 6px 4px',
-        /* no display: flex here — md:hidden must win */
-      }}
-    >
-      <div style={{ display: 'flex' }}>
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[40] border-t border-line bg-surface pt-2 pb-1 px-[6px]">
+      <div className="flex">
         {tabs.map((tab) => {
           const active = isActive(tab, pathname);
           return (
             <Link
               key={tab.label}
               href={tab.href}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 3,
-                textDecoration: 'none',
-                color: active ? 'var(--green-600)' : 'var(--ink-muted)',
-              }}
+              className={cn(
+                'flex-1 flex flex-col items-center gap-[3px] no-underline',
+                active ? 'text-green-600' : 'text-ink-muted',
+              )}
             >
               <Icon name={tab.icon} size={22} stroke={active ? 2.2 : 1.8} />
-              <span style={{ fontSize: 10.5, fontWeight: active ? 800 : 600 }}>{tab.label}</span>
+              <span className={cn('text-[10.5px]', active ? 'font-extrabold' : 'font-bold')}>
+                {tab.label}
+              </span>
             </Link>
           );
         })}

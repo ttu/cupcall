@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Logo, Icon } from '@/shared/ui';
+import { cn, Logo, Icon } from '@/shared/ui';
 import { signOutAction } from './nav-actions';
 import type { PoolSummary } from '@/features/pools';
 
@@ -14,39 +14,19 @@ export function Sidebar({ pools }: Props) {
   const pathname = usePathname();
 
   return (
-    <aside
-      className="turf hidden md:flex"
-      style={{
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: 220,
-        flexDirection: 'column',
-        zIndex: 40,
-        borderRight: '1px solid rgba(255,255,255,.07)',
-        overflowY: 'auto',
-      }}
-    >
+    <aside className="turf hidden md:flex fixed left-0 top-0 bottom-0 w-[220px] flex-col z-[40] overflow-y-auto border-r border-[rgba(255,255,255,.07)]">
       {/* Logo */}
-      <div style={{ padding: '20px 20px 12px' }}>
-        <Link href="/pools" style={{ textDecoration: 'none' }}>
+      <div className="pt-5 px-5 pb-3">
+        <Link href="/pools" className="no-underline">
           <Logo dark />
         </Link>
       </div>
 
       {/* Pool list */}
-      <div style={{ flex: 1, padding: '8px 12px', overflowY: 'auto' }}>
-        <div
-          className="eyebrow"
-          style={{ color: 'rgba(255,255,255,.35)', padding: '6px 8px', marginBottom: 4 }}
-        >
-          Your Pools
-        </div>
+      <div className="flex-1 px-3 py-2 overflow-y-auto">
+        <div className="eyebrow px-2 py-[6px] mb-1 text-[rgba(255,255,255,.35)]">Your Pools</div>
         {pools.length === 0 && (
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', padding: '6px 8px' }}>
-            No pools yet
-          </div>
+          <div className="text-xs px-2 py-[6px] text-[rgba(255,255,255,.3)]">No pools yet</div>
         )}
         {pools.map((pool) => {
           const active = pathname.startsWith(`/pools/${pool.id}`);
@@ -54,44 +34,26 @@ export function Sidebar({ pools }: Props) {
             <Link
               key={pool.id}
               href={`/pools/${pool.id}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '8px 10px',
-                borderRadius: 9,
-                textDecoration: 'none',
-                marginBottom: 2,
-                background: active ? 'rgba(255,255,255,.1)' : 'transparent',
-                transition: 'background .12s',
-              }}
+              className={cn(
+                'flex items-center gap-[10px] px-[10px] py-2 rounded-[9px] no-underline mb-0.5 transition-[background]',
+                active ? 'bg-[rgba(255,255,255,.1)]' : 'bg-transparent',
+              )}
             >
               <span
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  background: active ? 'var(--green-500)' : 'rgba(255,255,255,.1)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  flexShrink: 0,
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 12,
-                  color: active ? 'oklch(0.18 0.02 160)' : 'var(--on-dark)',
-                }}
+                className={cn(
+                  'w-7 h-7 rounded-lg grid place-items-center shrink-0 text-xs font-cup-display',
+                  active
+                    ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
+                    : 'bg-[rgba(255,255,255,.1)] text-on-dark',
+                )}
               >
                 {pool.name.slice(0, 2).toUpperCase()}
               </span>
               <span
-                style={{
-                  flex: 1,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: active ? 'var(--on-dark)' : 'var(--on-dark-soft)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
+                className={cn(
+                  'flex-1 text-[13px] font-bold truncate',
+                  active ? 'text-on-dark' : 'text-on-dark-soft',
+                )}
               >
                 {pool.name}
               </span>
@@ -102,18 +64,7 @@ export function Sidebar({ pools }: Props) {
         {/* New pool link */}
         <Link
           href="/pools"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '7px 10px',
-            borderRadius: 9,
-            textDecoration: 'none',
-            marginTop: 4,
-            color: 'rgba(255,255,255,.4)',
-            fontSize: 12,
-            fontWeight: 700,
-          }}
+          className="flex items-center gap-2 px-[10px] py-[7px] rounded-[9px] no-underline mt-1 text-xs font-bold text-[rgba(255,255,255,.4)]"
         >
           <Icon name="plus" size={13} color="rgba(255,255,255,.4)" />
           New pool
@@ -121,34 +72,12 @@ export function Sidebar({ pools }: Props) {
       </div>
 
       {/* Bottom nav items */}
-      <div
-        style={{
-          padding: '12px',
-          borderTop: '1px solid rgba(255,255,255,.07)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}
-      >
+      <div className="p-3 flex flex-col gap-0.5 border-t border-[rgba(255,255,255,.07)]">
         <SidebarLink href="/settings" icon="settings" label="Settings" pathname={pathname} />
         <form action={signOutAction}>
           <button
             type="submit"
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '8px 10px',
-              borderRadius: 9,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 700,
-              color: 'rgba(255,255,255,.4)',
-              textAlign: 'left',
-            }}
+            className="w-full flex items-center gap-[10px] px-[10px] py-2 rounded-[9px] border-0 bg-transparent cursor-pointer text-[13px] font-bold text-left text-[rgba(255,255,255,.4)]"
           >
             <Icon name="arrow" size={16} color="rgba(255,255,255,.4)" />
             Sign out
@@ -174,18 +103,10 @@ function SidebarLink({
   return (
     <Link
       href={href}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '8px 10px',
-        borderRadius: 9,
-        textDecoration: 'none',
-        background: active ? 'rgba(255,255,255,.1)' : 'transparent',
-        fontSize: 13,
-        fontWeight: 700,
-        color: active ? 'var(--on-dark)' : 'var(--on-dark-soft)',
-      }}
+      className={cn(
+        'flex items-center gap-[10px] px-[10px] py-2 rounded-[9px] no-underline text-[13px] font-bold',
+        active ? 'text-on-dark bg-[rgba(255,255,255,.1)]' : 'text-on-dark-soft bg-transparent',
+      )}
     >
       <Icon name={icon} size={16} color={active ? 'var(--on-dark)' : 'rgba(255,255,255,.5)'} />
       {label}

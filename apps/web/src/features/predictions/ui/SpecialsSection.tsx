@@ -44,15 +44,9 @@ export function SpecialsSection({
     <section
       data-testid="specials-section"
       aria-label="Special bets"
-      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+      className="flex flex-col gap-3"
     >
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: 12,
-        }}
-      >
+      <div className="grid [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))] gap-3">
         {specials.map((bet) => (
           <SpecialBetCard
             key={bet.key}

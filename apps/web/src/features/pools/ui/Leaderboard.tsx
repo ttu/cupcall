@@ -25,8 +25,8 @@ export function Leaderboard({
 
   if (entries.length === 0) {
     return (
-      <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 14, margin: 0 }}>No members yet.</p>
+      <div className="card py-8 px-6 text-center">
+        <p className="text-ink-muted text-sm m-0">No members yet.</p>
       </div>
     );
   }
@@ -46,25 +46,12 @@ export function Leaderboard({
       )}
 
       {ranked4plus.length > 0 && (
-        <div
-          className="card"
-          style={{ marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
-        >
-          <div
-            className="eyebrow"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '34px 1fr 60px 60px',
-              gap: 8,
-              padding: '10px 16px 8px',
-              color: 'var(--ink-muted)',
-              borderBottom: '1px solid var(--line-soft)',
-            }}
-          >
+        <div className="card mt-0 rounded-tl-none rounded-tr-none">
+          <div className="eyebrow grid [grid-template-columns:34px_1fr_60px_60px] gap-2 px-4 pt-[10px] pb-2 text-ink-muted border-b border-line-soft">
             <span>#</span>
             <span>Player</span>
-            <span style={{ textAlign: 'right' }}>Pts</span>
-            <span style={{ textAlign: 'right' }}>%</span>
+            <span className="text-right">Pts</span>
+            <span className="text-right">%</span>
           </div>
           <div className="divide">
             {ranked4plus.map((entry, i) => (

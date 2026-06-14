@@ -13,33 +13,17 @@ export function UserScoreChip({ rank }: Props): ReactElement {
   return (
     <div className="flex items-center gap-4">
       <div className="text-right">
-        <div
-          className="text-[10px] font-bold uppercase tracking-wider"
-          style={{ color: 'var(--ink-muted)' }}
-        >
+        <div className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">
           Your points
         </div>
         <div className="flex items-center gap-2 justify-end mt-0.5">
-          <span
-            className="text-2xl font-black"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--ink)' }}
-          >
-            {rank.points}
-          </span>
+          <span className="text-2xl font-black font-cup-display text-ink">{rank.points}</span>
         </div>
       </div>
-      <span className="w-px h-9" style={{ background: 'var(--line)' }} />
+      <span className="w-px h-9 bg-line" />
       <div className="text-right">
-        <div
-          className="text-[10px] font-bold uppercase tracking-wider"
-          style={{ color: 'var(--ink-muted)' }}
-        >
-          Rank
-        </div>
-        <div
-          className="text-2xl font-black mt-0.5"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--green-600)' }}
-        >
+        <div className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Rank</div>
+        <div className="text-2xl font-black mt-0.5 font-cup-display text-green-600">
           {ordinal(rank.rank)}
         </div>
       </div>

@@ -26,57 +26,29 @@ export default async function ResultsPage({ params, searchParams }: Props): Prom
   if (!view) notFound();
 
   return (
-    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '28px 20px' }}>
+    <div className="max-w-[1400px] mx-auto p-[28px_20px]">
       {/* Page header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 16,
-          flexWrap: 'wrap',
-          marginBottom: 20,
-        }}
-      >
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
         <div>
-          <div
-            className="eyebrow"
-            style={{
-              color: 'var(--ink-muted)',
-              marginBottom: 8,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
+          <div className="eyebrow text-ink-muted mb-2 flex items-center gap-[6px]">
             <BackLink href={`/pools/${poolId}`}>{view.poolName}</BackLink>
             <span>· Results &amp; standings</span>
           </div>
-          <h1 className="display" style={{ fontSize: 34, margin: 0 }}>
-            The Cup, as it unfolds
-          </h1>
+          <h1 className="display text-[34px] m-0">The Cup, as it unfolds</h1>
         </div>
 
         {view.userRank && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div className="eyebrow" style={{ color: 'var(--ink-muted)' }}>
-                Your points
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <span className="display" style={{ fontSize: 26 }}>
-                  {view.userRank.points}
-                </span>
+          <div className="flex items-center gap-[18px]">
+            <div className="text-right">
+              <div className="eyebrow text-ink-muted">Your points</div>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="display text-[26px]">{view.userRank.points}</span>
               </div>
             </div>
-            <span style={{ width: 1, height: 38, background: 'var(--line)' }} />
-            <div style={{ textAlign: 'right' }}>
-              <div className="eyebrow" style={{ color: 'var(--ink-muted)' }}>
-                Rank
-              </div>
-              <span className="display" style={{ fontSize: 26, color: 'var(--green-600)' }}>
-                #{view.userRank.rank}
-              </span>
+            <span className="w-px h-[38px] bg-line" />
+            <div className="text-right">
+              <div className="eyebrow text-ink-muted">Rank</div>
+              <span className="display text-[26px] text-green-600">#{view.userRank.rank}</span>
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { StageProgress } from '../domain/types';
+import { cn } from '@/shared/ui';
 
 type Props = { stages: StageProgress[] };
 
@@ -7,100 +8,62 @@ const fmt = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' });
 
 export function StageBar({ stages }: Props): ReactElement {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        marginBottom: 24,
-        overflowX: 'auto',
-        paddingBottom: 4,
-      }}
-    >
+    <div className="flex items-start mb-6 overflow-x-auto pb-1">
       {stages.map((s, i) => {
         const prev = i > 0 ? stages[i - 1] : null;
         const leftFilled = prev != null && prev.state !== 'upcoming';
         const rightFilled = s.state === 'completed';
 
         return (
-          <div
-            key={s.key}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              flex: 1,
-              minWidth: 72,
-            }}
-          >
+          <div key={s.key} className="flex flex-col items-center flex-1 min-w-[72px]">
             {/* Connector line + dot row */}
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%', marginBottom: 8 }}>
+            <div className="flex items-center w-full mb-2">
               <div
-                style={{
-                  flex: 1,
-                  height: 2,
-                  background:
-                    i === 0 ? 'transparent' : leftFilled ? 'var(--green-300)' : 'var(--line)',
-                }}
+                className={cn(
+                  'flex-1 h-[2px]',
+                  i === 0 ? 'bg-transparent' : leftFilled ? 'bg-green-300' : 'bg-line',
+                )}
               />
               <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  flexShrink: 0,
-                  background:
-                    s.state === 'active'
-                      ? 'var(--green-500)'
-                      : s.state === 'completed'
-                        ? 'var(--green-400)'
-                        : 'var(--line)',
-                  boxShadow: s.state === 'active' ? '0 0 0 3px var(--green-050)' : undefined,
-                }}
+                className={cn(
+                  'w-[10px] h-[10px] rounded-full shrink-0',
+                  s.state === 'active'
+                    ? 'bg-green-500 shadow-[0_0_0_3px_var(--green-050)]'
+                    : s.state === 'completed'
+                      ? 'bg-green-400'
+                      : 'bg-line',
+                )}
               />
               <div
-                style={{
-                  flex: 1,
-                  height: 2,
-                  background:
-                    i === stages.length - 1
-                      ? 'transparent'
-                      : rightFilled
-                        ? 'var(--green-300)'
-                        : 'var(--line)',
-                }}
+                className={cn(
+                  'flex-1 h-[2px]',
+                  i === stages.length - 1
+                    ? 'bg-transparent'
+                    : rightFilled
+                      ? 'bg-green-300'
+                      : 'bg-line',
+                )}
               />
             </div>
 
             {/* Label */}
             <span
-              style={{
-                fontSize: 11,
-                fontWeight: s.state !== 'upcoming' ? 700 : 500,
-                color:
-                  s.state === 'active'
-                    ? 'var(--ink)'
-                    : s.state === 'completed'
-                      ? 'var(--ink-soft)'
-                      : 'var(--ink-muted)',
-                fontFamily: 'var(--font-ui)',
-                textAlign: 'center',
-                lineHeight: 1.3,
-              }}
+              className={cn(
+                'text-[11px] font-cup-ui text-center leading-[1.3]',
+                s.state !== 'upcoming' ? 'font-bold' : 'font-medium',
+                s.state === 'active'
+                  ? 'text-ink'
+                  : s.state === 'completed'
+                    ? 'text-ink-soft'
+                    : 'text-ink-muted',
+              )}
             >
               {s.label}
             </span>
 
             {/* Date */}
             {s.startDate && (
-              <span
-                style={{
-                  fontSize: 10,
-                  color: 'var(--ink-muted)',
-                  fontWeight: 500,
-                  marginTop: 2,
-                  fontFamily: 'var(--font-ui)',
-                }}
-              >
+              <span className="text-[10px] text-ink-muted font-medium mt-0.5 font-cup-ui">
                 {fmt.format(s.startDate)}
               </span>
             )}

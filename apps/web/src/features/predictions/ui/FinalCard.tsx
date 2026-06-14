@@ -1,22 +1,45 @@
-import type { CSSProperties, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import type { FinishMatchView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
 import { TeamBadge } from '@/shared/ui';
+import { cn } from '@/shared/ui';
 
-function tieButtonStyle(isPick: boolean, isFinal: boolean): CSSProperties {
-  return {
-    flex: 1,
-    padding: '6px 8px',
-    borderRadius: 7,
-    border: isPick
-      ? '1px solid var(--green-300)'
-      : `1px solid ${isFinal ? 'rgba(255,255,255,.12)' : 'var(--line)'}`,
-    background: isPick ? 'var(--green-050)' : isFinal ? 'rgba(255,255,255,.04)' : 'transparent',
-    color: isPick ? 'var(--green-700)' : isFinal ? 'var(--on-dark)' : 'var(--ink)',
-    fontSize: 12,
-    fontWeight: 700,
-    cursor: 'pointer',
-  };
+function TieButton({
+  isPick,
+  isFinal,
+  onClick,
+  disabled,
+  testId,
+  label,
+  pressed,
+}: {
+  isPick: boolean;
+  isFinal: boolean;
+  onClick: () => void;
+  disabled: boolean;
+  testId: string;
+  label: string;
+  pressed: boolean;
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-pressed={pressed}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'flex-1 py-[6px] px-2 rounded-[7px] text-xs font-bold cursor-pointer',
+        isPick
+          ? 'border border-[var(--green-300)] bg-green-050 text-green-700'
+          : isFinal
+            ? 'border border-white/[.12] bg-white/[.04] text-on-dark'
+            : 'border border-line bg-transparent text-ink',
+      )}
+    >
+      {label}
+    </button>
+  );
 }
 
 type Props = {
@@ -59,43 +82,19 @@ export function FinalCard({
   return (
     <div
       data-testid={`${matchKey}-section`}
-      style={{
-        borderRadius: 'var(--radius)',
-        overflow: 'hidden',
-        background: isFinal ? 'var(--ink-900)' : 'var(--surface)',
-        border: isFinal ? 'none' : '1px solid var(--line-soft)',
-        boxShadow: 'var(--shadow-sm)',
-      }}
+      className={cn(
+        'rounded-[var(--radius)] overflow-hidden shadow-cup-sm',
+        isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
+      )}
     >
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          alignItems: 'center',
-          gap: 6,
-          padding: '10px 10px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 5,
-            minWidth: 0,
-          }}
-        >
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[6px] p-[10px]">
+        <div className="flex items-center justify-end gap-[5px] min-w-0">
           <span
             data-testid="home-team-name"
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              textAlign: 'right',
-            }}
+            className={cn(
+              'text-[11px] font-bold truncate text-right',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             {match.homeTeamName ?? '—'}
           </span>
@@ -111,17 +110,13 @@ export function FinalCard({
           onSave={(_, home, away) => Promise.resolve(onSave(matchKey, home, away))}
         />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+        <div className="flex items-center gap-[5px] min-w-0">
           <TeamBadge teamId={match.awayTeamId} size="sm" />
           <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
+            className={cn(
+              'text-[11px] font-bold truncate',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             {match.awayTeamName ?? '—'}
           </span>
@@ -131,65 +126,53 @@ export function FinalCard({
       {needsTiebreak && !locked && (
         <div
           data-testid={`${matchKey}-winner-picker`}
-          style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 10px 10px' }}
+          className="flex flex-col gap-[6px] px-[10px] pt-[6px] pb-[10px]"
         >
           <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-              textAlign: 'center',
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-            }}
+            className={cn(
+              'text-[11px] font-bold text-center tracking-[0.04em] uppercase',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             Pick the shootout winner
           </span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              type="button"
-              data-testid={`${matchKey}-pick-home`}
-              aria-pressed={match.pickedWinnerId === match.homeTeamId}
+          <div className="flex gap-[6px]">
+            <TieButton
+              testId={`${matchKey}-pick-home`}
+              isPick={match.pickedWinnerId === match.homeTeamId}
+              isFinal={isFinal}
+              pressed={match.pickedWinnerId === match.homeTeamId}
               onClick={() => match.homeTeamId && onPickWinner(matchKey, match.homeTeamId)}
               disabled={!match.homeTeamId}
-              style={tieButtonStyle(match.pickedWinnerId === match.homeTeamId, isFinal)}
-            >
-              {match.homeTeamName ?? '—'}
-            </button>
-            <button
-              type="button"
-              data-testid={`${matchKey}-pick-away`}
-              aria-pressed={match.pickedWinnerId === match.awayTeamId}
+              label={match.homeTeamName ?? '—'}
+            />
+            <TieButton
+              testId={`${matchKey}-pick-away`}
+              isPick={match.pickedWinnerId === match.awayTeamId}
+              isFinal={isFinal}
+              pressed={match.pickedWinnerId === match.awayTeamId}
               onClick={() => match.awayTeamId && onPickWinner(matchKey, match.awayTeamId)}
               disabled={!match.awayTeamId}
-              style={tieButtonStyle(match.pickedWinnerId === match.awayTeamId, isFinal)}
-            >
-              {match.awayTeamName ?? '—'}
-            </button>
+              label={match.awayTeamName ?? '—'}
+            />
           </div>
         </div>
       )}
 
       {champion?.teamId && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 8px 10px' }}>
+        <div className="flex justify-center px-2 pt-0.5 pb-[10px]">
           <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px 4px 6px',
-              borderRadius: 999,
-              background: isFinal ? 'var(--gold)' : 'oklch(0.80 0.06 55)',
-            }}
+            className={cn(
+              'inline-flex items-center gap-[6px] py-1 pr-[10px] pl-[6px] rounded-full',
+              isFinal ? 'bg-[var(--gold)]' : 'bg-[oklch(0.80_0.06_55)]',
+            )}
           >
             <TeamBadge teamId={champion.teamId} size="sm" />
             <span
-              className="display"
-              style={{
-                fontSize: 11,
-                color: isFinal ? 'oklch(0.28 0.06 80)' : 'oklch(0.32 0.06 55)',
-                letterSpacing: '0.04em',
-              }}
+              className={cn(
+                'display text-[11px] tracking-[0.04em]',
+                isFinal ? 'text-[oklch(0.28_0.06_80)]' : 'text-[oklch(0.32_0.06_55)]',
+              )}
             >
               {champion.teamName}
             </span>

@@ -12,16 +12,12 @@ export function StatCard({
   color: string;
 }): ReactElement {
   return (
-    <div className="card" style={{ padding: '14px 16px' }}>
-      <div className="eyebrow" style={{ color: 'var(--ink-muted)' }}>
-        {label}
-      </div>
-      <div className="display" style={{ fontSize: 30, color, marginTop: 6 }}>
+    <div className="card p-[14px_16px]">
+      <div className="eyebrow text-ink-muted">{label}</div>
+      <div className="display text-[30px] mt-[6px]" style={{ color }}>
         {value}
       </div>
-      <div style={{ fontSize: 11.5, color: 'var(--ink-muted)', fontWeight: 600, marginTop: 2 }}>
-        {sub}
-      </div>
+      <div className="text-[11.5px] text-ink-muted font-semibold mt-0.5">{sub}</div>
     </div>
   );
 }

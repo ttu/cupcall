@@ -58,43 +58,16 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
   }
 
   return (
-    <div style={{ padding: '10px 16px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className="py-[10px] px-4">
+      <div className="flex items-center gap-3">
         <Avatar name={member.displayName} index={avatarIndex} size={34} />
-        <span
-          style={{
-            flex: 1,
-            fontSize: 14,
-            fontWeight: 700,
-            color: 'var(--ink)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {member.displayName}
-        </span>
-        <span
-          className="display"
-          style={{ fontSize: 15, color: 'var(--ink-muted)', flexShrink: 0 }}
-        >
-          {member.pointsTotal}
-        </span>
+        <span className="flex-1 text-sm font-bold text-ink truncate">{member.displayName}</span>
+        <span className="display text-[15px] text-ink-muted shrink-0">{member.pointsTotal}</span>
         <button
           type="button"
           disabled={loginLinkPending}
           onClick={() => void handleGetLink()}
-          style={{
-            flexShrink: 0,
-            fontSize: 12,
-            fontWeight: 700,
-            padding: '5px 11px',
-            borderRadius: 8,
-            border: '1.5px solid var(--line)',
-            background: 'transparent',
-            color: 'var(--ink-muted)',
-            cursor: 'pointer',
-          }}
+          className="shrink-0 text-xs font-bold py-[5px] px-[11px] rounded-lg border-[1.5px] border-line bg-transparent text-ink-muted cursor-pointer"
         >
           {loginLinkPending ? 'Getting…' : 'Get link'}
         </button>
@@ -104,31 +77,14 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
               type="button"
               disabled={isPendingKick}
               onClick={handleKickClick}
-              style={{
-                flexShrink: 0,
-                fontSize: 12,
-                fontWeight: 700,
-                padding: '5px 11px',
-                borderRadius: 8,
-                border: 'none',
-                background: 'var(--danger)',
-                color: 'white',
-                cursor: 'pointer',
-              }}
+              className="shrink-0 text-xs font-bold py-[5px] px-[11px] rounded-lg border-0 bg-danger text-white cursor-pointer"
             >
               Confirm kick
             </button>
             <button
               type="button"
               onClick={() => setConfirmKick(false)}
-              style={{
-                flexShrink: 0,
-                fontSize: 12,
-                background: 'none',
-                border: 'none',
-                color: 'var(--ink-muted)',
-                cursor: 'pointer',
-              }}
+              className="shrink-0 text-xs bg-transparent border-0 text-ink-muted cursor-pointer"
             >
               Cancel
             </button>
@@ -138,39 +94,15 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
             type="button"
             disabled={isPendingKick}
             onClick={handleKickClick}
-            style={{
-              flexShrink: 0,
-              fontSize: 12,
-              fontWeight: 700,
-              padding: '5px 11px',
-              borderRadius: 8,
-              border: '1.5px solid oklch(0.78 0.12 25)',
-              background: 'transparent',
-              color: 'var(--danger)',
-              cursor: 'pointer',
-            }}
+            className="shrink-0 text-xs font-bold py-[5px] px-[11px] rounded-lg border-[1.5px] border-[oklch(0.78_0.12_25)] bg-transparent text-danger cursor-pointer"
           >
             <Icon name="kick" size={12} color="var(--danger)" />
           </button>
         )}
       </div>
       {loginLink && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-          <span
-            style={{
-              flex: 1,
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: 'var(--ink-soft)',
-              background: 'var(--surface-2)',
-              borderRadius: 7,
-              padding: '4px 10px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              boxShadow: 'inset 0 0 0 1px var(--line)',
-            }}
-          >
+        <div className="flex items-center gap-2 mt-2">
+          <span className="flex-1 text-[11px] font-mono text-ink-soft bg-surface-2 rounded-[7px] py-1 px-[10px] truncate shadow-[inset_0_0_0_1px_var(--line)]">
             {loginLink}
           </span>
           <button type="button" onClick={() => handleCopy(loginLink)} className="btn btn-soft sm">
@@ -179,12 +111,12 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
         </div>
       )}
       {loginLinkError && (
-        <p role="alert" style={{ marginTop: 4, fontSize: 11, color: 'var(--danger)' }}>
+        <p role="alert" className="mt-1 text-[11px] text-danger">
           {loginLinkError}
         </p>
       )}
       {kickError && (
-        <p role="alert" style={{ marginTop: 4, fontSize: 11, color: 'var(--danger)' }}>
+        <p role="alert" className="mt-1 text-[11px] text-danger">
           {kickError}
         </p>
       )}

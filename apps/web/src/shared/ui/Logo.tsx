@@ -3,9 +3,11 @@ type LogoProps = {
   dark?: boolean;
 };
 
+import { cn } from './cn';
+
 export function Logo({ size, dark = false }: LogoProps) {
   return (
-    <span className="logo" style={{ color: dark ? 'var(--on-dark)' : 'var(--ink)' }}>
+    <span className={cn('logo', dark ? 'text-on-dark' : 'text-ink')}>
       <span className={`logo-mark${size === 'lg' ? ' lg' : ''}`} />
       <span className="logo-word">
         CUP<span className="b">CALL</span>

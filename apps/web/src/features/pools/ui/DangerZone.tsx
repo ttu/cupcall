@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { deletePool } from '../api/actions';
-import { SectionLabel, Icon } from '@/shared/ui';
+import { SectionLabel, Icon, cn } from '@/shared/ui';
 
 export function DangerZone({ poolId }: { poolId: string }): ReactElement {
   const router = useRouter();
@@ -29,36 +29,24 @@ export function DangerZone({ poolId }: { poolId: string }): ReactElement {
   }
 
   return (
-    <div
-      className="card"
-      style={{
-        padding: 18,
-        border: '1px solid oklch(0.85 0.08 25)',
-        background: 'oklch(0.98 0.015 25)',
-      }}
-    >
+    <div className="card p-[18px] border border-[oklch(0.85_0.08_25)] bg-[oklch(0.98_0.015_25)]">
       <SectionLabel icon={<Icon name="trash" size={13} color="var(--danger)" />}>
-        <span style={{ color: 'var(--danger)' }}>Danger zone</span>
+        <span className="text-danger">Danger zone</span>
       </SectionLabel>
-      <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '10px 0 14px' }}>
+      <p className="text-xs text-ink-soft mt-[10px] mb-[14px]">
         Deleting the pool is permanent and removes all members and predictions.
       </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div className="flex items-center gap-[10px] flex-wrap">
         <button
           type="button"
           disabled={isPendingDelete}
           onClick={handleDeleteClick}
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            padding: '8px 16px',
-            borderRadius: 9,
-            border: 'none',
-            cursor: 'pointer',
-            background: confirmDelete ? 'var(--danger)' : 'transparent',
-            color: confirmDelete ? 'white' : 'var(--danger)',
-            boxShadow: confirmDelete ? 'none' : 'inset 0 0 0 1.5px oklch(0.78 0.12 25)',
-          }}
+          className={cn(
+            'text-[13px] font-bold py-2 px-4 rounded-[9px] border-0 cursor-pointer',
+            confirmDelete
+              ? 'bg-danger text-white'
+              : 'bg-transparent text-danger shadow-[inset_0_0_0_1.5px_oklch(0.78_0.12_25)]',
+          )}
         >
           {isPendingDelete ? 'Deleting…' : confirmDelete ? 'Confirm delete' : 'Delete pool'}
         </button>
@@ -66,20 +54,14 @@ export function DangerZone({ poolId }: { poolId: string }): ReactElement {
           <button
             type="button"
             onClick={() => setConfirmDelete(false)}
-            style={{
-              fontSize: 12,
-              background: 'none',
-              border: 'none',
-              color: 'var(--ink-muted)',
-              cursor: 'pointer',
-            }}
+            className="text-xs bg-transparent border-0 text-ink-muted cursor-pointer"
           >
             Cancel
           </button>
         )}
       </div>
       {deleteError && (
-        <p role="alert" style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>
+        <p role="alert" className="mt-2 text-xs text-danger">
           {deleteError}
         </p>
       )}

@@ -96,7 +96,7 @@ export function ScoreCell({
   return (
     <span
       data-testid={`score-${matchId}`}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, position: 'relative' }}
+      className="inline-flex items-center gap-1 relative"
       aria-label="Score"
       aria-busy={pending}
     >
@@ -127,27 +127,10 @@ export function ScoreCell({
       />
       {pending && (
         <span
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 10,
-            background: 'rgba(255,255,255,0.6)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
+          className="absolute inset-0 rounded-[10px] bg-white/60 grid place-items-center"
           aria-hidden="true"
         >
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              border: '2px solid var(--green-300)',
-              borderTopColor: 'var(--green-600)',
-              animation: 'spin 0.75s linear infinite',
-              display: 'block',
-            }}
-          />
+          <span className="page-spinner" style={{ width: 16, height: 16 }} />
         </span>
       )}
     </span>

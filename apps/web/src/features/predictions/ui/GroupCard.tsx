@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import type { GroupView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
 import { TeamBadge, Chip } from '@/shared/ui';
+import { cn } from '@/shared/ui';
 import { DerivedStandingsPanel } from './DerivedStandingsPanel';
 
 type Props = {
@@ -15,14 +16,11 @@ export function GroupCard({ group, poolId, locked, onSave }: Props): ReactElemen
   return (
     <div
       id={`predict-group-${group.groupId}`}
-      style={{ display: 'grid', gap: 12, alignItems: 'start' }}
-      className="md:grid-cols-[1fr_196px]"
+      className="grid gap-3 items-start md:grid-cols-[1fr_196px]"
     >
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <div className="turf" style={{ padding: '10px 16px' }}>
-          <span className="display" style={{ fontSize: 20, color: 'var(--on-dark)' }}>
-            Group {group.groupId}
-          </span>
+      <div className="card overflow-hidden">
+        <div className="turf px-4 py-[10px]">
+          <span className="display text-xl text-on-dark">Group {group.groupId}</span>
         </div>
         <div className="divide">
           {group.matches.map((match) => {
@@ -31,39 +29,18 @@ export function GroupCard({ group, poolId, locked, onSave }: Props): ReactElemen
             return (
               <div
                 key={match.matchId}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto 1fr',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '10px 16px',
-                  background: incomplete && !cellLocked ? 'var(--orange-050)' : undefined,
-                }}
+                className={cn(
+                  'grid grid-cols-[1fr_auto_1fr] items-center gap-[10px] px-4 py-[10px]',
+                  incomplete && !cellLocked && 'bg-orange-050',
+                )}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    gap: 8,
-                    minWidth: 0,
-                  }}
-                >
+                <div className="flex items-center justify-end gap-2 min-w-0">
                   {incomplete && !cellLocked && (
                     <Chip variant="orange" style={{ height: 22, fontSize: 10 }}>
                       Needs a score
                     </Chip>
                   )}
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: 'var(--ink)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+                  <span className="text-[13px] font-bold text-ink truncate">
                     {match.homeTeamName}
                   </span>
                   <TeamBadge teamId={match.homeTeamId} size="lg" />
@@ -78,18 +55,9 @@ export function GroupCard({ group, poolId, locked, onSave }: Props): ReactElemen
                   onSave={onSave}
                 />
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <div className="flex items-center gap-2 min-w-0">
                   <TeamBadge teamId={match.awayTeamId} size="lg" />
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: 'var(--ink)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+                  <span className="text-[13px] font-bold text-ink truncate">
                     {match.awayTeamName}
                   </span>
                 </div>

@@ -87,14 +87,14 @@ export function InviteSection({
   }
 
   return (
-    <div className="card" style={{ padding: 18 }}>
+    <div className="card p-[18px]">
       <SectionLabel icon={<Icon name="link" size={13} color="var(--ink-muted)" />}>
         Invite link
       </SectionLabel>
 
       {token && inviteUrl ? (
-        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0 }}>
+        <div className="mt-[14px] flex flex-col gap-[10px]">
+          <p className="text-xs text-ink-soft m-0">
             Share this link — anyone with it can join without an email address.
           </p>
           <InviteLinkDisplay inviteUrl={inviteUrl} copied={copied} onCopy={handleCopy} />
@@ -111,8 +111,8 @@ export function InviteSection({
           )}
         </div>
       ) : (
-        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0 }}>
+        <div className="mt-[14px] flex flex-col gap-[10px]">
+          <p className="text-xs text-ink-soft m-0">
             {isOwner
               ? 'Invite link is disabled. Generate one to let people join.'
               : 'Invite link is disabled. Ask the pool owner to generate one.'}
@@ -131,7 +131,7 @@ export function InviteSection({
       )}
 
       {error && (
-        <p role="alert" style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>
+        <p role="alert" className="mt-2 text-xs text-danger">
           {error}
         </p>
       )}

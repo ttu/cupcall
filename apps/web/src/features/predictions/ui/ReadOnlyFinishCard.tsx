@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { TeamBadge } from '@/shared/ui';
+import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = {
   label: string;
@@ -33,98 +33,60 @@ export function ReadOnlyFinishCard({
 
   return (
     <div
-      style={{
-        borderRadius: 'var(--radius)',
-        overflow: 'hidden',
-        background: isFinal ? 'var(--ink-900)' : 'var(--surface)',
-        border: isFinal ? 'none' : '1px solid var(--line-soft)',
-        boxShadow: 'var(--shadow-sm)',
-      }}
+      className={cn(
+        'rounded-[var(--radius)] overflow-hidden shadow-cup-sm',
+        isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
+      )}
     >
       <div
-        style={{
-          padding: '8px 12px',
-          borderBottom: isFinal ? '1px solid rgba(255,255,255,.06)' : '1px solid var(--line-soft)',
-        }}
+        className={cn(
+          'py-2 px-3',
+          isFinal ? 'border-b border-b-white/[0.06]' : 'border-b border-b-line-soft',
+        )}
       >
-        <span
-          className="display"
-          style={{ fontSize: 15, color: isFinal ? 'var(--on-dark)' : 'var(--ink)' }}
-        >
+        <span className={cn('display text-[15px]', isFinal ? 'text-on-dark' : 'text-ink')}>
           {label}
         </span>
       </div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          alignItems: 'center',
-          gap: 6,
-          padding: '10px 12px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 5,
-            minWidth: 0,
-          }}
-        >
+      <div className="grid [grid-template-columns:1fr_auto_1fr] items-center gap-[6px] py-[10px] px-3">
+        <div className="flex items-center justify-end gap-[5px] min-w-0">
           <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              textAlign: 'right',
-            }}
+            className={cn(
+              'text-[11px] font-bold text-right truncate',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             {homeTeamName ?? '—'}
           </span>
           <TeamBadge teamId={homeTeamId} size="sm" />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="flex items-center gap-[6px]">
           {predictedHome !== null ? (
             <>
-              <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
-                {predictedHome}
-              </span>
+              <span className="score-cell filled pointer-events-none">{predictedHome}</span>
               <span className="score-sep">:</span>
-              <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
-                {predictedAway}
-              </span>
+              <span className="score-cell filled pointer-events-none">{predictedAway}</span>
             </>
           ) : (
             <span
-              className="display tnum"
-              style={{
-                fontSize: 22,
-                color: isFinal ? 'var(--on-dark)' : 'var(--ink)',
-                minWidth: 56,
-                textAlign: 'center',
-              }}
+              className={cn(
+                'display tnum text-[22px] min-w-[56px] text-center',
+                isFinal ? 'text-on-dark' : 'text-ink',
+              )}
             >
               –
             </span>
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+        <div className="flex items-center gap-[5px] min-w-0">
           <TeamBadge teamId={awayTeamId} size="sm" />
           <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: isFinal ? 'var(--on-dark-soft)' : 'var(--ink-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
+            className={cn(
+              'text-[11px] font-bold truncate',
+              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+            )}
           >
             {awayTeamName ?? '—'}
           </span>
@@ -132,25 +94,19 @@ export function ReadOnlyFinishCard({
       </div>
 
       {champion?.teamId && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 8px 10px' }}>
+        <div className="flex justify-center pt-[2px] px-2 pb-[10px]">
           <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px 4px 6px',
-              borderRadius: 999,
-              background: isFinal ? 'var(--gold)' : 'oklch(0.80 0.06 55)',
-            }}
+            className={cn(
+              'inline-flex items-center gap-[6px] py-1 pr-[10px] pl-[6px] rounded-full',
+              isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]',
+            )}
           >
             <TeamBadge teamId={champion.teamId} size="sm" />
             <span
-              className="display"
-              style={{
-                fontSize: 11,
-                color: isFinal ? 'oklch(0.28 0.06 80)' : 'oklch(0.32 0.06 55)',
-                letterSpacing: '0.04em',
-              }}
+              className={cn(
+                'display text-[11px] tracking-[0.04em]',
+                isFinal ? 'text-[oklch(0.28_0.06_80)]' : 'text-[oklch(0.32_0.06_55)]',
+              )}
             >
               {champion.teamName}
             </span>

@@ -28,8 +28,8 @@ export function CreatorPredictEdit({
   const [editEnabled, setEditEnabled] = useState(false);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-[10px]">
         <span className="pill-lock">
           <Icon name="lock" size={14} />
           Locked

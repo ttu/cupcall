@@ -7,7 +7,7 @@ import { GroupScoresSection } from './GroupScoresSection';
 import { BracketSection } from './BracketSection';
 import { SpecialsSection } from './SpecialsSection';
 import { DevControls } from './DevControls';
-import { Icon } from '@/shared/ui';
+import { Icon, cn } from '@/shared/ui';
 
 type Step = 'groups' | 'bracket' | 'specials';
 
@@ -39,15 +39,12 @@ export function PredictStepper({ card, teams, players, isDev }: Props): ReactEle
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* Dev controls */}
       <DevControls poolId={card.poolId} isDev={isDev} locked={locked} />
 
       {/* Step indicator tabs */}
-      <nav
-        aria-label="Card sections"
-        style={{ display: 'flex', borderBottom: '1px solid var(--line-soft)' }}
-      >
+      <nav aria-label="Card sections" className="flex border-b border-line-soft">
         {STEPS.map(({ id, label, n }) => {
           const active = step === id;
           const done = isStepDone(id) && !active;
@@ -57,46 +54,20 @@ export function PredictStepper({ card, teams, players, isDev }: Props): ReactEle
               type="button"
               onClick={() => setStep(id)}
               aria-current={active ? 'step' : undefined}
-              style={{
-                flex: 1,
-                padding: '11px 12px 14px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                boxShadow: active ? 'inset 0 -3px 0 var(--green-500)' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                fontFamily: 'var(--font-ui)',
-                fontSize: 13,
-                fontWeight: 700,
-                color: active ? 'var(--ink)' : 'var(--ink-muted)',
-                transition: 'color .15s',
-              }}
+              className={cn(
+                'flex-1 pt-[11px] px-3 pb-[14px] bg-transparent border-0 cursor-pointer flex items-center justify-center gap-2 font-cup-ui text-[13px] font-bold transition-colors',
+                active ? 'text-ink shadow-[inset_0_-3px_0_var(--green-500)]' : 'text-ink-muted',
+              )}
             >
               <span
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: '50%',
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontSize: 11,
-                  fontWeight: 800,
-                  background: active
-                    ? 'var(--green-500)'
+                className={cn(
+                  'w-[22px] h-[22px] rounded-full grid place-items-center text-[11px] font-extrabold shrink-0',
+                  active
+                    ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
                     : done
-                      ? 'var(--green-050)'
-                      : 'var(--surface-2)',
-                  color: active
-                    ? 'oklch(0.18 0.02 160)'
-                    : done
-                      ? 'var(--green-700)'
-                      : 'var(--ink-muted)',
-                  boxShadow: done ? 'inset 0 0 0 1px var(--green-300)' : undefined,
-                  flexShrink: 0,
-                }}
+                      ? 'bg-green-050 text-green-700 shadow-[inset_0_0_0_1px_var(--green-300)]'
+                      : 'bg-surface-2 text-ink-muted',
+                )}
               >
                 {done ? <Icon name="check" size={11} color="var(--green-700)" /> : n}
               </span>

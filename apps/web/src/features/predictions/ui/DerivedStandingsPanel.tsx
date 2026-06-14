@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import type { GroupView } from '../domain/types';
 import { TeamBadge, Chip } from '@/shared/ui';
+import { cn } from '@/shared/ui';
 
 type DerivedEntry = GroupView['derivedOrder'][number];
 
@@ -10,45 +11,21 @@ export function DerivedStandingsPanel({
   derivedOrder: DerivedEntry[];
 }): ReactElement {
   return (
-    <div className="card" style={{ padding: '12px 14px' }}>
-      <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 10 }}>
-        Auto-derived order
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <div className="card px-[14px] py-3">
+      <div className="eyebrow text-ink-muted mb-[10px]">Auto-derived order</div>
+      <div className="flex flex-col gap-[3px]">
         {derivedOrder.map((entry, i) => (
           <div
             key={entry.teamId}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-              padding: '5px 8px',
-              borderRadius: 8,
-              background:
-                entry.qualifies === 'auto'
-                  ? 'var(--green-050)'
-                  : entry.qualifies === 'best-third'
-                    ? 'var(--orange-050)'
-                    : undefined,
-            }}
+            className={cn(
+              'flex items-center gap-[7px] py-[5px] px-2 rounded-lg',
+              entry.qualifies === 'auto' && 'bg-green-050',
+              entry.qualifies === 'best-third' && 'bg-orange-050',
+            )}
           >
-            <span style={{ fontSize: 11, color: 'var(--ink-muted)', width: 14, flexShrink: 0 }}>
-              {i + 1}.
-            </span>
+            <span className="text-[11px] text-ink-muted w-[14px] shrink-0">{i + 1}.</span>
             <TeamBadge teamId={entry.teamId} size="sm" />
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: 'var(--ink)',
-                flex: 1,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {entry.teamName}
-            </span>
+            <span className="text-xs font-bold text-ink flex-1 truncate">{entry.teamName}</span>
             {entry.qualifies === 'auto' && (
               <Chip variant="green" style={{ height: 18, fontSize: 9, padding: '0 6px' }}>
                 QUALIFIES

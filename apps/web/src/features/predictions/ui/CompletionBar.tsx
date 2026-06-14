@@ -4,10 +4,9 @@ type Props = { percent: number };
 
 export function CompletionBar({ percent }: Props): ReactElement {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className="flex items-center gap-[10px]">
       <div
-        className="bar"
-        style={{ flex: 1 }}
+        className="bar flex-1"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
@@ -15,12 +14,7 @@ export function CompletionBar({ percent }: Props): ReactElement {
       >
         <i style={{ width: `${Math.min(percent, 100)}%` }} />
       </div>
-      <span
-        className="display"
-        style={{ fontSize: 17, color: 'var(--green-600)', minWidth: '3ch', textAlign: 'right' }}
-      >
-        {percent}%
-      </span>
+      <span className="display text-[17px] text-green-600 min-w-[3ch] text-right">{percent}%</span>
     </div>
   );
 }

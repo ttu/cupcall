@@ -26,10 +26,7 @@ export default async function PoolScoringPage({ params }: Props): Promise<ReactE
         >
           ← {detail.name}
         </Link>
-        <h1
-          className="text-2xl font-bold text-[var(--ink)]"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
+        <h1 className="text-2xl font-bold text-[var(--ink)] font-cup-display">
           How points are calculated
         </h1>
         <p className="text-sm text-[var(--ink-soft)] mt-0.5">{detail.tournamentName}</p>

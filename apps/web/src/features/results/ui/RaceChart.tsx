@@ -17,7 +17,7 @@ export function RaceChart({
   players: RaceChartPlayer[];
 }): ReactElement {
   const n = stages.length - 1;
-  if (n === 0 || players.length === 0) return <div style={{ height: 160 }} />;
+  if (n === 0 || players.length === 0) return <div className="h-40" />;
 
   const allValues = players.flatMap((p) => p.points);
   const rawMax = Math.max(...allValues, 50);
@@ -48,7 +48,7 @@ export function RaceChart({
   return (
     <svg
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-      style={{ width: '100%', height: 'auto', display: 'block' }}
+      className="w-full h-auto block"
       aria-label="Points race chart"
       role="img"
     >

@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPool } from '../api/actions';
+import { cn } from '@/shared/ui';
 
 interface Tournament {
   id: string;
@@ -22,11 +23,7 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
   const router = useRouter();
 
   if (tournaments.length === 0) {
-    return (
-      <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: 0 }}>
-        No tournament available yet.
-      </p>
-    );
+    return <p className="text-sm text-ink-soft m-0">No tournament available yet.</p>;
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -43,24 +40,17 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <select
         value={tournamentId}
         onChange={(e) => setTournamentId(e.target.value)}
         disabled={isPending || tournaments.length === 1}
         aria-label="Tournament"
         data-testid="tournament-select"
-        style={{
-          height: 48,
-          borderRadius: 11,
-          border: '1.5px solid var(--line)',
-          background: 'var(--surface)',
-          padding: '0 15px',
-          fontSize: 15,
-          color: 'var(--ink)',
-          fontFamily: 'var(--font-ui)',
-          opacity: isPending ? 0.6 : 1,
-        }}
+        className={cn(
+          'h-12 rounded-[11px] border-[1.5px] border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui',
+          isPending && 'opacity-60',
+        )}
       >
         {tournaments.map((t) => (
           <option key={t.id} value={t.id}>
@@ -68,7 +58,7 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
           </option>
         ))}
       </select>
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div className="flex gap-[10px]">
         <input
           id="pool-name"
           type="text"
@@ -79,31 +69,24 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
           maxLength={100}
           disabled={isPending}
           aria-label="Pool name"
-          style={{
-            flex: 1,
-            height: 48,
-            borderRadius: 11,
-            border: '1.5px solid var(--line)',
-            background: 'var(--surface)',
-            padding: '0 15px',
-            fontSize: 15,
-            color: 'var(--ink)',
-            fontFamily: 'var(--font-ui)',
-            boxSizing: 'border-box',
-            opacity: isPending ? 0.6 : 1,
-          }}
+          className={cn(
+            'flex-1 h-12 rounded-[11px] border-[1.5px] border-line bg-surface px-[15px] text-[15px] text-ink box-border font-cup-ui',
+            isPending && 'opacity-60',
+          )}
         />
         <button
           type="submit"
           disabled={isPending || name.trim().length === 0}
-          className="btn btn-primary"
-          style={{ opacity: isPending || name.trim().length === 0 ? 0.55 : 1 }}
+          className={cn(
+            'btn btn-primary',
+            (isPending || name.trim().length === 0) && 'opacity-[0.55]',
+          )}
         >
           {isPending ? 'Creating…' : 'Create'}
         </button>
       </div>
       {error && (
-        <p role="alert" style={{ fontSize: 13, color: 'var(--danger)', margin: 0 }}>
+        <p role="alert" className="text-[13px] text-danger m-0">
           {error}
         </p>
       )}

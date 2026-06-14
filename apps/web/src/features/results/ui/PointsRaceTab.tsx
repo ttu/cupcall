@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import type { PointsRaceView } from '../domain/types';
+import { cn } from '@/shared/ui';
 import { RaceView } from './RaceView';
 import { MatchMatrix } from './MatchMatrix';
 
@@ -15,7 +16,7 @@ export function PointsRaceTab({ race, viewerMode = false }: Props): ReactElement
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      <div className="flex gap-2 mb-5">
         {(['race', 'by-match'] as RaceSubTab[]).map((t) => {
           const active = subTab === t;
           return (
@@ -24,19 +25,12 @@ export function PointsRaceTab({ race, viewerMode = false }: Props): ReactElement
               type="button"
               onClick={() => setSubTab(t)}
               data-testid={`points-race-subtab-${t}`}
-              style={{
-                padding: '7px 16px',
-                borderRadius: 9,
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-ui)',
-                fontSize: 13,
-                fontWeight: 800,
-                background: active ? 'var(--ink-900)' : 'var(--surface)',
-                color: active ? '#fff' : 'var(--ink-muted)',
-                boxShadow: active ? 'none' : 'inset 0 0 0 1px var(--line)',
-                transition: 'background .15s',
-              }}
+              className={cn(
+                'py-[7px] px-4 rounded-[9px] border-0 cursor-pointer font-cup-ui text-[13px] font-extrabold transition-[background]',
+                active
+                  ? 'bg-ink-900 text-white shadow-none'
+                  : 'bg-surface text-ink-muted shadow-[inset_0_0_0_1px_var(--line)]',
+              )}
             >
               {t === 'race' ? 'Race' : 'By match'}
             </button>

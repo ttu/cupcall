@@ -3,7 +3,7 @@ import type { CardView } from '../domain/types';
 import { CompletionBar } from './CompletionBar';
 import { ReadOnlyPickRow } from './ReadOnlyPickRow';
 import { ReadOnlyFinishCard } from './ReadOnlyFinishCard';
-import { SectionLabel, Icon, TeamBadge } from '@/shared/ui';
+import { SectionLabel, Icon, TeamBadge, cn } from '@/shared/ui';
 import type { MatchHit } from '@/features/results';
 import { HitChip } from '@/features/results';
 
@@ -13,18 +13,16 @@ type Props = { card: CardView; matchScores?: ReadonlyMap<string, MatchScore> };
 
 export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="flex flex-col gap-6">
       <CompletionBar percent={card.completionPercent} />
 
       <section aria-label="Group stage">
         <SectionLabel icon={<Icon name="ball" size={13} />}>Group Stage</SectionLabel>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+        <div className="flex flex-col gap-3 mt-3">
           {card.groups.map((group) => (
-            <div key={group.groupId} className="card" style={{ overflow: 'hidden' }}>
-              <div className="turf" style={{ padding: '10px 16px' }}>
-                <span className="display" style={{ fontSize: 20, color: 'var(--on-dark)' }}>
-                  Group {group.groupId}
-                </span>
+            <div key={group.groupId} className="card overflow-hidden">
+              <div className="turf py-[10px] px-4">
+                <span className="display text-xl text-on-dark">Group {group.groupId}</span>
               </div>
               <div className="divide">
                 {group.matches.map((match) => {
@@ -32,76 +30,41 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
                   return (
                     <div
                       key={match.matchId}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: score ? '1fr auto 1fr auto' : '1fr auto 1fr',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '10px 16px',
-                      }}
+                      className={cn(
+                        'grid items-center gap-[10px] py-[10px] px-4',
+                        score
+                          ? '[grid-template-columns:1fr_auto_1fr_auto]'
+                          : '[grid-template-columns:1fr_auto_1fr]',
+                      )}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-end',
-                          gap: 8,
-                          minWidth: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: 'var(--ink)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
+                      <div className="flex items-center justify-end gap-2 min-w-0">
+                        <span className="text-[13px] font-bold text-ink truncate">
                           {match.homeTeamName}
                         </span>
                         <TeamBadge teamId={match.homeTeamId} size="lg" />
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div className="flex items-center gap-[6px]">
                         {match.predictedHome !== null ? (
                           <>
-                            <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
+                            <span className="score-cell filled pointer-events-none">
                               {match.predictedHome}
                             </span>
                             <span className="score-sep">:</span>
-                            <span className="score-cell filled" style={{ pointerEvents: 'none' }}>
+                            <span className="score-cell filled pointer-events-none">
                               {match.predictedAway}
                             </span>
                           </>
                         ) : (
-                          <span
-                            className="display"
-                            style={{
-                              fontSize: 20,
-                              color: 'var(--ink-muted)',
-                              minWidth: 58,
-                              textAlign: 'center',
-                            }}
-                          >
+                          <span className="display text-xl text-ink-muted min-w-[58px] text-center">
                             –
                           </span>
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <div className="flex items-center gap-2 min-w-0">
                         <TeamBadge teamId={match.awayTeamId} size="lg" />
-                        <span
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: 'var(--ink)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
+                        <span className="text-[13px] font-bold text-ink truncate">
                           {match.awayTeamName}
                         </span>
                       </div>
@@ -118,25 +81,15 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
 
       <section aria-label="Bracket picks">
         <SectionLabel icon={<Icon name="trophy" size={13} />}>Bracket</SectionLabel>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+        <div className="flex flex-col gap-3 mt-3">
           {card.bracket.rounds.map((round) => (
-            <div key={round.label} className="card" style={{ overflow: 'hidden' }}>
-              <div className="turf" style={{ padding: '8px 16px' }}>
-                <span className="display" style={{ fontSize: 15, color: 'var(--on-dark)' }}>
-                  {round.label}
-                </span>
+            <div key={round.label} className="card overflow-hidden">
+              <div className="turf py-2 px-4">
+                <span className="display text-[15px] text-on-dark">{round.label}</span>
               </div>
               <div className="divide">
                 {round.ties.map((tie) => (
-                  <div
-                    key={tie.bracketMatchKey}
-                    style={{
-                      padding: '6px 12px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                    }}
-                  >
+                  <div key={tie.bracketMatchKey} className="py-[6px] px-3 flex flex-col gap-[2px]">
                     <ReadOnlyPickRow
                       teamId={tie.homeTeamId}
                       teamName={tie.homeTeamName ?? '?'}
@@ -182,29 +135,19 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
       {card.specials.length > 0 && (
         <section aria-label="Special bets">
           <SectionLabel icon={<Icon name="spark" size={13} />}>Special Bets</SectionLabel>
-          <div className="card" style={{ overflow: 'hidden', marginTop: 12 }}>
+          <div className="card overflow-hidden mt-3">
             <div className="divide">
               {card.specials.map((bet) => (
                 <div
                   key={bet.key}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    padding: '10px 16px',
-                  }}
+                  className="flex items-center justify-between gap-3 py-[10px] px-4"
                 >
-                  <span style={{ fontSize: 13, color: 'var(--ink-soft)', flex: 1 }}>
-                    {bet.label}
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                  <span className="text-[13px] text-ink-soft flex-1">{bet.label}</span>
+                  <span className="text-[13px] font-bold text-ink">
                     {bet.value !== null ? String(bet.value) : '—'}
                   </span>
                   {bet.points !== undefined && (
-                    <span className="display" style={{ fontSize: 13, color: 'var(--green-600)' }}>
-                      {bet.points}
-                    </span>
+                    <span className="display text-[13px] text-green-600">{bet.points}</span>
                   )}
                 </div>
               ))}

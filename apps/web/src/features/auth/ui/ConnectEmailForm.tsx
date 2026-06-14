@@ -25,53 +25,35 @@ export function ConnectEmailForm(): ReactElement {
   }
 
   return (
-    <div className="card" style={{ padding: 18, marginBottom: 24 }}>
+    <div className="card p-[18px] mb-6">
       <SectionLabel icon={<Icon name="mail" size={13} color="var(--ink-muted)" />}>
         Connect your email
       </SectionLabel>
 
       {sent ? (
-        <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '10px 0 0', lineHeight: 1.5 }}>
+        <p className="text-[13px] text-ink-soft mt-[10px] mb-0 leading-[1.5]">
           Check your inbox — we sent a link to connect your email to this account.
         </p>
       ) : (
         <>
-          <p
-            style={{
-              fontSize: 12,
-              color: 'var(--ink-soft)',
-              margin: '10px 0 12px',
-              lineHeight: 1.5,
-            }}
-          >
+          <p className="text-xs text-ink-soft mt-[10px] mb-3 leading-[1.5]">
             Add an email address so you can sign in without needing your login link.
           </p>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <form onSubmit={handleSubmit} className="flex gap-2 items-center">
             <input
               type="email"
               name="email"
               placeholder="you@example.com"
               required
               disabled={isPending}
-              style={{
-                flex: 1,
-                height: 36,
-                borderRadius: 9,
-                background: 'var(--surface-2)',
-                boxShadow: 'inset 0 0 0 1px var(--line)',
-                border: 'none',
-                padding: '0 12px',
-                fontSize: 13,
-                color: 'var(--ink)',
-                outline: 'none',
-              }}
+              className="flex-1 h-9 rounded-[9px] bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] border-0 px-3 text-[13px] text-ink outline-none"
             />
             <button type="submit" disabled={isPending} className="btn btn-primary sm">
               {isPending ? 'Sending…' : 'Send link'}
             </button>
           </form>
           {error && (
-            <p role="alert" style={{ fontSize: 12, color: 'var(--danger)', marginTop: 8 }}>
+            <p role="alert" className="text-xs text-danger mt-2">
               {error}
             </p>
           )}

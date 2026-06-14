@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import Link from 'next/link';
 import type { LeaderboardEntry } from '../domain/types';
-import { Avatar } from '@/shared/ui';
+import { Avatar, cn } from '@/shared/ui';
 
 type Props = {
   entry: LeaderboardEntry;
@@ -22,47 +22,32 @@ export function LeaderboardRow({
 }: Props): ReactElement {
   const row = (
     <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '34px 1fr 60px 60px',
-        alignItems: 'center',
-        gap: 8,
-        padding: '10px 16px',
-        background: isSelf ? 'var(--green-050)' : undefined,
-      }}
+      className={cn(
+        'grid items-center gap-2 px-4 py-[10px] [grid-template-columns:34px_1fr_60px_60px]',
+        isSelf && 'bg-green-050',
+      )}
     >
-      <span className="lb-rank" style={{ fontSize: 16 }}>
-        {rank}
-      </span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+      <span className="lb-rank text-base">{rank}</span>
+      <div className="flex items-center gap-[10px] min-w-0">
         <Avatar name={entry.displayName} index={avatarIndex} size={28} />
         <span
-          style={{
-            fontSize: 13,
-            fontWeight: isSelf ? 700 : 600,
-            color: isSelf ? 'var(--green-700)' : 'var(--ink)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
+          className={cn(
+            'text-[13px] truncate',
+            isSelf ? 'font-bold text-green-700' : 'font-semibold text-ink',
+          )}
         >
           {entry.displayName}
         </span>
       </div>
-      <span
-        className="display tnum"
-        style={{ fontSize: 16, color: 'var(--ink)', textAlign: 'right' }}
-      >
-        {entry.pointsTotal}
-      </span>
-      <span style={{ fontSize: 11, color: 'var(--ink-muted)', textAlign: 'right' }}>
+      <span className="display tnum text-base text-ink text-right">{entry.pointsTotal}</span>
+      <span className="text-[11px] text-ink-muted text-right">
         {entry.completionPercent ?? '–'}%
       </span>
     </div>
   );
 
   return canViewCards ? (
-    <Link href={href} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link href={href} className="no-underline block">
       {row}
     </Link>
   ) : (

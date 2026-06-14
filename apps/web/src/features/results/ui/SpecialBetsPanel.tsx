@@ -9,20 +9,13 @@ export function SpecialBetsPanel({ specialBets, viewerMode = false }: Props): Re
   const totalPossible = specialBets.reduce((sum, b) => sum + b.points, 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div
-        className="card"
-        style={{ padding: '14px 16px', display: 'flex', alignItems: 'baseline', gap: 8 }}
-      >
-        <span className="display tnum" style={{ fontSize: 36, color: 'var(--ink)', lineHeight: 1 }}>
-          {totalAwarded}
-        </span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-muted)' }}>
-          / {totalPossible} pts
-        </span>
+    <div className="flex flex-col gap-4">
+      <div className="card p-[14px_16px] flex items-baseline gap-2">
+        <span className="display tnum text-[36px] text-ink leading-none">{totalAwarded}</span>
+        <span className="text-[13px] font-bold text-ink-muted">/ {totalPossible} pts</span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {specialBets.map((bet) => (
           <SpecialBetRow key={bet.key} bet={bet} showUserPick={!viewerMode} />
         ))}

@@ -7,7 +7,7 @@ import {
   deleteAccountAction,
   type DisplayNameState,
 } from '@/features/auth/actions';
-import { Avatar, Chip, Icon, SectionLabel } from '@/shared/ui';
+import { Avatar, Chip, Icon, SectionLabel, cn } from '@/shared/ui';
 
 const initial: DisplayNameState = { error: null, saved: false };
 
@@ -40,40 +40,25 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
   }
 
   return (
-    <div className="card" style={{ padding: 24 }}>
-      <div style={{ marginBottom: 18 }}>
+    <div className="card p-6">
+      <div className="mb-[18px]">
         <SectionLabel>Profile</SectionLabel>
       </div>
 
       {/* Profile section */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          margin: '0 0 22px',
-        }}
-      >
+      <div className="flex items-center gap-4 mb-[22px]">
         <Avatar name={displayName} index={0} size={56} />
         <div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--ink)' }}>
-            Shown on every leaderboard
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--ink-muted)', marginTop: 2 }}>
-            Your email stays private.
-          </div>
+          <div className="font-extrabold text-base text-ink">Shown on every leaderboard</div>
+          <div className="text-[13px] text-ink-muted mt-0.5">Your email stays private.</div>
         </div>
       </div>
 
-      <form action={action} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-        <label
-          className="eyebrow"
-          htmlFor="displayName"
-          style={{ color: 'var(--ink-muted)', display: 'block', marginBottom: 8 }}
-        >
+      <form action={action} className="flex flex-col gap-0">
+        <label className="eyebrow text-ink-muted block mb-2" htmlFor="displayName">
           Display name
         </label>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="flex gap-[10px]">
           <input
             id="displayName"
             name="displayName"
@@ -83,18 +68,7 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
             minLength={1}
             maxLength={64}
             autoComplete="nickname"
-            style={{
-              flex: 1,
-              height: 48,
-              borderRadius: 11,
-              border: '1.5px solid var(--line)',
-              background: 'var(--surface)',
-              padding: '0 15px',
-              fontSize: 15,
-              color: 'var(--ink)',
-              fontFamily: 'var(--font-ui)',
-              outline: 'none',
-            }}
+            className="flex-1 h-12 rounded-[11px] border-[1.5px] border-line bg-surface px-[15px] text-[15px] text-ink font-cup-ui outline-none"
             onFocus={(e) => {
               e.currentTarget.style.borderColor = 'var(--green-500)';
               e.currentTarget.style.boxShadow = '0 0 0 3px var(--green-050)';
@@ -110,61 +84,22 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
         </div>
 
         {state.error && (
-          <p
-            role="alert"
-            style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)', fontWeight: 600 }}
-          >
+          <p role="alert" className="mt-2 text-xs text-danger font-semibold">
             {state.error}
           </p>
         )}
         {state.saved && !state.error && (
-          <p style={{ marginTop: 8, fontSize: 12, color: 'var(--green-700)', fontWeight: 600 }}>
-            Saved!
-          </p>
+          <p className="mt-2 text-xs text-green-700 font-semibold">Saved!</p>
         )}
       </form>
 
       {email && (
         <>
-          <hr
-            style={{
-              margin: '24px 0',
-              border: 'none',
-              borderTop: '1px solid var(--line-soft)',
-              height: 0,
-            }}
-          />
-          <label
-            className="eyebrow"
-            style={{ color: 'var(--ink-muted)', display: 'block', marginBottom: 8 }}
-          >
-            Email
-          </label>
-          <div
-            style={{
-              height: 48,
-              borderRadius: 11,
-              background: 'var(--surface-2)',
-              border: '1px solid var(--line)',
-              padding: '0 15px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}
-          >
+          <hr className="my-6 border-none border-t border-line-soft h-0" />
+          <label className="eyebrow text-ink-muted block mb-2">Email</label>
+          <div className="h-12 rounded-[11px] bg-surface-2 border border-line px-[15px] flex items-center gap-[10px]">
             <Icon name="mail" size={15} color="var(--ink-muted)" />
-            <span
-              style={{
-                flex: 1,
-                fontSize: 14,
-                color: 'var(--ink-soft)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {email}
-            </span>
+            <span className="flex-1 text-[14px] text-ink-soft truncate">{email}</span>
             <Chip variant="green" dot>
               Verified
             </Chip>
@@ -173,48 +108,28 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
       )}
 
       {/* Danger zone */}
-      <hr
-        style={{
-          margin: '28px 0 0',
-          border: 'none',
-          borderTop: '1px solid var(--line-soft)',
-          height: 0,
-        }}
-      />
-      <div
-        style={{
-          marginTop: 20,
-          padding: 18,
-          borderRadius: 13,
-          border: '1px solid oklch(0.85 0.08 25)',
-          background: 'oklch(0.98 0.015 25)',
-        }}
-      >
+      <hr className="mt-7 border-none border-t border-line-soft h-0" />
+      <div className="mt-5 p-[18px] rounded-[13px] border border-[oklch(0.85_0.08_25)] bg-[oklch(0.98_0.015_25)]">
         <SectionLabel icon={<Icon name="trash" size={13} color="var(--danger)" />}>
-          <span style={{ color: 'var(--danger)' }}>Danger zone</span>
+          <span className="text-danger">Danger zone</span>
         </SectionLabel>
-        <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '10px 0 14px' }}>
+        <p className="text-xs text-ink-soft mt-[10px] mb-[14px]">
           {ownedPoolCount > 0
             ? `Deleting your account is permanent and will also delete ${ownedPoolCount} pool${ownedPoolCount === 1 ? '' : 's'} you own and all their data.`
             : 'Deleting your account is permanent and cannot be undone.'}
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div className="flex items-center gap-[10px] flex-wrap">
           <button
             type="button"
             data-testid="delete-account-btn"
             disabled={isPendingDelete}
             onClick={handleDeleteClick}
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              padding: '8px 16px',
-              borderRadius: 9,
-              border: 'none',
-              cursor: 'pointer',
-              background: confirmDelete ? 'var(--danger)' : 'transparent',
-              color: confirmDelete ? 'white' : 'var(--danger)',
-              boxShadow: confirmDelete ? 'none' : 'inset 0 0 0 1.5px oklch(0.78 0.12 25)',
-            }}
+            className={cn(
+              'text-[13px] font-bold py-2 px-4 rounded-[9px] border-0 cursor-pointer',
+              confirmDelete
+                ? 'bg-danger text-white shadow-none'
+                : 'bg-transparent text-danger shadow-[inset_0_0_0_1.5px_oklch(0.78_0.12_25)]',
+            )}
           >
             {isPendingDelete ? 'Deleting…' : confirmDelete ? 'Confirm delete' : 'Delete account'}
           </button>
@@ -222,20 +137,14 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              style={{
-                fontSize: 12,
-                background: 'none',
-                border: 'none',
-                color: 'var(--ink-muted)',
-                cursor: 'pointer',
-              }}
+              className="text-xs bg-none border-0 text-ink-muted cursor-pointer"
             >
               Cancel
             </button>
           )}
         </div>
         {deleteError && (
-          <p role="alert" style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>
+          <p role="alert" className="mt-2 text-xs text-danger">
             {deleteError}
           </p>
         )}

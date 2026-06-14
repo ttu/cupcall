@@ -47,13 +47,10 @@ export default async function ViewMemberCardPage({ params }: Props): Promise<Rea
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <div className="eyebrow" style={{ marginBottom: 6 }}>
+        <div className="eyebrow mb-[6px]">
           <BackLink href={`/view/${token}`}>{pool.name}</BackLink>
         </div>
-        <h1
-          className="text-2xl font-bold text-[var(--ink)]"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
+        <h1 className="text-2xl font-bold text-[var(--ink)] font-cup-display">
           {memberName}&apos;s Predictions
         </h1>
       </div>

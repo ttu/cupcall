@@ -23,8 +23,8 @@ type Props = {
 export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
   if (rounds.length === 0) {
     return (
-      <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-muted)' }}>
+      <div className="card p-[32px_24px] text-center">
+        <p className="text-[13px] font-semibold text-ink-muted">
           Knockout stage bracket will appear here once teams are confirmed.
         </p>
       </div>
@@ -39,22 +39,10 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
   const finalColumnIndex = mainRounds.length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* Info banner */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 10,
-          padding: '10px 14px',
-          borderRadius: 10,
-          background: 'var(--green-050)',
-          border: '1px solid var(--green-300)',
-          fontSize: 13,
-          color: 'var(--green-700)',
-        }}
-      >
-        <span style={{ fontWeight: 800 }}>⚡</span>
+      <div className="flex items-start gap-[10px] p-[10px_14px] rounded-[10px] bg-green-050 border border-[var(--green-300)] text-[13px] text-green-700">
+        <span className="font-extrabold">⚡</span>
         <span>
           Results drop into your bracket as we enter them.{' '}
           <strong>Green = your pick survived, red = it&apos;s out.</strong>
@@ -62,37 +50,17 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
       </div>
 
       {/* Bracket columns */}
-      <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
-        <div
-          style={{
-            display: 'flex',
-            gap: 16,
-            alignItems: 'flex-start',
-            minWidth: 'max-content',
-          }}
-        >
+      <div className="overflow-x-auto pb-2">
+        <div className="flex gap-4 items-start min-w-max">
           {mainRounds.map((round, i) => (
             <div
               key={round.label}
               data-testid={`bracket-round-${round.label}`}
-              style={{
-                minWidth: 190,
-                paddingTop: columnPaddingTop(i),
-              }}
+              className="min-w-[190px]"
+              style={{ paddingTop: columnPaddingTop(i) }}
             >
-              <div
-                className="eyebrow"
-                style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2 }}
-              >
-                {round.label}
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: columnItemGap(i),
-                }}
-              >
+              <div className="eyebrow text-ink-muted mb-2 pl-0.5">{round.label}</div>
+              <div className="flex flex-col" style={{ gap: columnItemGap(i) }}>
                 {round.matches.map((match) => (
                   <BracketMatchCard key={match.bracketMatchKey} match={match} />
                 ))}
@@ -103,30 +71,18 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
           {/* Final + Bronze column */}
           {(finalMatch || bronzeMatch) && (
             <div
-              style={{
-                minWidth: 220,
-                paddingTop: columnPaddingTop(finalColumnIndex),
-              }}
+              className="min-w-[220px]"
+              style={{ paddingTop: columnPaddingTop(finalColumnIndex) }}
             >
               {finalMatch && (
                 <>
-                  <div
-                    className="eyebrow"
-                    style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2 }}
-                  >
-                    Final
-                  </div>
+                  <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>
                   <FinalResultCard match={finalMatch} matchKey="final" />
                 </>
               )}
               {bronzeMatch && (
                 <>
-                  <div
-                    className="eyebrow"
-                    style={{ color: 'var(--ink-muted)', margin: '16px 0 8px', paddingLeft: 2 }}
-                  >
-                    3rd Place
-                  </div>
+                  <div className="eyebrow text-ink-muted mt-4 mb-2 pl-0.5">3rd Place</div>
                   <FinalResultCard match={bronzeMatch} matchKey="bronze" />
                 </>
               )}

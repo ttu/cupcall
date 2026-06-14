@@ -3,14 +3,8 @@ import { Logo } from '@/shared/ui';
 
 export default function ViewLayout({ children }: { children: ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <header
-        style={{
-          padding: '14px 20px',
-          borderBottom: '1px solid var(--line)',
-          background: 'var(--surface)',
-        }}
-      >
+    <div className="min-h-screen">
+      <header className="p-[14px_20px] border-b border-line bg-surface">
         <Logo />
       </header>
       <main>{children}</main>

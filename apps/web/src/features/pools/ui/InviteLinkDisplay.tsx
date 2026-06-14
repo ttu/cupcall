@@ -10,32 +10,9 @@ export function InviteLinkDisplay({
   onCopy: () => void;
 }): ReactElement {
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <div
-        style={{
-          flex: 1,
-          height: 36,
-          borderRadius: 9,
-          background: 'var(--surface-2)',
-          boxShadow: 'inset 0 0 0 1px var(--line)',
-          padding: '0 12px',
-          display: 'flex',
-          alignItems: 'center',
-          overflow: 'hidden',
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: 'var(--ink-soft)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {inviteUrl}
-        </span>
+    <div className="flex gap-2">
+      <div className="flex-1 h-9 rounded-[9px] bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] px-3 flex items-center overflow-hidden">
+        <span className="text-[11px] font-mono text-ink-soft truncate">{inviteUrl}</span>
       </div>
       <button type="button" onClick={onCopy} className="btn btn-soft sm">
         {copied ? 'Copied!' : 'Copy'}

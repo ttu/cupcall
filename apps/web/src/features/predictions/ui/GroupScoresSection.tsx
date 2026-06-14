@@ -23,10 +23,7 @@ export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): R
   }
 
   return (
-    <section
-      aria-label="Group stage predictions"
-      style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
-    >
+    <section aria-label="Group stage predictions" className="flex flex-col gap-6">
       <GroupJumpNav groups={groups} />
       {groups.map((group) => (
         <GroupCard

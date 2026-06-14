@@ -65,44 +65,28 @@ export function BracketSection({
     <section
       data-testid="bracket-section"
       aria-label="Knockout bracket predictions"
-      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+      className="flex flex-col gap-3"
     >
       {!locked && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 10,
-            padding: '10px 14px',
-            borderRadius: 10,
-            background: 'var(--green-050)',
-            border: '1px solid var(--green-300)',
-            fontSize: 13,
-            color: 'var(--green-700)',
-          }}
-        >
-          <span style={{ fontWeight: 800 }}>⚡</span>
+        <div className="flex items-start gap-[10px] py-[10px] px-[14px] rounded-[10px] bg-green-050 border border-[var(--green-300)] text-[13px] text-green-700">
+          <span className="font-extrabold">⚡</span>
           <span>
             Pick the winner of each tie. Your group stage predictions determine who fills each slot.
           </span>
         </div>
       )}
 
-      <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+      <div className="overflow-x-auto pb-2">
+        <div className="flex gap-4 items-start">
           {bracket.rounds.map((round, i) => (
             <div
               key={round.label}
               data-testid={`bracket-round-${round.label}`}
-              style={{ minWidth: 190, paddingTop: columnPaddingTop(i) }}
+              className="min-w-[190px]"
+              style={{ paddingTop: columnPaddingTop(i) }}
             >
-              <div
-                className="eyebrow"
-                style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2 }}
-              >
-                {round.label}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: columnItemGap(i) }}>
+              <div className="eyebrow text-ink-muted mb-2 pl-0.5">{round.label}</div>
+              <div className="flex flex-col" style={{ gap: columnItemGap(i) }}>
                 {round.ties.map((tie) => (
                   <TieCard
                     key={tie.bracketMatchKey}
@@ -116,13 +100,8 @@ export function BracketSection({
             </div>
           ))}
 
-          <div style={{ minWidth: 220, paddingTop: columnPaddingTop(finalColumnIndex) }}>
-            <div
-              className="eyebrow"
-              style={{ color: 'var(--ink-muted)', marginBottom: 8, paddingLeft: 2 }}
-            >
-              Final
-            </div>
+          <div className="min-w-[220px]" style={{ paddingTop: columnPaddingTop(finalColumnIndex) }}>
+            <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>
             <FinalCard
               match={bracket.final}
               matchKey="final"
@@ -131,12 +110,7 @@ export function BracketSection({
               onSave={handleFinishSave}
               onPickWinner={handlePick}
             />
-            <div
-              className="eyebrow"
-              style={{ color: 'var(--ink-muted)', margin: '16px 0 8px', paddingLeft: 2 }}
-            >
-              3rd Place
-            </div>
+            <div className="eyebrow text-ink-muted mt-4 mb-2 pl-0.5">3rd Place</div>
             <FinalCard
               match={bracket.bronze}
               matchKey="bronze"

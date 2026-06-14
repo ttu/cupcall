@@ -28,13 +28,9 @@ export default async function SettingsPage(): Promise<ReactElement> {
   const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
 
   return (
-    <div style={{ maxWidth: 560, margin: '32px auto', padding: '0 24px' }}>
-      <h1 className="display" style={{ fontSize: 36, marginBottom: 28 }}>
-        Settings
-      </h1>
-      <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 10 }}>
-        Your account
-      </div>
+    <div className="max-w-[560px] mx-auto mt-8 px-6">
+      <h1 className="display text-[36px] mb-7">Settings</h1>
+      <div className="eyebrow text-ink-muted mb-[10px]">Your account</div>
       <SettingsForm displayName={displayName} email={email} ownedPoolCount={ownedPoolCount} />
       {!email && <ConnectEmailForm />}
       <MyLoginLink token={loginToken} baseUrl={baseUrl} />

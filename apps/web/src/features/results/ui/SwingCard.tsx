@@ -14,14 +14,12 @@ export function SwingCard({
   const text = buildSwingText(me, entries, stillLive);
 
   return (
-    <div className="card" style={{ padding: '12px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 13 }}>
+    <div className="card p-[12px_14px]">
+      <div className="flex items-center gap-2 font-extrabold text-[13px]">
         <Icon name="spark" size={15} color="var(--orange-500, oklch(0.65 0.2 55))" />
         The swing
       </div>
-      <p style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 8, lineHeight: 1.55 }}>
-        {text}
-      </p>
+      <p className="text-xs text-ink-muted mt-2 leading-[1.55]">{text}</p>
     </div>
   );
 }

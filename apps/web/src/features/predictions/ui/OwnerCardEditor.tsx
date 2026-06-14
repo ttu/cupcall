@@ -56,7 +56,7 @@ export function OwnerCardEditor({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="flex flex-col gap-6">
       <CompletionBar percent={card.completionPercent} />
 
       <GroupScoresSection

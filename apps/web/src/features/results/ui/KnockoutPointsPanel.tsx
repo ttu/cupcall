@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { ScoreBreakdown } from '../domain/types';
+import { cn } from '@/shared/ui';
 
 type Props = { breakdown: ScoreBreakdown | null };
 
@@ -18,45 +19,21 @@ export function KnockoutPointsPanel({ breakdown }: Props): ReactElement | null {
   const total = rows.reduce((sum, r) => sum + r.points, 0);
 
   return (
-    <div data-testid="knockout-points-panel" className="card" style={{ padding: '14px 16px' }}>
-      <div className="eyebrow" style={{ color: 'var(--ink-muted)', marginBottom: 10 }}>
-        Knockout points
+    <div data-testid="knockout-points-panel" className="card p-[14px_16px]">
+      <div className="eyebrow text-ink-muted mb-[10px]">Knockout points</div>
+      <div className="flex items-baseline gap-[6px] mb-3">
+        <span className="display tnum text-[36px] text-ink leading-none">{total}</span>
+        <span className="text-[13px] font-bold text-ink-muted">pts</span>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          gap: 6,
-          marginBottom: 12,
-        }}
-      >
-        <span className="display tnum" style={{ fontSize: 36, color: 'var(--ink)', lineHeight: 1 }}>
-          {total}
-        </span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-muted)' }}>pts</span>
-      </div>
-      <ul
-        style={{
-          listStyle: 'none',
-          margin: 0,
-          padding: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-        }}
-      >
+      <ul className="list-none m-0 p-0 flex flex-col gap-[6px]">
         {rows.map((row) => (
           <li
             key={row.label}
             data-testid={`knockout-points-row-${row.label}`}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: 12,
-              fontWeight: 700,
-              color: row.points > 0 ? 'var(--ink)' : 'var(--ink-muted)',
-            }}
+            className={cn(
+              'flex justify-between items-center text-xs font-bold',
+              row.points > 0 ? 'text-ink' : 'text-ink-muted',
+            )}
           >
             <span>{row.label}</span>
             <span className="tnum">+{row.points}</span>

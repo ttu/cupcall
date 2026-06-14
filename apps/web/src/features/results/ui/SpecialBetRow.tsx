@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { SpecialBetResultRow, SpecialBetPoolStats } from '../domain/types';
-import { Icon, TeamBadge } from '@/shared/ui';
+import { Icon, TeamBadge, cn } from '@/shared/ui';
 
 const KIND_ICON = {
   team: 'flag',
@@ -24,46 +24,22 @@ export function SpecialBetRow({
   return (
     <div
       data-testid={`special-bet-result-${bet.key}`}
-      style={{
-        borderRadius: 'var(--radius)',
-        border: isPending
-          ? '1px solid var(--line-soft)'
+      className={cn(
+        'rounded-[var(--radius)] shadow-cup-sm p-[12px_14px] grid [grid-template-columns:34px_1fr_auto] gap-[10px] items-start border',
+        isPending || (!isHit && !isMissed)
+          ? 'border-line-soft bg-surface'
           : isHit
-            ? '1px solid var(--green-300)'
-            : isMissed
-              ? '1px solid var(--red-300)'
-              : '1px solid var(--line-soft)',
-        background: isHit ? 'var(--green-050)' : isMissed ? 'var(--red-050)' : 'var(--surface)',
-        boxShadow: 'var(--shadow-sm)',
-        padding: '12px 14px',
-        display: 'grid',
-        gridTemplateColumns: '34px 1fr auto',
-        gap: 10,
-        alignItems: 'start',
-      }}
+            ? 'border-green-300 bg-green-050'
+            : 'border-red-300 bg-red-050',
+      )}
     >
-      <div
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 9,
-          background: 'var(--surface-2)',
-          boxShadow: 'inset 0 0 0 1px var(--line)',
-          display: 'grid',
-          placeItems: 'center',
-          color: 'var(--ink-muted)',
-        }}
-      >
+      <div className="w-[34px] h-[34px] rounded-[9px] bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center text-ink-muted">
         <Icon name={icon} size={16} stroke={1.8} />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-        <span
-          style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)', lineHeight: 1.4 }}
-        >
-          {bet.label}
-        </span>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="flex flex-col gap-1 min-w-0">
+        <span className="text-[12.5px] font-bold text-ink-soft leading-[1.4]">{bet.label}</span>
+        <div className="flex gap-[6px] flex-wrap items-center">
           {showUserPick && (
             <PickDisplay
               value={bet.userPickDisplay}
@@ -73,7 +49,7 @@ export function SpecialBetRow({
           )}
           {bet.actualAnswerDisplay !== null && (
             <>
-              {showUserPick && <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>→</span>}
+              {showUserPick && <span className="text-[11px] text-ink-muted">→</span>}
               <PickDisplay
                 value={bet.actualAnswerDisplay}
                 label="Actual"
@@ -89,29 +65,15 @@ export function SpecialBetRow({
         {bet.poolStats && <PoolPicksRow stats={bet.poolStats} />}
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: 4,
-          paddingTop: 2,
-        }}
-      >
+      <div className="flex flex-col items-end gap-1 pt-0.5">
         {isPending ? (
           <span className="chip" style={{ height: 24, fontSize: 11 }}>
             Pending
           </span>
         ) : isHit ? (
           <span
-            className="chip"
-            style={{
-              background: 'var(--green-500)',
-              color: 'oklch(0.2 0.02 160)',
-              boxShadow: 'none',
-              height: 24,
-              fontSize: 11,
-            }}
+            className="chip bg-green-500 text-[oklch(0.2_0.02_160)] shadow-none"
+            style={{ height: 24, fontSize: 11 }}
           >
             +{bet.pointsAwarded}
           </span>
@@ -120,9 +82,7 @@ export function SpecialBetRow({
             +0
           </span>
         ) : null}
-        <span className="display tnum" style={{ fontSize: 11, color: 'var(--ink-muted)' }}>
-          {bet.points} pts
-        </span>
+        <span className="display tnum text-[11px] text-ink-muted">{bet.points} pts</span>
       </div>
     </div>
   );
@@ -140,23 +100,15 @@ function PickDisplay({
   teamId?: string | null;
 }): ReactElement {
   if (value === null) {
-    return (
-      <span style={{ fontSize: 12, color: 'var(--ink-muted)', fontStyle: 'italic' }}>{label}</span>
-    );
+    return <span className="text-xs text-ink-muted italic">{label}</span>;
   }
 
   const display = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+    <span className="inline-flex items-center gap-[5px]">
       {teamId && <TeamBadge teamId={teamId} size="sm" />}
-      <span
-        style={{
-          fontSize: 12,
-          fontWeight: actual ? 700 : 400,
-          color: actual ? 'var(--ink)' : 'var(--ink-soft)',
-        }}
-      >
+      <span className={cn('text-xs', actual ? 'font-bold text-ink' : 'font-normal text-ink-soft')}>
         {display}
       </span>
     </span>
@@ -169,28 +121,17 @@ function PoolPicksRow({ stats }: { stats: SpecialBetPoolStats }): ReactElement {
   const restCount = stats.totalPredictions - shownCount;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: 'var(--ink-muted)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          flexShrink: 0,
-        }}
-      >
+    <div className="flex items-center gap-[6px] flex-wrap mt-0.5">
+      <span className="text-[10px] font-bold text-ink-muted uppercase tracking-[0.05em] shrink-0">
         Pool
       </span>
       {top.map((v) => (
-        <span key={v.displayValue} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-          <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{v.displayValue}</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink)' }}>{v.pct}%</span>
+        <span key={v.displayValue} className="inline-flex items-center gap-[3px]">
+          <span className="text-[11px] text-ink-soft">{v.displayValue}</span>
+          <span className="text-[11px] font-bold text-ink">{v.pct}%</span>
         </span>
       ))}
-      {restCount > 0 && (
-        <span style={{ fontSize: 10, color: 'var(--ink-muted)' }}>+{restCount}</span>
-      )}
+      {restCount > 0 && <span className="text-[10px] text-ink-muted">+{restCount}</span>}
     </div>
   );
 }
@@ -207,15 +148,7 @@ function CurrentLeaderLine({
   return (
     <div
       data-testid={`special-bet-current-leader-${betKey}`}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 5,
-        flexWrap: 'wrap',
-        fontSize: 11,
-        color: 'var(--ink-muted)',
-        marginTop: 2,
-      }}
+      className="flex items-center gap-[5px] flex-wrap text-[11px] text-ink-muted mt-0.5"
     >
       <span>{prefix}</span>
       {leader.teamIds.map((tid) => (

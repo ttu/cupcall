@@ -4,9 +4,7 @@ import Link from 'next/link';
 export default function InvalidEmailLinkPage(): ReactElement {
   return (
     <main className="max-w-md mx-auto px-4 py-12 text-center space-y-4">
-      <h1 className="text-2xl font-bold text-(--ink)" style={{ fontFamily: 'var(--font-display)' }}>
-        Link Expired
-      </h1>
+      <h1 className="text-2xl font-bold text-(--ink) font-cup-display">Link Expired</h1>
       <p className="text-sm text-(--ink-soft)">
         This email link is invalid or has expired. Go to your pools page to request a new one.
       </p>

@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { ProjectedEntry } from '../domain/types';
-import { Icon } from '@/shared/ui';
+import { Icon, cn } from '@/shared/ui';
 
 export function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -17,27 +17,15 @@ export function projectedSubLabel(entries: ProjectedEntry[]): string {
 
 export function ProjectedStandings({ entries }: { entries: ProjectedEntry[] }): ReactElement {
   return (
-    <div style={{ overflow: 'hidden' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '44px 1fr 52px 64px',
-          gap: 6,
-          padding: '8px 16px',
-          background: 'var(--surface-2)',
-          borderTop: '1px solid var(--line)',
-          borderBottom: '1px solid var(--line)',
-        }}
-      >
+    <div className="overflow-hidden">
+      <div className="grid [grid-template-columns:44px_1fr_52px_64px] gap-[6px] p-[8px_16px] bg-surface-2 border-t border-b border-line">
         {(['Now → Fin', 'Player', 'Now', 'Proj.'] as const).map((hd, i) => (
           <span
             key={hd}
-            className="eyebrow"
-            style={{
-              color: 'var(--ink-muted)',
-              fontSize: 10,
-              textAlign: i >= 2 ? 'right' : 'left',
-            }}
+            className={cn(
+              'eyebrow text-ink-muted text-[10px]',
+              i >= 2 ? 'text-right' : 'text-left',
+            )}
           >
             {hd}
           </span>
@@ -59,43 +47,23 @@ function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
 
   return (
     <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '44px 1fr 52px 64px',
-        gap: 6,
-        padding: '10px 16px',
-        alignItems: 'center',
-        background: isCurrentUser ? 'var(--green-050)' : 'transparent',
-      }}
+      className={cn(
+        'grid [grid-template-columns:44px_1fr_52px_64px] gap-[6px] p-[10px_16px] items-center',
+        isCurrentUser ? 'bg-green-050' : 'bg-transparent',
+      )}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span
-          className="display"
-          style={{
-            fontSize: 16,
-            color: isTop3 ? 'var(--gold, oklch(0.8 0.14 85))' : 'var(--ink-muted)',
-            width: 18,
-          }}
-        >
+      <span className="flex items-center gap-1">
+        <span className={cn('display text-base w-[18px]', isTop3 ? 'text-gold' : 'text-ink-muted')}>
           {projectedRank}
         </span>
         {rankDelta !== 0 && (
           <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1,
-              fontSize: 10,
-              fontWeight: 800,
-              color: rankDelta > 0 ? 'var(--green-600)' : 'var(--danger, oklch(0.55 0.2 25))',
-            }}
+            className={cn(
+              'inline-flex items-center gap-px text-[10px] font-extrabold',
+              rankDelta > 0 ? 'text-green-600' : 'text-danger',
+            )}
           >
-            <span
-              style={{
-                display: 'inline-flex',
-                transform: rankDelta > 0 ? 'rotate(180deg)' : 'none',
-              }}
-            >
+            <span className={cn('inline-flex', rankDelta > 0 ? 'rotate-180' : '')}>
               <Icon name="chevdown" size={11} stroke={2.8} color="currentColor" />
             </span>
             {Math.abs(rankDelta)}
@@ -103,51 +71,31 @@ function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
         )}
       </span>
 
-      <span style={{ minWidth: 0 }}>
+      <span className="min-w-0">
         <span
-          style={{
-            display: 'block',
-            fontWeight: 700,
-            fontSize: 13,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            color: isCurrentUser ? 'var(--green-700)' : 'var(--ink)',
-          }}
+          className={cn(
+            'block font-bold text-[13px] truncate',
+            isCurrentUser ? 'text-green-700' : 'text-ink',
+          )}
         >
           {isCurrentUser ? 'You' : displayName.split(' ')[0]}
         </span>
         {!isCurrentUser && displayName.split(' ')[1] && (
-          <span
-            style={{
-              display: 'block',
-              fontSize: 11,
-              fontWeight: 500,
-              color: 'var(--ink-muted)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
+          <span className="block text-[11px] font-medium text-ink-muted truncate">
             {displayName.split(' ').slice(1).join(' ')}
           </span>
         )}
       </span>
 
-      <span
-        className="tnum"
-        style={{ textAlign: 'right', fontWeight: 600, fontSize: 13, color: 'var(--ink-muted)' }}
-      >
+      <span className="tnum text-right font-semibold text-[13px] text-ink-muted">
         {currentPoints}
       </span>
 
       <span
-        className="display tnum"
-        style={{
-          textAlign: 'right',
-          fontSize: 18,
-          color: isCurrentUser ? 'var(--green-600)' : 'var(--ink)',
-        }}
+        className={cn(
+          'display tnum text-right text-[18px]',
+          isCurrentUser ? 'text-green-600' : 'text-ink',
+        )}
       >
         {projectedPoints}
       </span>

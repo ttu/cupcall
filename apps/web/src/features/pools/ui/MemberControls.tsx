@@ -31,43 +31,20 @@ export function MemberControls({ poolId }: Props): ReactElement {
   }
 
   return (
-    <div
-      className="card"
-      style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}
-    >
-      <div
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}
-      >
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: 'var(--ink-muted)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
+    <div className="card py-3 px-[14px] flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-[10px]">
+        <span className="text-xs font-bold text-ink-muted inline-flex items-center gap-[6px]">
           <Icon name="trash" size={11} color="var(--ink-muted)" />
           Leave pool
         </span>
         {confirmLeave ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="flex items-center gap-[6px]">
             <button
               type="button"
               data-testid="leave-pool-btn"
               disabled={isPending}
               onClick={handleLeaveClick}
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                padding: '4px 9px',
-                borderRadius: 7,
-                border: 'none',
-                background: 'var(--danger)',
-                color: 'white',
-                cursor: 'pointer',
-              }}
+              className="text-[11px] font-bold py-1 px-[9px] rounded-[7px] border-0 bg-danger text-white cursor-pointer"
             >
               {isPending ? 'Leaving…' : 'Confirm'}
             </button>
@@ -75,13 +52,7 @@ export function MemberControls({ poolId }: Props): ReactElement {
               <button
                 type="button"
                 onClick={() => setConfirmLeave(false)}
-                style={{
-                  fontSize: 11,
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--ink-muted)',
-                  cursor: 'pointer',
-                }}
+                className="text-[11px] bg-transparent border-0 text-ink-muted cursor-pointer"
               >
                 Cancel
               </button>
@@ -93,27 +64,18 @@ export function MemberControls({ poolId }: Props): ReactElement {
             data-testid="leave-pool-btn"
             disabled={isPending}
             onClick={handleLeaveClick}
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              padding: '4px 9px',
-              borderRadius: 7,
-              border: '1.5px solid oklch(0.78 0.12 25)',
-              background: 'transparent',
-              color: 'var(--danger)',
-              cursor: 'pointer',
-            }}
+            className="text-[11px] font-bold py-1 px-[9px] rounded-[7px] border-[1.5px] border-[oklch(0.78_0.12_25)] bg-transparent text-danger cursor-pointer"
           >
             Leave
           </button>
         )}
       </div>
-      <p style={{ fontSize: 11, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.4 }}>
+      <p className="text-[11px] text-ink-soft m-0 leading-[1.4]">
         Leaving removes you and your predictions from this pool. You can rejoin later with an invite
         link.
       </p>
       {leaveError && (
-        <p role="alert" style={{ margin: 0, fontSize: 11, color: 'var(--danger)' }}>
+        <p role="alert" className="m-0 text-[11px] text-danger">
           {leaveError}
         </p>
       )}
