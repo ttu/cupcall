@@ -140,7 +140,16 @@ export async function syncTournament(
   for (const { predictionId, poolId, userId } of predictions) {
     const inputs = await getPredictionInputs(db, predictionId);
     try {
-      const derived = deriveCard(inputs, tournament);
+      // Late joiners only predict non-locked matches, so their groupScores are
+      // incomplete. Augmenting with actual results (same as rescoreCard does)
+      // lets deriveCard resolve bracket slots correctly, preventing a throw on
+      // the pick-validation step inside buildBracket.
+      const savedMatchIds = new Set(inputs.groupScores.map((gs) => gs.matchId as string));
+      const augmentedGroupScores = [
+        ...inputs.groupScores,
+        ...mergedActual.matchResults.filter((r) => !savedMatchIds.has(r.matchId as string)),
+      ];
+      const derived = deriveCard({ ...inputs, groupScores: augmentedGroupScores }, tournament);
       const breakdown = scoreCard(derived, inputs, mergedActual, tournament.scoring);
       await upsertScore(db, { poolId, userId, pointsTotal: breakdown.total, breakdown });
       scored++;

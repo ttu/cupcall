@@ -284,6 +284,133 @@ describe('syncTournament integration', () => {
     expect(poolScores).toHaveLength(1);
   });
 
+  it('scores a late joiner whose QF picks are based on actual group results, not seed order', async () => {
+    // Regression: sync was calling deriveCard without augmenting group scores with
+    // actual results. A late joiner only predicts non-locked matches, so their
+    // groupScores are incomplete. buildBracket would resolve slots from the wrong
+    // (seed-order) group standings and throw "invalid pick", skipping the prediction
+    // and leaving their score at 0 even though they had correct group match hits.
+    const scratch = mkdtempSync(join(tmpdir(), 'sync-latejoin-'));
+    try {
+      cpSync(mini2026Dir, scratch, { recursive: true });
+
+      // Write results.json where A2 wins group A (overturning seed order: A1 is 1st by seed).
+      // This means 1A=A2, so qf1 = A2 vs B2. Without augmentation the sync would
+      // resolve 1A=A1 (seed) and treat the QF pick of A2 as invalid.
+      const resultsPath = join(scratch, 'results.json');
+      const allGroupAMatches = [
+        { matchId: 'mA1', home: 0, away: 1 }, // A1 vs A2: A2 wins
+        { matchId: 'mA2', home: 0, away: 1 }, // A1 vs A3: A3 wins
+        { matchId: 'mA3', home: 0, away: 0 }, // A1 vs A4: draw
+        { matchId: 'mA4', home: 1, away: 0 }, // A2 vs A3: A2 wins
+        { matchId: 'mA5', home: 1, away: 0 }, // A2 vs A4: A2 wins
+        { matchId: 'mA6', home: 1, away: 0 }, // A3 vs A4: A3 wins
+      ];
+      // Group B: B1 wins (seed order preserved; B1 beats everyone)
+      const allGroupBMatches = [
+        { matchId: 'mB1', home: 1, away: 0 }, // B1 vs B2: B1 wins → 3pts B1
+        { matchId: 'mB2', home: 1, away: 0 }, // B1 vs B3: B1 wins
+        { matchId: 'mB3', home: 1, away: 0 }, // B1 vs B4: B1 wins
+        { matchId: 'mB4', home: 1, away: 0 }, // B2 vs B3: B2 wins
+        { matchId: 'mB5', home: 1, away: 0 }, // B2 vs B4: B2 wins
+        { matchId: 'mB6', home: 0, away: 0 }, // B3 vs B4: draw
+      ];
+      // Groups C and D: C1, D1 win (seed order preserved)
+      const allGroupCMatches = [
+        { matchId: 'mC1', home: 1, away: 0 },
+        { matchId: 'mC2', home: 1, away: 0 },
+        { matchId: 'mC3', home: 1, away: 0 },
+        { matchId: 'mC4', home: 1, away: 0 },
+        { matchId: 'mC5', home: 1, away: 0 },
+        { matchId: 'mC6', home: 0, away: 0 },
+      ];
+      const allGroupDMatches = [
+        { matchId: 'mD1', home: 1, away: 0 },
+        { matchId: 'mD2', home: 1, away: 0 },
+        { matchId: 'mD3', home: 1, away: 0 },
+        { matchId: 'mD4', home: 1, away: 0 },
+        { matchId: 'mD5', home: 1, away: 0 },
+        { matchId: 'mD6', home: 0, away: 0 },
+      ];
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          matchResults: [
+            ...allGroupAMatches,
+            ...allGroupBMatches,
+            ...allGroupCMatches,
+            ...allGroupDMatches,
+          ],
+          groupOrder: {},
+          answers: {},
+        }),
+      );
+
+      await syncTournament(db, 'mini-2026', scratch);
+
+      const owner = await createUser(db, {
+        email: `owner-${crypto.randomUUID()}@x.com`,
+        displayName: 'Owner',
+      });
+      const user = await createUser(db, {
+        email: `latejoin-${crypto.randomUUID()}@x.com`,
+        displayName: 'LateJoiner',
+      });
+      const pool = await createPool(db, {
+        tournamentId: 'mini-2026',
+        ownerId: owner.id,
+        name: 'Late Join Pool',
+        inviteTokenHash: `h-lj-${crypto.randomUUID()}`,
+      });
+
+      const [predRow] = await db
+        .insert(schema.predictions)
+        .values({ poolId: pool.id, userId: user.id, tournamentId: 'mini-2026' })
+        .returning();
+      if (!predRow) throw new Error('No prediction row returned');
+
+      // Late joiner never predicted group A (all those matches were locked when they joined).
+      // They did predict mB1 correctly (B1 1-0 B2 → exact hit).
+      await db
+        .insert(schema.predictionGroupScores)
+        .values([{ predictionId: predRow.id, matchId: 'mB1', homeGoals: 1, awayGoals: 0 }]);
+
+      // Their QF picks are based on the ACTUAL bracket:
+      //   1A=A2, 2A=A1, 1B=B1, 2B=B2, 1C=C1, 2C=C2, 1D=D1, 2D=D2
+      //   qf1=A2 vs B2, qf2=C1 vs D2, qf3=B1 vs A1, qf4=D1 vs C2
+      await db.insert(schema.predictionKnockoutPicks).values([
+        { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('qf1'), winnerTeamId: 'A2' },
+        { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('qf2'), winnerTeamId: 'C1' },
+        { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('qf3'), winnerTeamId: 'B1' },
+        { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('qf4'), winnerTeamId: 'D1' },
+        { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('sf1'), winnerTeamId: 'A2' },
+        { predictionId: predRow.id, bracketMatchKey: bracketMatchKey('sf2'), winnerTeamId: 'B1' },
+        {
+          predictionId: predRow.id,
+          bracketMatchKey: bracketMatchKey('final'),
+          winnerTeamId: 'A2',
+        },
+        {
+          predictionId: predRow.id,
+          bracketMatchKey: bracketMatchKey('bronze'),
+          winnerTeamId: 'C1',
+        },
+      ]);
+
+      // Sync should score this prediction, not skip it.
+      const result = await syncTournament(db, 'mini-2026', scratch);
+      expect(result.scored).toBe(1);
+
+      const allScores = await db.select().from(schema.scores);
+      const score = allScores.find((s) => s.poolId === pool.id);
+      expect(score).toBeDefined();
+      // Should have at least the exact-score hit on mB1 (6 pts by default scoring).
+      expect(score?.breakdown?.groupMatches).toBeGreaterThan(0);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
   it('rejects results.json that references a player ID not present in tournament.json players', async () => {
     // Build a scratch data dir that copies mini-2026 then rewrites results.json
     // with a player ID that does NOT exist in tournament.json's players[].
