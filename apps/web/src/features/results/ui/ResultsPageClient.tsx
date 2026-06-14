@@ -13,6 +13,7 @@ import { BracketHealthPanel } from './BracketHealthPanel';
 import { KnockoutPointsPanel } from './KnockoutPointsPanel';
 import { PointsRaceTab } from './PointsRaceTab';
 import { SpecialBetsPanel } from './SpecialBetsPanel';
+import { PointsSummaryPanel } from './PointsSummaryPanel';
 
 type Tab = 'group' | 'knockout' | 'race' | 'specials';
 
@@ -69,6 +70,7 @@ export function ResultsPageClient({
 
       {activeTab === 'group' && (
         <section aria-label="Group stage results" className="flex flex-col gap-6">
+          {view.userGroupSummary && <PointsSummaryPanel summary={view.userGroupSummary} />}
           <TodayMatchesFeed groups={view.groupResults} />
 
           {/* Group jump nav */}
@@ -113,17 +115,23 @@ export function ResultsPageClient({
       )}
 
       {activeTab === 'knockout' && (
-        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_240px]">
-          <KnockoutBracket rounds={view.bracketRounds} bronzeMatch={view.bronzeMatch} />
-          <div className="flex flex-col gap-4">
-            <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
-            <KnockoutPointsPanel breakdown={view.userBreakdown} />
+        <div className="flex flex-col gap-6">
+          {view.userKnockoutSummary && <PointsSummaryPanel summary={view.userKnockoutSummary} />}
+          <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_240px]">
+            <KnockoutBracket rounds={view.bracketRounds} bronzeMatch={view.bronzeMatch} />
+            <div className="flex flex-col gap-4">
+              <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
+              <KnockoutPointsPanel breakdown={view.userBreakdown} />
+            </div>
           </div>
         </div>
       )}
 
       {activeTab === 'specials' && (
-        <SpecialBetsPanel specialBets={view.specialBets} viewerMode={viewerMode} />
+        <div className="flex flex-col gap-6">
+          {view.userSpecialsSummary && <PointsSummaryPanel summary={view.userSpecialsSummary} />}
+          <SpecialBetsPanel specialBets={view.specialBets} viewerMode={viewerMode} />
+        </div>
       )}
 
       {activeTab === 'race' && <PointsRaceTab race={view.pointsRaceView} viewerMode={viewerMode} />}

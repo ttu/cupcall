@@ -21,7 +21,7 @@ import {
 } from '@cup/db';
 import * as schema from '@cup/db/schema';
 import { miniTournament } from '@cup/engine/testing';
-import { groupId, bracketMatchKey, points, computeRemainingMaxPoints } from '@cup/engine';
+import { groupId, bracketMatchKey, points, computeRemainingMaxPoints, teamId } from '@cup/engine';
 import type { UserId, ScoreBreakdown, Tournament } from '@cup/engine';
 import { getResultsView } from './get-results-view';
 
@@ -1692,6 +1692,213 @@ describe('getResultsView', () => {
       expect(bet.poolStats!.totalPredictions).toBe(1);
       expect(bet.poolStats!.topValues[0]!.displayValue).toBe('5');
       expect(bet.poolStats!.topValues[0]!.teamId).toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // userGroupSummary
+  // ---------------------------------------------------------------------------
+
+  describe('userGroupSummary', () => {
+    it('is null in view mode (no userId)', async () => {
+      const view = await getResultsView({ db, poolId, now: NOW });
+      expect(view!.userGroupSummary).toBeNull();
+    });
+
+    it('earned=0, missed=0 before any group match resolves', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userGroupSummary!;
+      const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+      expect(s.earned).toBe(0);
+      expect(s.missed).toBe(0);
+      expect(s.canStillGet).toBe(totalMax.groupMatches + totalMax.groupOrder);
+    });
+
+    it('earned reflects group points and canStillGet decreases after a group match resolves', async () => {
+      const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!;
+      await finalizeMatch(db, miniTournament.id, oneMatch.id, 2, 1);
+
+      const exactPts = miniTournament.scoring.groupMatch.exactScore;
+      await upsertScore(db, {
+        poolId,
+        userId,
+        pointsTotal: points(exactPts),
+        breakdown: {
+          groupMatches: points(exactPts),
+          groupOrder: points(0),
+          roundOf8: points(0),
+          topFour: points(0),
+          bronze: points(0),
+          final: points(0),
+          specials: points(0),
+          total: points(exactPts),
+        },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userGroupSummary!;
+      const remaining = computeRemainingMaxPoints(miniTournament, {
+        finalMatchIds: new Set([oneMatch.id]),
+      });
+      expect(s.earned).toBe(exactPts);
+      expect(s.missed).toBe(0);
+      expect(s.canStillGet).toBe(remaining.groupMatches + remaining.groupOrder);
+    });
+
+    it('missed reflects group points the user did not score', async () => {
+      const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!;
+      await finalizeMatch(db, miniTournament.id, oneMatch.id, 2, 1);
+
+      await upsertScore(db, {
+        poolId,
+        userId,
+        pointsTotal: points(0),
+        breakdown: {
+          groupMatches: points(0),
+          groupOrder: points(0),
+          roundOf8: points(0),
+          topFour: points(0),
+          bronze: points(0),
+          final: points(0),
+          specials: points(0),
+          total: points(0),
+        },
+      });
+
+      const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+      const remaining = computeRemainingMaxPoints(miniTournament, {
+        finalMatchIds: new Set([oneMatch.id]),
+      });
+      const maxFromResolved =
+        totalMax.groupMatches +
+        totalMax.groupOrder -
+        (remaining.groupMatches + remaining.groupOrder);
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userGroupSummary!;
+      expect(s.earned).toBe(0);
+      expect(s.missed).toBe(maxFromResolved);
+      expect(s.canStillGet).toBe(remaining.groupMatches + remaining.groupOrder);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // userKnockoutSummary
+  // ---------------------------------------------------------------------------
+
+  describe('userKnockoutSummary', () => {
+    it('is null in view mode (no userId)', async () => {
+      const view = await getResultsView({ db, poolId, now: NOW });
+      expect(view!.userKnockoutSummary).toBeNull();
+    });
+
+    it('earned=0, missed=0 before any knockout match resolves', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userKnockoutSummary!;
+      const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+      expect(s.earned).toBe(0);
+      expect(s.missed).toBe(0);
+      expect(s.canStillGet).toBe(
+        totalMax.roundOf8 + totalMax.topFour + totalMax.bronze + totalMax.final,
+      );
+    });
+
+    it('earned reflects knockout points from the breakdown', async () => {
+      await upsertScore(db, {
+        poolId,
+        userId,
+        pointsTotal: points(50),
+        breakdown: {
+          groupMatches: points(0),
+          groupOrder: points(0),
+          roundOf8: points(20),
+          topFour: points(15),
+          bronze: points(10),
+          final: points(5),
+          specials: points(0),
+          total: points(50),
+        },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userKnockoutSummary!;
+      expect(s.earned).toBe(50);
+    });
+
+    it('canStillGet drops to 0 for topFour/bronze/final when actualResults resolves them', async () => {
+      // KO matches are never inserted into the matches table by the sync pipeline, so the
+      // engine's finalMatchIds check would wrongly keep these categories open. This test
+      // verifies we read resolution state from actualResults instead.
+      await upsertTournamentResults(db, miniTournament.id, {
+        matchResults: [],
+        groupOrder: {},
+        answers: {
+          topFourOrder: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')],
+        },
+        bronzeMatch: { home: teamId('C1'), away: teamId('D1'), homeGoals: 1, awayGoals: 0 },
+        finalMatch: {
+          home: teamId('A1'),
+          away: teamId('B1'),
+          homeGoals: 2,
+          awayGoals: 1,
+          decidedBy: 'regulation',
+        },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userKnockoutSummary!;
+      const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+
+      // topFour/bronze/final are resolved → 0 remaining; roundOf8 still open (no group matches)
+      expect(s.canStillGet).toBe(totalMax.roundOf8);
+      // earned=0, all resolved max is missed
+      expect(s.missed).toBe(totalMax.topFour + totalMax.bronze + totalMax.final);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // userSpecialsSummary
+  // ---------------------------------------------------------------------------
+
+  describe('userSpecialsSummary', () => {
+    it('is null in view mode (no userId)', async () => {
+      const view = await getResultsView({ db, poolId, now: NOW });
+      expect(view!.userSpecialsSummary).toBeNull();
+    });
+
+    it('all pending and earned=0 when no actual answers exist', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userSpecialsSummary!;
+      expect(s.earned).toBe(0);
+      expect(s.missed).toBe(0);
+      expect(s.canStillGet).toBe(view!.specialBets.reduce((sum, b) => sum + b.points, 0));
+    });
+
+    it('earned and missed reflect resolved special bets', async () => {
+      const pred = await getOrCreatePrediction(db, {
+        poolId,
+        userId,
+        tournamentId: miniTournament.id,
+      });
+      // User picks A1 for groupTopScoringTeam (will hit) and B1 for groupTopConcedingTeam (will miss)
+      await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'A1');
+      await upsertSpecialBet(db, pred.id, 'groupTopConcedingTeam', 'B1');
+
+      await upsertTournamentResults(db, miniTournament.id, {
+        matchResults: [],
+        groupOrder: {},
+        answers: {
+          groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId,
+          groupTopConcedingTeam: 'C1' as import('@cup/engine').TeamId,
+        },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userSpecialsSummary!;
+      const hitBet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      const missBet = view!.specialBets.find((b) => b.key === 'groupTopConcedingTeam')!;
+      expect(s.earned).toBe(hitBet.points);
+      expect(s.missed).toBe(missBet.points);
     });
   });
 

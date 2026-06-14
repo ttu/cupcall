@@ -239,12 +239,27 @@ export type SpecialBetResultRow = {
   poolStats: SpecialBetPoolStats | null;
 };
 
+export type UserPointsSummary = {
+  /** Points the user has actually scored from resolved matches. */
+  earned: number;
+  /** Max points available from resolved matches that the user didn't score. */
+  missed: number;
+  /** Maximum points still attainable from unresolved matches. */
+  canStillGet: number;
+};
+
 export type ResultsView = {
   poolName: string;
   tournamentName: string;
   userRank: UserRankChip | null;
   /** The current user's score breakdown — null when the user has no scored prediction yet. */
   userBreakdown: ScoreBreakdown | null;
+  /** Group matches + group order points summary — null in viewer mode. */
+  userGroupSummary: UserPointsSummary | null;
+  /** Bracket picks points summary (roundOf8, topFour, bronze, final) — null in viewer mode. */
+  userKnockoutSummary: UserPointsSummary | null;
+  /** Specials-only points summary — null in viewer mode. */
+  userSpecialsSummary: UserPointsSummary | null;
   stageProgress: StageProgress[];
   currentStage: StageKey;
   groupResults: GroupResultView[];

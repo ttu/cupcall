@@ -50,6 +50,7 @@ import type {
   SpecialBetResultRow,
   SpecialBetPoolStats,
   CurrentLeader,
+  UserPointsSummary,
 } from '../domain/types';
 import {
   computeGroupTopScoringLeader,
@@ -141,11 +142,24 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     poolSpecialBets,
   );
 
+  const userGroupSummary = buildGroupSummary(def, allMatches, userBreakdown, userId);
+  const userKnockoutSummary = buildKnockoutSummary(
+    def,
+    allMatches,
+    userBreakdown,
+    userId,
+    actualResults,
+  );
+  const userSpecialsSummary = buildSpecialsSummary(specialBets, userId);
+
   return {
     poolName: pool.name,
     tournamentName: tournament.name,
     userRank,
     userBreakdown,
+    userGroupSummary,
+    userKnockoutSummary,
+    userSpecialsSummary,
     stageProgress,
     currentStage,
     groupResults,
@@ -181,6 +195,83 @@ function deriveCurrentStage(progress: StageProgress[]): StageKey {
   if (active) return active.key;
   const first = progress[0];
   return first?.key ?? 'group';
+}
+
+// ---------------------------------------------------------------------------
+// User points summary (earned / missed / canStillGet)
+// ---------------------------------------------------------------------------
+
+type ScoreBreakdown = import('@cup/engine').ScoreBreakdown;
+
+function makeSummaryFromCategories(
+  earnedTotal: number,
+  totalMaxTotal: number,
+  remainingMaxTotal: number,
+): UserPointsSummary {
+  const maxFromResolved = totalMaxTotal - remainingMaxTotal;
+  return {
+    earned: earnedTotal,
+    missed: Math.max(0, maxFromResolved - earnedTotal),
+    canStillGet: remainingMaxTotal,
+  };
+}
+
+function buildGroupSummary(
+  def: Tournament,
+  allMatches: MatchRow[],
+  userBreakdown: ScoreBreakdown | null,
+  userId: string | undefined,
+): UserPointsSummary | null {
+  if (userId === undefined) return null;
+  const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
+  const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
+  const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
+  const earned = (userBreakdown?.groupMatches ?? 0) + (userBreakdown?.groupOrder ?? 0);
+  const totalMaxCat = totalMax.groupMatches + totalMax.groupOrder;
+  const remainingMaxCat = remainingMax.groupMatches + remainingMax.groupOrder;
+  return makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat);
+}
+
+function buildKnockoutSummary(
+  def: Tournament,
+  allMatches: MatchRow[],
+  userBreakdown: ScoreBreakdown | null,
+  userId: string | undefined,
+  actualResults: ActualResults,
+): UserPointsSummary | null {
+  if (userId === undefined) return null;
+  const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
+  const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
+  // roundOf8 uses group match IDs (present in DB) — engine correctly detects resolution.
+  // topFour/bronze/final use KO match IDs that are never inserted into the matches table by
+  // the sync pipeline, so we detect their resolution from actualResults instead.
+  const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
+  const earned =
+    (userBreakdown?.roundOf8 ?? 0) +
+    (userBreakdown?.topFour ?? 0) +
+    (userBreakdown?.bronze ?? 0) +
+    (userBreakdown?.final ?? 0);
+  const topFourRemaining = actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour;
+  const bronzeRemaining = actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze;
+  const finalRemaining = actualResults.finalMatch !== undefined ? 0 : totalMax.final;
+  const totalMaxCat = totalMax.roundOf8 + totalMax.topFour + totalMax.bronze + totalMax.final;
+  const remainingMaxCat =
+    remainingMax.roundOf8 + topFourRemaining + bronzeRemaining + finalRemaining;
+  return makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat);
+}
+
+function buildSpecialsSummary(
+  specialBets: SpecialBetResultRow[],
+  userId: string | undefined,
+): UserPointsSummary | null {
+  if (userId === undefined) return null;
+  return {
+    earned: specialBets.reduce((sum, b) => sum + b.pointsAwarded, 0),
+    missed: specialBets.filter((b) => b.hit === 'missed').reduce((sum, b) => sum + b.points, 0),
+    canStillGet: specialBets
+      .filter((b) => b.hit === 'pending')
+      .reduce((sum, b) => sum + b.points, 0),
+  };
 }
 
 // ---------------------------------------------------------------------------
