@@ -15,7 +15,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <Sidebar pools={pools} />
 
       {/* Main content — offset by sidebar width on desktop */}
-      <main className="pb-16 md:pl-[220px] md:pb-0">{children}</main>
+      <main className="pb-16 md:pl-55 md:pb-0">{children}</main>
 
       {/* Mobile bottom nav */}
       <MobileNav />

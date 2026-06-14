@@ -47,7 +47,7 @@ export function Leaderboard({
 
       {ranked4plus.length > 0 && (
         <div className="card mt-0 rounded-tl-none rounded-tr-none">
-          <div className="eyebrow grid [grid-template-columns:34px_1fr_60px_60px] gap-2 px-4 pt-[10px] pb-2 text-ink-muted border-b border-line-soft">
+          <div className="eyebrow grid grid-cols-[34px_1fr_60px_60px] gap-2 px-4 pt-2.5 pb-2 text-ink-muted border-b border-line-soft">
             <span>#</span>
             <span>Player</span>
             <span className="text-right">Pts</span>

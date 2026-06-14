@@ -25,7 +25,7 @@ export function SpecialBetRow({
     <div
       data-testid={`special-bet-result-${bet.key}`}
       className={cn(
-        'rounded-cup shadow-cup-sm p-[12px_14px] grid [grid-template-columns:34px_1fr_auto] gap-[10px] items-start border',
+        'rounded-cup shadow-cup-sm p-[12px_14px] grid grid-cols-[34px_1fr_auto] gap-2.5 items-start border',
         isPending || (!isHit && !isMissed)
           ? 'border-line-soft bg-surface'
           : isHit
@@ -33,13 +33,13 @@ export function SpecialBetRow({
             : 'border-red-300 bg-red-050',
       )}
     >
-      <div className="w-[34px] h-[34px] rounded-cup-sm bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center text-ink-muted">
+      <div className="w-8.5 h-8.5 rounded-cup-sm bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center text-ink-muted">
         <Icon name={icon} size={16} stroke={1.8} />
       </div>
 
       <div className="flex flex-col gap-1 min-w-0">
         <span className="text-[12.5px] font-bold text-ink-soft leading-[1.4]">{bet.label}</span>
-        <div className="flex gap-[6px] flex-wrap items-center">
+        <div className="flex gap-1.5 flex-wrap items-center">
           {showUserPick && (
             <PickDisplay
               value={bet.userPickDisplay}
@@ -121,7 +121,7 @@ function PoolPicksRow({ stats }: { stats: SpecialBetPoolStats }): ReactElement {
   const restCount = stats.totalPredictions - shownCount;
 
   return (
-    <div className="flex items-center gap-[6px] flex-wrap mt-0.5">
+    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
       <span className="text-[10px] font-bold text-ink-muted uppercase tracking-[0.05em] shrink-0">
         Pool
       </span>

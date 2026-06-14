@@ -19,7 +19,7 @@ export function GroupCard({ group, poolId, locked, onSave }: Props): ReactElemen
       className="grid gap-3 items-start md:grid-cols-[1fr_196px]"
     >
       <div className="card overflow-hidden">
-        <div className="turf px-4 py-[10px]">
+        <div className="turf px-4 py-2.5">
           <span className="display text-xl text-on-dark">Group {group.groupId}</span>
         </div>
         <div className="divide">
@@ -30,7 +30,7 @@ export function GroupCard({ group, poolId, locked, onSave }: Props): ReactElemen
               <div
                 key={match.matchId}
                 className={cn(
-                  'grid grid-cols-[1fr_auto_1fr] items-center gap-[10px] px-4 py-[10px]',
+                  'grid grid-cols-[1fr_auto_1fr] items-center gap-2.5 px-4 py-2.5',
                   incomplete && !cellLocked && 'bg-orange-050',
                 )}
               >

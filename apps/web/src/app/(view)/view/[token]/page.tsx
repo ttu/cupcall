@@ -23,10 +23,10 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
   const raceChart = locked ? detail.raceChart : null;
 
   return (
-    <div className="max-w-[1100px] mx-auto p-[28px_20px]">
+    <div className="max-w-275 mx-auto p-[28px_20px]">
       {/* Page header */}
       <div className="mb-6">
-        <div className="eyebrow text-ink-muted mb-[10px]">Leaderboard</div>
+        <div className="eyebrow text-ink-muted mb-2.5">Leaderboard</div>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="display text-[34px] m-0">{detail.name}</h1>
@@ -60,7 +60,7 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
               className="block no-underline text-inherit"
             >
               <div className="card p-[14px_18px_12px] cursor-pointer">
-                <div className="flex items-center justify-between mb-[10px]">
+                <div className="flex items-center justify-between mb-2.5">
                   <span className="section-label">Points Race</span>
                   <span className="text-xs font-bold text-ink-muted">View full →</span>
                 </div>
@@ -80,7 +80,7 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
           <Link
             href={`/view/${token}/results`}
             data-testid="view-results-link"
-            className="p-[18px] rounded-cup bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
+            className="p-4.5 rounded-cup bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-3.5 no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
           >
             <span
               aria-hidden

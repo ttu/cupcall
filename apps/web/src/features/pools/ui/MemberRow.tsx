@@ -58,7 +58,7 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
   }
 
   return (
-    <div className="py-[10px] px-4">
+    <div className="py-2.5 px-4">
       <div className="flex items-center gap-3">
         <Avatar name={member.displayName} index={avatarIndex} size={34} />
         <span className="flex-1 text-sm font-bold text-ink truncate">{member.displayName}</span>
@@ -102,7 +102,7 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
       </div>
       {loginLink && (
         <div className="flex items-center gap-2 mt-2">
-          <span className="flex-1 text-[11px] font-mono text-ink-soft bg-surface-2 rounded-[7px] py-1 px-[10px] truncate shadow-[inset_0_0_0_1px_var(--line)]">
+          <span className="flex-1 text-[11px] font-mono text-ink-soft bg-surface-2 rounded-[7px] py-1 px-2.5 truncate shadow-[inset_0_0_0_1px_var(--line)]">
             {loginLink}
           </span>
           <button type="button" onClick={() => handleCopy(loginLink)} className="btn btn-soft sm">

@@ -14,7 +14,7 @@ export function StatCard({
   return (
     <div className="card p-[14px_16px]">
       <div className="eyebrow text-ink-muted">{label}</div>
-      <div className="display text-[30px] mt-[6px]" style={{ color }}>
+      <div className="display text-[30px] mt-1.5" style={{ color }}>
         {value}
       </div>
       <div className="text-[11.5px] text-ink-muted font-semibold mt-0.5">{sub}</div>

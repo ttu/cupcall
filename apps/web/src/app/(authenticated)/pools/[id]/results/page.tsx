@@ -26,11 +26,11 @@ export default async function ResultsPage({ params, searchParams }: Props): Prom
   if (!view) notFound();
 
   return (
-    <div className="max-w-[1400px] mx-auto p-[28px_20px]">
+    <div className="max-w-350 mx-auto p-[28px_20px]">
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
         <div>
-          <div className="eyebrow text-ink-muted mb-2 flex items-center gap-[6px]">
+          <div className="eyebrow text-ink-muted mb-2 flex items-center gap-1.5">
             <BackLink href={`/pools/${poolId}`}>{view.poolName}</BackLink>
             <span>· Results &amp; standings</span>
           </div>
@@ -38,14 +38,14 @@ export default async function ResultsPage({ params, searchParams }: Props): Prom
         </div>
 
         {view.userRank && (
-          <div className="flex items-center gap-[18px]">
+          <div className="flex items-center gap-4.5">
             <div className="text-right">
               <div className="eyebrow text-ink-muted">Your points</div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="display text-[26px]">{view.userRank.points}</span>
               </div>
             </div>
-            <span className="w-px h-[38px] bg-line" />
+            <span className="w-px h-9.5 bg-line" />
             <div className="text-right">
               <div className="eyebrow text-ink-muted">Rank</div>
               <span className="display text-[26px] text-green-600">#{view.userRank.rank}</span>

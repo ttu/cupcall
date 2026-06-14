@@ -20,7 +20,7 @@ export function OwnerInviteActions({
   onCancelRemove,
 }: Props): ReactElement {
   return (
-    <div className="flex flex-wrap gap-[10px] items-center">
+    <div className="flex flex-wrap gap-2.5 items-center">
       {confirmRotate ? (
         <>
           <button
@@ -58,7 +58,7 @@ export function OwnerInviteActions({
                 type="button"
                 disabled={isPending}
                 onClick={onRemoveClick}
-                className="text-[11px] font-bold py-1 px-[10px] rounded-[7px] border-0 bg-danger text-white cursor-pointer"
+                className="text-[11px] font-bold py-1 px-2.5 rounded-[7px] border-0 bg-danger text-white cursor-pointer"
               >
                 Confirm remove
               </button>

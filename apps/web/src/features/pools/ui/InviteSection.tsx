@@ -87,13 +87,13 @@ export function InviteSection({
   }
 
   return (
-    <div className="card p-[18px]">
+    <div className="card p-4.5">
       <SectionLabel icon={<Icon name="link" size={13} color="var(--ink-muted)" />}>
         Invite link
       </SectionLabel>
 
       {token && inviteUrl ? (
-        <div className="mt-[14px] flex flex-col gap-[10px]">
+        <div className="mt-3.5 flex flex-col gap-2.5">
           <p className="text-xs text-ink-soft m-0">
             Share this link — anyone with it can join without an email address.
           </p>
@@ -111,7 +111,7 @@ export function InviteSection({
           )}
         </div>
       ) : (
-        <div className="mt-[14px] flex flex-col gap-[10px]">
+        <div className="mt-3.5 flex flex-col gap-2.5">
           <p className="text-xs text-ink-soft m-0">
             {isOwner
               ? 'Invite link is disabled. Generate one to let people join.'

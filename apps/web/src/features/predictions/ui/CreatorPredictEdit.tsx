@@ -29,7 +29,7 @@ export function CreatorPredictEdit({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-[10px]">
+      <div className="flex items-center gap-2.5">
         <span className="pill-lock">
           <Icon name="lock" size={14} />
           Locked

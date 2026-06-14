@@ -3,11 +3,11 @@ import { SectionLabel, Icon } from '@/shared/ui';
 
 export function ConnectEmailForm(): ReactElement {
   return (
-    <div className="card p-[18px] mb-6">
+    <div className="card p-4.5 mb-6">
       <SectionLabel icon={<Icon name="mail" size={13} color="var(--ink-muted)" />}>
         Connect your email
       </SectionLabel>
-      <p className="text-xs text-ink-soft mt-[10px] mb-3 leading-[1.5]">
+      <p className="text-xs text-ink-soft mt-2.5 mb-3 leading-[1.5]">
         Add an email address so you can sign in without needing your login link.
       </p>
       <div className="flex items-center gap-2">

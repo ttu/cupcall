@@ -42,12 +42,12 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
   }
 
   return (
-    <div className="card p-[18px] mb-6">
+    <div className="card p-4.5 mb-6">
       <SectionLabel icon={<Icon name="link" size={13} color="var(--ink-muted)" />}>
         Your login link
       </SectionLabel>
 
-      <p className="text-xs text-ink-soft mt-[10px] mb-3 leading-[1.5]">
+      <p className="text-xs text-ink-soft mt-2.5 mb-3 leading-[1.5]">
         Your browser remembers you automatically, but this link lets you sign in from any other
         device. Store it somewhere safe — anyone with it can access your account.
       </p>
@@ -63,7 +63,7 @@ export function MyLoginLink({ token: initialToken, baseUrl }: Props): ReactEleme
       </div>
 
       {/* Reset / confirm row */}
-      <div className="mt-[10px] flex items-center gap-[10px]">
+      <div className="mt-2.5 flex items-center gap-2.5">
         {confirmReset ? (
           <>
             <button

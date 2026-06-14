@@ -23,7 +23,7 @@ export function OwnerControls({ poolId, members, currentUserId }: Props): ReactE
         </div>
 
         {otherMembers.length === 0 ? (
-          <p className="py-[14px] px-4 text-[13px] text-ink-muted">No other members yet.</p>
+          <p className="py-3.5 px-4 text-[13px] text-ink-muted">No other members yet.</p>
         ) : (
           <div className="divide">
             {otherMembers.map((member, i) => (

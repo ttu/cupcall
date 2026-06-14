@@ -15,18 +15,18 @@ export function StageBar({ stages }: Props): ReactElement {
         const rightFilled = s.state === 'completed';
 
         return (
-          <div key={s.key} className="flex flex-col items-center flex-1 min-w-[72px]">
+          <div key={s.key} className="flex flex-col items-center flex-1 min-w-18">
             {/* Connector line + dot row */}
             <div className="flex items-center w-full mb-2">
               <div
                 className={cn(
-                  'flex-1 h-[2px]',
+                  'flex-1 h-0.5',
                   i === 0 ? 'bg-transparent' : leftFilled ? 'bg-green-300' : 'bg-line',
                 )}
               />
               <span
                 className={cn(
-                  'w-[10px] h-[10px] rounded-full shrink-0',
+                  'w-2.5 h-2.5 rounded-full shrink-0',
                   s.state === 'active'
                     ? 'bg-green-500 shadow-[0_0_0_3px_var(--green-050)]'
                     : s.state === 'completed'
@@ -36,7 +36,7 @@ export function StageBar({ stages }: Props): ReactElement {
               />
               <div
                 className={cn(
-                  'flex-1 h-[2px]',
+                  'flex-1 h-0.5',
                   i === stages.length - 1
                     ? 'bg-transparent'
                     : rightFilled

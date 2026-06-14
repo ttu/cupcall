@@ -14,9 +14,9 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
   return (
     <div className="flex flex-col gap-3">
       {/* Health card */}
-      <div className="card bg-green-050 border border-green-300 py-[14px] px-4">
-        <div className="eyebrow text-green-700 mb-[10px]">Bracket health</div>
-        <div className="flex items-baseline gap-2 mb-[10px]">
+      <div className="card bg-green-050 border border-green-300 py-3.5 px-4">
+        <div className="eyebrow text-green-700 mb-2.5">Bracket health</div>
+        <div className="flex items-baseline gap-2 mb-2.5">
           <span className="display text-green-700 text-[44px] leading-none">
             {health.alivePicks}
             <span className="text-[24px] text-green-600">/{health.totalPicks}</span>
@@ -35,8 +35,8 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
 
       {/* Champion card */}
       {champion && (
-        <div className="card py-3 px-[14px]">
-          <div className="flex items-center gap-[6px] mb-[6px]">
+        <div className="card py-3 px-3.5">
+          <div className="flex items-center gap-1.5 mb-1.5">
             <span>🏆</span>
             <span className="text-[13px] font-extrabold text-ink">Your champion</span>
           </div>

@@ -58,7 +58,7 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
           </option>
         ))}
       </select>
-      <div className="flex gap-[10px]">
+      <div className="flex gap-2.5">
         <input
           id="pool-name"
           type="text"

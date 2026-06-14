@@ -21,7 +21,7 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
         <div className="flex flex-col gap-3 mt-3">
           {card.groups.map((group) => (
             <div key={group.groupId} className="card overflow-hidden">
-              <div className="turf py-[10px] px-4">
+              <div className="turf py-2.5 px-4">
                 <span className="display text-xl text-on-dark">Group {group.groupId}</span>
               </div>
               <div className="divide">
@@ -31,10 +31,8 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
                     <div
                       key={match.matchId}
                       className={cn(
-                        'grid items-center gap-[10px] py-[10px] px-4',
-                        score
-                          ? '[grid-template-columns:1fr_auto_1fr_auto]'
-                          : '[grid-template-columns:1fr_auto_1fr]',
+                        'grid items-center gap-2.5 py-2.5 px-4',
+                        score ? 'grid-cols-[1fr_auto_1fr_auto]' : 'grid-cols-[1fr_auto_1fr]',
                       )}
                     >
                       <div className="flex items-center justify-end gap-2 min-w-0">
@@ -44,7 +42,7 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
                         <TeamBadge teamId={match.homeTeamId} size="lg" />
                       </div>
 
-                      <div className="flex items-center gap-[6px]">
+                      <div className="flex items-center gap-1.5">
                         {match.predictedHome !== null ? (
                           <>
                             <span className="score-cell filled pointer-events-none">
@@ -56,7 +54,7 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
                             </span>
                           </>
                         ) : (
-                          <span className="display text-xl text-ink-muted min-w-[58px] text-center">
+                          <span className="display text-xl text-ink-muted min-w-14.5 text-center">
                             –
                           </span>
                         )}
@@ -89,7 +87,7 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
               </div>
               <div className="divide">
                 {round.ties.map((tie) => (
-                  <div key={tie.bracketMatchKey} className="py-[6px] px-3 flex flex-col gap-[2px]">
+                  <div key={tie.bracketMatchKey} className="py-1.5 px-3 flex flex-col gap-0.5">
                     <ReadOnlyPickRow
                       teamId={tie.homeTeamId}
                       teamName={tie.homeTeamName ?? '?'}
@@ -138,10 +136,7 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
           <div className="card overflow-hidden mt-3">
             <div className="divide">
               {card.specials.map((bet) => (
-                <div
-                  key={bet.key}
-                  className="flex items-center justify-between gap-3 py-[10px] px-4"
-                >
+                <div key={bet.key} className="flex items-center justify-between gap-3 py-2.5 px-4">
                   <span className="text-[13px] text-ink-soft flex-1">{bet.label}</span>
                   <span className="text-[13px] font-bold text-ink">
                     {bet.value !== null ? String(bet.value) : '—'}

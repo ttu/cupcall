@@ -51,7 +51,7 @@ export function MatchMatrix({
       </div>
 
       {topPlayer && topPlayer.totalPoints > 0 && (
-        <p className="text-[12.5px] text-ink-muted mt-[14px] flex items-center gap-2">
+        <p className="text-[12.5px] text-ink-muted mt-3.5 flex items-center gap-2">
           <Icon name="spark" size={15} color="var(--orange-500, oklch(0.65 0.2 55))" />
           {topPlayer.isCurrentUser ? (
             <>
@@ -87,7 +87,7 @@ function MatrixRow({
       )}
       style={{ gridTemplateColumns: colTemplate }}
     >
-      <span className="flex items-center gap-[10px] min-w-0">
+      <span className="flex items-center gap-2.5 min-w-0">
         <Avatar name={row.displayName} index={avatarIndex} size={30} />
         <span
           className={cn(
@@ -97,7 +97,7 @@ function MatrixRow({
         >
           {row.displayName}
           {row.isCurrentUser && (
-            <span className="chip green h-[18px] ml-[7px] text-[9.5px] align-middle">YOU</span>
+            <span className="chip green h-4.5 ml-[7px] text-[9.5px] align-middle">YOU</span>
           )}
         </span>
       </span>

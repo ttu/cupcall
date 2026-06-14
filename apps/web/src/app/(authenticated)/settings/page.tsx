@@ -28,9 +28,9 @@ export default async function SettingsPage(): Promise<ReactElement> {
   const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
 
   return (
-    <div className="max-w-[560px] mx-auto mt-8 px-6">
+    <div className="max-w-140 mx-auto mt-8 px-6">
       <h1 className="display text-[36px] mb-7">Settings</h1>
-      <div className="eyebrow text-ink-muted mb-[10px]">Your account</div>
+      <div className="eyebrow text-ink-muted mb-2.5">Your account</div>
       <SettingsForm displayName={displayName} email={email} ownedPoolCount={ownedPoolCount} />
       {!email && <ConnectEmailForm />}
       <MyLoginLink token={loginToken} baseUrl={baseUrl} />

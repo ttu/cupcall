@@ -55,13 +55,13 @@ export function PredictStepper({ card, teams, players, isDev }: Props): ReactEle
               onClick={() => setStep(id)}
               aria-current={active ? 'step' : undefined}
               className={cn(
-                'flex-1 pt-[11px] px-3 pb-[14px] bg-transparent border-0 cursor-pointer flex items-center justify-center gap-2 font-cup-ui text-[13px] font-bold transition-colors',
+                'flex-1 pt-[11px] px-3 pb-3.5 bg-transparent border-0 cursor-pointer flex items-center justify-center gap-2 font-cup-ui text-[13px] font-bold transition-colors',
                 active ? 'text-ink shadow-[inset_0_-3px_0_var(--green-500)]' : 'text-ink-muted',
               )}
             >
               <span
                 className={cn(
-                  'w-[22px] h-[22px] rounded-full grid place-items-center text-[11px] font-extrabold shrink-0',
+                  'w-5.5 h-5.5 rounded-full grid place-items-center text-[11px] font-extrabold shrink-0',
                   active
                     ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
                     : done

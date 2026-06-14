@@ -97,16 +97,16 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
   const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name, team: p.team }));
 
   return (
-    <div className="max-w-[1200px] mx-auto p-[28px_20px]">
+    <div className="max-w-300 mx-auto p-[28px_20px]">
       {/* Page header */}
       <div className="mb-5">
-        <div className="eyebrow text-ink-muted mb-2 flex items-center gap-[6px]">
+        <div className="eyebrow text-ink-muted mb-2 flex items-center gap-1.5">
           <BackLink href={`/pools/${poolId}`}>{pool.name}</BackLink>
           <span>· Your card</span>
         </div>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="display text-[34px] m-0">Make your call</h1>
-          <div className="flex items-center gap-[10px] min-w-[160px] flex-[0_1_260px]">
+          <div className="flex items-center gap-2.5 min-w-40 flex-[0_1_260px]">
             {card.completionPercent === 100 && (
               <Chip variant="green" dot>
                 Saved
@@ -122,7 +122,7 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
             <CompletionBar percent={card.completionPercent} />
           </div>
         </div>
-        <div className="mt-[10px]">
+        <div className="mt-2.5">
           {/* Pass targetUserId so import also uses the owner-bypass path after lock */}
           <ExportImportControls
             poolId={poolId}
@@ -132,7 +132,7 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
       </div>
 
       {card.status === 'partial' && card.lateJoinerDeadline && (
-        <div className="flex items-start gap-[10px] p-[12px_16px] mb-5 rounded-[10px] bg-surface-2 border border-line text-[13px] text-ink-soft">
+        <div className="flex items-start gap-2.5 p-[12px_16px] mb-5 rounded-[10px] bg-surface-2 border border-line text-[13px] text-ink-soft">
           <span className="font-extrabold text-base">⏱</span>
           <span>
             You joined after the tournament started — you have until{' '}

@@ -103,10 +103,10 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
   );
 
   return (
-    <main className="max-w-[860px] mx-auto p-[28px_20px] flex flex-col gap-5">
+    <main className="max-w-215 mx-auto p-[28px_20px] flex flex-col gap-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="eyebrow text-ink-muted mb-2 flex items-center gap-[6px]">
+          <div className="eyebrow text-ink-muted mb-2 flex items-center gap-1.5">
             <BackLink href={`/pools/${poolId}`}>{pool.name}</BackLink>
             <span>· {isSelf ? 'Your card' : `${memberName}'s card`}</span>
           </div>

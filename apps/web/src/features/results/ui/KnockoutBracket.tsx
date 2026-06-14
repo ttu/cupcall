@@ -41,7 +41,7 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       {/* Info banner */}
-      <div className="flex items-start gap-[10px] p-[10px_14px] rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
+      <div className="flex items-start gap-2.5 p-[10px_14px] rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
         <span className="font-extrabold">⚡</span>
         <span>
           Results drop into your bracket as we enter them.{' '}
@@ -56,7 +56,7 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
             <div
               key={round.label}
               data-testid={`bracket-round-${round.label}`}
-              className="min-w-[190px]"
+              className="min-w-47.5"
               style={{ paddingTop: columnPaddingTop(i) }}
             >
               <div className="eyebrow text-ink-muted mb-2 pl-0.5">{round.label}</div>
@@ -70,10 +70,7 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
 
           {/* Final + Bronze column */}
           {(finalMatch || bronzeMatch) && (
-            <div
-              className="min-w-[220px]"
-              style={{ paddingTop: columnPaddingTop(finalColumnIndex) }}
-            >
+            <div className="min-w-55" style={{ paddingTop: columnPaddingTop(finalColumnIndex) }}>
               {finalMatch && (
                 <>
                   <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>

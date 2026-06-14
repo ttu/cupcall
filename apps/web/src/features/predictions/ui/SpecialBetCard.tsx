@@ -35,14 +35,14 @@ export function SpecialBetCard({
       data-testid={`special-bet-${bet.key}`}
       aria-busy={isPending}
       className={cn(
-        'rounded-cup shadow-cup-sm p-4 flex flex-col gap-[10px] relative',
+        'rounded-cup shadow-cup-sm p-4 flex flex-col gap-2.5 relative',
         empty && !locked
           ? 'border border-dashed border-orange-400 bg-orange-050'
           : 'border border-line-soft bg-surface',
       )}
     >
-      <div className="flex items-start gap-[10px]">
-        <div className="w-[34px] h-[34px] rounded-cup-sm bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center shrink-0 text-ink-muted">
+      <div className="flex items-start gap-2.5">
+        <div className="w-8.5 h-8.5 rounded-cup-sm bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center shrink-0 text-ink-muted">
           <Icon name={icon} size={16} stroke={1.8} />
         </div>
         <div className="flex-1 min-w-0">

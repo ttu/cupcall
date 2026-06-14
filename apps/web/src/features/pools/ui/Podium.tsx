@@ -60,9 +60,9 @@ export function Podium({
           const avatarIndex = entries.indexOf(entry);
 
           const podiumBlock = (
-            <div key={entry.userId} className="flex flex-col items-center w-[110px] gap-[6px]">
+            <div key={entry.userId} className="flex flex-col items-center w-27.5 gap-1.5">
               <Avatar name={entry.displayName} index={avatarIndex} size={avatarSizes[i] ?? 40} />
-              <div className="text-[11px] font-bold text-on-dark-soft max-w-[90px] text-center truncate">
+              <div className="text-[11px] font-bold text-on-dark-soft max-w-22.5 text-center truncate">
                 {entry.displayName}
                 {isSelf && ' (you)'}
               </div>

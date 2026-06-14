@@ -29,14 +29,14 @@ export function DangerZone({ poolId }: { poolId: string }): ReactElement {
   }
 
   return (
-    <div className="card p-[18px] border border-[oklch(0.85_0.08_25)] bg-[oklch(0.98_0.015_25)]">
+    <div className="card p-4.5 border border-[oklch(0.85_0.08_25)] bg-[oklch(0.98_0.015_25)]">
       <SectionLabel icon={<Icon name="trash" size={13} color="var(--danger)" />}>
         <span className="text-danger">Danger zone</span>
       </SectionLabel>
-      <p className="text-xs text-ink-soft mt-[10px] mb-[14px]">
+      <p className="text-xs text-ink-soft mt-2.5 mb-3.5">
         Deleting the pool is permanent and removes all members and predictions.
       </p>
-      <div className="flex items-center gap-[10px] flex-wrap">
+      <div className="flex items-center gap-2.5 flex-wrap">
         <button
           type="button"
           disabled={isPendingDelete}

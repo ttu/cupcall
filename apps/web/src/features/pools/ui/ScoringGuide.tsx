@@ -38,7 +38,7 @@ function Row({
       <span className="flex-1 text-sm text-ink-soft">{label}</span>
       {note && <span className="text-xs text-ink-muted shrink-0">{note}</span>}
       {pts !== undefined && (
-        <span className="text-sm font-semibold tabular-nums text-ink shrink-0 min-w-[48px] text-right">
+        <span className="text-sm font-semibold tabular-nums text-ink shrink-0 min-w-12 text-right">
           {pts} pts
         </span>
       )}

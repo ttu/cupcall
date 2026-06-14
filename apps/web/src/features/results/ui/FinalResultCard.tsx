@@ -37,7 +37,7 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
       )}
     >
       {/* Header strip */}
-      <div className="flex items-center justify-between gap-[6px] p-[8px_10px_6px]">
+      <div className="flex items-center justify-between gap-1.5 p-[8px_10px_6px]">
         {hasActualScore ? (
           <span
             className={cn('tnum text-base font-extrabold', isFinal ? 'text-on-dark' : 'text-ink')}
@@ -73,7 +73,7 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
       {hasPredictedScore && (
         <div
           className={cn(
-            'px-[10px] pb-[6px] text-[11px] font-bold tracking-[0.02em]',
+            'px-2.5 pb-1.5 text-[11px] font-bold tracking-[0.02em]',
             isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
           )}
         >
@@ -82,7 +82,7 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
       )}
 
       {/* Teams */}
-      <div className="grid [grid-template-columns:1fr_auto_1fr] items-center gap-[6px] p-[6px_10px_10px]">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 p-[6px_10px_10px]">
         <div className="flex items-center justify-end gap-[5px] min-w-0">
           <span
             data-testid="home-team-name"
@@ -127,10 +127,10 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
 
       {/* Champion pill */}
       {championId !== null && championName !== null && (
-        <div className="flex justify-center px-2 pb-[10px]">
+        <div className="flex justify-center px-2 pb-2.5">
           <div
             className={cn(
-              'inline-flex items-center gap-[6px] py-1 pr-[10px] pl-[6px] rounded-full',
+              'inline-flex items-center gap-1.5 py-1 pr-2.5 pl-1.5 rounded-full',
               pillBgClass,
             )}
           >

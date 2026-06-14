@@ -74,13 +74,13 @@ export function ResultsPageClient({
           <TodayMatchesFeed groups={view.groupResults} />
 
           {/* Group jump nav */}
-          <div className="flex gap-[6px] flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             {view.groupResults.map((g) => (
               <button
                 key={g.groupId}
                 type="button"
                 onClick={() => jumpToGroup(g.groupId)}
-                className="w-[38px] h-[38px] rounded-cup-sm border-0 cursor-pointer font-cup-display text-base font-normal bg-surface-2 text-ink-soft shadow-[inset_0_0_0_1px_var(--line)] transition-[background]"
+                className="w-9.5 h-9.5 rounded-cup-sm border-0 cursor-pointer font-cup-display text-base font-normal bg-surface-2 text-ink-soft shadow-[inset_0_0_0_1px_var(--line)] transition-[background]"
               >
                 {g.groupId}
               </button>

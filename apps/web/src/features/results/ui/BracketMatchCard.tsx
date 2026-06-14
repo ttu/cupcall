@@ -31,7 +31,7 @@ function TeamRow({
     <div
       data-testid="bracket-tie-team-row"
       className={cn(
-        'flex items-center gap-[6px] p-[6px_7px] rounded-[7px]',
+        'flex items-center gap-1.5 p-[6px_7px] rounded-[7px]',
         isPick ? 'bg-green-050' : 'bg-transparent',
       )}
     >
@@ -74,12 +74,12 @@ export function BracketMatchCard({ match }: Props): ReactElement {
     <div
       data-testid="bracket-tie-row"
       className={cn(
-        'card overflow-hidden min-w-[150px] p-1 border',
+        'card overflow-hidden min-w-37.5 p-1 border',
         borderClassForHit(match.hit, match.projected),
       )}
     >
       {/* Header strip */}
-      <div className="flex items-center justify-between gap-[6px] p-[2px_4px_4px]">
+      <div className="flex items-center justify-between gap-1.5 p-[2px_4px_4px]">
         {hasScore ? (
           <span className="tnum text-[11px] font-bold text-ink-muted">
             {match.actualHome}–{match.actualAway}

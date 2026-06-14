@@ -18,7 +18,7 @@ export function projectedSubLabel(entries: ProjectedEntry[]): string {
 export function ProjectedStandings({ entries }: { entries: ProjectedEntry[] }): ReactElement {
   return (
     <div className="overflow-hidden">
-      <div className="grid [grid-template-columns:44px_1fr_52px_64px] gap-[6px] p-[8px_16px] bg-surface-2 border-t border-b border-line">
+      <div className="grid grid-cols-[44px_1fr_52px_64px] gap-1.5 p-[8px_16px] bg-surface-2 border-t border-b border-line">
         {(['Now → Fin', 'Player', 'Now', 'Proj.'] as const).map((hd, i) => (
           <span
             key={hd}
@@ -48,12 +48,12 @@ function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
   return (
     <div
       className={cn(
-        'grid [grid-template-columns:44px_1fr_52px_64px] gap-[6px] p-[10px_16px] items-center',
+        'grid grid-cols-[44px_1fr_52px_64px] gap-1.5 p-[10px_16px] items-center',
         isCurrentUser ? 'bg-green-050' : 'bg-transparent',
       )}
     >
       <span className="flex items-center gap-1">
-        <span className={cn('display text-base w-[18px]', isTop3 ? 'text-gold' : 'text-ink-muted')}>
+        <span className={cn('display text-base w-4.5', isTop3 ? 'text-gold' : 'text-ink-muted')}>
           {projectedRank}
         </span>
         {rankDelta !== 0 && (

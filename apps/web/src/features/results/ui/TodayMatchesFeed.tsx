@@ -50,7 +50,7 @@ function TodayMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactElemen
     <div>
       <div
         className={cn(
-          'grid [grid-template-columns:auto_1fr_auto_1fr_auto] items-center gap-2',
+          'grid grid-cols-[auto_1fr_auto_1fr_auto] items-center gap-2',
           stats ? 'p-[10px_14px_6px]' : 'p-[10px_14px]',
         )}
       >
@@ -60,7 +60,7 @@ function TodayMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactElemen
         </div>
 
         {/* Home */}
-        <div className="flex items-center justify-end gap-[6px] min-w-0">
+        <div className="flex items-center justify-end gap-1.5 min-w-0">
           <span className="text-[13px] font-bold truncate text-ink">{match.homeTeamName}</span>
           <TeamBadge teamId={match.homeTeamId} size="sm" />
         </div>
@@ -78,7 +78,7 @@ function TodayMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactElemen
         </div>
 
         {/* Away */}
-        <div className="flex items-center gap-[6px] min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
           <TeamBadge teamId={match.awayTeamId} size="sm" />
           <span className="text-[13px] font-bold truncate text-ink">{match.awayTeamName}</span>
         </div>
@@ -88,7 +88,7 @@ function TodayMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactElemen
       </div>
 
       {stats && (
-        <div className="px-[14px] pb-[10px]">
+        <div className="px-3.5 pb-2.5">
           <PredictionStatsBar stats={stats} />
         </div>
       )}

@@ -48,7 +48,7 @@ export function ReadOnlyFinishCard({
           {label}
         </span>
       </div>
-      <div className="grid [grid-template-columns:1fr_auto_1fr] items-center gap-[6px] py-[10px] px-3">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 py-2.5 px-3">
         <div className="flex items-center justify-end gap-[5px] min-w-0">
           <span
             className={cn(
@@ -61,7 +61,7 @@ export function ReadOnlyFinishCard({
           <TeamBadge teamId={homeTeamId} size="sm" />
         </div>
 
-        <div className="flex items-center gap-[6px]">
+        <div className="flex items-center gap-1.5">
           {predictedHome !== null ? (
             <>
               <span className="score-cell filled pointer-events-none">{predictedHome}</span>
@@ -71,7 +71,7 @@ export function ReadOnlyFinishCard({
           ) : (
             <span
               className={cn(
-                'display tnum text-[22px] min-w-[56px] text-center',
+                'display tnum text-[22px] min-w-14 text-center',
                 isFinal ? 'text-on-dark' : 'text-ink',
               )}
             >
@@ -94,10 +94,10 @@ export function ReadOnlyFinishCard({
       </div>
 
       {champion?.teamId && (
-        <div className="flex justify-center pt-[2px] px-2 pb-[10px]">
+        <div className="flex justify-center pt-0.5 px-2 pb-2.5">
           <div
             className={cn(
-              'inline-flex items-center gap-[6px] py-1 pr-[10px] pl-[6px] rounded-full',
+              'inline-flex items-center gap-1.5 py-1 pr-2.5 pl-1.5 rounded-full',
               isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]',
             )}
           >

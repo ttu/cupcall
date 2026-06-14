@@ -4,7 +4,7 @@ type Props = { percent: number };
 
 export function CompletionBar({ percent }: Props): ReactElement {
   return (
-    <div className="flex items-center gap-[10px]">
+    <div className="flex items-center gap-2.5">
       <div
         className="bar flex-1"
         role="progressbar"

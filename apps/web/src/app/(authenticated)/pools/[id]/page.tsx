@@ -37,10 +37,10 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   const raceChart = locked ? detail.raceChart : null;
 
   return (
-    <div className="max-w-[1100px] mx-auto p-[28px_20px]">
+    <div className="max-w-275 mx-auto p-[28px_20px]">
       {/* Page header */}
       <div className="mb-6">
-        <div className="eyebrow text-ink-muted mb-[10px]">
+        <div className="eyebrow text-ink-muted mb-2.5">
           <Link href="/pools" className="text-inherit no-underline">
             Pools
           </Link>{' '}
@@ -78,7 +78,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
               className="block no-underline text-inherit"
             >
               <div className="card p-[14px_18px_12px] cursor-pointer">
-                <div className="flex items-center justify-between mb-[10px]">
+                <div className="flex items-center justify-between mb-2.5">
                   <span className="section-label">Points Race</span>
                   <span className="text-xs font-bold text-ink-muted">View full →</span>
                 </div>
@@ -96,15 +96,15 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         <div className="flex flex-col gap-4 min-w-0">
           {/* Your standing */}
           {myEntry && myRank && (
-            <div className="card bg-green-050 border border-green-300 p-[18px]">
-              <div className="eyebrow text-green-700 mb-[10px]">Your standing</div>
-              <div className="flex items-baseline gap-[10px]">
+            <div className="card bg-green-050 border border-green-300 p-4.5">
+              <div className="eyebrow text-green-700 mb-2.5">Your standing</div>
+              <div className="flex items-baseline gap-2.5">
                 <span className="display text-[44px] text-green-700">#{myRank}</span>
                 <span className="display text-[24px] text-ink">{myEntry.pointsTotal}</span>
                 <span className="text-xs font-bold text-green-700">pts</span>
               </div>
               {myEntry.completionPercent !== null && myEntry.completionPercent < 100 && (
-                <div className="mt-[10px]">
+                <div className="mt-2.5">
                   <div className="bar mb-1">
                     <i style={{ width: `${myEntry.completionPercent}%` }} />
                   </div>
@@ -120,7 +120,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           <Link
             href={`/pools/${poolId}/results`}
             data-testid="pool-results-link"
-            className="p-[18px] rounded-cup bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
+            className="p-4.5 rounded-cup bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-3.5 no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
           >
             <span
               aria-hidden
@@ -143,7 +143,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           <Link
             href={`/pools/${poolId}/predict`}
             data-testid="pool-predict-link"
-            className="p-[18px] rounded-cup bg-green-500 text-[oklch(0.18_0.02_160)] flex items-center gap-[14px] no-underline shadow-[0_10px_30px_-16px_var(--green-500)]"
+            className="p-4.5 rounded-cup bg-green-500 text-[oklch(0.18_0.02_160)] flex items-center gap-3.5 no-underline shadow-[0_10px_30px_-16px_var(--green-500)]"
           >
             <span
               aria-hidden

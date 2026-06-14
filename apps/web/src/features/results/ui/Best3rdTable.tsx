@@ -7,7 +7,7 @@ type Props = { rows: Best3rdStandingRow[] };
 export function Best3rdTable({ rows }: Props): ReactElement {
   return (
     <div className="card overflow-hidden">
-      <div className="grid [grid-template-columns:20px_28px_1fr_26px_26px_36px] p-[7px_12px] bg-surface-2 border-b border-line">
+      <div className="grid grid-cols-[20px_28px_1fr_26px_26px_36px] p-[7px_12px] bg-surface-2 border-b border-line">
         <span />
         <span className="eyebrow text-[10px] tracking-[0.12em]">Grp</span>
         <span className="eyebrow text-[10px] tracking-[0.12em]">Team</span>
@@ -24,7 +24,7 @@ export function Best3rdTable({ rows }: Props): ReactElement {
             <div
               key={row.teamId}
               className={cn(
-                'grid [grid-template-columns:20px_28px_1fr_26px_26px_36px] items-center p-[8px_12px]',
+                'grid grid-cols-[20px_28px_1fr_26px_26px_36px] items-center p-[8px_12px]',
                 bg,
               )}
             >
@@ -32,7 +32,7 @@ export function Best3rdTable({ rows }: Props): ReactElement {
               <span className="font-cup-display text-[11px] font-bold text-ink-muted">
                 {row.groupId}
               </span>
-              <span className="flex items-center gap-[6px]">
+              <span className="flex items-center gap-1.5">
                 <TeamBadge teamId={row.teamId} size="sm" />
                 <span className="text-[13px] font-bold text-ink truncate">{row.teamName}</span>
               </span>
@@ -47,7 +47,7 @@ export function Best3rdTable({ rows }: Props): ReactElement {
       </div>
 
       {rows.some((r) => r.qualifies) && (
-        <div className="flex items-center gap-[14px] flex-wrap p-[7px_12px] bg-surface border-t border-line-soft text-[11px] font-semibold text-ink-muted">
+        <div className="flex items-center gap-3.5 flex-wrap p-[7px_12px] bg-surface border-t border-line-soft text-[11px] font-semibold text-ink-muted">
           <span className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-[3px] bg-orange-400 shrink-0 inline-block" />
             Best third advances

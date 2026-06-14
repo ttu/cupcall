@@ -68,7 +68,7 @@ export function BracketSection({
       className="flex flex-col gap-3"
     >
       {!locked && (
-        <div className="flex items-start gap-[10px] py-[10px] px-[14px] rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
+        <div className="flex items-start gap-2.5 py-2.5 px-3.5 rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
           <span className="font-extrabold">⚡</span>
           <span>
             Pick the winner of each tie. Your group stage predictions determine who fills each slot.
@@ -82,7 +82,7 @@ export function BracketSection({
             <div
               key={round.label}
               data-testid={`bracket-round-${round.label}`}
-              className="min-w-[190px]"
+              className="min-w-47.5"
               style={{ paddingTop: columnPaddingTop(i) }}
             >
               <div className="eyebrow text-ink-muted mb-2 pl-0.5">{round.label}</div>
@@ -100,7 +100,7 @@ export function BracketSection({
             </div>
           ))}
 
-          <div className="min-w-[220px]" style={{ paddingTop: columnPaddingTop(finalColumnIndex) }}>
+          <div className="min-w-55" style={{ paddingTop: columnPaddingTop(finalColumnIndex) }}>
             <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>
             <FinalCard
               match={bracket.final}

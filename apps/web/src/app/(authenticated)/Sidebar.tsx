@@ -14,7 +14,7 @@ export function Sidebar({ pools }: Props) {
   const pathname = usePathname();
 
   return (
-    <aside className="turf hidden md:flex fixed left-0 top-0 bottom-0 w-[220px] flex-col z-[40] overflow-y-auto border-r border-[rgba(255,255,255,.07)]">
+    <aside className="turf hidden md:flex fixed left-0 top-0 bottom-0 w-55 flex-col z-[40] overflow-y-auto border-r border-[rgba(255,255,255,.07)]">
       {/* Logo */}
       <div className="pt-5 px-5 pb-3">
         <Link href="/pools" className="no-underline">
@@ -24,9 +24,9 @@ export function Sidebar({ pools }: Props) {
 
       {/* Pool list */}
       <div className="flex-1 px-3 py-2 overflow-y-auto">
-        <div className="eyebrow px-2 py-[6px] mb-1 text-[rgba(255,255,255,.35)]">Your Pools</div>
+        <div className="eyebrow px-2 py-1.5 mb-1 text-[rgba(255,255,255,.35)]">Your Pools</div>
         {pools.length === 0 && (
-          <div className="text-xs px-2 py-[6px] text-[rgba(255,255,255,.3)]">No pools yet</div>
+          <div className="text-xs px-2 py-1.5 text-[rgba(255,255,255,.3)]">No pools yet</div>
         )}
         {pools.map((pool) => {
           const active = pathname.startsWith(`/pools/${pool.id}`);
@@ -35,7 +35,7 @@ export function Sidebar({ pools }: Props) {
               key={pool.id}
               href={`/pools/${pool.id}`}
               className={cn(
-                'flex items-center gap-[10px] px-[10px] py-2 rounded-cup-sm no-underline mb-0.5 transition-[background]',
+                'flex items-center gap-2.5 px-2.5 py-2 rounded-cup-sm no-underline mb-0.5 transition-[background]',
                 active ? 'bg-[rgba(255,255,255,.1)]' : 'bg-transparent',
               )}
             >
@@ -64,7 +64,7 @@ export function Sidebar({ pools }: Props) {
         {/* New pool link */}
         <Link
           href="/pools"
-          className="flex items-center gap-2 px-[10px] py-[7px] rounded-cup-sm no-underline mt-1 text-xs font-bold text-[rgba(255,255,255,.4)]"
+          className="flex items-center gap-2 px-2.5 py-[7px] rounded-cup-sm no-underline mt-1 text-xs font-bold text-[rgba(255,255,255,.4)]"
         >
           <Icon name="plus" size={13} color="rgba(255,255,255,.4)" />
           New pool
@@ -77,7 +77,7 @@ export function Sidebar({ pools }: Props) {
         <form action={signOutAction}>
           <button
             type="submit"
-            className="w-full flex items-center gap-[10px] px-[10px] py-2 rounded-cup-sm border-0 bg-transparent cursor-pointer text-[13px] font-bold text-left text-[rgba(255,255,255,.4)]"
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-cup-sm border-0 bg-transparent cursor-pointer text-[13px] font-bold text-left text-[rgba(255,255,255,.4)]"
           >
             <Icon name="arrow" size={16} color="rgba(255,255,255,.4)" />
             Sign out
@@ -104,7 +104,7 @@ function SidebarLink({
     <Link
       href={href}
       className={cn(
-        'flex items-center gap-[10px] px-[10px] py-2 rounded-cup-sm no-underline text-[13px] font-bold',
+        'flex items-center gap-2.5 px-2.5 py-2 rounded-cup-sm no-underline text-[13px] font-bold',
         active ? 'text-on-dark bg-[rgba(255,255,255,.1)]' : 'text-on-dark-soft bg-transparent',
       )}
     >

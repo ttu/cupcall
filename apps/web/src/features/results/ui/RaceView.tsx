@@ -16,9 +16,9 @@ export function RaceView({
     <div className="grid gap-0 md:grid-cols-[1fr_322px]">
       <div className="pb-6">
         <div className="card p-[18px_20px_8px] mb-4">
-          <div className="flex items-center justify-between mb-[10px] gap-[14px] flex-wrap">
+          <div className="flex items-center justify-between mb-2.5 gap-3.5 flex-wrap">
             <RaceLegend players={race.chartPlayers} />
-            <span className="flex items-center gap-[14px] shrink-0">
+            <span className="flex items-center gap-3.5 shrink-0">
               <LegendKey solid label="Actual" />
               <LegendKey solid={false} label="Projected" />
             </span>
@@ -54,11 +54,11 @@ export function RaceView({
         )}
       </div>
 
-      <div className="border-l border-line pb-6 pl-[22px] bg-transparent md:bg-surface-2">
+      <div className="border-l border-line pb-6 pl-5.5 bg-transparent md:bg-surface-2">
         <div className="bg-surface-2 rounded-xl pt-4 overflow-hidden">
-          <div className="px-[18px] pb-3">
+          <div className="px-4.5 pb-3">
             <div className="section-label mb-1">Projected final table</div>
-            <p className="text-xs text-ink-muted mt-[6px] leading-[1.5] m-0">
+            <p className="text-xs text-ink-muted mt-1.5 leading-[1.5] m-0">
               If every surviving bracket pick lands. Updates after each result.
             </p>
           </div>
@@ -82,12 +82,12 @@ function RaceLegend({ players }: { players: RaceChartPlayer[] }): ReactElement {
           key={p.userId}
           className={
             p.isCurrentUser
-              ? 'flex items-center gap-[6px] text-[11.5px] font-extrabold text-ink'
-              : 'flex items-center gap-[6px] text-[11.5px] font-bold text-ink-soft'
+              ? 'flex items-center gap-1.5 text-[11.5px] font-extrabold text-ink'
+              : 'flex items-center gap-1.5 text-[11.5px] font-bold text-ink-soft'
           }
         >
           <span
-            className="w-[14px] rounded-[2px] shrink-0"
+            className="w-3.5 rounded-[2px] shrink-0"
             style={{ height: p.isCurrentUser ? 4 : 3, background: p.color }}
           />
           {p.isCurrentUser ? 'You' : p.displayName.split(' ')[0]}
@@ -99,7 +99,7 @@ function RaceLegend({ players }: { players: RaceChartPlayer[] }): ReactElement {
 
 function LegendKey({ solid, label }: { solid: boolean; label: string }): ReactElement {
   return (
-    <span className="flex items-center gap-[6px] text-[11.5px] font-bold text-ink-muted">
+    <span className="flex items-center gap-1.5 text-[11.5px] font-bold text-ink-muted">
       <span
         className="w-4 h-[3px] rounded-[2px] shrink-0"
         style={{

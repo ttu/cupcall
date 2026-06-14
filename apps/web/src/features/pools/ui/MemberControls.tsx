@@ -31,14 +31,14 @@ export function MemberControls({ poolId }: Props): ReactElement {
   }
 
   return (
-    <div className="card py-3 px-[14px] flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-[10px]">
-        <span className="text-xs font-bold text-ink-muted inline-flex items-center gap-[6px]">
+    <div className="card py-3 px-3.5 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2.5">
+        <span className="text-xs font-bold text-ink-muted inline-flex items-center gap-1.5">
           <Icon name="trash" size={11} color="var(--ink-muted)" />
           Leave pool
         </span>
         {confirmLeave ? (
-          <div className="flex items-center gap-[6px]">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               data-testid="leave-pool-btn"

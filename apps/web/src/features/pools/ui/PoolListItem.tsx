@@ -40,11 +40,11 @@ export function PoolListItem({ pool, isOwner }: Props): ReactElement {
       className="card flex overflow-hidden p-0 no-underline text-inherit"
     >
       {/* Left accent bar */}
-      <div className="w-[6px] shrink-0" style={{ background: accent }} />
+      <div className="w-1.5 shrink-0" style={{ background: accent }} />
 
-      <div className="flex-1 py-[18px] px-5 flex items-center justify-between gap-3 min-w-0">
+      <div className="flex-1 py-4.5 px-5 flex items-center justify-between gap-3 min-w-0">
         {/* Pool identity */}
-        <div className="flex items-center gap-[14px] min-w-0">
+        <div className="flex items-center gap-3.5 min-w-0">
           {/* Initials square */}
           <span
             className="w-12 h-12 rounded-xl grid place-items-center font-cup-display text-[17px] tracking-[0.02em] text-on-dark shrink-0"
@@ -73,7 +73,7 @@ export function PoolListItem({ pool, isOwner }: Props): ReactElement {
         <div className="flex items-center gap-5 shrink-0">
           {pool.myScore !== null && (
             <div className="text-right">
-              <div className="eyebrow text-ink-muted mb-[2px]">Points</div>
+              <div className="eyebrow text-ink-muted mb-0.5">Points</div>
               <span className="display text-[22px] text-ink">{pool.myScore}</span>
             </div>
           )}

@@ -29,7 +29,7 @@ function TieButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'flex-1 py-[6px] px-2 rounded-[7px] text-xs font-bold cursor-pointer',
+        'flex-1 py-1.5 px-2 rounded-[7px] text-xs font-bold cursor-pointer',
         isPick
           ? 'border border-green-300 bg-green-050 text-green-700'
           : isFinal
@@ -87,7 +87,7 @@ export function FinalCard({
         isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
       )}
     >
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[6px] p-[10px]">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 p-2.5">
         <div className="flex items-center justify-end gap-[5px] min-w-0">
           <span
             data-testid="home-team-name"
@@ -126,7 +126,7 @@ export function FinalCard({
       {needsTiebreak && !locked && (
         <div
           data-testid={`${matchKey}-winner-picker`}
-          className="flex flex-col gap-[6px] px-[10px] pt-[6px] pb-[10px]"
+          className="flex flex-col gap-1.5 px-2.5 pt-1.5 pb-2.5"
         >
           <span
             className={cn(
@@ -136,7 +136,7 @@ export function FinalCard({
           >
             Pick the shootout winner
           </span>
-          <div className="flex gap-[6px]">
+          <div className="flex gap-1.5">
             <TieButton
               testId={`${matchKey}-pick-home`}
               isPick={match.pickedWinnerId === match.homeTeamId}
@@ -160,10 +160,10 @@ export function FinalCard({
       )}
 
       {champion?.teamId && (
-        <div className="flex justify-center px-2 pt-0.5 pb-[10px]">
+        <div className="flex justify-center px-2 pt-0.5 pb-2.5">
           <div
             className={cn(
-              'inline-flex items-center gap-[6px] py-1 pr-[10px] pl-[6px] rounded-full',
+              'inline-flex items-center gap-1.5 py-1 pr-2.5 pl-1.5 rounded-full',
               isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]',
             )}
           >

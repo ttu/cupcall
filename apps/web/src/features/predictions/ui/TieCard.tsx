@@ -75,7 +75,7 @@ function PickRow({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-[6px] py-[6px] px-[7px] rounded-[7px] border-0 text-left transition-[background] duration-[120ms]',
+        'w-full flex items-center gap-1.5 py-1.5 px-[7px] rounded-[7px] border-0 text-left transition-[background] duration-[120ms]',
         isPick ? 'bg-green-050' : 'bg-transparent',
         disabled ? 'cursor-default' : 'cursor-pointer',
       )}

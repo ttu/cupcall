@@ -8,7 +8,7 @@ type Props = { group: GroupResultView };
 function PoolMatchStatsRow({ stats }: { stats: MatchResultPoolStats }): ReactElement {
   const correctPct = stats.exactPct + stats.outcomePct;
   return (
-    <div className="px-[14px] pb-[10px] flex items-center gap-[6px] flex-wrap">
+    <div className="px-3.5 pb-2.5 flex items-center gap-1.5 flex-wrap">
       <span className="text-[10px] font-bold text-ink-muted uppercase tracking-[0.05em] shrink-0">
         Pool
       </span>
@@ -39,9 +39,9 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
         <div className="divide">
           {group.completedMatches.map((m) => (
             <div key={m.matchId}>
-              <div className="grid [grid-template-columns:1fr_auto_1fr_116px] items-center gap-2 p-[10px_14px_8px]">
+              <div className="grid grid-cols-[1fr_auto_1fr_116px] items-center gap-2 p-[10px_14px_8px]">
                 {/* Home team */}
-                <div className="flex items-center justify-end gap-[6px] min-w-0">
+                <div className="flex items-center justify-end gap-1.5 min-w-0">
                   <span
                     className={cn(
                       'text-[13px] font-bold truncate',
@@ -61,7 +61,7 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
                 </span>
 
                 {/* Away team */}
-                <div className="flex items-center gap-[6px] min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <TeamBadge teamId={m.awayTeamId} size="sm" />
                   <span
                     className={cn(

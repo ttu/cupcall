@@ -47,7 +47,7 @@ export default async function ViewMemberCardPage({ params }: Props): Promise<Rea
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <div className="eyebrow mb-[6px]">
+        <div className="eyebrow mb-1.5">
           <BackLink href={`/view/${token}`}>{pool.name}</BackLink>
         </div>
         <h1 className="text-2xl font-bold text-ink font-cup-display">

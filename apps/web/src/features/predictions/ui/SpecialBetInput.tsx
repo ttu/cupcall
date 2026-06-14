@@ -101,7 +101,7 @@ export function SpecialBetInput({
               disabled={locked}
               onClick={() => onSave(bet.key, boolVal)}
               className={cn(
-                'py-[6px] px-4 rounded-cup-sm border-0 text-[13px] font-bold font-cup-ui transition-[background] duration-[120ms]',
+                'py-1.5 px-4 rounded-cup-sm border-0 text-[13px] font-bold font-cup-ui transition-[background] duration-[120ms]',
                 locked ? 'cursor-default' : 'cursor-pointer',
                 active
                   ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'

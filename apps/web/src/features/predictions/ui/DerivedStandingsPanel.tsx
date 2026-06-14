@@ -11,8 +11,8 @@ export function DerivedStandingsPanel({
   derivedOrder: DerivedEntry[];
 }): ReactElement {
   return (
-    <div className="card px-[14px] py-3">
-      <div className="eyebrow text-ink-muted mb-[10px]">Auto-derived order</div>
+    <div className="card px-3.5 py-3">
+      <div className="eyebrow text-ink-muted mb-2.5">Auto-derived order</div>
       <div className="flex flex-col gap-[3px]">
         {derivedOrder.map((entry, i) => (
           <div
@@ -23,7 +23,7 @@ export function DerivedStandingsPanel({
               entry.qualifies === 'best-third' && 'bg-orange-050',
             )}
           >
-            <span className="text-[11px] text-ink-muted w-[14px] shrink-0">{i + 1}.</span>
+            <span className="text-[11px] text-ink-muted w-3.5 shrink-0">{i + 1}.</span>
             <TeamBadge teamId={entry.teamId} size="sm" />
             <span className="text-xs font-bold text-ink flex-1 truncate">{entry.teamName}</span>
             {entry.qualifies === 'auto' && (

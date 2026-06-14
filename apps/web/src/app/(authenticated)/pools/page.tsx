@@ -32,7 +32,7 @@ export default async function PoolsPage(): Promise<ReactElement> {
   const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
 
   return (
-    <div className="max-w-[760px] mx-auto px-6 py-8">
+    <div className="max-w-190 mx-auto px-6 py-8">
       {/* Page header */}
       <div className="flex justify-between items-center mb-7 gap-4 flex-wrap">
         <h1 className="display text-[36px] m-0">Your Pools</h1>
@@ -43,7 +43,7 @@ export default async function PoolsPage(): Promise<ReactElement> {
 
       {/* Pool list */}
       {pools.length > 0 ? (
-        <div className="flex flex-col gap-[10px] mb-9">
+        <div className="flex flex-col gap-2.5 mb-9">
           {pools.map((pool) => (
             <PoolListItem key={pool.id} pool={pool} isOwner={pool.ownerId === actor.userId} />
           ))}
@@ -61,7 +61,7 @@ export default async function PoolsPage(): Promise<ReactElement> {
       {myLoginToken && <MyLoginLink token={myLoginToken} baseUrl={baseUrl} />}
 
       {/* Create a new pool */}
-      <div id="create-pool" className="mb-[14px]">
+      <div id="create-pool" className="mb-3.5">
         <SectionLabel icon={<Icon name="plus" size={13} color="var(--ink-muted)" />}>
           Create a pool
         </SectionLabel>

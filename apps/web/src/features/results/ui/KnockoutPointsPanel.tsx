@@ -20,12 +20,12 @@ export function KnockoutPointsPanel({ breakdown }: Props): ReactElement | null {
 
   return (
     <div data-testid="knockout-points-panel" className="card p-[14px_16px]">
-      <div className="eyebrow text-ink-muted mb-[10px]">Knockout points</div>
-      <div className="flex items-baseline gap-[6px] mb-3">
+      <div className="eyebrow text-ink-muted mb-2.5">Knockout points</div>
+      <div className="flex items-baseline gap-1.5 mb-3">
         <span className="display tnum text-[36px] text-ink leading-none">{total}</span>
         <span className="text-[13px] font-bold text-ink-muted">pts</span>
       </div>
-      <ul className="list-none m-0 p-0 flex flex-col gap-[6px]">
+      <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
         {rows.map((row) => (
           <li
             key={row.label}

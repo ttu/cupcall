@@ -36,7 +36,7 @@ export function MobileNav() {
   const tabs = poolId ? poolTabs(poolId) : TOP_LEVEL_TABS;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[40] border-t border-line bg-surface pt-2 pb-1 px-[6px]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[40] border-t border-line bg-surface pt-2 pb-1 px-1.5">
       <div className="flex">
         {tabs.map((tab) => {
           const active = isActive(tab, pathname);

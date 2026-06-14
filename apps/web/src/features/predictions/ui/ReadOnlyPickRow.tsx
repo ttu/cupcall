@@ -13,7 +13,7 @@ export function ReadOnlyPickRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-[6px] py-[5px] px-[7px] rounded-[7px]',
+        'flex items-center gap-1.5 py-[5px] px-[7px] rounded-[7px]',
         isPick ? 'bg-green-050' : 'bg-transparent',
       )}
     >
