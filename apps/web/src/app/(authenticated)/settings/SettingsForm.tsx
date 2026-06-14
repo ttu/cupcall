@@ -7,6 +7,7 @@ import {
   deleteAccountAction,
   type DisplayNameState,
 } from '@/features/auth/actions';
+import { signOutAction } from '../nav-actions';
 import { Avatar, Chip, Icon, SectionLabel, cn } from '@/shared/ui';
 
 const initial: DisplayNameState = { error: null, saved: false };
@@ -106,6 +107,18 @@ export function SettingsForm({ displayName, email, ownedPoolCount }: Props): Rea
           </div>
         </>
       )}
+
+      {/* Sign out — visible on mobile where the sidebar is hidden */}
+      <hr className="mt-7 border-none border-t border-line-soft h-0 md:hidden" />
+      <form action={signOutAction} className="mt-5 md:hidden">
+        <button
+          type="submit"
+          className="flex items-center gap-[10px] text-[13px] font-bold text-ink-muted bg-transparent border-0 cursor-pointer p-0"
+        >
+          <Icon name="arrow" size={16} color="var(--ink-muted)" />
+          Sign out
+        </button>
+      </form>
 
       {/* Danger zone */}
       <hr className="mt-7 border-none border-t border-line-soft h-0" />
