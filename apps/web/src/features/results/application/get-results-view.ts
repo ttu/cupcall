@@ -102,6 +102,21 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   const currentStage = deriveCurrentStage(stageProgress);
   const groupResults = buildGroupResults(def, allMatches, inputs, poolGroupScores, now);
   const best3rdStanding = buildBest3rdStanding(def, groupResults);
+
+  // Mark live best-third qualifiers in individual group standings.
+  // buildGroupResults only confirms them once every group is complete; this fills in the
+  // coloring during the ongoing group stage using the same live ranking.
+  if (best3rdStanding) {
+    const liveBestThirds = new Set(best3rdStanding.filter((r) => r.qualifies).map((r) => r.teamId));
+    for (const gr of groupResults) {
+      for (const row of gr.standing) {
+        if (row.qualifies === false && liveBestThirds.has(row.teamId)) {
+          row.qualifies = 'best-third';
+        }
+      }
+    }
+  }
+
   const { bracketRounds, bronzeMatch } = buildBracketRounds(def, allMatches, inputs);
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch);
 

@@ -245,7 +245,7 @@ describe('getResultsView', () => {
     expect(b3.qualifies).toBe(false);
   });
 
-  it('does not mark best-third while any group is incomplete', async () => {
+  it('marks live best-third in individual group standing while group stage is ongoing', async () => {
     const t: Tournament = {
       ...miniTournament,
       qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 1 },
@@ -253,6 +253,7 @@ describe('getResultsView', () => {
     await upsertTournamentDef(db, t, firstKickoff, emptyKickoffs);
 
     // Finalize only group A — B, C, D remain incomplete
+    // A3 ends up 3rd in group A (3pts) and leads the live best-third ranking
     const aScores: [string, number, number][] = [
       ['mA1', 1, 0],
       ['mA2', 1, 0],
@@ -268,7 +269,13 @@ describe('getResultsView', () => {
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
     const a3 = groupA.standing.find((r) => r.teamId === 'A3')!;
-    expect(a3.qualifies).toBe(false);
+    // A3 is currently the best third — marked live even though group stage isn't complete
+    expect(a3.qualifies).toBe('best-third');
+
+    // Non-qualifying thirds in other groups remain unmarked
+    const groupB = view!.groupResults.find((g) => g.groupId === 'B')!;
+    const b3 = groupB.standing.find((r) => r.teamId === 'B3')!;
+    expect(b3.qualifies).toBe(false);
   });
 
   it('sets group stage as active when some matches are final', async () => {
