@@ -31,6 +31,17 @@ export type GroupStandingRow = {
   qualifies: 'auto' | 'best-third' | false;
 };
 
+export type Best3rdStandingRow = {
+  rank: number;
+  groupId: string;
+  teamId: string;
+  teamName: string;
+  played: number;
+  goalDifference: number;
+  points: number;
+  qualifies: boolean;
+};
+
 export type MatchPredictionStats = {
   homeWinPct: number;
   drawPct: number;
@@ -231,6 +242,8 @@ export type ResultsView = {
   stageProgress: StageProgress[];
   currentStage: StageKey;
   groupResults: GroupResultView[];
+  /** Live cross-group ranking of 3rd-placed teams. Null when tournament has no best-third advancement or no matches played yet. */
+  best3rdStanding: Best3rdStandingRow[] | null;
   bracketRounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
   bracketHealth: BracketHealth;

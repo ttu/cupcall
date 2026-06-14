@@ -6,6 +6,7 @@ import type { ResultsView } from '../domain/types';
 import { cn } from '@/shared/ui';
 import { GroupMatchFeed } from './GroupMatchFeed';
 import { GroupTable } from './GroupTable';
+import { Best3rdTable } from './Best3rdTable';
 import { TodayMatchesFeed } from './TodayMatchesFeed';
 import { KnockoutBracket } from './KnockoutBracket';
 import { BracketHealthPanel } from './BracketHealthPanel';
@@ -95,6 +96,19 @@ export function ResultsPageClient({
               <GroupTable standing={group.standing} />
             </div>
           ))}
+
+          {/* Best third place cross-group standings */}
+          {view.best3rdStanding && (
+            <div className="grid gap-3 items-start md:grid-cols-[minmax(0,1fr)_326px]">
+              <div />
+              <div>
+                <h2 className="eyebrow text-[11px] tracking-[0.12em] text-ink-muted mb-2">
+                  Best Third Place
+                </h2>
+                <Best3rdTable rows={view.best3rdStanding} />
+              </div>
+            </div>
+          )}
         </section>
       )}
 

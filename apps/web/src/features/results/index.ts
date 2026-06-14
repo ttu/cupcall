@@ -3,6 +3,7 @@ export type {
   GroupResultView,
   GroupMatchResultRow,
   GroupStandingRow,
+  Best3rdStandingRow,
   KnockoutMatchView,
   BracketRoundResultView,
   BracketHealth,

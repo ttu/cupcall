@@ -34,6 +34,7 @@ import type {
   GroupMatchResultRow,
   GroupUpcomingMatchRow,
   GroupStandingRow,
+  Best3rdStandingRow,
   KnockoutMatchView,
   BracketRoundResultView,
   BracketHealth,
@@ -100,6 +101,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   const stageProgress = buildStageProgress(def, allMatches);
   const currentStage = deriveCurrentStage(stageProgress);
   const groupResults = buildGroupResults(def, allMatches, inputs, poolGroupScores, now);
+  const best3rdStanding = buildBest3rdStanding(def, groupResults);
   const { bracketRounds, bronzeMatch } = buildBracketRounds(def, allMatches, inputs);
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch);
 
@@ -127,6 +129,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     stageProgress,
     currentStage,
     groupResults,
+    best3rdStanding,
     bracketRounds,
     bronzeMatch,
     bracketHealth,
@@ -239,6 +242,68 @@ function buildGroupResults(
 
     return { groupId: group.id, completedMatches, todayMatches, standing };
   });
+}
+
+/**
+ * Rank the current 3rd-place team from each group against each other.
+ * Works during an ongoing group stage — uses whatever matches have been played so far.
+ * Returns null when the tournament has no best-third advancement, or when no 3rd-place
+ * team has played any matches yet.
+ */
+function buildBest3rdStanding(
+  def: Tournament,
+  groupResults: GroupResultView[],
+): Best3rdStandingRow[] | null {
+  if (def.qualification.bestThirdPlaced === 0) return null;
+
+  const autoQualify = def.qualification.autoQualifyPerGroup;
+
+  const thirds = groupResults
+    .map((gr, groupIndex) => {
+      const row = gr.standing[autoQualify]; // 0-indexed: position after auto-qualifiers
+      if (!row) return null;
+      return { groupId: gr.groupId, row, groupIndex };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
+  if (thirds.every((t) => t.row.played === 0)) return null;
+
+  // H2h keys don't apply across groups — filter to overall metrics only.
+  const metricKeys = def.standingsTiebreak.filter(
+    (k): k is 'points' | 'goalDifference' | 'goalsFor' =>
+      k === 'points' || k === 'goalDifference' || k === 'goalsFor',
+  );
+
+  const sorted = [...thirds].sort((a, b) => {
+    for (const key of metricKeys) {
+      const av =
+        key === 'points'
+          ? a.row.points
+          : key === 'goalDifference'
+            ? a.row.goalDifference
+            : a.row.goalsFor;
+      const bv =
+        key === 'points'
+          ? b.row.points
+          : key === 'goalDifference'
+            ? b.row.goalDifference
+            : b.row.goalsFor;
+      const d = bv - av;
+      if (d !== 0) return d;
+    }
+    return a.groupIndex - b.groupIndex;
+  });
+
+  return sorted.map(({ groupId, row }, i) => ({
+    rank: i + 1,
+    groupId,
+    teamId: row.teamId,
+    teamName: row.teamName,
+    played: row.played,
+    goalDifference: row.goalDifference,
+    points: row.points,
+    qualifies: i < def.qualification.bestThirdPlaced,
+  }));
 }
 
 /**

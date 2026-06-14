@@ -280,6 +280,110 @@ describe('getResultsView', () => {
     expect(groupStage!.state).toBe('active');
   });
 
+  describe('best3rdStanding', () => {
+    it('is null when tournament has no best-third advancement', async () => {
+      // miniTournament default: bestThirdPlaced = 0
+      await finalizeMatch(db, miniTournament.id, 'mA1', 1, 0);
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      expect(view!.best3rdStanding).toBeNull();
+    });
+
+    it('is null when no 3rd-place team has played yet', async () => {
+      const t: Tournament = {
+        ...miniTournament,
+        qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 1 },
+      };
+      await upsertTournamentDef(db, t, firstKickoff, emptyKickoffs);
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      expect(view!.best3rdStanding).toBeNull();
+    });
+
+    it('ranks 3rd-place teams across groups during ongoing group stage', async () => {
+      const t: Tournament = {
+        ...miniTournament,
+        qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 1 },
+      };
+      await upsertTournamentDef(db, t, firstKickoff, emptyKickoffs);
+
+      // Group A: all matches — A3 ends up 3rd (3pts, GD=+1, GF=3 from 3-0 win vs A4)
+      const aScores: [string, number, number][] = [
+        ['mA1', 1, 0], // A1 beats A2
+        ['mA2', 1, 0], // A1 beats A3
+        ['mA3', 1, 0], // A1 beats A4
+        ['mA4', 1, 0], // A2 beats A3
+        ['mA5', 1, 0], // A2 beats A4
+        ['mA6', 3, 0], // A3 beats A4
+      ];
+      // Group B: all matches — B3 ends up 3rd (3pts, GD=-1, GF=1, worse than A3)
+      const bScores: [string, number, number][] = [
+        ['mB1', 1, 0],
+        ['mB2', 1, 0],
+        ['mB3', 1, 0],
+        ['mB4', 1, 0],
+        ['mB5', 1, 0],
+        ['mB6', 1, 0],
+      ];
+      for (const [mid, h, a] of [...aScores, ...bScores]) {
+        await finalizeMatch(db, t.id, mid, h, a);
+      }
+      // Groups C and D remain incomplete (no matches played for C/D's 3rd-place teams)
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.best3rdStanding!;
+
+      expect(rows).not.toBeNull();
+      // A3 (3pts, GD=+1) ranks above B3 (3pts, GD=-1)
+      expect(rows[0]!.teamId).toBe('A3');
+      expect(rows[0]!.rank).toBe(1);
+      expect(rows[0]!.qualifies).toBe(true);
+      expect(rows[1]!.teamId).toBe('B3');
+      expect(rows[1]!.rank).toBe(2);
+      expect(rows[1]!.qualifies).toBe(false);
+      // Groups C and D 3rd-place teams have 0 played — still included in the table
+      expect(rows.length).toBe(4);
+    });
+
+    it('marks top bestThirdPlaced teams as qualifying', async () => {
+      const t: Tournament = {
+        ...miniTournament,
+        qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 2 },
+      };
+      await upsertTournamentDef(db, t, firstKickoff, emptyKickoffs);
+
+      // Group A: A3 ends up 3rd (3pts, GD=+1)
+      const aScores: [string, number, number][] = [
+        ['mA1', 1, 0],
+        ['mA2', 1, 0],
+        ['mA3', 1, 0],
+        ['mA4', 1, 0],
+        ['mA5', 1, 0],
+        ['mA6', 3, 0],
+      ];
+      // Group B: B3 ends up 3rd (3pts, GD=-1)
+      const bScores: [string, number, number][] = [
+        ['mB1', 1, 0],
+        ['mB2', 1, 0],
+        ['mB3', 1, 0],
+        ['mB4', 1, 0],
+        ['mB5', 1, 0],
+        ['mB6', 1, 0],
+      ];
+      for (const [mid, h, a] of [...aScores, ...bScores]) {
+        await finalizeMatch(db, t.id, mid, h, a);
+      }
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.best3rdStanding!;
+
+      expect(rows[0]!.qualifies).toBe(true);
+      expect(rows[1]!.qualifies).toBe(true);
+      expect(rows[2]!.qualifies).toBe(false);
+      expect(rows[3]!.qualifies).toBe(false);
+    });
+  });
+
   it('shows knockout pick as alive when actual winner matches pick', async () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
