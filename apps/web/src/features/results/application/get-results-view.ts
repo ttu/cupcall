@@ -40,6 +40,7 @@ import type {
   BracketHealth,
   MatchHit,
   MatchPredictionStats,
+  MatchResultPoolStats,
   UserRankChip,
   PointsRaceView,
   RaceChartPlayer,
@@ -323,6 +324,13 @@ function buildGroupResults(
           predictedAway: pred?.away ?? null,
           hit: hit.hit,
           pointsAwarded: hit.points,
+          poolMatchStats: computeMatchResultPoolStats(
+            m.id,
+            m.homeGoals!,
+            m.awayGoals!,
+            poolGroupScores,
+            scoring,
+          ),
         };
       });
 
@@ -1108,6 +1116,33 @@ function computeKnockoutHit(args: {
 
 function isWithinNext24h(kickoff: Date, now: Date): boolean {
   return kickoff.getTime() <= now.getTime() + 24 * 60 * 60 * 1000;
+}
+
+function computeMatchResultPoolStats(
+  mId: string,
+  actualHome: number,
+  actualAway: number,
+  poolGroupScores: PoolGroupScore[],
+  scoring: Parameters<typeof computeHit>[4],
+): MatchResultPoolStats | null {
+  const preds = poolGroupScores.filter((s) => s.matchId === mId);
+  if (preds.length === 0) return null;
+
+  const total = preds.length;
+  let exactCount = 0;
+  let outcomeCount = 0;
+
+  for (const pred of preds) {
+    const result = computeHit(actualHome, actualAway, pred.home, pred.away, scoring);
+    if (result.hit === 'exact') exactCount++;
+    else if (result.hit === 'outcome') outcomeCount++;
+  }
+
+  return {
+    totalPredictions: total,
+    exactPct: Math.round((exactCount / total) * 100),
+    outcomePct: Math.round((outcomeCount / total) * 100),
+  };
 }
 
 function computeMatchPredictionStats(

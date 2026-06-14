@@ -14,6 +14,7 @@ export type GroupMatchResultRow = {
   predictedAway: number | null;
   hit: MatchHit;
   pointsAwarded: number;
+  poolMatchStats: MatchResultPoolStats | null;
 };
 
 export type GroupStandingRow = {
@@ -49,6 +50,14 @@ export type MatchPredictionStats = {
   avgHomeGoals: number;
   avgAwayGoals: number;
   totalPredictions: number;
+};
+
+export type MatchResultPoolStats = {
+  totalPredictions: number;
+  /** % of pool members who predicted the exact score. */
+  exactPct: number;
+  /** % who predicted the correct outcome (winner/draw) but not the exact score. */
+  outcomePct: number;
 };
 
 export type GroupUpcomingMatchRow = {

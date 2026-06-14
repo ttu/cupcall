@@ -172,6 +172,35 @@ describe('getResultsView', () => {
     expect(row.hit).toBe('pending');
   });
 
+  it('computes poolMatchStats for a completed match', async () => {
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await finalizeMatch(db, miniTournament.id, matchId, 2, 1);
+
+    // owner predicts exact score (2-1)
+    const ownerPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId: ownerId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, ownerPred.id, matchId, 2, 1);
+
+    // user predicts correct outcome but wrong score (1-0)
+    const userPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTournament.id,
+    });
+    await upsertGroupScore(db, userPred.id, matchId, 1, 0);
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    const row = groupA.completedMatches[0]!;
+    expect(row.poolMatchStats).not.toBeNull();
+    expect(row.poolMatchStats!.totalPredictions).toBe(2);
+    expect(row.poolMatchStats!.exactPct).toBe(50);
+    expect(row.poolMatchStats!.outcomePct).toBe(50);
+  });
+
   it('builds group standings from completed matches', async () => {
     const gAMatches = miniTournament.groupMatches.filter((m) => m.group === groupId('A'));
     // A1 gets 7pts (W,D,W), A2 gets 4pts (L,D,W), A4 gets 3pts (L,L,W), A3 gets 2pts (D,D,L)
