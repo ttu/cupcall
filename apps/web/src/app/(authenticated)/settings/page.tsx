@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { redirect } from 'next/navigation';
-import { auth } from '@/features/auth/auth';
+import { auth } from '@/features/auth';
 import { ConnectEmailForm } from '@/features/auth';
 import { db } from '@/shared/db';
 import { getUserById, countPoolsOwnedBy, getLoginTokenByUserId, upsertLoginToken } from '@cup/db';
