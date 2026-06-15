@@ -9,18 +9,12 @@ import type {
   MatrixMatch,
   MatchMatrixCell,
 } from '../domain/types';
-import { computeHit, buildRaceEventDates, buildDailyChartPlayers } from '../domain/race-chart';
-
-const RACE_COLORS = [
-  'var(--orange-500)',
-  'oklch(0.55 0.13 250)',
-  'oklch(0.64 0.12 30)',
-  'oklch(0.72 0.02 160)',
-  'oklch(0.65 0.10 60)',
-  'oklch(0.55 0.12 280)',
-  'oklch(0.70 0.10 200)',
-  'oklch(0.60 0.08 100)',
-];
+import {
+  computeHit,
+  buildRaceEventDates,
+  buildDailyChartPlayers,
+  RACE_COLORS,
+} from '../domain/race-chart';
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];

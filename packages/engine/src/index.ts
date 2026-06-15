@@ -32,7 +32,7 @@ export { ok, err } from './result.js';
 // Core engine functions
 export { deriveCard } from './derive.js';
 export { scoreCard } from './score.js';
-export { deriveGroupOrders, computeStandings, teamMetrics } from './standings.js';
+export { deriveGroupOrders, computeStandings, teamMetrics, metric } from './standings.js';
 export type { TeamMetrics } from './standings.js';
 export { selectQualifiers } from './qualifiers.js';
 export { findInvalidatedPickKeys, resolveSlot } from './bracket.js';

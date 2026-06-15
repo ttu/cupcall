@@ -18,6 +18,7 @@ import type {
   SpecialBetView,
 } from '../domain/types';
 import { getSpecialBetDefs } from '../domain/special-bet-defs';
+import { LATE_JOINER_WINDOW_MS } from '@/shared/authz';
 
 type Params = {
   db: Db<AppSchema>;
@@ -68,7 +69,6 @@ export async function getCardView(params: Params): Promise<CardView | null> {
 
   // A late joiner is someone who joined at or after the tournament lock.
   // They get per-item lock state within a 4-hour window from joining.
-  const LATE_JOINER_WINDOW_MS = 4 * 60 * 60 * 1000;
   const isLateJoiner = joinedAt !== undefined && now >= firstKickoff && joinedAt >= firstKickoff;
   const lateJoinerDeadline = isLateJoiner
     ? new Date(joinedAt!.getTime() + LATE_JOINER_WINDOW_MS)

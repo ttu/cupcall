@@ -3,15 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { db } from '@/shared/db';
-import { getCurrentActor } from '@/features/auth';
+import { getActorOrThrow } from '@/features/auth';
 import { getPoolById, getTournamentById, getOrCreatePrediction, upsertGroupScore } from '@cup/db';
 import { rescoreAfterEdit } from './rescore-helper';
-
-async function getActorOrThrow() {
-  const actor = await getCurrentActor();
-  if (!actor) throw new Error('Not signed in');
-  return actor;
-}
 
 async function loadPoolAndTournament(poolId: string) {
   const pool = await getPoolById(db, poolId);

@@ -15,7 +15,7 @@ export type RaceChartExtras = {
   def: Tournament;
 };
 
-const RACE_COLORS = [
+export const RACE_COLORS = [
   'var(--orange-500)',
   'oklch(0.55 0.13 250)',
   'oklch(0.64 0.12 30)',

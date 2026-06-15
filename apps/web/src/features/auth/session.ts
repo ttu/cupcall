@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { auth } from './auth';
 import type { Actor } from '../../shared/authz';
+import { assertSignedIn } from '../../shared/authz';
 import { userId } from '@cup/engine';
 
 /**
@@ -18,3 +19,9 @@ export const getCurrentActor = cache(async (): Promise<Actor | null> => {
   if (!session?.user?.id) return null;
   return { userId: userId(session.user.id) };
 });
+
+export async function getActorOrThrow(): Promise<Actor> {
+  const actor = await getCurrentActor();
+  assertSignedIn(actor);
+  return actor;
+}

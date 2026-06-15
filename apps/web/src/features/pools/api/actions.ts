@@ -5,9 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { db } from '@/shared/db';
-import { getCurrentActor } from '@/features/auth';
+import { getActorOrThrow } from '@/features/auth';
 import { checkBetaCode } from '@/features/auth/beta-code';
-import { assertIsOwner, assertSignedIn } from '@/shared/authz';
+import { assertIsOwner } from '@/shared/authz';
 import {
   getPoolById,
   getPoolByInviteTokenHash,
@@ -49,12 +49,6 @@ import type { PoolBackup } from '../application/pool-backup';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-async function getActorOrThrow() {
-  const actor = await getCurrentActor();
-  assertSignedIn(actor);
-  return actor;
-}
 
 async function getOwnerPoolOrThrow(poolId: string) {
   const pool = await getPoolById(db, poolId);

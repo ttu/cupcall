@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { db } from '@/shared/db';
-import { getCurrentActor } from '@/features/auth';
+import { getCurrentActor, getActorOrThrow } from '@/features/auth';
 import { assertCanEditOwnCard, assertCanOwnerEdit } from '@/shared/authz';
 import {
   getPoolById,
@@ -56,12 +56,6 @@ async function loadPoolAndTournament(poolId: string) {
     );
 
   return { pool, tournament };
-}
-
-async function getActorOrThrow() {
-  const actor = await getCurrentActor();
-  if (!actor) throw new Error('Not signed in');
-  return actor;
 }
 
 /**

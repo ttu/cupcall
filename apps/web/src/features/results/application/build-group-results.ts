@@ -5,6 +5,7 @@ import {
   teamMetrics,
   selectQualifiers,
   matchId,
+  metric,
 } from '@cup/engine';
 import type { Tournament, GroupId, GroupScore } from '@cup/engine';
 import type {
@@ -134,21 +135,15 @@ export function buildBest3rdStanding(
       k === 'points' || k === 'goalDifference' || k === 'goalsFor',
   );
 
+  const toMetricRow = (row: (typeof thirds)[number]['row']) => ({
+    points: row.points,
+    gf: row.goalsFor,
+    ga: row.goalsAgainst,
+  });
+
   const sorted = [...thirds].sort((a, b) => {
     for (const key of metricKeys) {
-      const av =
-        key === 'points'
-          ? a.row.points
-          : key === 'goalDifference'
-            ? a.row.goalDifference
-            : a.row.goalsFor;
-      const bv =
-        key === 'points'
-          ? b.row.points
-          : key === 'goalDifference'
-            ? b.row.goalDifference
-            : b.row.goalsFor;
-      const d = bv - av;
+      const d = metric(key, toMetricRow(b.row)) - metric(key, toMetricRow(a.row));
       if (d !== 0) return d;
     }
     return a.groupIndex - b.groupIndex;

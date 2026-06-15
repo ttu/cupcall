@@ -1,4 +1,4 @@
-export { getCurrentActor } from './session';
+export { getCurrentActor, getActorOrThrow } from './session';
 export { updateDisplayNameAction, deleteAccountAction } from './actions';
 export { deriveDisplayName } from './display-name';
 export { applyDerivedDisplayName } from './create-user';
