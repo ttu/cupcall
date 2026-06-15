@@ -10,6 +10,25 @@ export type SpecialBetDef = {
   allowFreeText?: boolean;
 };
 
+/**
+ * Static mapping from bet key to input kind. Does not depend on scoring config,
+ * so it can be imported by any layer that needs to deserialize special bets
+ * without access to a full Tournament/Scoring object.
+ */
+export const SPECIAL_BET_KINDS: Readonly<Record<string, BetInputKind>> = {
+  topScorerPlayer: 'player',
+  finalDecisiveGoalPlayer: 'player',
+  firstRedCardPlayer: 'player',
+  mostYellowCardsTeam: 'team',
+  groupTopScoringTeam: 'team',
+  groupTopConcedingTeam: 'team',
+  tournamentTopScoringTeam: 'team',
+  tournamentTopConcedingTeam: 'team',
+  highestMatchGoals: 'number',
+  penaltyShootoutCount: 'number',
+  finalDecidedByPenalties: 'bool',
+};
+
 export function getSpecialBetDefs(scoring: Scoring): SpecialBetDef[] {
   return [
     {
