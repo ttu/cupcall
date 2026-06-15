@@ -8,7 +8,8 @@ import { db } from '@/shared/db';
 import { getActorOrThrow } from '@/features/auth';
 import { checkBetaCode } from '@/features/auth/beta-code';
 import { assertIsOwner } from '@/shared/authz';
-import { userId } from '@cup/engine';
+import { userId, poolId as asPoolId, tournamentId as asTournamentId } from '@cup/engine';
+import type { PoolId } from '@cup/engine';
 import {
   getPoolById,
   getPoolByInviteTokenHash,
@@ -51,7 +52,7 @@ import type { PoolBackup } from '../application/pool-backup';
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function getOwnerPoolOrThrow(poolId: string) {
+async function getOwnerPoolOrThrow(poolId: PoolId) {
   const pool = await getPoolById(db, poolId);
   if (!pool) throw new Error(`Pool ${poolId} not found`);
   return pool;
@@ -68,7 +69,7 @@ const CreatePoolSchema = z.object({
 
 export async function createPool(
   raw: unknown,
-): Promise<{ ok: true; poolId: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; poolId: PoolId } | { ok: false; error: string }> {
   const parsed = CreatePoolSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
 
@@ -77,7 +78,9 @@ export async function createPool(
     const result = await appCreatePool(db, {
       ownerId: actor.userId,
       name: parsed.data.name,
-      ...(parsed.data.tournamentId ? { tournamentId: parsed.data.tournamentId } : {}),
+      ...(parsed.data.tournamentId
+        ? { tournamentId: asTournamentId(parsed.data.tournamentId) }
+        : {}),
       now: new Date(),
     });
 
@@ -108,7 +111,7 @@ const JoinPoolSchema = z.object({ token: z.string().min(1) });
 
 export async function joinPool(
   raw: unknown,
-): Promise<{ ok: true; poolId: string; alreadyMember: boolean } | { ok: false; error: string }> {
+): Promise<{ ok: true; poolId: PoolId; alreadyMember: boolean } | { ok: false; error: string }> {
   const parsed = JoinPoolSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
 
@@ -154,7 +157,8 @@ export async function kickMember(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = KickMemberSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId: rawTargetUserId } = parsed.data;
+  const { poolId: rawPoolId, targetUserId: rawTargetUserId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
   const targetUserId = userId(rawTargetUserId);
 
   try {
@@ -187,7 +191,8 @@ export async function leavePool(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = LeavePoolSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const actor = await getActorOrThrow();
@@ -221,7 +226,8 @@ export async function clearInviteLink(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = ClearInviteLinkSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const actor = await getActorOrThrow();
@@ -247,7 +253,8 @@ export async function rotateToken(
 ): Promise<{ ok: true; newToken: string } | { ok: false; error: string }> {
   const parsed = RotateTokenSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const actor = await getActorOrThrow();
@@ -275,7 +282,8 @@ export async function rotateViewToken(
 ): Promise<{ ok: true; newToken: string } | { ok: false; error: string }> {
   const parsed = RotateViewTokenSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const actor = await getActorOrThrow();
@@ -303,7 +311,8 @@ export async function clearViewLink(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = ClearViewLinkSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const actor = await getActorOrThrow();
@@ -329,7 +338,8 @@ export async function deletePool(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = DeletePoolSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const actor = await getActorOrThrow();
@@ -419,7 +429,8 @@ export async function generateMemberLoginLink(
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const parsed = GenerateMemberLoginLinkSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId: rawTargetUserId } = parsed.data;
+  const { poolId: rawPoolId, targetUserId: rawTargetUserId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
   const targetUserId = userId(rawTargetUserId);
 
   try {
@@ -471,7 +482,8 @@ export async function exportPool(
 ): Promise<{ ok: true; data: PoolBackup } | { ok: false; error: string }> {
   const parsed = ExportPoolSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const actor = await getActorOrThrow();
@@ -499,7 +511,8 @@ export async function importPool(
 ): Promise<{ ok: true; membersRestored: number } | { ok: false; error: string }> {
   const parsed = ImportPoolSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, backupData } = parsed.data;
+  const { poolId: rawPoolId, backupData } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const actor = await getActorOrThrow();

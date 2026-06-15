@@ -16,8 +16,8 @@ import {
   getPrediction,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
-import { bracketMatchKey, teamId, groupId } from '@cup/engine';
-import type { UserId } from '@cup/engine';
+import { bracketMatchKey, teamId, groupId, tournamentId as asTournamentId } from '@cup/engine';
+import type { UserId, TournamentId, PoolId, PredictionId } from '@cup/engine';
 
 // Mocks — only system boundaries: auth, Next.js cache, and the DB singleton.
 // (The `server-only` guard in @/shared/db would throw in tests without this mock.)
@@ -51,7 +51,7 @@ const pastKickoff = new Date('2000-01-01T00:00:00Z');
 const emptyKickoffs = new Map<string, Date | null>();
 
 describe('clearAllPredictions', () => {
-  let poolId: string;
+  let poolId: PoolId;
   let actorId: UserId;
 
   beforeAll(async () => {
@@ -73,7 +73,7 @@ describe('clearAllPredictions', () => {
     actorId = member.id;
 
     const pool = await dbCreatePool(testDb, {
-      tournamentId: 'mini-2026',
+      tournamentId: asTournamentId('mini-2026'),
       ownerId: owner.id,
       name: 'Test Pool',
       inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -90,7 +90,7 @@ describe('clearAllPredictions', () => {
     const pred = await getOrCreatePrediction(testDb, {
       poolId,
       userId: actorId,
-      tournamentId: 'mini-2026',
+      tournamentId: asTournamentId('mini-2026'),
     });
     await testDb
       .insert(schema.predictionGroupScores)
@@ -131,7 +131,10 @@ describe('clearAllPredictions', () => {
 
 // Seed enough state on `predictionId` that deriveCard resolves finalists = [A1, B1]
 // and bronzePair = [C1, D1] (group scores 0-0 + home-side QF/SF picks).
-async function seedCompleteGroupsAndQfSf(db: typeof testDb, predictionId: string): Promise<void> {
+async function seedCompleteGroupsAndQfSf(
+  db: typeof testDb,
+  predictionId: PredictionId,
+): Promise<void> {
   for (const g of ['A', 'B', 'C', 'D'] as const) {
     const matches = miniTournament.groupMatches.filter((m) => m.group === g);
     for (const m of matches) {
@@ -147,9 +150,9 @@ async function seedCompleteGroupsAndQfSf(db: typeof testDb, predictionId: string
 }
 
 describe('saveFinishScore — implicit winner derivation', () => {
-  let poolId: string;
+  let poolId: PoolId;
   let actorId: UserId;
-  let predictionId: string;
+  let predictionId: PredictionId;
 
   beforeAll(async () => {
     if (!testDb) {
@@ -172,7 +175,7 @@ describe('saveFinishScore — implicit winner derivation', () => {
     actorId = member.id;
 
     const pool = await dbCreatePool(testDb, {
-      tournamentId: 'mini-2026',
+      tournamentId: asTournamentId('mini-2026'),
       ownerId: owner.id,
       name: 'Test Pool',
       inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -183,7 +186,7 @@ describe('saveFinishScore — implicit winner derivation', () => {
     const pred = await getOrCreatePrediction(testDb, {
       poolId,
       userId: actorId,
-      tournamentId: 'mini-2026',
+      tournamentId: asTournamentId('mini-2026'),
     });
     predictionId = pred.id;
     await seedCompleteGroupsAndQfSf(testDb, predictionId);
@@ -240,10 +243,10 @@ describe('saveFinishScore — implicit winner derivation', () => {
 });
 
 describe('ownerSaveFinishScore — implicit winner derivation', () => {
-  let poolId: string;
+  let poolId: PoolId;
   let ownerId: UserId;
   let memberId: UserId;
-  let predictionId: string;
+  let predictionId: PredictionId;
 
   beforeAll(async () => {
     if (!testDb) {
@@ -267,7 +270,7 @@ describe('ownerSaveFinishScore — implicit winner derivation', () => {
     memberId = member.id;
 
     const pool = await dbCreatePool(testDb, {
-      tournamentId: 'mini-2026',
+      tournamentId: asTournamentId('mini-2026'),
       ownerId,
       name: 'Owner Pool',
       inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -278,7 +281,7 @@ describe('ownerSaveFinishScore — implicit winner derivation', () => {
     const pred = await getOrCreatePrediction(testDb, {
       poolId,
       userId: memberId,
-      tournamentId: 'mini-2026',
+      tournamentId: asTournamentId('mini-2026'),
     });
     predictionId = pred.id;
     await seedCompleteGroupsAndQfSf(testDb, predictionId);
@@ -319,9 +322,9 @@ describe('ownerSaveFinishScore — implicit winner derivation', () => {
 });
 
 describe('owner editing own card post-lock (creator predict edit)', () => {
-  let poolId: string;
+  let poolId: PoolId;
   let ownerId: UserId;
-  let ownerPredictionId: string;
+  let ownerPredictionId: PredictionId;
 
   beforeAll(async () => {
     if (!testDb) {
@@ -346,7 +349,7 @@ describe('owner editing own card post-lock (creator predict edit)', () => {
     ownerId = owner.id;
 
     const pool = await dbCreatePool(testDb, {
-      tournamentId: 'mini-past',
+      tournamentId: asTournamentId('mini-past'),
       ownerId,
       name: 'Past Pool',
       inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -357,7 +360,7 @@ describe('owner editing own card post-lock (creator predict edit)', () => {
     const pred = await getOrCreatePrediction(testDb, {
       poolId,
       userId: ownerId,
-      tournamentId: 'mini-past',
+      tournamentId: asTournamentId('mini-past'),
     });
     ownerPredictionId = pred.id;
 
@@ -445,8 +448,8 @@ describe('owner editing own card post-lock (creator predict edit)', () => {
  */
 async function seedGroupsForPostLockTest(
   db: typeof testDb,
-  predictionId: string,
-  tournamentId: string,
+  predictionId: PredictionId,
+  tournamentId: TournamentId,
 ) {
   const mA1 = miniTournament.groupMatches.find(
     (m) => m.group === groupId('A') && m.home === teamId('A1') && m.away === teamId('A2'),
@@ -473,11 +476,11 @@ async function seedGroupsForPostLockTest(
 }
 
 describe('saveKnockoutPick / saveGroupScore — actual group scores used during post-lock invalidation', () => {
-  const lockedTournamentId = 'mini-locked';
+  const lockedTournamentId = asTournamentId('mini-locked');
 
-  let poolId: string;
+  let poolId: PoolId;
   let actorId: UserId;
-  let predictionId: string;
+  let predictionId: PredictionId;
 
   beforeAll(async () => {
     if (!testDb) {

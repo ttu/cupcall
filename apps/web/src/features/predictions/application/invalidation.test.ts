@@ -24,7 +24,8 @@ import {
   selectQualifiers,
   deriveGroupOrders,
 } from '@cup/engine';
-import type { UserId } from '@cup/engine';
+import { tournamentId as asTournamentId } from '@cup/engine';
+import type { UserId, PredictionId } from '@cup/engine';
 
 const firstKickoff = new Date('2030-06-11T18:00:00Z');
 const emptyKickoffs = new Map<string, Date | null>();
@@ -38,7 +39,7 @@ async function setup(db: TestDb) {
     displayName: 'Owner',
   });
   const pool = await createPool(db, {
-    tournamentId: miniTournament.id,
+    tournamentId: asTournamentId(miniTournament.id),
     ownerId: owner.id,
     name: 'Test Pool',
     inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -50,12 +51,12 @@ async function setup(db: TestDb) {
   const prediction = await getOrCreatePrediction(db, {
     poolId: pool.id,
     userId: user.id as UserId,
-    tournamentId: miniTournament.id,
+    tournamentId: asTournamentId(miniTournament.id),
   });
   return { poolId: pool.id, userId: user.id as UserId, predictionId: prediction.id };
 }
 
-async function seedAllGroupScores(db: TestDb, predictionId: string) {
+async function seedAllGroupScores(db: TestDb, predictionId: PredictionId) {
   for (const m of miniTournament.groupMatches) {
     await upsertGroupScore(db, predictionId, m.id, 0, 0);
   }
@@ -63,7 +64,7 @@ async function seedAllGroupScores(db: TestDb, predictionId: string) {
 
 async function applyInvalidation(
   db: TestDb,
-  predictionId: string,
+  predictionId: PredictionId,
   matchId: string,
   home: number,
   away: number,
@@ -94,7 +95,7 @@ async function applyInvalidation(
 
 describe('pick invalidation after group score change', () => {
   let db: TestDb;
-  let predictionId: string;
+  let predictionId: PredictionId;
 
   beforeEach(async () => {
     db = await makeTestDb();

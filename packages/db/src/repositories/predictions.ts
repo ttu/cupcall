@@ -7,8 +7,14 @@ import {
   playerId,
   matchId,
   bracketMatchKey,
+  poolId as asPoolId,
+  tournamentId as asTournamentId,
+  predictionId as asPredictionId,
   SPECIAL_BET_KINDS,
   type UserId,
+  type PoolId,
+  type TournamentId,
+  type PredictionId,
   type CardInputs,
   type GroupScore,
   type KnockoutPick,
@@ -20,16 +26,16 @@ import {
 type Database = Db<typeof schema>;
 
 export type PredictionRow = {
-  id: string;
-  poolId: string;
+  id: PredictionId;
+  poolId: PoolId;
   userId: UserId;
-  tournamentId: string;
+  tournamentId: TournamentId;
   lockedAt: Date | null;
 };
 
 export type EditRow = {
   id: string;
-  predictionId: string;
+  predictionId: PredictionId;
   editorUserId: UserId;
   editorName: string;
   fieldPath: string;
@@ -41,8 +47,8 @@ export type EditRow = {
 };
 
 export type PredictionRef = {
-  predictionId: string;
-  poolId: string;
+  predictionId: PredictionId;
+  poolId: PoolId;
   userId: UserId;
 };
 
@@ -51,7 +57,7 @@ export type PredictionRef = {
  */
 export async function getPrediction(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
   uid: UserId,
 ): Promise<PredictionRow | undefined> {
   const [row] = await db
@@ -59,7 +65,13 @@ export async function getPrediction(
     .from(schema.predictions)
     .where(and(eq(schema.predictions.poolId, poolId), eq(schema.predictions.userId, uid)));
   if (!row) return undefined;
-  return { ...row, userId: userId(row.userId) };
+  return {
+    ...row,
+    id: asPredictionId(row.id),
+    poolId: asPoolId(row.poolId),
+    tournamentId: asTournamentId(row.tournamentId),
+    userId: userId(row.userId),
+  };
 }
 
 /**
@@ -68,7 +80,7 @@ export async function getPrediction(
  */
 export async function getOrCreatePrediction(
   db: Database,
-  input: { poolId: string; userId: UserId; tournamentId: string },
+  input: { poolId: PoolId; userId: UserId; tournamentId: TournamentId },
 ): Promise<PredictionRow> {
   const existing = await db
     .select()
@@ -76,7 +88,14 @@ export async function getOrCreatePrediction(
     .where(
       and(eq(schema.predictions.poolId, input.poolId), eq(schema.predictions.userId, input.userId)),
     );
-  if (existing[0]) return { ...existing[0], userId: userId(existing[0].userId) };
+  if (existing[0])
+    return {
+      ...existing[0],
+      id: asPredictionId(existing[0].id),
+      poolId: asPoolId(existing[0].poolId),
+      tournamentId: asTournamentId(existing[0].tournamentId),
+      userId: userId(existing[0].userId),
+    };
 
   const [row] = await db
     .insert(schema.predictions)
@@ -87,13 +106,19 @@ export async function getOrCreatePrediction(
     })
     .returning();
   if (!row) throw new Error('getOrCreatePrediction: insert did not return a row');
-  return { ...row, userId: userId(row.userId) };
+  return {
+    ...row,
+    id: asPredictionId(row.id),
+    poolId: asPoolId(row.poolId),
+    tournamentId: asTournamentId(row.tournamentId),
+    userId: userId(row.userId),
+  };
 }
 
 /** Upserts a single group-match score prediction. */
 export async function upsertGroupScore(
   db: Database,
-  predictionId: string,
+  predictionId: PredictionId,
   mid: string,
   homeGoals: number,
   awayGoals: number,
@@ -110,7 +135,7 @@ export async function upsertGroupScore(
 /** Upserts a knockout winner pick. */
 export async function upsertKnockoutPick(
   db: Database,
-  predictionId: string,
+  predictionId: PredictionId,
   key: BracketMatchKey,
   winnerTeamId: string,
 ): Promise<void> {
@@ -132,7 +157,7 @@ export async function upsertKnockoutPick(
  */
 export async function deleteKnockoutPicks(
   db: Database,
-  predictionId: string,
+  predictionId: PredictionId,
   keys: BracketMatchKey[],
 ): Promise<void> {
   if (keys.length === 0) return;
@@ -153,7 +178,7 @@ export async function deleteKnockoutPicks(
  */
 export async function deletePrediction(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
   userId: UserId,
 ): Promise<void> {
   await db
@@ -162,7 +187,10 @@ export async function deletePrediction(
 }
 
 /** Removes all prediction sub-rows (group scores, knockout picks, finish scores, specials) for a prediction. */
-export async function clearPredictionInputs(db: Database, predictionId: string): Promise<void> {
+export async function clearPredictionInputs(
+  db: Database,
+  predictionId: PredictionId,
+): Promise<void> {
   await Promise.all([
     db
       .delete(schema.predictionGroupScores)
@@ -182,7 +210,7 @@ export async function clearPredictionInputs(db: Database, predictionId: string):
 /** Upserts the predicted exact score for the final or bronze match. */
 export async function upsertFinishScore(
   db: Database,
-  predictionId: string,
+  predictionId: PredictionId,
   match: 'final' | 'bronze',
   homeGoals: number,
   awayGoals: number,
@@ -199,7 +227,7 @@ export async function upsertFinishScore(
 /** Upserts a single special bet. Value must be JSON-serializable. */
 export async function upsertSpecialBet(
   db: Database,
-  predictionId: string,
+  predictionId: PredictionId,
   betKey: string,
   value: unknown,
 ): Promise<void> {
@@ -216,7 +244,7 @@ export async function upsertSpecialBet(
 export async function createPredictionEdit(
   db: Database,
   input: {
-    predictionId: string;
+    predictionId: PredictionId;
     editorUserId: UserId;
     fieldPath: string;
     oldValue: unknown;
@@ -242,7 +270,7 @@ export async function createPredictionEdit(
  */
 export async function listEditsForPrediction(
   db: Database,
-  predictionId: string,
+  predictionId: PredictionId,
 ): Promise<EditRow[]> {
   const rows = await db
     .select({
@@ -268,7 +296,7 @@ export async function listEditsForPrediction(
     .reverse()
     .map((r) => ({
       id: r.id,
-      predictionId: r.predictionId,
+      predictionId: asPredictionId(r.predictionId),
       editorUserId: userId(r.editorUserId),
       editorName: r.editorDisplayName || r.editorEmail || r.editorUserId,
       fieldPath: r.fieldPath,
@@ -299,7 +327,7 @@ export type PoolSpecialBet = {
  */
 export async function getSpecialBetsByPool(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
 ): Promise<PoolSpecialBet[]> {
   const rows = await db
     .select({
@@ -327,7 +355,7 @@ export async function getSpecialBetsByPool(
  */
 export async function getGroupScoresByPool(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
 ): Promise<PoolGroupScore[]> {
   const rows = await db
     .select({
@@ -357,7 +385,7 @@ export async function getGroupScoresByPool(
  */
 export async function listPredictionsForTournament(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
 ): Promise<PredictionRef[]> {
   const rows = await db
     .select({
@@ -369,8 +397,8 @@ export async function listPredictionsForTournament(
     .where(eq(schema.predictions.tournamentId, tournamentId));
 
   return rows.map((r) => ({
-    predictionId: r.id,
-    poolId: r.poolId,
+    predictionId: asPredictionId(r.id),
+    poolId: asPoolId(r.poolId),
     userId: userId(r.userId),
   }));
 }
@@ -378,7 +406,10 @@ export async function listPredictionsForTournament(
 /**
  * Assembles CardInputs for a given prediction by querying the four sub-tables.
  */
-export async function getPredictionInputs(db: Database, predictionId: string): Promise<CardInputs> {
+export async function getPredictionInputs(
+  db: Database,
+  predictionId: PredictionId,
+): Promise<CardInputs> {
   const [groupScoreRows, knockoutRows, finishRows, specialRows] = await Promise.all([
     db
       .select()

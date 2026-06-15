@@ -15,7 +15,7 @@ import {
   createGuestUser,
   createPredictionEdit,
 } from '@cup/db';
-import type { UserId, BracketMatchKey } from '@cup/engine';
+import type { UserId, BracketMatchKey, PoolId, TournamentId, PredictionId } from '@cup/engine';
 import { userId as toUserId, bracketMatchKey as bmk } from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
 
@@ -66,9 +66,9 @@ export type PoolBackup = z.infer<typeof PoolBackupSchema>;
 
 export async function buildPoolExport(
   db: Db<AppSchema>,
-  poolId: string,
+  poolId: PoolId,
   poolName: string,
-  tournamentId: string,
+  tournamentId: TournamentId,
 ): Promise<PoolBackup> {
   const leaderboard = await getLeaderboard(db, poolId);
 
@@ -122,7 +122,7 @@ export async function buildPoolExport(
 // ---------------------------------------------------------------------------
 
 export type RestoredPrediction = {
-  predictionId: string;
+  predictionId: PredictionId;
   userId: UserId;
 };
 
@@ -133,8 +133,8 @@ export type RestoreResult = {
 
 export async function restorePoolFromBackup(
   db: Db<AppSchema>,
-  poolId: string,
-  tournamentId: string,
+  poolId: PoolId,
+  tournamentId: TournamentId,
   backup: PoolBackup,
   restoredByUserId: UserId,
 ): Promise<RestoreResult> {

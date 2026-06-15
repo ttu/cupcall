@@ -12,7 +12,12 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import pino from 'pino';
 import { tournamentSchema, resultsSchema } from '@cup/schemas';
-import { deriveCard, scoreCard, deriveGroupOrders } from '@cup/engine';
+import {
+  deriveCard,
+  scoreCard,
+  deriveGroupOrders,
+  tournamentId as asTournamentId,
+} from '@cup/engine';
 import type { GroupId, TeamId, Tournament, ActualResults } from '@cup/engine';
 import {
   createDb,
@@ -129,10 +134,10 @@ export async function syncTournament(
   await upsertTournamentDef(db, tournament, firstKickoff, matchKickoffs);
 
   logger.info({ tournamentId }, 'upserting tournament results');
-  await upsertTournamentResults(db, tournamentId, mergedActual);
+  await upsertTournamentResults(db, asTournamentId(tournamentId), mergedActual);
 
   // 5. Rescore all cards
-  const predictions = await listPredictionsForTournament(db, tournamentId);
+  const predictions = await listPredictionsForTournament(db, asTournamentId(tournamentId));
   logger.info({ tournamentId, count: predictions.length }, 'rescoring cards');
 
   let scored = 0;

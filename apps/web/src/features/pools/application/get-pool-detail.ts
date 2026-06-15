@@ -6,7 +6,7 @@ import {
   getMatchesForTournament,
   getGroupScoresByPool,
 } from '@cup/db';
-import type { Tournament } from '@cup/engine';
+import type { Tournament, PoolId } from '@cup/engine';
 import type { PoolDetail } from '../domain/types';
 import { buildRaceChartData } from '@/features/results';
 import { buildStageProgress } from '@/shared/stage-progress';
@@ -30,7 +30,7 @@ function computeTotalFields(definition: Tournament | null): number {
 
 export async function getPoolDetail(
   db: Db<import('@/shared/db').AppSchema>,
-  poolId: string,
+  poolId: PoolId,
 ): Promise<PoolDetail | undefined> {
   const pool = await getPoolById(db, poolId);
   if (!pool) return undefined;

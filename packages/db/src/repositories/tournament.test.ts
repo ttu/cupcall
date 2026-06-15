@@ -5,8 +5,8 @@ import type { Db } from '../client';
 import * as schema from '../schema/index';
 import { upsertTournamentDef, upsertTournamentResults, listTournaments } from './tournament';
 import { miniTournament } from '@cup/engine/testing';
-import type { ActualResults, GroupId, TeamId } from '@cup/engine';
-import { teamId, groupId, matchId } from '@cup/engine';
+import type { ActualResults, GroupId, TeamId, TournamentId } from '@cup/engine';
+import { teamId, groupId, matchId, tournamentId as asTournamentId } from '@cup/engine';
 
 const firstKickoff = new Date('2026-06-11T18:00:00Z');
 
@@ -129,7 +129,7 @@ describe('tournament repository', () => {
         groupOrder: {},
         answers: {},
       };
-      await upsertTournamentResults(db, 'mini-2026', actual);
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual);
 
       const [match] = await db
         .select()
@@ -148,7 +148,7 @@ describe('tournament repository', () => {
         } as Record<GroupId, TeamId[]>,
         answers: {},
       };
-      await upsertTournamentResults(db, 'mini-2026', actual);
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual);
 
       const rows = await db
         .select()
@@ -169,7 +169,7 @@ describe('tournament repository', () => {
           penaltyShootoutCount: 3,
         },
       };
-      await upsertTournamentResults(db, 'mini-2026', actual);
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual);
 
       const rows = await db
         .select()
@@ -195,7 +195,7 @@ describe('tournament repository', () => {
           decidedBy: 'regulation',
         },
       };
-      await upsertTournamentResults(db, 'mini-2026', actual);
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual);
 
       const rows = await db
         .select()
@@ -214,8 +214,8 @@ describe('tournament repository', () => {
         } as Record<GroupId, TeamId[]>,
         answers: { penaltyShootoutCount: 2 },
       };
-      await upsertTournamentResults(db, 'mini-2026', actual);
-      await upsertTournamentResults(db, 'mini-2026', actual);
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual);
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual);
 
       const answers = await db
         .select()
@@ -240,7 +240,7 @@ describe('tournament repository', () => {
         } as Record<GroupId, TeamId[]>,
         answers: {},
       };
-      await upsertTournamentResults(db, 'mini-2026', actual1);
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual1);
 
       // Re-run with a different order
       const actual2: ActualResults = {
@@ -250,7 +250,7 @@ describe('tournament repository', () => {
         } as Record<GroupId, TeamId[]>,
         answers: {},
       };
-      await upsertTournamentResults(db, 'mini-2026', actual2);
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual2);
 
       const rows = await db
         .select()

@@ -32,11 +32,19 @@ import {
   getPredictionInputs,
   upsertScore,
 } from '@cup/db';
-import { bracketMatchKey, deriveCard, scoreCard, groupId, teamId, matchId } from '@cup/engine';
+import {
+  bracketMatchKey,
+  deriveCard,
+  scoreCard,
+  groupId,
+  teamId,
+  matchId,
+  tournamentId as asTournamentId,
+} from '@cup/engine';
 import type { ActualResults, UserId } from '@cup/engine';
 import { tournamentSchema } from '@cup/schemas';
 
-const TOURNAMENT_ID = 'test-wc-2026';
+const TOURNAMENT_ID = asTournamentId('test-wc-2026');
 const DEV_ONGOING_TOKEN = 'dev-ongoing-login';
 
 const logger = pino({ name: 'seed-ongoing', level: 'info' });

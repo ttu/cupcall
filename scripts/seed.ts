@@ -27,11 +27,11 @@ import {
   upsertFinishScore,
   upsertSpecialBet,
 } from '@cup/db';
-import { bracketMatchKey } from '@cup/engine';
+import { bracketMatchKey, tournamentId as asTournamentId } from '@cup/engine';
 import type { UserId } from '@cup/engine';
 import { syncTournament } from './sync';
 
-const TOURNAMENT_ID = 'test-wc-2026';
+const TOURNAMENT_ID = asTournamentId('test-wc-2026');
 const DEV_CREATOR_TOKEN = 'dev-creator-login';
 
 const logger = pino({ name: 'seed', level: 'info' });

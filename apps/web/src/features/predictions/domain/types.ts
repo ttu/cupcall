@@ -12,6 +12,9 @@ import type {
   GroupId,
   BetInputKind,
   SpecialBetDef,
+  PoolId,
+  TournamentId,
+  PredictionId,
 } from '@cup/engine';
 
 export type { BetInputKind, SpecialBetDef };
@@ -120,9 +123,9 @@ export type SpecialBetView = SpecialBetDef & {
 // ---------------------------------------------------------------------------
 
 export type CardView = {
-  predictionId: string;
-  poolId: string;
-  tournamentId: string;
+  predictionId: PredictionId;
+  poolId: PoolId;
+  tournamentId: TournamentId;
   status: PredictionStatus;
   completionPercent: number;
   groups: GroupView[];

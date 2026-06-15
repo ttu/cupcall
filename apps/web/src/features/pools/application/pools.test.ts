@@ -17,8 +17,8 @@ import {
   upsertScore,
   tournaments,
 } from '@cup/db';
-import type { UserId } from '@cup/engine';
-import { points } from '@cup/engine';
+import { points, tournamentId as asTournamentId } from '@cup/engine';
+import type { UserId, TournamentId, PoolId } from '@cup/engine';
 import { createPool } from './create-pool';
 import { joinPool } from './join-pool';
 import { getUserPools } from './get-user-pools';
@@ -57,14 +57,14 @@ const SCORING = {
   topScorerPlayer: 15,
 };
 
-async function seedTournament(db: Db, id = 'wc-test'): Promise<string> {
+async function seedTournament(db: Db, id = 'wc-test'): Promise<TournamentId> {
   await db.insert(tournaments).values({
     id,
     name: 'Test WC',
     firstKickoff: new Date('2026-06-11T18:00:00Z'),
     scoringConfig: SCORING,
   });
-  return id;
+  return asTournamentId(id);
 }
 
 async function seedUser(db: Db, emailPrefix = 'user'): Promise<UserId> {
@@ -104,7 +104,7 @@ describe('createPool', () => {
     const result = await createPool(db, {
       ownerId,
       name: 'Mini Pool',
-      tournamentId: 'mini-test',
+      tournamentId: asTournamentId('mini-test'),
       now: NOW,
     });
     expect(result.ok).toBe(true);
@@ -116,7 +116,7 @@ describe('createPool', () => {
     const result = await createPool(db, {
       ownerId,
       name: 'My Pool',
-      tournamentId: 'nonexistent',
+      tournamentId: asTournamentId('nonexistent'),
       now: NOW,
     });
     expect(result.ok).toBe(false);
@@ -176,7 +176,7 @@ describe('joinPool', () => {
   let ownerId: UserId;
   let joinerId: UserId;
   let poolToken: string;
-  let poolId: string;
+  let poolId: PoolId;
 
   beforeEach(async () => {
     db = await makeTestDb();
@@ -233,7 +233,7 @@ describe('joinPool', () => {
     // Create a separate pool whose token was expired before NOW.
     const expiredToken = 'expired-raw-token-abc123';
     await dbCreatePool(db, {
-      tournamentId: 'wc-test',
+      tournamentId: asTournamentId('wc-test'),
       ownerId,
       name: 'Expired Pool',
       inviteTokenHash: expiredToken,
@@ -352,7 +352,7 @@ describe('leavePool (via removeMember / isMember)', () => {
   let db: Db;
   let ownerId: UserId;
   let memberId: UserId;
-  let poolId: string;
+  let poolId: PoolId;
   let poolToken: string;
 
   beforeEach(async () => {
@@ -407,7 +407,11 @@ describe('leavePool (via removeMember / isMember)', () => {
     const { deletePrediction, getPrediction, getOrCreatePrediction } = await import('@cup/db');
 
     // joinPool already created a prediction for memberId; create one for ownerId too.
-    await getOrCreatePrediction(db, { poolId, userId: ownerId, tournamentId: 'wc-test' });
+    await getOrCreatePrediction(db, {
+      poolId,
+      userId: ownerId,
+      tournamentId: asTournamentId('wc-test'),
+    });
 
     expect(await getPrediction(db, poolId, memberId)).toBeDefined();
     expect(await getPrediction(db, poolId, ownerId)).toBeDefined();

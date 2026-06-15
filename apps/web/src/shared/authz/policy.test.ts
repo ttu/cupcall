@@ -8,7 +8,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { makeTestDb } from '@cup/db/testing';
 import { createUser, createPool, addMember, removeMember, recordKick, tournaments } from '@cup/db';
-import type { UserId } from '@cup/engine';
+import { tournamentId as asTournamentId } from '@cup/engine';
+import type { UserId, PoolId } from '@cup/engine';
 import {
   ForbiddenError,
   LockedError,
@@ -55,7 +56,7 @@ describe('authz policy', () => {
   let memberId: UserId;
   let lateMemberId: UserId;
   let outsiderId: UserId;
-  let poolId: string;
+  let poolId: PoolId;
 
   beforeEach(async () => {
     db = await makeTestDb();
@@ -118,7 +119,7 @@ describe('authz policy', () => {
 
     // Create a pool owned by ownerUser.
     const pool = await createPool(db, {
-      tournamentId: tId,
+      tournamentId: asTournamentId(tId),
       ownerId,
       name: 'Test Pool',
       inviteTokenHash: `hash-${crypto.randomUUID()}`,

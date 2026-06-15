@@ -1,4 +1,4 @@
-import type { UserId, Points, Scoring } from '@cup/engine';
+import type { UserId, Points, Scoring, PoolId, TournamentId } from '@cup/engine';
 import type { LeaderboardEntry } from '@cup/db';
 import type { StageProgress } from '@/shared/stage-progress';
 import type { RaceChartData } from '@/features/results';
@@ -6,9 +6,9 @@ import type { RaceChartData } from '@/features/results';
 export type { LeaderboardEntry, StageProgress };
 
 export type PoolSummary = {
-  id: string;
+  id: PoolId;
   name: string;
-  tournamentId: string;
+  tournamentId: TournamentId;
   tournamentName: string;
   ownerId: UserId;
   memberCount: number;
@@ -16,9 +16,9 @@ export type PoolSummary = {
 };
 
 export type PoolDetail = {
-  id: string;
+  id: PoolId;
   name: string;
-  tournamentId: string;
+  tournamentId: TournamentId;
   tournamentName: string;
   ownerId: UserId;
   inviteToken: string | null;

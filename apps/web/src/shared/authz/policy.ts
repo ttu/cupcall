@@ -11,7 +11,7 @@
 /** Late joiners have this many ms from joinedAt to fill in predictions. */
 export const LATE_JOINER_WINDOW_MS = 4 * 60 * 60 * 1000;
 
-import type { UserId } from '@cup/engine';
+import type { UserId, PoolId } from '@cup/engine';
 import { isMember, getMember } from '@cup/db';
 import type { Actor } from './actor';
 import { ForbiddenError, LockedError } from './errors';
@@ -27,7 +27,7 @@ type PolicyDb = Parameters<typeof getMember>[0];
 // ---------------------------------------------------------------------------
 
 type PoolRef = {
-  id: string;
+  id: PoolId;
   ownerId: UserId;
 };
 
@@ -69,7 +69,7 @@ export function assertIsOwner(pool: PoolRef, userId: UserId): void {
  * A user who has been kicked is removed from `pool_members`, so `isMember`
  * returns false — kicked users are denied just like non-members.
  */
-export async function assertIsMember(db: PolicyDb, poolId: string, userId: UserId): Promise<void> {
+export async function assertIsMember(db: PolicyDb, poolId: PoolId, userId: UserId): Promise<void> {
   const member = await isMember(db, poolId, userId);
   if (!member) {
     throw new ForbiddenError(

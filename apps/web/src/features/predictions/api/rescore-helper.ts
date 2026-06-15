@@ -2,11 +2,19 @@ import { db } from '@/shared/db';
 import { rescoreCard } from '../application/rescore';
 import { loadActualResults } from '../application/load-actual-results';
 import { getPredictionInputs } from '@cup/db';
-import type { Tournament, UserId, ActualResults, CardInputs } from '@cup/engine';
+import { tournamentId as asTournamentId } from '@cup/engine';
+import type {
+  Tournament,
+  UserId,
+  ActualResults,
+  CardInputs,
+  PoolId,
+  PredictionId,
+} from '@cup/engine';
 
 export async function rescoreAfterEdit(
-  predictionId: string,
-  poolId: string,
+  predictionId: PredictionId,
+  poolId: PoolId,
   userId: UserId,
   tournamentDef: Tournament,
   /** Pre-loaded actual results — skips the DB fetch when provided. */
@@ -15,7 +23,7 @@ export async function rescoreAfterEdit(
   inputs?: CardInputs,
 ): Promise<void> {
   const [resolvedActual, resolvedInputs] = await Promise.all([
-    actual ?? loadActualResults(db, tournamentDef.id),
+    actual ?? loadActualResults(db, asTournamentId(tournamentDef.id)),
     inputs ?? getPredictionInputs(db, predictionId),
   ]);
   await rescoreCard({

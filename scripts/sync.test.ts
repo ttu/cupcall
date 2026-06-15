@@ -14,8 +14,10 @@ import { makeTestDb } from '@cup/db/testing';
 import type { Db } from '@cup/db';
 import * as schema from '@cup/db/schema';
 import { createUser, createPool } from '@cup/db';
-import { bracketMatchKey } from '@cup/engine';
+import { bracketMatchKey, tournamentId as asTournamentId } from '@cup/engine';
 import { syncTournament } from './sync';
+
+const mini2026Id = asTournamentId('mini-2026');
 
 // Minimal runtime shapes for the on-disk fixture files. Validating here keeps
 // the mutate-then-write helpers in the new tests free of unsafe `as` casts —
@@ -98,7 +100,7 @@ describe('syncTournament integration', () => {
       displayName: 'Alice',
     });
     const pool = await createPool(db, {
-      tournamentId: 'mini-2026',
+      tournamentId: mini2026Id,
       ownerId: owner.id,
       name: 'Test Pool',
       inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -153,7 +155,7 @@ describe('syncTournament integration', () => {
       displayName: 'User',
     });
     const pool = await createPool(db, {
-      tournamentId: 'mini-2026',
+      tournamentId: mini2026Id,
       ownerId: owner.id,
       name: 'Zero Pool',
       inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -252,7 +254,7 @@ describe('syncTournament integration', () => {
       displayName: 'Bob',
     });
     const pool = await createPool(db, {
-      tournamentId: 'mini-2026',
+      tournamentId: mini2026Id,
       ownerId: owner.id,
       name: 'Test Pool 2',
       inviteTokenHash: `h2-${crypto.randomUUID()}`,
@@ -357,7 +359,7 @@ describe('syncTournament integration', () => {
         displayName: 'LateJoiner',
       });
       const pool = await createPool(db, {
-        tournamentId: 'mini-2026',
+        tournamentId: mini2026Id,
         ownerId: owner.id,
         name: 'Late Join Pool',
         inviteTokenHash: `h-lj-${crypto.randomUUID()}`,
@@ -479,7 +481,7 @@ describe('syncTournament integration', () => {
         displayName: 'Alice',
       });
       const pool = await createPool(db, {
-        tournamentId: 'mini-2026',
+        tournamentId: mini2026Id,
         ownerId: owner.id,
         name: 'Non-roster Pool',
         inviteTokenHash: `h-${crypto.randomUUID()}`,

@@ -1,7 +1,14 @@
 import { eq, and, ne } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
-import type { Tournament, ActualResults, GroupId, TeamId } from '@cup/engine';
+import {
+  tournamentId as asTournamentId,
+  type Tournament,
+  type ActualResults,
+  type GroupId,
+  type TeamId,
+  type TournamentId,
+} from '@cup/engine';
 
 type Database = Db<typeof schema>;
 
@@ -140,7 +147,7 @@ export async function upsertTournamentDef(
 }
 
 export type TournamentRow = {
-  id: string;
+  id: TournamentId;
   name: string;
   firstKickoff: Date;
   scoringConfig: import('@cup/engine').Scoring;
@@ -154,7 +161,7 @@ export type TournamentRow = {
 export async function listTournaments(db: Database): Promise<TournamentRow[]> {
   const rows = await db.select().from(schema.tournaments).orderBy(schema.tournaments.firstKickoff);
   return rows.map((row) => ({
-    id: row.id,
+    id: asTournamentId(row.id),
     name: row.name,
     firstKickoff: row.firstKickoff,
     scoringConfig: row.scoringConfig,
@@ -168,7 +175,7 @@ export async function listTournaments(db: Database): Promise<TournamentRow[]> {
  */
 export async function getTournamentById(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
 ): Promise<TournamentRow | undefined> {
   const [row] = await db
     .select()
@@ -176,7 +183,7 @@ export async function getTournamentById(
     .where(eq(schema.tournaments.id, tournamentId));
   if (!row) return undefined;
   return {
-    id: row.id,
+    id: asTournamentId(row.id),
     name: row.name,
     firstKickoff: row.firstKickoff,
     scoringConfig: row.scoringConfig,
@@ -187,7 +194,7 @@ export async function getTournamentById(
 
 export type MatchRow = {
   id: string;
-  tournamentId: string;
+  tournamentId: TournamentId;
   stage: 'group' | 'R32' | 'R16' | 'QF' | 'SF' | 'Final' | 'bronze';
   groupId: string | null;
   homeTeamId: string | null;
@@ -205,7 +212,7 @@ export type MatchRow = {
  */
 export async function getMatchesForTournament(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
 ): Promise<MatchRow[]> {
   const rows = await db
     .select()
@@ -214,7 +221,7 @@ export async function getMatchesForTournament(
     .orderBy(schema.matches.kickoff);
   return rows.map((r) => ({
     id: r.id,
-    tournamentId: r.tournamentId,
+    tournamentId: asTournamentId(r.tournamentId),
     stage: r.stage,
     groupId: r.groupId ?? null,
     homeTeamId: r.homeTeamId ?? null,
@@ -238,7 +245,7 @@ export async function getMatchesForTournament(
  */
 export async function upsertTournamentResults(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
   actual: ActualResults,
 ): Promise<void> {
   // 1. Update group match results
@@ -271,7 +278,7 @@ export async function upsertTournamentResults(
   }
 
   // 3. Upsert answers
-  const answerEntries: Array<{ tournamentId: string; betKey: string; value: unknown }> = [];
+  const answerEntries: Array<{ tournamentId: TournamentId; betKey: string; value: unknown }> = [];
 
   const { answers } = actual;
 
@@ -374,7 +381,10 @@ export async function upsertTournamentResults(
  * Used by the dev simulator before applying a new checkpoint so that
  * going backwards in time produces a fully consistent state.
  */
-export async function resetTournamentResults(db: Database, tournamentId: string): Promise<void> {
+export async function resetTournamentResults(
+  db: Database,
+  tournamentId: TournamentId,
+): Promise<void> {
   await db
     .update(schema.matches)
     .set({
@@ -403,7 +413,7 @@ export async function resetTournamentResults(db: Database, tournamentId: string)
  */
 export async function finalizeMatch(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
   matchId: string,
   homeGoals: number,
   awayGoals: number,
@@ -422,7 +432,7 @@ export async function upsertKnockoutMatch(
   db: Database,
   input: {
     id: string;
-    tournamentId: string;
+    tournamentId: TournamentId;
     stage: 'R32' | 'R16' | 'QF' | 'SF' | 'Final' | 'bronze';
     homeTeamId?: string;
     awayTeamId?: string;

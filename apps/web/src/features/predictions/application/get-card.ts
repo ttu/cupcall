@@ -6,7 +6,7 @@ import type { AppSchema } from '@/shared/db';
 import type { Db } from '@cup/db';
 import { getPrediction, getOrCreatePrediction, getPredictionInputs } from '@cup/db';
 import { deriveCard, deriveGroupOrders, matchId, userId as brandUserId } from '@cup/engine';
-import type { Tournament, GroupId, TeamId } from '@cup/engine';
+import type { Tournament, GroupId, TeamId, PoolId, TournamentId } from '@cup/engine';
 import type {
   CardView,
   GroupView,
@@ -22,9 +22,9 @@ import { LATE_JOINER_WINDOW_MS } from '@/shared/authz';
 
 type Params = {
   db: Db<AppSchema>;
-  poolId: string;
+  poolId: PoolId;
   userId: string;
-  tournamentId: string;
+  tournamentId: TournamentId;
   tournament: Tournament;
   firstKickoff: Date;
   now: Date;

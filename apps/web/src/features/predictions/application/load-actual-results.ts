@@ -1,11 +1,11 @@
 import type { AppSchema } from '@/shared/db';
 import type { Db } from '@cup/db';
 import { getActualResults } from '@cup/db';
-import type { ActualResults } from '@cup/engine';
+import type { ActualResults, TournamentId } from '@cup/engine';
 
 export async function loadActualResults(
   db: Db<AppSchema>,
-  tournamentId: string,
+  tournamentId: TournamentId,
 ): Promise<ActualResults> {
   return getActualResults(db, tournamentId);
 }

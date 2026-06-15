@@ -7,7 +7,14 @@ import {
 } from '@cup/db';
 import type { Db } from '@cup/db';
 import { bracketMatchKey as bmk } from '@cup/engine';
-import type { BracketMatchKey, MatchId, TeamId, Tournament, UserId } from '@cup/engine';
+import type {
+  BracketMatchKey,
+  MatchId,
+  TeamId,
+  Tournament,
+  UserId,
+  PredictionId,
+} from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
 
 export type CardExportData = {
@@ -27,7 +34,7 @@ export type CardImportResult = { imported: number; skipped: string[] };
 
 type Deps = {
   db: Db<AppSchema>;
-  predictionId: string;
+  predictionId: PredictionId;
   tournamentDef: Tournament;
   exportData: CardExportData;
   /** When true, write audit records for each imported item. */

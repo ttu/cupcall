@@ -5,14 +5,21 @@
 import { getPredictionInputs, upsertScore } from '@cup/db';
 import type { Db } from '@cup/db';
 import { deriveCard, scoreCard, points } from '@cup/engine';
-import type { Tournament, ActualResults, CardInputs } from '@cup/engine';
+import type {
+  Tournament,
+  ActualResults,
+  CardInputs,
+  PoolId,
+  PredictionId,
+  UserId,
+} from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
 
 type Deps = {
   db: Db<AppSchema>;
-  predictionId: string;
-  poolId: string;
-  userId: string;
+  predictionId: PredictionId;
+  poolId: PoolId;
+  userId: UserId;
   tournament: Tournament;
   actual: ActualResults;
   /** Pre-loaded inputs — skips the DB fetch when provided. */
@@ -42,7 +49,7 @@ export async function rescoreCard(deps: Deps): Promise<void> {
 
   await upsertScore(db, {
     poolId,
-    userId: deps.userId as import('@cup/engine').UserId,
+    userId: deps.userId,
     pointsTotal: points(breakdown.total),
     breakdown,
   });

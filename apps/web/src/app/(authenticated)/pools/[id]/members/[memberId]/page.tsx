@@ -21,13 +21,14 @@ import {
 } from '@/features/predictions';
 import type { AuditEntry, MatchScore } from '@/features/predictions';
 import { getResultsView } from '@/features/results';
-import { userId } from '@cup/engine';
+import { userId, poolId as asPoolId } from '@cup/engine';
 import { BackLink } from '@/shared/ui';
 
 type Props = { params: Promise<{ id: string; memberId: string }> };
 
 export default async function MemberCardPage({ params }: Props): Promise<ReactElement> {
-  const { id: poolId, memberId } = await params;
+  const { id, memberId } = await params;
+  const poolId = asPoolId(id);
 
   const actor = await getCurrentActor();
   if (!actor) redirect('/');

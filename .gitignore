@@ -7,3 +7,5 @@ coverage/
 .pnpm-store/
 settings.local.json
 .playwright-mcp/
+.agents/skills/
+.claude/skills/

@@ -8,7 +8,7 @@ import {
   listTournaments,
   getTournamentById,
 } from '@cup/db';
-import type { UserId } from '@cup/engine';
+import type { UserId, TournamentId } from '@cup/engine';
 import { generateInviteToken } from '../domain/invite';
 import type { PoolSummary } from '../domain/types';
 
@@ -27,7 +27,7 @@ export type CreatePoolResult =
 
 export async function createPool(
   db: Db<import('@/shared/db').AppSchema>,
-  input: { ownerId: UserId; name: string; tournamentId?: string; now: Date },
+  input: { ownerId: UserId; name: string; tournamentId?: TournamentId; now: Date },
 ): Promise<CreatePoolResult> {
   const { ownerId, name, tournamentId, now } = input;
 

@@ -1,6 +1,7 @@
 import type { Db } from '@cup/db';
 import type { AppSchema } from '@/shared/db';
 import { listAllUsers, getMatchesForTournament } from '@cup/db';
+import { tournamentId as asTournamentId } from '@cup/engine';
 
 export type SimulationCheckpoint =
   | 'fresh'
@@ -22,7 +23,7 @@ export type DevState = {
 export async function getDevState(db: Db<AppSchema>): Promise<DevState> {
   const [users, matches] = await Promise.all([
     listAllUsers(db),
-    getMatchesForTournament(db, 'test-wc-2026'),
+    getMatchesForTournament(db, asTournamentId('test-wc-2026')),
   ]);
 
   const groupFinal = matches.filter((m) => m.stage === 'group' && m.status === 'final').length;

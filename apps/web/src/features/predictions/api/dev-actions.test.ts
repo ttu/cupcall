@@ -8,7 +8,8 @@ import {
   getOrCreatePrediction,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
-import type { UserId } from '@cup/engine';
+import { tournamentId as asTournamentId } from '@cup/engine';
+import type { UserId, PoolId } from '@cup/engine';
 
 let testDb: Awaited<ReturnType<typeof makeTestDb>>;
 
@@ -30,7 +31,7 @@ const firstKickoff = new Date('2099-06-11T18:00:00Z');
 const emptyKickoffs = new Map<string, Date | null>();
 
 describe('devFillRandomGroupScores', () => {
-  let poolId: string;
+  let poolId: PoolId;
   let actorId: UserId;
 
   beforeAll(async () => {
@@ -53,7 +54,7 @@ describe('devFillRandomGroupScores', () => {
     actorId = member.id;
 
     const pool = await dbCreatePool(testDb, {
-      tournamentId: 'mini-2026',
+      tournamentId: asTournamentId('mini-2026'),
       ownerId: owner.id,
       name: 'Test Pool',
       inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -81,7 +82,7 @@ describe('devFillRandomGroupScores', () => {
     const pred = await getOrCreatePrediction(testDb, {
       poolId,
       userId: actorId,
-      tournamentId: 'mini-2026',
+      tournamentId: asTournamentId('mini-2026'),
     });
     const inputs = await getPredictionInputs(testDb, pred.id);
     expect(inputs.groupScores).toHaveLength(24);

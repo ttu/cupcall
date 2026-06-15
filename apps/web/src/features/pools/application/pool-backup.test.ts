@@ -20,8 +20,8 @@ import {
   isMember,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
-import { bracketMatchKey } from '@cup/engine';
-import type { UserId } from '@cup/engine';
+import { bracketMatchKey, tournamentId as asTournamentId } from '@cup/engine';
+import type { UserId, TournamentId, PoolId } from '@cup/engine';
 import { buildPoolExport, restorePoolFromBackup } from './pool-backup';
 
 // ---------------------------------------------------------------------------
@@ -33,9 +33,9 @@ type Db = Awaited<ReturnType<typeof makeTestDb>>;
 const FUTURE_KICKOFF = new Date('2099-06-11T18:00:00Z');
 const EMPTY_KICKOFFS = new Map<string, Date | null>();
 
-async function seedTournament(db: Db) {
+async function seedTournament(db: Db): Promise<TournamentId> {
   await upsertTournamentDef(db, miniTournament, FUTURE_KICKOFF, EMPTY_KICKOFFS);
-  return miniTournament.id;
+  return asTournamentId(miniTournament.id);
 }
 
 async function seedUser(db: Db, name: string): Promise<UserId> {
@@ -52,8 +52,8 @@ async function seedUser(db: Db, name: string): Promise<UserId> {
 
 describe('buildPoolExport', () => {
   let db: Db;
-  let tournamentId: string;
-  let poolId: string;
+  let tournamentId: TournamentId;
+  let poolId: PoolId;
   let ownerId: UserId;
   let memberId: UserId;
 
@@ -162,8 +162,8 @@ describe('buildPoolExport', () => {
 
 describe('restorePoolFromBackup', () => {
   let db: Db;
-  let tournamentId: string;
-  let targetPoolId: string;
+  let tournamentId: TournamentId;
+  let targetPoolId: PoolId;
   let targetOwnerId: UserId;
 
   beforeEach(async () => {
@@ -401,7 +401,7 @@ describe('restorePoolFromBackup', () => {
 
 describe('buildPoolExport + restorePoolFromBackup (round-trip)', () => {
   let db: Db;
-  let tournamentId: string;
+  let tournamentId: TournamentId;
 
   beforeEach(async () => {
     db = await makeTestDb();

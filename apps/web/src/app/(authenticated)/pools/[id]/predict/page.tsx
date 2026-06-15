@@ -22,11 +22,13 @@ import {
 } from '@/features/predictions';
 import type { AuditEntry } from '@/features/predictions';
 import { Chip, Icon, BackLink } from '@/shared/ui';
+import { poolId as asPoolId } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function PredictPage({ params }: Props): Promise<ReactElement> {
-  const { id: poolId } = await params;
+  const { id } = await params;
+  const poolId = asPoolId(id);
 
   const actor = await getCurrentActor();
   if (!actor) redirect('/');

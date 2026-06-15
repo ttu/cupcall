@@ -7,8 +7,8 @@ import { createUser } from './users';
 import { createPool } from './pools';
 import { addMember } from './members';
 import { getOrCreatePrediction } from './predictions';
-import type { UserId } from '@cup/engine';
-import { points, bracketMatchKey } from '@cup/engine';
+import type { UserId, PoolId, TournamentId } from '@cup/engine';
+import { points, bracketMatchKey, tournamentId as asTournamentId } from '@cup/engine';
 import * as schema from '../schema/index';
 import type { ScoreBreakdown } from '@cup/engine';
 
@@ -27,15 +27,15 @@ function makeBreakdown(total: number): ScoreBreakdown {
 
 describe('scores repository', () => {
   let db: Db<typeof schema>;
-  let poolId: string;
-  let tournamentId: string;
+  let poolId: PoolId;
+  let tournamentId: TournamentId;
   let userId1: UserId;
   let userId2: UserId;
   let userId3: UserId;
 
   beforeEach(async () => {
     db = await makeTestDb();
-    const tId = `wc-${crypto.randomUUID()}`;
+    const tId = asTournamentId(`wc-${crypto.randomUUID()}`);
     tournamentId = tId;
     await db.insert(schema.tournaments).values({
       id: tId,

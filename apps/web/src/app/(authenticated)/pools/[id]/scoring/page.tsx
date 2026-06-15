@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
 import { getPoolDetail, ScoringGuide } from '@/features/pools';
+import { poolId as asPoolId } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function PoolScoringPage({ params }: Props): Promise<ReactElement> {
-  const { id: poolId } = await params;
+  const { id } = await params;
+  const poolId = asPoolId(id);
 
   const actor = await getCurrentActor();
   if (!actor) redirect('/');

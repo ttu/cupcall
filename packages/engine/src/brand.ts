@@ -17,3 +17,12 @@ export const points = (n: number): Points => n as Points;
 
 export type UserId = Brand<string, 'UserId'>;
 export const userId = (s: string): UserId => s as UserId;
+
+export type PoolId = Brand<string, 'PoolId'>;
+export const poolId = (s: string): PoolId => s as PoolId;
+
+export type TournamentId = Brand<string, 'TournamentId'>;
+export const tournamentId = (s: string): TournamentId => s as TournamentId;
+
+export type PredictionId = Brand<string, 'PredictionId'>;
+export const predictionId = (s: string): PredictionId => s as PredictionId;

@@ -1,14 +1,14 @@
 import { eq, inArray, count } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
-import type { UserId } from '@cup/engine';
-import { userId } from '@cup/engine';
+import type { UserId, PoolId, TournamentId } from '@cup/engine';
+import { userId, poolId, tournamentId as asTournamentId } from '@cup/engine';
 
 type Database = Db<typeof schema>;
 
 export type PoolRow = {
-  id: string;
-  tournamentId: string;
+  id: PoolId;
+  tournamentId: TournamentId;
   ownerId: UserId;
   name: string;
   inviteTokenHash: string | null;
@@ -18,13 +18,18 @@ export type PoolRow = {
 };
 
 function toPoolRow(raw: typeof schema.pools.$inferSelect): PoolRow {
-  return { ...raw, ownerId: userId(raw.ownerId) };
+  return {
+    ...raw,
+    id: poolId(raw.id),
+    tournamentId: asTournamentId(raw.tournamentId),
+    ownerId: userId(raw.ownerId),
+  };
 }
 
 export async function createPool(
   db: Database,
   input: {
-    tournamentId: string;
+    tournamentId: TournamentId;
     ownerId: UserId;
     name: string;
     inviteTokenHash?: string;
@@ -45,7 +50,7 @@ export async function createPool(
   return toPoolRow(row);
 }
 
-export async function getPoolById(db: Database, id: string): Promise<PoolRow | undefined> {
+export async function getPoolById(db: Database, id: PoolId): Promise<PoolRow | undefined> {
   const [row] = await db.select().from(schema.pools).where(eq(schema.pools.id, id));
   return row ? toPoolRow(row) : undefined;
 }
@@ -91,7 +96,7 @@ export async function listPoolsForUser(db: Database, userId: UserId): Promise<Po
 
 export async function rotateInviteTokenHash(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
   newHash: string,
 ): Promise<void> {
   await db
@@ -100,7 +105,7 @@ export async function rotateInviteTokenHash(
     .where(eq(schema.pools.id, poolId));
 }
 
-export async function clearInviteToken(db: Database, poolId: string): Promise<void> {
+export async function clearInviteToken(db: Database, poolId: PoolId): Promise<void> {
   await db.update(schema.pools).set({ inviteTokenHash: null }).where(eq(schema.pools.id, poolId));
 }
 
@@ -114,17 +119,17 @@ export async function getPoolByViewToken(
 
 export async function rotateViewToken(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
   newToken: string,
 ): Promise<void> {
   await db.update(schema.pools).set({ viewToken: newToken }).where(eq(schema.pools.id, poolId));
 }
 
-export async function clearViewToken(db: Database, poolId: string): Promise<void> {
+export async function clearViewToken(db: Database, poolId: PoolId): Promise<void> {
   await db.update(schema.pools).set({ viewToken: null }).where(eq(schema.pools.id, poolId));
 }
 
-export async function deletePool(db: Database, poolId: string): Promise<void> {
+export async function deletePool(db: Database, poolId: PoolId): Promise<void> {
   await db.delete(schema.pools).where(eq(schema.pools.id, poolId));
 }
 

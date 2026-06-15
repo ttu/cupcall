@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { miniTournament } from '@cup/engine/testing';
+import { tournamentId as asTournamentId } from '@cup/engine';
 import type { MatchRow } from '@cup/db';
 import {
   computeGroupTopScoringLeader,
@@ -20,7 +21,7 @@ function groupFinal(
 ): MatchRow {
   return {
     id,
-    tournamentId: miniTournament.id,
+    tournamentId: asTournamentId(miniTournament.id),
     stage: 'group',
     groupId,
     homeTeamId: home,
@@ -45,7 +46,7 @@ function koFinal(
 ): MatchRow {
   return {
     id,
-    tournamentId: miniTournament.id,
+    tournamentId: asTournamentId(miniTournament.id),
     stage,
     groupId: null,
     homeTeamId: home,

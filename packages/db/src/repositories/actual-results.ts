@@ -9,6 +9,7 @@ import {
   type TeamId,
   type PlayerId,
   type GroupId,
+  type TournamentId,
 } from '@cup/engine';
 
 type Database = Db<typeof schema>;
@@ -17,7 +18,10 @@ type Database = Db<typeof schema>;
  * Assembles ActualResults from the DB for the given tournament.
  * Used by rescore pipelines after any mutation or sync.
  */
-export async function getActualResults(db: Database, tournamentId: string): Promise<ActualResults> {
+export async function getActualResults(
+  db: Database,
+  tournamentId: TournamentId,
+): Promise<ActualResults> {
   const [allCompletedMatchRows, groupOrderRows, answerRows] = await Promise.all([
     db
       .select()
@@ -144,7 +148,7 @@ export async function getActualResults(db: Database, tournamentId: string): Prom
 /** Returns true if the match (group or knockout) has a recorded final score. */
 export async function matchHasResult(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
   matchId: string,
 ): Promise<boolean> {
   const [row] = await db
@@ -163,7 +167,7 @@ export async function matchHasResult(
 /** Returns true if the given special bet key has a recorded answer. */
 export async function betKeyHasAnswer(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
   betKey: string,
 ): Promise<boolean> {
   const [row] = await db
@@ -184,7 +188,7 @@ export async function betKeyHasAnswer(
  */
 export async function getKnownResultMatchIds(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
 ): Promise<Set<string>> {
   const rows = await db
     .select({ id: schema.matches.id })
@@ -197,7 +201,10 @@ export async function getKnownResultMatchIds(
  * Returns the set of bet keys that have a recorded answer in actualAnswers.
  * Used by getCardView to compute per-item lock state for late joiners.
  */
-export async function getAnsweredBetKeys(db: Database, tournamentId: string): Promise<Set<string>> {
+export async function getAnsweredBetKeys(
+  db: Database,
+  tournamentId: TournamentId,
+): Promise<Set<string>> {
   const rows = await db
     .select({ betKey: schema.actualAnswers.betKey })
     .from(schema.actualAnswers)
@@ -211,7 +218,7 @@ export async function getAnsweredBetKeys(db: Database, tournamentId: string): Pr
  */
 export async function getActualGroupMatchScores(
   db: Database,
-  tournamentId: string,
+  tournamentId: TournamentId,
 ): Promise<Map<string, { home: number; away: number }>> {
   const rows = await db
     .select({

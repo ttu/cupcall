@@ -12,8 +12,15 @@ import { upsertTournamentDef } from './tournament';
 import { createUser } from './users';
 import { createPool } from './pools';
 import { miniTournament } from '@cup/engine/testing';
-import type { UserId } from '@cup/engine';
-import { matchId, teamId, bracketMatchKey, playerId } from '@cup/engine';
+import type { UserId, PoolId, PredictionId } from '@cup/engine';
+import {
+  matchId,
+  teamId,
+  bracketMatchKey,
+  playerId,
+  tournamentId as asTournamentId,
+  predictionId as asPredictionId,
+} from '@cup/engine';
 
 const firstKickoff = new Date('2026-06-11T18:00:00Z');
 const emptyKickoffs = new Map<string, Date | null>();
@@ -23,20 +30,20 @@ async function seedPrediction(
   poolId: string,
   userId: string,
   tournamentId: string,
-): Promise<string> {
+): Promise<PredictionId> {
   const [row] = await db
     .insert(schema.predictions)
     .values({ poolId, userId, tournamentId })
     .returning();
   if (!row) throw new Error('seedPrediction: insert did not return a row');
-  return row.id;
+  return asPredictionId(row.id);
 }
 
 describe('predictions repository', () => {
   let db: Db<typeof schema>;
   let userId1: UserId;
-  let poolId: string;
-  const tournamentId = 'mini-2026';
+  let poolId: PoolId;
+  const tournamentId = asTournamentId('mini-2026');
 
   beforeEach(async () => {
     db = await makeTestDb();
@@ -79,7 +86,7 @@ describe('predictions repository', () => {
     });
 
     it('does not return predictions for other tournaments', async () => {
-      const otherTournamentId = `other-${crypto.randomUUID()}`;
+      const otherTournamentId = asTournamentId(`other-${crypto.randomUUID()}`);
       await db.insert(schema.tournaments).values({
         id: otherTournamentId,
         name: 'Other',

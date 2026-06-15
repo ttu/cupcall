@@ -5,17 +5,18 @@ import type { Db } from '../client';
 import { recordKick, isKicked, clearKick } from './kicks';
 import { createUser } from './users';
 import { createPool } from './pools';
-import type { UserId } from '@cup/engine';
+import type { UserId, PoolId } from '@cup/engine';
+import { tournamentId as asTournamentId } from '@cup/engine';
 import * as schema from '../schema/index';
 
 describe('kicks repository', () => {
   let db: Db<typeof schema>;
-  let poolId: string;
+  let poolId: PoolId;
   let userId: UserId;
 
   beforeEach(async () => {
     db = await makeTestDb();
-    const tId = `wc-${crypto.randomUUID()}`;
+    const tId = asTournamentId(`wc-${crypto.randomUUID()}`);
     await db.insert(schema.tournaments).values({
       id: tId,
       name: 'Test',

@@ -5,9 +5,11 @@ import { z } from 'zod';
 import { db } from '@/shared/db';
 import { getActorOrThrow } from '@/features/auth';
 import { getPoolById, getTournamentById, getOrCreatePrediction, upsertGroupScore } from '@cup/db';
+import { poolId as asPoolId } from '@cup/engine';
+import type { PoolId } from '@cup/engine';
 import { rescoreAfterEdit } from './rescore-helper';
 
-async function loadPoolAndTournament(poolId: string) {
+async function loadPoolAndTournament(poolId: PoolId) {
   const pool = await getPoolById(db, poolId);
   if (!pool) throw new Error(`Pool ${poolId} not found`);
   const tournament = await getTournamentById(db, pool.tournamentId);
@@ -28,7 +30,8 @@ export async function devFillRandomGroupScores(
 
   const parsed = DevFillSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     const { userId } = await getActorOrThrow();

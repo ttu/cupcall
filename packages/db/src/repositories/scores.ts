@@ -1,12 +1,20 @@
 import { asc, eq, and, sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
-import { userId, points, type UserId, type Points, type ScoreBreakdown } from '@cup/engine';
+import {
+  userId,
+  points,
+  poolId as asPoolId,
+  type UserId,
+  type Points,
+  type ScoreBreakdown,
+  type PoolId,
+} from '@cup/engine';
 
 type Database = Db<typeof schema>;
 
 export type ScoreRow = {
-  poolId: string;
+  poolId: PoolId;
   userId: UserId;
   pointsTotal: Points;
   breakdown: ScoreBreakdown;
@@ -25,13 +33,14 @@ export type LeaderboardEntry = {
 function toScoreRow(raw: typeof schema.scores.$inferSelect): ScoreRow {
   return {
     ...raw,
+    poolId: asPoolId(raw.poolId),
     userId: userId(raw.userId),
     pointsTotal: points(raw.pointsTotal),
   };
 }
 
 /** Deletes the score row for (poolId, userId). No-op if no row exists. */
-export async function deleteScore(db: Database, poolId: string, uid: UserId): Promise<void> {
+export async function deleteScore(db: Database, poolId: PoolId, uid: UserId): Promise<void> {
   await db
     .delete(schema.scores)
     .where(and(eq(schema.scores.poolId, poolId), eq(schema.scores.userId, uid)));
@@ -44,7 +53,7 @@ export async function deleteScore(db: Database, poolId: string, uid: UserId): Pr
 export async function upsertScore(
   db: Database,
   input: {
-    poolId: string;
+    poolId: PoolId;
     userId: UserId;
     pointsTotal: Points;
     breakdown: ScoreBreakdown;
@@ -82,7 +91,7 @@ export async function upsertScore(
  */
 export async function getLeaderboard(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
   totalFields = 0,
 ): Promise<LeaderboardEntry[]> {
   const rows = await db

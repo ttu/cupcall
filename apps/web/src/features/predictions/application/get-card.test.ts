@@ -14,13 +14,14 @@ import {
   getOrCreatePrediction,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
-import { groupId, teamId, bracketMatchKey } from '@cup/engine';
-import type { UserId } from '@cup/engine';
+import { groupId, teamId, bracketMatchKey, tournamentId as asTournamentId } from '@cup/engine';
+import type { UserId, PoolId, TournamentId, PredictionId } from '@cup/engine';
 import { getCardView } from './get-card';
 
 const firstKickoff = new Date('2030-06-11T18:00:00Z');
 const now = new Date('2025-01-01T00:00:00Z');
 const emptyKickoffs = new Map<string, Date | null>();
+const miniTournamentId: TournamentId = asTournamentId(miniTournament.id);
 
 type TestDb = Awaited<ReturnType<typeof makeTestDb>>;
 
@@ -31,7 +32,7 @@ async function setupDb(db: TestDb) {
     displayName: 'Owner',
   });
   const pool = await createPool(db, {
-    tournamentId: miniTournament.id,
+    tournamentId: miniTournamentId,
     ownerId: owner.id,
     name: 'Test Pool',
     inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -49,7 +50,7 @@ function groupMatchIds(g: string) {
 
 describe('getCardView — qualifying highlight', () => {
   let db: TestDb;
-  let poolId: string;
+  let poolId: PoolId;
   let userId: UserId;
 
   beforeEach(async () => {
@@ -61,7 +62,7 @@ describe('getCardView — qualifying highlight', () => {
     const prediction = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
     });
     // Add only 3 of the 6 group-A matches (group incomplete)
     for (const mid of groupMatchIds('A').slice(0, 3)) {
@@ -72,7 +73,7 @@ describe('getCardView — qualifying highlight', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff,
       now,
@@ -88,7 +89,7 @@ describe('getCardView — qualifying highlight', () => {
     const prediction = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
     });
     // Predict all 6 group-A matches as draws → seed order, A1 and A2 qualify
     for (const mid of groupMatchIds('A')) {
@@ -99,7 +100,7 @@ describe('getCardView — qualifying highlight', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff,
       now,
@@ -117,7 +118,7 @@ describe('getCardView — qualifying highlight', () => {
 
 describe('getCardView — bracket slot resolution', () => {
   let db: TestDb;
-  let poolId: string;
+  let poolId: PoolId;
   let userId: UserId;
 
   beforeEach(async () => {
@@ -129,7 +130,7 @@ describe('getCardView — bracket slot resolution', () => {
     const prediction = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
     });
     // Complete groups B, C, D — leave group A with only 1 match predicted
     for (const g of ['B', 'C', 'D']) {
@@ -143,7 +144,7 @@ describe('getCardView — bracket slot resolution', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff,
       now,
@@ -166,7 +167,7 @@ describe('getCardView — bracket slot resolution', () => {
     const prediction = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
     });
     for (const g of ['A', 'B', 'C', 'D']) {
       for (const mid of groupMatchIds(g)) {
@@ -178,7 +179,7 @@ describe('getCardView — bracket slot resolution', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff,
       now,
@@ -195,7 +196,7 @@ describe('getCardView — bracket slot resolution', () => {
 // Helper: seed a complete card up to the SFs so the finalists & bronze pair resolve to
 //   finalists = [A1, B1], bronzePair = [C1, D1].
 // All group scores are 0-0 (declaration-order standings); QF/SF picks send the home side through.
-async function seedThroughSf(db: TestDb, predictionId: string): Promise<void> {
+async function seedThroughSf(db: TestDb, predictionId: PredictionId): Promise<void> {
   for (const g of ['A', 'B', 'C', 'D']) {
     for (const mid of groupMatchIds(g)) {
       await upsertGroupScore(db, predictionId, mid, 0, 0);
@@ -211,7 +212,7 @@ async function seedThroughSf(db: TestDb, predictionId: string): Promise<void> {
 
 describe('getCardView — final/bronze pickedWinnerId', () => {
   let db: TestDb;
-  let poolId: string;
+  let poolId: PoolId;
   let userId: UserId;
 
   beforeEach(async () => {
@@ -223,7 +224,7 @@ describe('getCardView — final/bronze pickedWinnerId', () => {
     const prediction = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
     });
     await seedThroughSf(db, prediction.id);
     await upsertKnockoutPick(db, prediction.id, bracketMatchKey('final'), teamId('A1'));
@@ -235,7 +236,7 @@ describe('getCardView — final/bronze pickedWinnerId', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff,
       now,
@@ -250,7 +251,7 @@ describe('getCardView — final/bronze pickedWinnerId', () => {
     const prediction = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
     });
     await seedThroughSf(db, prediction.id);
     await upsertFinishScore(db, prediction.id, 'final', 1, 1);
@@ -259,7 +260,7 @@ describe('getCardView — final/bronze pickedWinnerId', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff,
       now,
@@ -273,14 +274,14 @@ describe('getCardView — final/bronze pickedWinnerId', () => {
 
 describe('getCardView — completion math for tied final/bronze', () => {
   let db: TestDb;
-  let poolId: string;
+  let poolId: PoolId;
 
   beforeEach(async () => {
     db = await makeTestDb();
     ({ poolId } = await setupDb(db));
   });
 
-  async function getPercent(seed: (predictionId: string) => Promise<void>): Promise<number> {
+  async function getPercent(seed: (predictionId: PredictionId) => Promise<void>): Promise<number> {
     // Fresh user (and therefore fresh prediction) per call so we never leak state.
     const freshUser = await createUser(db, {
       email: `user-${crypto.randomUUID()}@test.com`,
@@ -290,7 +291,7 @@ describe('getCardView — completion math for tied final/bronze', () => {
     const prediction = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
     });
     await seedThroughSf(db, prediction.id);
     await seed(prediction.id);
@@ -299,7 +300,7 @@ describe('getCardView — completion math for tied final/bronze', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff,
       now,
@@ -344,7 +345,7 @@ describe('getCardView — completion math for tied final/bronze', () => {
 
 describe('getCardView — late joiner per-item lock', () => {
   let db: TestDb;
-  let poolId: string;
+  let poolId: PoolId;
   let userId: UserId;
 
   const lockTime = new Date('2026-06-11T18:00:00Z');
@@ -364,7 +365,7 @@ describe('getCardView — late joiner per-item lock', () => {
       displayName: 'Owner',
     });
     const pool = await createPool(db, {
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       ownerId: owner.id,
       name: 'Test Pool',
       inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -375,7 +376,7 @@ describe('getCardView — late joiner per-item lock', () => {
     });
     poolId = pool.id;
     userId = user.id as UserId;
-    await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTournament.id });
+    await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTournamentId });
   });
 
   function firstGroupMatchId() {
@@ -387,7 +388,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedAfterLock,
@@ -403,7 +404,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedAfterLock,
@@ -419,7 +420,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedBeforeLock,
@@ -436,7 +437,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedAfterLock,
@@ -454,7 +455,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedAfterLock,
@@ -472,7 +473,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedAfterLock,
@@ -490,7 +491,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedBeforeLock,
@@ -514,7 +515,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedAfterLock,
@@ -539,7 +540,7 @@ describe('getCardView — late joiner per-item lock', () => {
       db,
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTournamentId,
       tournament: miniTournament,
       firstKickoff: lockTime,
       joinedAt: joinedAfterLock,

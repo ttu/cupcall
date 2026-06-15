@@ -13,7 +13,7 @@ import {
 } from '@cup/db';
 import type { MatchRow, LeaderboardEntry } from '@cup/db';
 import { computeRemainingMaxPoints } from '@cup/engine';
-import type { Tournament, ActualResults, ScoreBreakdown } from '@cup/engine';
+import type { Tournament, ActualResults, ScoreBreakdown, PoolId } from '@cup/engine';
 import type {
   ResultsView,
   UserRankChip,
@@ -29,7 +29,7 @@ import { buildSpecialBetResults } from './build-special-bet-results';
 
 type Params = {
   db: Db<AppSchema>;
-  poolId: string;
+  poolId: PoolId;
   userId?: string;
   now: Date;
 };

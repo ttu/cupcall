@@ -5,11 +5,13 @@ import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
 import { getResultsView, StageBar, ResultsPageClient } from '@/features/results';
 import { BackLink } from '@/shared/ui';
+import { poolId as asPoolId } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string>> };
 
 export default async function ResultsPage({ params, searchParams }: Props): Promise<ReactElement> {
-  const { id: poolId } = await params;
+  const { id } = await params;
+  const poolId = asPoolId(id);
   const { tab } = await searchParams;
 
   const actor = await getCurrentActor();

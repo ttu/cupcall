@@ -9,7 +9,7 @@ import {
   RATE_LIMITS,
   getOrCreatePrediction,
 } from '@cup/db';
-import type { UserId } from '@cup/engine';
+import type { UserId, PoolId } from '@cup/engine';
 
 /** Maximum members per pool (functional-spec §9). */
 const MAX_MEMBERS_PER_POOL = 30;
@@ -22,7 +22,7 @@ export type JoinPoolError =
   | { code: 'rate_limited' };
 
 export type JoinPoolResult =
-  | { ok: true; poolId: string; alreadyMember: boolean }
+  | { ok: true; poolId: PoolId; alreadyMember: boolean }
   | { ok: false; error: JoinPoolError };
 
 export async function joinPool(

@@ -1,18 +1,18 @@
 import { and, eq, count } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
-import { userId, type UserId } from '@cup/engine';
+import { userId, poolId as asPoolId, type UserId, type PoolId } from '@cup/engine';
 
 type Database = Db<typeof schema>;
 
 export type MemberRow = {
-  poolId: string;
+  poolId: PoolId;
   userId: UserId;
   joinedAt: Date;
 };
 
 function toMemberRow(raw: typeof schema.poolMembers.$inferSelect): MemberRow {
-  return { ...raw, userId: userId(raw.userId) };
+  return { ...raw, poolId: asPoolId(raw.poolId), userId: userId(raw.userId) };
 }
 
 /**
@@ -21,7 +21,7 @@ function toMemberRow(raw: typeof schema.poolMembers.$inferSelect): MemberRow {
  */
 export async function addMember(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
   userId: UserId,
   joinedAt?: Date,
 ): Promise<void> {
@@ -31,13 +31,13 @@ export async function addMember(
     .onConflictDoNothing({ target: [schema.poolMembers.poolId, schema.poolMembers.userId] });
 }
 
-export async function removeMember(db: Database, poolId: string, userId: UserId): Promise<void> {
+export async function removeMember(db: Database, poolId: PoolId, userId: UserId): Promise<void> {
   await db
     .delete(schema.poolMembers)
     .where(and(eq(schema.poolMembers.poolId, poolId), eq(schema.poolMembers.userId, userId)));
 }
 
-export async function listMembers(db: Database, poolId: string): Promise<MemberRow[]> {
+export async function listMembers(db: Database, poolId: PoolId): Promise<MemberRow[]> {
   const rows = await db
     .select()
     .from(schema.poolMembers)
@@ -45,7 +45,7 @@ export async function listMembers(db: Database, poolId: string): Promise<MemberR
   return rows.map(toMemberRow);
 }
 
-export async function countPoolMembers(db: Database, poolId: string): Promise<number> {
+export async function countPoolMembers(db: Database, poolId: PoolId): Promise<number> {
   const [row] = await db
     .select({ n: count() })
     .from(schema.poolMembers)
@@ -55,7 +55,7 @@ export async function countPoolMembers(db: Database, poolId: string): Promise<nu
 
 export async function getMember(
   db: Database,
-  poolId: string,
+  poolId: PoolId,
   userId: UserId,
 ): Promise<MemberRow | null> {
   const [row] = await db
@@ -65,7 +65,7 @@ export async function getMember(
   return row ? toMemberRow(row) : null;
 }
 
-export async function isMember(db: Database, poolId: string, userId: UserId): Promise<boolean> {
+export async function isMember(db: Database, poolId: PoolId, userId: UserId): Promise<boolean> {
   const member = await getMember(db, poolId, userId);
   return member !== null;
 }

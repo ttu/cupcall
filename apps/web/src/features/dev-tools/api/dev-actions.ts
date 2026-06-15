@@ -14,11 +14,19 @@ import {
   upsertScore,
   getTournamentById,
 } from '@cup/db';
-import { deriveCard, scoreCard, groupId, teamId, matchId, playerId } from '@cup/engine';
+import {
+  deriveCard,
+  scoreCard,
+  groupId,
+  teamId,
+  matchId,
+  playerId,
+  tournamentId as asTournamentId,
+} from '@cup/engine';
 import type { ActualResults } from '@cup/engine';
 import type { SimulationCheckpoint } from '../application/get-dev-state';
 
-const TOURNAMENT_ID = 'test-wc-2026';
+const TOURNAMENT_ID = asTournamentId('test-wc-2026');
 
 // ── Group match scores ─────────────────────────────────────────────────────────
 

@@ -21,13 +21,22 @@ import {
 } from '@cup/db';
 import * as schema from '@cup/db/schema';
 import { miniTournament } from '@cup/engine/testing';
-import { groupId, bracketMatchKey, points, computeRemainingMaxPoints, teamId } from '@cup/engine';
-import type { UserId, ScoreBreakdown, Tournament } from '@cup/engine';
+import {
+  groupId,
+  bracketMatchKey,
+  points,
+  computeRemainingMaxPoints,
+  teamId,
+  poolId as asPoolId,
+  tournamentId as asTournamentId,
+} from '@cup/engine';
+import type { UserId, ScoreBreakdown, Tournament, PoolId, TournamentId } from '@cup/engine';
 import { getResultsView } from './get-results-view';
 
 const firstKickoff = new Date('2030-06-11T18:00:00Z');
 const emptyKickoffs = new Map<string, Date | null>();
 const NOW = new Date('2030-06-15T12:00:00Z');
+const miniTId: TournamentId = asTournamentId('mini-2026');
 
 type TestDb = Awaited<ReturnType<typeof makeTestDb>>;
 
@@ -39,7 +48,7 @@ async function setupDb(db: TestDb) {
     displayName: 'Owner',
   });
   const pool = await createPool(db, {
-    tournamentId: miniTournament.id,
+    tournamentId: miniTId,
     ownerId: owner.id,
     name: 'Test Pool',
     inviteTokenHash: `h-${crypto.randomUUID()}`,
@@ -57,7 +66,7 @@ async function setupDb(db: TestDb) {
 
 describe('getResultsView', () => {
   let db: TestDb;
-  let poolId: string;
+  let poolId: PoolId;
   let userId: UserId;
   let ownerId: UserId;
 
@@ -67,7 +76,7 @@ describe('getResultsView', () => {
   });
 
   it('returns null when pool does not exist', async () => {
-    const view = await getResultsView({ db, poolId: 'no-such-pool', userId, now: NOW });
+    const view = await getResultsView({ db, poolId: asPoolId('no-such-pool'), userId, now: NOW });
     expect(view).toBeNull();
   });
 
@@ -86,7 +95,7 @@ describe('getResultsView', () => {
       status: 'upcoming',
     });
     const noDefPool = await createPool(db, {
-      tournamentId: 'no-def-t',
+      tournamentId: asTournamentId('no-def-t'),
       ownerId: rawOwner.id,
       name: 'NoDef',
       inviteTokenHash: 'hnd',
@@ -110,12 +119,12 @@ describe('getResultsView', () => {
 
   it('marks exact hit correctly', async () => {
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, matchId, 2, 1);
+    await finalizeMatch(db, miniTId, matchId, 2, 1);
 
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, pred.id, matchId, 2, 1);
 
@@ -128,12 +137,12 @@ describe('getResultsView', () => {
 
   it('marks outcome hit correctly', async () => {
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, matchId, 2, 0);
+    await finalizeMatch(db, miniTId, matchId, 2, 0);
 
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, pred.id, matchId, 1, 0);
 
@@ -146,12 +155,12 @@ describe('getResultsView', () => {
 
   it('marks missed correctly', async () => {
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, matchId, 0, 2);
+    await finalizeMatch(db, miniTId, matchId, 0, 2);
 
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, pred.id, matchId, 2, 0);
 
@@ -164,7 +173,7 @@ describe('getResultsView', () => {
 
   it('marks pending for completed match with no prediction', async () => {
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, matchId, 2, 1);
+    await finalizeMatch(db, miniTId, matchId, 2, 1);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
@@ -174,13 +183,13 @@ describe('getResultsView', () => {
 
   it('computes poolMatchStats for a completed match', async () => {
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, matchId, 2, 1);
+    await finalizeMatch(db, miniTId, matchId, 2, 1);
 
     // owner predicts exact score (2-1)
     const ownerPred = await getOrCreatePrediction(db, {
       poolId,
       userId: ownerId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, ownerPred.id, matchId, 2, 1);
 
@@ -188,7 +197,7 @@ describe('getResultsView', () => {
     const userPred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, userPred.id, matchId, 1, 0);
 
@@ -214,7 +223,7 @@ describe('getResultsView', () => {
     ];
 
     for (const [mid, h, a] of results) {
-      await finalizeMatch(db, miniTournament.id, mid, h, a);
+      await finalizeMatch(db, miniTId, mid, h, a);
     }
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -261,7 +270,7 @@ describe('getResultsView', () => {
     );
 
     for (const [mid, h, a] of [...aScores, ...drawScores]) {
-      await finalizeMatch(db, miniTournament.id, mid, h, a);
+      await finalizeMatch(db, miniTId, mid, h, a);
     }
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -292,7 +301,7 @@ describe('getResultsView', () => {
       ['mA6', 3, 0],
     ];
     for (const [mid, h, a] of aScores) {
-      await finalizeMatch(db, miniTournament.id, mid, h, a);
+      await finalizeMatch(db, miniTId, mid, h, a);
     }
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -308,7 +317,7 @@ describe('getResultsView', () => {
   });
 
   it('sets group stage as active when some matches are final', async () => {
-    await finalizeMatch(db, miniTournament.id, miniTournament.groupMatches[0]!.id, 1, 0);
+    await finalizeMatch(db, miniTId, miniTournament.groupMatches[0]!.id, 1, 0);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     expect(view!.currentStage).toBe('group');
@@ -319,7 +328,7 @@ describe('getResultsView', () => {
   describe('best3rdStanding', () => {
     it('is null when tournament has no best-third advancement', async () => {
       // miniTournament default: bestThirdPlaced = 0
-      await finalizeMatch(db, miniTournament.id, 'mA1', 1, 0);
+      await finalizeMatch(db, miniTId, 'mA1', 1, 0);
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       expect(view!.best3rdStanding).toBeNull();
@@ -362,7 +371,7 @@ describe('getResultsView', () => {
         ['mB6', 1, 0],
       ];
       for (const [mid, h, a] of [...aScores, ...bScores]) {
-        await finalizeMatch(db, t.id, mid, h, a);
+        await finalizeMatch(db, miniTId, mid, h, a);
       }
       // Groups C and D remain incomplete (no matches played for C/D's 3rd-place teams)
 
@@ -407,7 +416,7 @@ describe('getResultsView', () => {
         ['mB6', 1, 0],
       ];
       for (const [mid, h, a] of [...aScores, ...bScores]) {
-        await finalizeMatch(db, t.id, mid, h, a);
+        await finalizeMatch(db, miniTId, mid, h, a);
       }
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -424,13 +433,13 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
 
     await upsertKnockoutMatch(db, {
       id: 'qf1',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'A1',
       awayTeamId: 'B2',
@@ -450,13 +459,13 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'B2');
 
     await upsertKnockoutMatch(db, {
       id: 'qf1',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'A1',
       awayTeamId: 'B2',
@@ -476,7 +485,7 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
 
@@ -490,7 +499,7 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf2'), 'C1');
@@ -499,7 +508,7 @@ describe('getResultsView', () => {
 
     await upsertKnockoutMatch(db, {
       id: 'qf1',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'A1',
       awayTeamId: 'B2',
@@ -510,7 +519,7 @@ describe('getResultsView', () => {
     });
     await upsertKnockoutMatch(db, {
       id: 'qf2',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'C1',
       awayTeamId: 'D2',
@@ -521,7 +530,7 @@ describe('getResultsView', () => {
     });
     await upsertKnockoutMatch(db, {
       id: 'qf3',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'B1',
       awayTeamId: 'D2',
@@ -551,7 +560,7 @@ describe('getResultsView', () => {
     it('marks entry-round slots as not projected once all group matches are final', async () => {
       // Finalize all group matches
       for (const gm of miniTournament.groupMatches) {
-        await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
+        await finalizeMatch(db, miniTId, gm.id, 1, 0);
       }
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const qfRound = view!.bracketRounds.find((r) => r.label === 'QF')!;
@@ -565,7 +574,7 @@ describe('getResultsView', () => {
       const mA1 = miniTournament.groupMatches.find(
         (m) => m.group === groupId('A') && m.home === 'A1' && m.away === 'A2',
       )!;
-      await finalizeMatch(db, miniTournament.id, mA1.id, 0, 3); // A2 beats A1 3-0
+      await finalizeMatch(db, miniTId, mA1.id, 0, 3); // A2 beats A1 3-0
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const qfRound = view!.bracketRounds.find((r) => r.label === 'QF')!;
@@ -593,7 +602,7 @@ describe('getResultsView', () => {
         const pred = await getOrCreatePrediction(db, {
           poolId,
           userId: uid,
-          tournamentId: miniTournament.id,
+          tournamentId: miniTId,
         });
         for (const [mid, [h, a]] of Object.entries(scores)) {
           await upsertGroupScore(db, pred.id, mid, h, a);
@@ -648,7 +657,7 @@ describe('getResultsView', () => {
   it('includes today match in todayMatches', async () => {
     const todayKickoff = new Date('2030-06-15T18:00:00Z'); // same UTC day as NOW
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await setMatchKickoff(db, miniTournament.id, matchId, todayKickoff);
+    await setMatchKickoff(db, miniTId, matchId, todayKickoff);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
@@ -660,7 +669,7 @@ describe('getResultsView', () => {
   it('excludes tomorrow match from todayMatches', async () => {
     const tomorrowKickoff = new Date('2030-06-16T18:00:00Z');
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await setMatchKickoff(db, miniTournament.id, matchId, tomorrowKickoff);
+    await setMatchKickoff(db, miniTId, matchId, tomorrowKickoff);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
@@ -678,8 +687,8 @@ describe('getResultsView', () => {
   it('does not include completed match in todayMatches', async () => {
     const todayKickoff = new Date('2030-06-15T18:00:00Z');
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await setMatchKickoff(db, miniTournament.id, matchId, todayKickoff);
-    await finalizeMatch(db, miniTournament.id, matchId, 2, 1);
+    await setMatchKickoff(db, miniTId, matchId, todayKickoff);
+    await finalizeMatch(db, miniTId, matchId, 2, 1);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
@@ -691,7 +700,7 @@ describe('getResultsView', () => {
     // 23h in the future: within 24h window, different UTC day
     const kickoff = new Date(NOW.getTime() + 23 * 60 * 60 * 1000);
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await setMatchKickoff(db, miniTournament.id, matchId, kickoff);
+    await setMatchKickoff(db, miniTId, matchId, kickoff);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
@@ -701,7 +710,7 @@ describe('getResultsView', () => {
   it('excludes match beyond 24h window from todayMatches', async () => {
     const kickoff = new Date(NOW.getTime() + 25 * 60 * 60 * 1000);
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await setMatchKickoff(db, miniTournament.id, matchId, kickoff);
+    await setMatchKickoff(db, miniTId, matchId, kickoff);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
@@ -711,20 +720,20 @@ describe('getResultsView', () => {
   it('computes poolPredictionStats for upcoming match', async () => {
     const kickoff = new Date('2030-06-15T18:00:00Z');
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await setMatchKickoff(db, miniTournament.id, matchId, kickoff);
+    await setMatchKickoff(db, miniTId, matchId, kickoff);
 
     // userId predicts 2-0 (home win), ownerId predicts 1-1 (draw)
     const userPred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, userPred.id, matchId, 2, 0);
 
     const ownerPred = await getOrCreatePrediction(db, {
       poolId,
       userId: ownerId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, ownerPred.id, matchId, 1, 1);
 
@@ -743,7 +752,7 @@ describe('getResultsView', () => {
   it('returns null poolPredictionStats when no predictions exist', async () => {
     const kickoff = new Date('2030-06-15T18:00:00Z');
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await setMatchKickoff(db, miniTournament.id, matchId, kickoff);
+    await setMatchKickoff(db, miniTId, matchId, kickoff);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
@@ -769,19 +778,19 @@ describe('getResultsView', () => {
 
   it('builds match matrix from all pool members group scores', async () => {
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, matchId, 2, 0);
+    await finalizeMatch(db, miniTId, matchId, 2, 0);
 
     const userPred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, userPred.id, matchId, 2, 0); // exact
 
     const ownerPred = await getOrCreatePrediction(db, {
       poolId,
       userId: ownerId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, ownerPred.id, matchId, 1, 0); // outcome
 
@@ -802,20 +811,20 @@ describe('getResultsView', () => {
 
   it('sorts matchMatrix by totalPoints descending', async () => {
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, matchId, 2, 0);
+    await finalizeMatch(db, miniTId, matchId, 2, 0);
 
     // owner gets exact, user gets missed → owner should rank 1st
     const userPred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, userPred.id, matchId, 0, 2); // missed
 
     const ownerPred = await getOrCreatePrediction(db, {
       poolId,
       userId: ownerId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, ownerPred.id, matchId, 2, 0); // exact
 
@@ -852,7 +861,7 @@ describe('getResultsView', () => {
   it('myStillLive scales with hit rate once some matches have resolved', async () => {
     // Finalise one group match → unlocks `exactScore` of resolved upside.
     const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, oneMatch, 1, 0);
+    await finalizeMatch(db, miniTId, oneMatch, 1, 0);
 
     // User has banked exactly the points that match was worth (hitRate = 1.0).
     await upsertScore(db, {
@@ -877,7 +886,7 @@ describe('getResultsView', () => {
 
   it('myStillLive is zero for a user with zero earned points', async () => {
     const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, oneMatch, 1, 0);
+    await finalizeMatch(db, miniTId, oneMatch, 1, 0);
 
     await upsertScore(db, {
       poolId,
@@ -894,7 +903,7 @@ describe('getResultsView', () => {
   it('myStillLive scales linearly with banked points', async () => {
     // Finalise two group matches → resolved max = 2 × exactScore = 12.
     const matches = miniTournament.groupMatches.filter((m) => m.group === groupId('A')).slice(0, 2);
-    for (const m of matches) await finalizeMatch(db, miniTournament.id, m.id, 1, 0);
+    for (const m of matches) await finalizeMatch(db, miniTId, m.id, 1, 0);
 
     // User has earned 6 of 12 available → hitRate = 0.5.
     const banked = miniTournament.scoring.groupMatch.exactScore; // 6
@@ -916,7 +925,7 @@ describe('getResultsView', () => {
 
   it('myStillLive collapses to zero once every match is final', async () => {
     for (const gm of miniTournament.groupMatches) {
-      await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
+      await finalizeMatch(db, miniTId, gm.id, 1, 0);
     }
     for (const key of [
       ...miniTournament.bracket.roundOf8Matches,
@@ -926,7 +935,7 @@ describe('getResultsView', () => {
     ]) {
       await upsertKnockoutMatch(db, {
         id: key,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
         stage: 'QF',
         homeTeamId: 'A1',
         awayTeamId: 'B2',
@@ -953,7 +962,7 @@ describe('getResultsView', () => {
 
   it('each member projects at their own hit rate (chart slopes differ)', async () => {
     const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await finalizeMatch(db, miniTournament.id, oneMatch, 1, 0);
+    await finalizeMatch(db, miniTId, oneMatch, 1, 0);
 
     // user earned 6 (perfect), owner earned 3 (outcome only)
     await upsertScore(db, {
@@ -992,7 +1001,7 @@ describe('getResultsView', () => {
   it('a stronger hit rate can overtake a higher current score in projection', async () => {
     // Resolve a couple of matches so hit rates have something to bite into.
     const matches = miniTournament.groupMatches.filter((m) => m.group === groupId('A')).slice(0, 3);
-    for (const m of matches) await finalizeMatch(db, miniTournament.id, m.id, 1, 0);
+    for (const m of matches) await finalizeMatch(db, miniTId, m.id, 1, 0);
 
     // owner: lots banked, but low hit rate (5 of 18 = 27.8%)
     await upsertScore(db, {
@@ -1054,8 +1063,8 @@ describe('getResultsView', () => {
   it('uses date-based stages when completed matches have kickoff dates', async () => {
     const match = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!;
     const kickoff = new Date('2030-06-11T18:00:00Z');
-    await setMatchKickoff(db, miniTournament.id, match.id, kickoff);
-    await finalizeMatch(db, miniTournament.id, match.id, 2, 1);
+    await setMatchKickoff(db, miniTId, match.id, kickoff);
+    await finalizeMatch(db, miniTId, match.id, 2, 1);
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const { chartStages, chartNowIndex } = view!.pointsRaceView;
@@ -1071,19 +1080,19 @@ describe('getResultsView', () => {
 
     // Match 1 on Jun 11: user predicts exact → exact score pts
     const m1 = gAMatches[0]!;
-    await setMatchKickoff(db, miniTournament.id, m1.id, new Date('2030-06-11T18:00:00Z'));
-    await finalizeMatch(db, miniTournament.id, m1.id, 2, 1);
+    await setMatchKickoff(db, miniTId, m1.id, new Date('2030-06-11T18:00:00Z'));
+    await finalizeMatch(db, miniTId, m1.id, 2, 1);
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, pred.id, m1.id, 2, 1); // exact
 
     // Match 2 on Jun 12: user predicts outcome only
     const m2 = gAMatches[1]!;
-    await setMatchKickoff(db, miniTournament.id, m2.id, new Date('2030-06-12T18:00:00Z'));
-    await finalizeMatch(db, miniTournament.id, m2.id, 1, 0);
+    await setMatchKickoff(db, miniTId, m2.id, new Date('2030-06-12T18:00:00Z'));
+    await finalizeMatch(db, miniTId, m2.id, 1, 0);
     await upsertGroupScore(db, pred.id, m2.id, 3, 0); // outcome
 
     // Score user properly
@@ -1135,12 +1144,12 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     for (let i = 0; i < gAMatches.length; i++) {
       const m = gAMatches[i]!;
-      await setMatchKickoff(db, miniTournament.id, m.id, new Date(`${dates[i]}T18:00:00Z`));
-      await finalizeMatch(db, miniTournament.id, m.id, 1, 0);
+      await setMatchKickoff(db, miniTId, m.id, new Date(`${dates[i]}T18:00:00Z`));
+      await finalizeMatch(db, miniTId, m.id, 1, 0);
       // User predicts home wins 1-0 for all → derives correct order A1,A2,A3,A4
       await upsertGroupScore(db, pred.id, m.id, 1, 0);
     }
@@ -1177,12 +1186,12 @@ describe('getResultsView', () => {
   it('populates prediction fields in todayMatch when user has a prediction', async () => {
     const todayKickoff = new Date('2030-06-15T18:00:00Z');
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-    await setMatchKickoff(db, miniTournament.id, matchId, todayKickoff);
+    await setMatchKickoff(db, miniTId, matchId, todayKickoff);
 
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertGroupScore(db, pred.id, matchId, 3, 1);
 
@@ -1196,12 +1205,12 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
     await upsertKnockoutMatch(db, {
       id: 'qf1',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'A1',
       awayTeamId: 'B2',
@@ -1224,12 +1233,12 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'B2');
     await upsertKnockoutMatch(db, {
       id: 'qf1',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'A1',
       awayTeamId: 'B2',
@@ -1250,7 +1259,7 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
 
@@ -1265,13 +1274,13 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('final'), 'A1');
     await upsertFinishScore(db, pred.id, 'final', 2, 1);
     await upsertKnockoutMatch(db, {
       id: 'final',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'Final',
       homeTeamId: 'A1',
       awayTeamId: 'B1',
@@ -1293,13 +1302,13 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('final'), 'A1');
     await upsertFinishScore(db, pred.id, 'final', 3, 0);
     await upsertKnockoutMatch(db, {
       id: 'final',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'Final',
       homeTeamId: 'A1',
       awayTeamId: 'B1',
@@ -1320,13 +1329,13 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('final'), 'B1');
     await upsertFinishScore(db, pred.id, 'final', 1, 2);
     await upsertKnockoutMatch(db, {
       id: 'final',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'Final',
       homeTeamId: 'A1',
       awayTeamId: 'B1',
@@ -1345,7 +1354,7 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('final'), 'A1');
     await upsertFinishScore(db, pred.id, 'final', 2, 1);
@@ -1361,7 +1370,7 @@ describe('getResultsView', () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
       userId,
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
     });
     await upsertFinishScore(db, pred.id, 'bronze', 1, 0);
 
@@ -1380,7 +1389,7 @@ describe('getResultsView', () => {
     // With round-robin results where home always wins: rank by win count within group.
     // Team X1 beats X2,X3,X4 → 9pts (1st), X2 beats X3,X4 → 6pts (2nd), etc.
     for (const gm of miniTournament.groupMatches) {
-      await finalizeMatch(db, miniTournament.id, gm.id, 1, 0);
+      await finalizeMatch(db, miniTId, gm.id, 1, 0);
     }
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -1401,7 +1410,7 @@ describe('getResultsView', () => {
     // sf1.from = [qf1, qf2]: finalize both QFs with known winners
     await upsertKnockoutMatch(db, {
       id: 'qf1',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'A1',
       awayTeamId: 'B2',
@@ -1412,7 +1421,7 @@ describe('getResultsView', () => {
     });
     await upsertKnockoutMatch(db, {
       id: 'qf2',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'QF',
       homeTeamId: 'C1',
       awayTeamId: 'D2',
@@ -1460,7 +1469,7 @@ describe('getResultsView', () => {
     // SF1: A1 vs A2 → A1 wins → A2 is loser
     await upsertKnockoutMatch(db, {
       id: 'sf1',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'SF',
       homeTeamId: 'A1',
       awayTeamId: 'A2',
@@ -1472,7 +1481,7 @@ describe('getResultsView', () => {
     // SF2: B1 vs B2 → B2 wins → B1 is loser
     await upsertKnockoutMatch(db, {
       id: 'sf2',
-      tournamentId: miniTournament.id,
+      tournamentId: miniTId,
       stage: 'SF',
       homeTeamId: 'B1',
       awayTeamId: 'B2',
@@ -1505,11 +1514,11 @@ describe('getResultsView', () => {
       const pred = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'A1');
 
-      await upsertTournamentResults(db, miniTournament.id, {
+      await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
         answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
@@ -1527,11 +1536,11 @@ describe('getResultsView', () => {
       const pred = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'B1');
 
-      await upsertTournamentResults(db, miniTournament.id, {
+      await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
         answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
@@ -1546,7 +1555,7 @@ describe('getResultsView', () => {
     });
 
     it('marks missed when no user pick but actual answer exists', async () => {
-      await upsertTournamentResults(db, miniTournament.id, {
+      await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
         answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
@@ -1564,11 +1573,11 @@ describe('getResultsView', () => {
       const pred = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, pred.id, 'topScorerPlayer', player.id);
 
-      await upsertTournamentResults(db, miniTournament.id, {
+      await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
         answers: { topScorerPlayer: player.id as import('@cup/engine').PlayerId },
@@ -1586,11 +1595,11 @@ describe('getResultsView', () => {
       const pred = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, pred.id, 'topScorerPlayer', player.id);
 
-      await upsertTournamentResults(db, miniTournament.id, {
+      await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
         answers: { topScorerPlayer: player.id as import('@cup/engine').PlayerId },
@@ -1610,8 +1619,8 @@ describe('getResultsView', () => {
 
     it('populates currentLeader for pending derivable bets with played matches', async () => {
       // mA1 = A1 vs A2; mA2 = A1 vs A3 — A1 scores 3 goals total across the group stage
-      await finalizeMatch(db, miniTournament.id, 'mA1', 2, 0);
-      await finalizeMatch(db, miniTournament.id, 'mA2', 1, 0);
+      await finalizeMatch(db, miniTId, 'mA1', 2, 0);
+      await finalizeMatch(db, miniTId, 'mA2', 1, 0);
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const groupScoring = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
@@ -1622,7 +1631,7 @@ describe('getResultsView', () => {
     });
 
     it('leaves currentLeader null for non-derivable pending bets', async () => {
-      await finalizeMatch(db, miniTournament.id, 'mA1', 3, 0);
+      await finalizeMatch(db, miniTId, 'mA1', 3, 0);
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const topScorer = view!.specialBets.find((b) => b.key === 'topScorerPlayer')!;
@@ -1637,8 +1646,8 @@ describe('getResultsView', () => {
     });
 
     it('leaves currentLeader null on resolved bets even when matches exist', async () => {
-      await finalizeMatch(db, miniTournament.id, 'mA1', 3, 0);
-      await upsertTournamentResults(db, miniTournament.id, {
+      await finalizeMatch(db, miniTId, 'mA1', 3, 0);
+      await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
         answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
@@ -1664,14 +1673,14 @@ describe('getResultsView', () => {
       const pred1 = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, pred1.id, 'groupTopScoringTeam', 'A1');
 
       const ownerPred = await getOrCreatePrediction(db, {
         poolId,
         userId: ownerId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, ownerPred.id, 'groupTopScoringTeam', 'A1');
 
@@ -1689,14 +1698,14 @@ describe('getResultsView', () => {
       const pred1 = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, pred1.id, 'groupTopScoringTeam', 'A1');
 
       const ownerPred = await getOrCreatePrediction(db, {
         poolId,
         userId: ownerId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, ownerPred.id, 'groupTopScoringTeam', 'B1');
 
@@ -1712,7 +1721,7 @@ describe('getResultsView', () => {
       const pred = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertSpecialBet(db, pred.id, 'highestMatchGoals', 5);
 
@@ -1745,7 +1754,7 @@ describe('getResultsView', () => {
 
     it('earned reflects group points and canStillGet decreases after a group match resolves', async () => {
       const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!;
-      await finalizeMatch(db, miniTournament.id, oneMatch.id, 2, 1);
+      await finalizeMatch(db, miniTId, oneMatch.id, 2, 1);
 
       const exactPts = miniTournament.scoring.groupMatch.exactScore;
       await upsertScore(db, {
@@ -1776,7 +1785,7 @@ describe('getResultsView', () => {
 
     it('missed reflects group points the user did not score', async () => {
       const oneMatch = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!;
-      await finalizeMatch(db, miniTournament.id, oneMatch.id, 2, 1);
+      await finalizeMatch(db, miniTId, oneMatch.id, 2, 1);
 
       await upsertScore(db, {
         poolId,
@@ -1858,7 +1867,7 @@ describe('getResultsView', () => {
       // KO matches are never inserted into the matches table by the sync pipeline, so the
       // engine's finalMatchIds check would wrongly keep these categories open. This test
       // verifies we read resolution state from actualResults instead.
-      await upsertTournamentResults(db, miniTournament.id, {
+      await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
         answers: {
@@ -1907,13 +1916,13 @@ describe('getResultsView', () => {
       const pred = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       // User picks A1 for groupTopScoringTeam (will hit) and B1 for groupTopConcedingTeam (will miss)
       await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'A1');
       await upsertSpecialBet(db, pred.id, 'groupTopConcedingTeam', 'B1');
 
-      await upsertTournamentResults(db, miniTournament.id, {
+      await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
         answers: {
@@ -1946,13 +1955,13 @@ describe('getResultsView', () => {
 
     it('builds completed-match rows without a predicted score when userId is omitted', async () => {
       const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
-      await finalizeMatch(db, miniTournament.id, matchId, 2, 1);
+      await finalizeMatch(db, miniTId, matchId, 2, 1);
 
       // Seed a prediction for the regular user — view mode should not pick it up.
       const pred = await getOrCreatePrediction(db, {
         poolId,
         userId,
-        tournamentId: miniTournament.id,
+        tournamentId: miniTId,
       });
       await upsertGroupScore(db, pred.id, matchId, 2, 1);
 

@@ -29,6 +29,8 @@ import {
   selectQualifiers,
   findInvalidatedPickKeys,
   userId,
+  poolId as asPoolId,
+  predictionId as asPredictionId,
 } from '@cup/engine';
 import type {
   ActualResults,
@@ -37,6 +39,8 @@ import type {
   MatchId,
   TeamId,
   Tournament,
+  PoolId,
+  PredictionId,
 } from '@cup/engine';
 import { rescoreAfterEdit } from './rescore-helper';
 import { applyCardImport } from '../application/import-card';
@@ -46,7 +50,7 @@ import { applyCardImport } from '../application/import-card';
 // ---------------------------------------------------------------------------
 
 /** Load pool, tournament, and assert pool/tournament exist. */
-async function loadPoolAndTournament(poolId: string) {
+async function loadPoolAndTournament(poolId: PoolId) {
   const pool = await getPoolById(db, poolId);
   if (!pool) throw new Error(`Pool ${poolId} not found`);
 
@@ -65,7 +69,7 @@ async function loadPoolAndTournament(poolId: string) {
  * Stage 1: pool (need its tournamentId first)
  * Stage 2: tournament + actual results in parallel (both need tournamentId)
  */
-async function loadPoolTournamentAndActual(poolId: string) {
+async function loadPoolTournamentAndActual(poolId: PoolId) {
   const pool = await getPoolById(db, poolId);
   if (!pool) throw new Error(`Pool ${poolId} not found`);
 
@@ -90,7 +94,7 @@ function actualGroupScoresMap(actual: ActualResults): Map<string, { home: number
 }
 
 async function invalidatePicksAfterKnockoutPickChange(
-  predictionId: string,
+  predictionId: PredictionId,
   updatedInputs: Awaited<ReturnType<typeof getPredictionInputs>>,
   tournamentDef: Tournament,
   actualGroupMatchScores?: Map<string, { home: number; away: number }>,
@@ -135,7 +139,7 @@ async function invalidatePicksAfterKnockoutPickChange(
  *   - the finalists / bronze pair are not yet resolved (no SF picks).
  */
 async function deriveFinishWinner(
-  predictionId: string,
+  predictionId: PredictionId,
   match: 'final' | 'bronze',
   home: number,
   away: number,
@@ -153,7 +157,7 @@ async function deriveFinishWinner(
 }
 
 async function invalidatePicksAfterGroupScoreChange(
-  predictionId: string,
+  predictionId: PredictionId,
   matchId: string,
   home: number,
   away: number,
@@ -211,7 +215,8 @@ export async function saveGroupScore(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = SaveGroupScoreSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, matchId: mId, home, away } = parsed.data;
+  const { poolId: rawPoolId, matchId: mId, home, away } = parsed.data;
+  const poolId = asPoolId(rawPoolId);
 
   try {
     // Stage 1 (parallel): actor + pool
@@ -300,7 +305,8 @@ export async function saveKnockoutPick(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = SaveKnockoutPickSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, bracketMatchKey: key, winner } = parsed.data;
+  const { poolId: rawPoolId2, bracketMatchKey: key, winner } = parsed.data;
+  const poolId = asPoolId(rawPoolId2);
 
   try {
     // Stage 1 (parallel): actor + pool
@@ -378,7 +384,8 @@ export async function saveFinishScore(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = SaveFinishScoreSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, match, home, away } = parsed.data;
+  const { poolId: rawPoolId3, match, home, away } = parsed.data;
+  const poolId = asPoolId(rawPoolId3);
 
   try {
     // Stage 1 (parallel): actor + pool + actual results
@@ -450,7 +457,8 @@ export async function saveSpecialBet(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = SaveSpecialBetSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, betKey, value } = parsed.data;
+  const { poolId: rawPoolId4, betKey, value } = parsed.data;
+  const poolId = asPoolId(rawPoolId4);
 
   try {
     // Stage 1 (parallel): actor + pool + actual results
@@ -505,7 +513,15 @@ export async function ownerSaveGroupScore(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = OwnerSaveGroupScoreSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId: rawTargetUserId, matchId: mId, home, away, reason } = parsed.data;
+  const {
+    poolId: rawPoolId5,
+    targetUserId: rawTargetUserId,
+    matchId: mId,
+    home,
+    away,
+    reason,
+  } = parsed.data;
+  const poolId = asPoolId(rawPoolId5);
   const targetUserId = userId(rawTargetUserId);
 
   try {
@@ -591,7 +607,8 @@ export async function ownerSaveSpecialBet(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = OwnerSaveSpecialBetSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId: rawTargetUserId, betKey, value, reason } = parsed.data;
+  const { poolId: rawPoolId6, targetUserId: rawTargetUserId, betKey, value, reason } = parsed.data;
+  const poolId = asPoolId(rawPoolId6);
   const targetUserId = userId(rawTargetUserId);
 
   try {
@@ -652,12 +669,13 @@ export async function ownerSaveKnockoutPick(
   const parsed = OwnerSaveKnockoutPickSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
   const {
-    poolId,
+    poolId: rawPoolId7,
     targetUserId: rawTargetUserId,
     bracketMatchKey: key,
     winner,
     reason,
   } = parsed.data;
+  const poolId = asPoolId(rawPoolId7);
   const targetUserId = userId(rawTargetUserId);
 
   try {
@@ -729,7 +747,15 @@ export async function ownerSaveFinishScore(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = OwnerSaveFinishScoreSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId: rawTargetUserId, match, home, away, reason } = parsed.data;
+  const {
+    poolId: rawPoolId8,
+    targetUserId: rawTargetUserId,
+    match,
+    home,
+    away,
+    reason,
+  } = parsed.data;
+  const poolId = asPoolId(rawPoolId8);
   const targetUserId = userId(rawTargetUserId);
 
   try {
@@ -796,7 +822,8 @@ export async function exportCard(
 ): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
   const parsed = ExportCardSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId } = parsed.data;
+  const { poolId: rawPoolId9, targetUserId } = parsed.data;
+  const poolId = asPoolId(rawPoolId9);
 
   try {
     const { userId: actorId } = await getActorOrThrow();
@@ -870,7 +897,8 @@ export async function importCard(
 ): Promise<{ ok: true; imported: number; skipped: string[] } | { ok: false; error: string }> {
   const parsed = ImportCardSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId, exportData } = parsed.data;
+  const { poolId: rawPoolId10, targetUserId, exportData } = parsed.data;
+  const poolId = asPoolId(rawPoolId10);
 
   try {
     // Stage 1 (parallel): actor + pool + actual results
@@ -945,7 +973,8 @@ export async function clearAllPredictions(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = ClearAllPredictionsSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId } = parsed.data;
+  const { poolId: rawPoolId11 } = parsed.data;
+  const poolId = asPoolId(rawPoolId11);
 
   try {
     // Stage 1 (parallel): actor + pool + actual results
