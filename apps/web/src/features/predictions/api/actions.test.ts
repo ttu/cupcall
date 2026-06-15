@@ -12,6 +12,8 @@ import {
   upsertKnockoutPick as dbUpsertKnockoutPick,
   deleteKnockoutPicks as dbDeleteKnockoutPicks,
   finalizeMatch,
+  listEditsForPrediction,
+  getPrediction,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
 import { bracketMatchKey, teamId, groupId } from '@cup/engine';
@@ -410,6 +412,24 @@ describe('owner editing own card post-lock (creator predict edit)', () => {
     expect(result).toMatchObject({ ok: true });
     const inputs = await getPredictionInputs(testDb, ownerPredictionId);
     expect(inputs.groupScores[0]).toMatchObject({ home: 3, away: 0 });
+  });
+
+  it('audit entry includes the editor display name, not the raw user id', async () => {
+    const matchId = miniTournament.groupMatches[0]!.id;
+    await ownerSaveGroupScore({
+      poolId,
+      targetUserId: ownerId,
+      matchId,
+      home: 3,
+      away: 1,
+    });
+
+    const prediction = await getPrediction(testDb, poolId, ownerId);
+    expect(prediction).not.toBeNull();
+    const edits = await listEditsForPrediction(testDb, prediction!.id);
+    expect(edits).toHaveLength(1);
+    expect(edits[0]!.editorName).toBe('OwnerPast');
+    expect(edits[0]!.editorName).not.toMatch(/^usr_/);
   });
 });
 

@@ -81,7 +81,7 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
     const edits = await listEditsForPrediction(db, prediction.id);
     auditEntries = edits.map((e) => ({
       id: e.id,
-      editorName: e.editorUserId,
+      editorName: e.editorName,
       fieldPath: e.fieldPath,
       oldValue: e.oldValue,
       newValue: e.newValue,

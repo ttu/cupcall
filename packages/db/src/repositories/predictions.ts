@@ -30,6 +30,7 @@ export type EditRow = {
   id: string;
   predictionId: string;
   editorUserId: UserId;
+  editorName: string;
   fieldPath: string;
   oldValue: unknown;
   newValue: unknown;
@@ -243,8 +244,21 @@ export async function listEditsForPrediction(
   predictionId: string,
 ): Promise<EditRow[]> {
   const rows = await db
-    .select()
+    .select({
+      id: schema.predictionEdits.id,
+      predictionId: schema.predictionEdits.predictionId,
+      editorUserId: schema.predictionEdits.editorUserId,
+      editorDisplayName: schema.users.displayName,
+      editorEmail: schema.users.email,
+      fieldPath: schema.predictionEdits.fieldPath,
+      oldValue: schema.predictionEdits.oldValue,
+      newValue: schema.predictionEdits.newValue,
+      reason: schema.predictionEdits.reason,
+      source: schema.predictionEdits.source,
+      editedAt: schema.predictionEdits.editedAt,
+    })
     .from(schema.predictionEdits)
+    .leftJoin(schema.users, eq(schema.predictionEdits.editorUserId, schema.users.id))
     .where(eq(schema.predictionEdits.predictionId, predictionId))
     .orderBy(schema.predictionEdits.editedAt);
 
@@ -255,6 +269,7 @@ export async function listEditsForPrediction(
       id: r.id,
       predictionId: r.predictionId,
       editorUserId: userId(r.editorUserId),
+      editorName: r.editorDisplayName || r.editorEmail || r.editorUserId,
       fieldPath: r.fieldPath,
       oldValue: r.oldValue,
       newValue: r.newValue,

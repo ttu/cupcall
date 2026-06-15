@@ -5,7 +5,6 @@ import {
   getTournamentById,
   getPrediction,
   listEditsForPrediction,
-  isMember,
   getMember,
   getKnownResultMatchIds,
   getAnsweredBetKeys,
@@ -71,23 +70,21 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
 
   if (!card) notFound();
 
-  // Audit log — only shown to owner (editing own card still creates no edits, but owner may have edited this card)
+  // Audit log — visible to all pool members per functional-spec §8.3
   let auditEntries: AuditEntry[] = [];
-  if (actor.userId === pool.ownerId) {
-    const prediction = await getPrediction(db, poolId, actor.userId);
-    if (prediction) {
-      const edits = await listEditsForPrediction(db, prediction.id);
-      auditEntries = edits.map((e) => ({
-        id: e.id,
-        editorName: e.editorUserId,
-        fieldPath: e.fieldPath,
-        oldValue: e.oldValue,
-        newValue: e.newValue,
-        ...(e.reason !== null ? { reason: e.reason } : {}),
-        source: e.source,
-        editedAt: e.editedAt,
-      }));
-    }
+  const prediction = await getPrediction(db, poolId, actor.userId);
+  if (prediction) {
+    const edits = await listEditsForPrediction(db, prediction.id);
+    auditEntries = edits.map((e) => ({
+      id: e.id,
+      editorName: e.editorName,
+      fieldPath: e.fieldPath,
+      oldValue: e.oldValue,
+      newValue: e.newValue,
+      ...(e.reason !== null ? { reason: e.reason } : {}),
+      source: e.source,
+      editedAt: e.editedAt,
+    }));
   }
 
   const isOwner = actor.userId === pool.ownerId;
