@@ -28,6 +28,7 @@ import {
   deriveGroupOrders,
   selectQualifiers,
   findInvalidatedPickKeys,
+  userId,
 } from '@cup/engine';
 import type {
   ActualResults,
@@ -503,7 +504,8 @@ export async function ownerSaveGroupScore(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = OwnerSaveGroupScoreSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId, matchId: mId, home, away, reason } = parsed.data;
+  const { poolId, targetUserId: rawTargetUserId, matchId: mId, home, away, reason } = parsed.data;
+  const targetUserId = userId(rawTargetUserId);
 
   try {
     // Stage 1 (parallel): editor actor + pool + actual results
@@ -518,7 +520,7 @@ export async function ownerSaveGroupScore(
 
     const prediction = await getOrCreatePrediction(db, {
       poolId,
-      userId: targetUserId as import('@cup/engine').UserId,
+      userId: targetUserId,
       tournamentId: pool.tournamentId,
     });
 
@@ -557,7 +559,7 @@ export async function ownerSaveGroupScore(
     await rescoreAfterEdit(
       prediction.id,
       poolId,
-      targetUserId as import('@cup/engine').UserId,
+      targetUserId,
       tournament.definition!,
       actual,
       updatedInputs,
@@ -588,7 +590,8 @@ export async function ownerSaveSpecialBet(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = OwnerSaveSpecialBetSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId, betKey, value, reason } = parsed.data;
+  const { poolId, targetUserId: rawTargetUserId, betKey, value, reason } = parsed.data;
+  const targetUserId = userId(rawTargetUserId);
 
   try {
     // Stage 1 (parallel): editor actor + pool + actual results
@@ -603,7 +606,7 @@ export async function ownerSaveSpecialBet(
 
     const prediction = await getOrCreatePrediction(db, {
       poolId,
-      userId: targetUserId as import('@cup/engine').UserId,
+      userId: targetUserId,
       tournamentId: pool.tournamentId,
     });
 
@@ -620,13 +623,7 @@ export async function ownerSaveSpecialBet(
       ...(reason !== undefined ? { reason } : {}),
       source: 'manual',
     });
-    await rescoreAfterEdit(
-      prediction.id,
-      poolId,
-      targetUserId as import('@cup/engine').UserId,
-      tournament.definition!,
-      actual,
-    );
+    await rescoreAfterEdit(prediction.id, poolId, targetUserId, tournament.definition!, actual);
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
     revalidatePath(`/pools/${poolId}/predict`);
@@ -653,7 +650,14 @@ export async function ownerSaveKnockoutPick(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = OwnerSaveKnockoutPickSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId, bracketMatchKey: key, winner, reason } = parsed.data;
+  const {
+    poolId,
+    targetUserId: rawTargetUserId,
+    bracketMatchKey: key,
+    winner,
+    reason,
+  } = parsed.data;
+  const targetUserId = userId(rawTargetUserId);
 
   try {
     // Stage 1 (parallel): editor actor + pool + actual results
@@ -668,7 +672,7 @@ export async function ownerSaveKnockoutPick(
 
     const prediction = await getOrCreatePrediction(db, {
       poolId,
-      userId: targetUserId as import('@cup/engine').UserId,
+      userId: targetUserId,
       tournamentId: pool.tournamentId,
     });
 
@@ -692,7 +696,7 @@ export async function ownerSaveKnockoutPick(
     await rescoreAfterEdit(
       prediction.id,
       poolId,
-      targetUserId as import('@cup/engine').UserId,
+      targetUserId,
       tournament.definition!,
       actual,
       updatedInputs,
@@ -724,7 +728,8 @@ export async function ownerSaveFinishScore(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = OwnerSaveFinishScoreSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId, match, home, away, reason } = parsed.data;
+  const { poolId, targetUserId: rawTargetUserId, match, home, away, reason } = parsed.data;
+  const targetUserId = userId(rawTargetUserId);
 
   try {
     // Stage 1 (parallel): editor actor + pool + actual results
@@ -739,7 +744,7 @@ export async function ownerSaveFinishScore(
 
     const prediction = await getOrCreatePrediction(db, {
       poolId,
-      userId: targetUserId as import('@cup/engine').UserId,
+      userId: targetUserId,
       tournamentId: pool.tournamentId,
     });
 
@@ -769,13 +774,7 @@ export async function ownerSaveFinishScore(
       ...(reason !== undefined ? { reason } : {}),
       source: 'manual',
     });
-    await rescoreAfterEdit(
-      prediction.id,
-      poolId,
-      targetUserId as import('@cup/engine').UserId,
-      tournament.definition!,
-      actual,
-    );
+    await rescoreAfterEdit(prediction.id, poolId, targetUserId, tournament.definition!, actual);
 
     revalidatePath(`/pools/${poolId}/members/${targetUserId}`);
     revalidatePath(`/pools/${poolId}/predict`);
@@ -802,9 +801,8 @@ export async function exportCard(
     const { userId: actorId } = await getActorOrThrow();
     const { pool } = await loadPoolAndTournament(poolId);
     const isOwner = actorId === pool.ownerId;
-    const userId =
-      isOwner && targetUserId ? (targetUserId as import('@cup/engine').UserId) : actorId;
-    const prediction = await getPrediction(db, poolId, userId);
+    const effectiveUserId = isOwner && targetUserId ? userId(targetUserId) : actorId;
+    const prediction = await getPrediction(db, poolId, effectiveUserId);
     if (!prediction) return { ok: false, error: 'No prediction found for this pool' };
 
     const inputs = await getPredictionInputs(db, prediction.id);
@@ -891,8 +889,7 @@ export async function importCard(
     }
 
     const isOwner = actorId === pool.ownerId;
-    const effectiveUserId =
-      isOwner && targetUserId ? (targetUserId as import('@cup/engine').UserId) : actorId;
+    const effectiveUserId = isOwner && targetUserId ? userId(targetUserId) : actorId;
     const isOwnerEdit = isOwner && !!targetUserId;
 
     if (isOwnerEdit) {

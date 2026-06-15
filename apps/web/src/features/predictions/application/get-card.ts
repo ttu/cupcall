@@ -5,7 +5,7 @@
 import type { AppSchema } from '@/shared/db';
 import type { Db } from '@cup/db';
 import { getPrediction, getOrCreatePrediction, getPredictionInputs } from '@cup/db';
-import { deriveCard, deriveGroupOrders, matchId } from '@cup/engine';
+import { deriveCard, deriveGroupOrders, matchId, userId as brandUserId } from '@cup/engine';
 import type { Tournament, GroupId, TeamId } from '@cup/engine';
 import type {
   CardView,
@@ -92,11 +92,11 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   if (createIfMissing) {
     prediction = await getOrCreatePrediction(db, {
       poolId,
-      userId: userId as import('@cup/engine').UserId,
+      userId: brandUserId(userId),
       tournamentId,
     });
   } else {
-    prediction = await getPrediction(db, poolId, userId as import('@cup/engine').UserId);
+    prediction = await getPrediction(db, poolId, brandUserId(userId));
     if (!prediction) return null;
   }
 

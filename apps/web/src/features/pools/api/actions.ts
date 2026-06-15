@@ -8,6 +8,7 @@ import { db } from '@/shared/db';
 import { getActorOrThrow } from '@/features/auth';
 import { checkBetaCode } from '@/features/auth/beta-code';
 import { assertIsOwner } from '@/shared/authz';
+import { userId } from '@cup/engine';
 import {
   getPoolById,
   getPoolByInviteTokenHash,
@@ -153,7 +154,8 @@ export async function kickMember(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = KickMemberSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId } = parsed.data;
+  const { poolId, targetUserId: rawTargetUserId } = parsed.data;
+  const targetUserId = userId(rawTargetUserId);
 
   try {
     const actor = await getActorOrThrow();
@@ -164,12 +166,8 @@ export async function kickMember(
       return { ok: false, error: 'The pool owner cannot be kicked.' };
     }
 
-    await removeMember(
-      db,
-      poolId,
-      actor.userId === targetUserId ? actor.userId : (targetUserId as import('@cup/engine').UserId),
-    );
-    await recordKick(db, poolId, targetUserId as import('@cup/engine').UserId);
+    await removeMember(db, poolId, actor.userId === targetUserId ? actor.userId : targetUserId);
+    await recordKick(db, poolId, targetUserId);
 
     revalidatePath(`/pools/${poolId}`);
     return { ok: true };
@@ -421,7 +419,8 @@ export async function generateMemberLoginLink(
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const parsed = GenerateMemberLoginLinkSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId, targetUserId } = parsed.data;
+  const { poolId, targetUserId: rawTargetUserId } = parsed.data;
+  const targetUserId = userId(rawTargetUserId);
 
   try {
     const actor = await getActorOrThrow();
@@ -432,11 +431,11 @@ export async function generateMemberLoginLink(
       return { ok: false, error: 'Cannot generate a login link for the pool owner.' };
     }
 
-    const inPool = await isMember(db, poolId, targetUserId as import('@cup/engine').UserId);
+    const inPool = await isMember(db, poolId, targetUserId);
     if (!inPool) return { ok: false, error: 'User is not a member of this pool.' };
 
     const token = generateLoginToken();
-    await upsertLoginToken(db, targetUserId as import('@cup/engine').UserId, token);
+    await upsertLoginToken(db, targetUserId, token);
 
     return { ok: true, url: buildLoginUrl(token) };
   } catch (e) {
