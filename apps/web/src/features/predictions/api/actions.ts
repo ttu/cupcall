@@ -39,6 +39,7 @@ import type {
   Tournament,
 } from '@cup/engine';
 import { rescoreAfterEdit } from './rescore-helper';
+import { applyCardImport } from '../application/import-card';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -909,79 +910,14 @@ export async function importCard(
       tournamentId: pool.tournamentId,
     });
 
-    const matchIds = new Set(tournamentDef.groupMatches.map((m) => m.id));
-    const teamIds = new Set(tournamentDef.teams.map((t) => t.id));
-    const playerIds = new Set(tournamentDef.players.map((p) => p.id));
-    const bracketKeys = new Set([
-      ...tournamentDef.bracket.slots.map((s) => s.match),
-      ...tournamentDef.bracket.progression.map((p) => p.match),
-    ]);
-
-    let imported = 0;
-    const skipped: string[] = [];
-
-    for (const gs of exportData.groupScores ?? []) {
-      if (!matchIds.has(gs.matchId as MatchId)) {
-        skipped.push(`matchId:${gs.matchId}`);
-        continue;
-      }
-      await upsertGroupScore(db, prediction.id, gs.matchId, gs.home, gs.away);
-      if (isOwnerEdit) {
-        await createPredictionEdit(db, {
-          predictionId: prediction.id,
-          editorUserId: actorId,
-          fieldPath: `groupScores.${gs.matchId}`,
-          oldValue: null,
-          newValue: gs,
-          source: 'import',
-        });
-      }
-      imported++;
-    }
-
-    for (const kp of exportData.knockoutPicks ?? []) {
-      if (!bracketKeys.has(kp.bracketMatchKey as BracketMatchKey)) {
-        skipped.push(`bracketMatchKey:${kp.bracketMatchKey}`);
-        continue;
-      }
-      if (!teamIds.has(kp.winner as TeamId)) {
-        skipped.push(`team:${kp.winner}`);
-        continue;
-      }
-      await upsertKnockoutPick(
-        db,
-        prediction.id,
-        bmk(kp.bracketMatchKey) as BracketMatchKey,
-        kp.winner,
-      );
-      imported++;
-    }
-
-    if (exportData.finishScores?.final) {
-      await upsertFinishScore(
-        db,
-        prediction.id,
-        'final',
-        exportData.finishScores.final.home,
-        exportData.finishScores.final.away,
-      );
-      imported++;
-    }
-    if (exportData.finishScores?.bronze) {
-      await upsertFinishScore(
-        db,
-        prediction.id,
-        'bronze',
-        exportData.finishScores.bronze.home,
-        exportData.finishScores.bronze.away,
-      );
-      imported++;
-    }
-
-    for (const [betKey, value] of Object.entries(exportData.specials ?? {})) {
-      await upsertSpecialBet(db, prediction.id, betKey, value);
-      imported++;
-    }
+    const { imported, skipped } = await applyCardImport({
+      db,
+      predictionId: prediction.id,
+      tournamentDef,
+      exportData,
+      isOwnerEdit,
+      editorUserId: actorId,
+    });
 
     await rescoreAfterEdit(prediction.id, poolId, effectiveUserId, tournamentDef, actual);
 
