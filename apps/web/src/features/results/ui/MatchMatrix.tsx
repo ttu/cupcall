@@ -2,6 +2,8 @@ import type { ReactElement } from 'react';
 import type { MatchMatrixEntry, MatrixMatch, MatchHit } from '../domain/types';
 import { Avatar, Icon, cn } from '@/shared/ui';
 
+const MATCH_COL_W = 52;
+
 export function MatchMatrix({
   entries,
   matches,
@@ -20,18 +22,20 @@ export function MatchMatrix({
   }
 
   const topPlayer = entries[0];
-  const colTemplate = `200px repeat(${matches.length}, 1fr) 64px`;
+  const colTemplate = `50px 150px repeat(${matches.length}, ${MATCH_COL_W}px) 64px`;
 
   return (
     <div>
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         <div
-          className="grid items-center p-[12px_16px] bg-surface-2 border-b border-line gap-1"
+          className="grid items-center gap-1 bg-surface-2 border-b border-line"
           style={{ gridTemplateColumns: colTemplate }}
         >
-          <span className="eyebrow text-ink-muted text-[10px]">Player</span>
+          {/* Sticky placeholder — covers the avatar column so scrolling content doesn't bleed through */}
+          <div className="sticky left-0 z-10 bg-surface-2 self-stretch" />
+          <span className="eyebrow text-ink-muted text-[10px] py-3">Player</span>
           {matches.map((m) => (
-            <div key={m.matchId} className="flex flex-col items-center gap-0.5 text-[11px]">
+            <div key={m.matchId} className="flex flex-col items-center gap-0.5 text-[11px] py-3">
               <span className="font-extrabold text-ink font-cup-display">
                 {m.actualHome}–{m.actualAway}
               </span>
@@ -40,7 +44,7 @@ export function MatchMatrix({
               </span>
             </div>
           ))}
-          <span className="eyebrow text-ink-muted text-[10px] text-right">Total</span>
+          <span className="eyebrow text-ink-muted text-[10px] text-right py-3 pr-4">Total</span>
         </div>
 
         <div className="divide">
@@ -79,16 +83,28 @@ function MatrixRow({
   avatarIndex: number;
   colTemplate: string;
 }): ReactElement {
+  const stickyBg = row.isCurrentUser ? 'bg-green-050' : 'bg-surface';
+
   return (
     <div
       className={cn(
-        'grid items-center p-[9px_16px] gap-1',
+        'grid items-center gap-1',
         row.isCurrentUser ? 'bg-green-050' : 'bg-transparent',
       )}
       style={{ gridTemplateColumns: colTemplate }}
     >
-      <span className="flex items-center gap-2.5 min-w-0">
+      {/* Sticky avatar — stays visible while the player name scrolls out of view */}
+      <div
+        className={cn(
+          'sticky left-0 z-10 flex items-center justify-center self-stretch py-[9px]',
+          stickyBg,
+        )}
+      >
         <Avatar name={row.displayName} index={avatarIndex} size={30} />
+      </div>
+
+      {/* Player name — non-sticky, scrolls away horizontally */}
+      <span className="flex items-center min-w-0 py-[9px]">
         <span
           className={cn(
             'font-bold text-[13px] truncate',
@@ -101,14 +117,16 @@ function MatrixRow({
           )}
         </span>
       </span>
+
       {row.cells.map((cell) => (
-        <span key={cell.matchId} className="grid place-items-center">
+        <span key={cell.matchId} className="grid place-items-center py-[9px]">
           <MatrixCell hit={cell.hit} points={cell.points} />
         </span>
       ))}
+
       <span
         className={cn(
-          'display tnum text-right text-[18px]',
+          'display tnum text-right text-[18px] py-[9px] pr-4',
           row.isCurrentUser ? 'text-green-600' : 'text-ink',
         )}
       >
