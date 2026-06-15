@@ -1,23 +1,57 @@
 import type { ReactElement } from 'react';
-import type { GroupResultView, MatchResultPoolStats } from '../domain/types';
+import type { GroupResultView, MatchHit, MatchResultPoolStats } from '../domain/types';
 import { HitChip } from './HitChip';
 import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = { group: GroupResultView };
 
-function PoolMatchStatsRow({ stats }: { stats: MatchResultPoolStats }): ReactElement {
-  const correctPct = stats.exactPct + stats.outcomePct;
+type FooterProps = {
+  predictedHome: number | null;
+  predictedAway: number | null;
+  hit: MatchHit;
+  pointsAwarded: number;
+  poolMatchStats: MatchResultPoolStats | null;
+};
+
+function MatchFooter({
+  predictedHome,
+  predictedAway,
+  hit,
+  pointsAwarded,
+  poolMatchStats,
+}: FooterProps): ReactElement | null {
+  const hasPrediction = predictedHome !== null;
+  const hasPool = poolMatchStats !== null;
+  if (!hasPrediction && !hasPool) return null;
+
+  const correctPct = hasPool ? poolMatchStats.exactPct + poolMatchStats.outcomePct : 0;
+
   return (
-    <div className="px-3.5 pb-2.5 flex items-center gap-1.5 flex-wrap">
-      <span className="text-[10px] font-bold text-ink-muted uppercase tracking-[0.05em] shrink-0">
-        Pool
-      </span>
-      <span className="text-[11px] text-ink-soft">
-        <span className="font-bold text-ink">{correctPct}%</span> correct
-      </span>
-      {stats.exactPct > 0 && (
-        <span className="text-[11px] text-ink-muted">({stats.exactPct}% exact)</span>
+    <div className="flex items-center justify-between px-3.5 pb-2.5 gap-2">
+      {/* Left: pool stats */}
+      {hasPool && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider shrink-0">
+            Pool
+          </span>
+          <span className="text-[11px] text-ink-soft">
+            <span className="font-bold text-ink">{correctPct}%</span> correct
+          </span>
+          {poolMatchStats.exactPct > 0 && (
+            <span className="text-[11px] text-ink-muted">({poolMatchStats.exactPct}% exact)</span>
+          )}
+        </div>
       )}
+
+      {/* Right: hit chip + your prediction */}
+      <div className="flex items-center gap-1.5 ml-auto">
+        {hasPrediction && (
+          <span className="text-[10.5px] font-semibold text-ink-muted">
+            you {predictedHome}–{predictedAway}
+          </span>
+        )}
+        <HitChip hit={hit} points={pointsAwarded} />
+      </div>
     </div>
   );
 }
@@ -39,9 +73,9 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
         <div className="divide">
           {group.completedMatches.map((m) => (
             <div key={m.matchId}>
-              <div className="grid grid-cols-[1fr_auto_1fr_116px] items-center gap-2 p-[10px_14px_8px]">
-                {/* Home team */}
-                <div className="flex items-center justify-end gap-1.5 min-w-0">
+              {/* Match row: teams + score centered */}
+              <div className="flex items-center justify-center gap-2 p-[10px_14px_6px]">
+                <div className="flex items-center justify-end gap-1.5 flex-1 min-w-0">
                   <span
                     className={cn(
                       'text-[13px] font-bold truncate',
@@ -53,15 +87,13 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
                   <TeamBadge teamId={m.homeTeamId} size="sm" />
                 </div>
 
-                {/* Score */}
-                <span className="display tnum text-[19px] text-ink text-center">
+                <span className="display tnum text-[19px] text-ink shrink-0">
                   {m.actualHome}
                   <span className="text-ink-muted mx-0.5 text-sm">–</span>
                   {m.actualAway}
                 </span>
 
-                {/* Away team */}
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <TeamBadge teamId={m.awayTeamId} size="sm" />
                   <span
                     className={cn(
@@ -72,18 +104,15 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
                     {m.awayTeamName}
                   </span>
                 </div>
-
-                {/* Prediction + hit chip */}
-                <div className="flex flex-col items-end gap-[3px]">
-                  {m.predictedHome !== null && (
-                    <span className="text-[10.5px] font-semibold text-ink-muted">
-                      you {m.predictedHome}–{m.predictedAway}
-                    </span>
-                  )}
-                  <HitChip hit={m.hit} points={m.pointsAwarded} />
-                </div>
               </div>
-              {m.poolMatchStats && <PoolMatchStatsRow stats={m.poolMatchStats} />}
+
+              <MatchFooter
+                predictedHome={m.predictedHome}
+                predictedAway={m.predictedAway}
+                hit={m.hit}
+                pointsAwarded={m.pointsAwarded}
+                poolMatchStats={m.poolMatchStats}
+              />
             </div>
           ))}
         </div>
