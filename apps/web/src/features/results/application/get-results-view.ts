@@ -14,6 +14,8 @@ import {
 import type { MatchRow, LeaderboardEntry, PoolGroupScore, PoolSpecialBet } from '@cup/db';
 import {
   deriveGroupOrders,
+  computeStandings,
+  teamMetrics,
   selectQualifiers,
   matchId,
   computeRemainingMaxPoints,
@@ -462,32 +464,33 @@ function buildGroupStanding(
   teamMap: Map<string, string>,
   bestThirdsSet: Set<string>,
 ): GroupStandingRow[] {
-  const group = def.groups.find((g) => g.id === groupId);
-  if (!group) return [];
-
-  const stats = new Map<string, { w: number; d: number; l: number; gf: number; ga: number }>(
-    group.teams.map((t) => [t, { w: 0, d: 0, l: 0, gf: 0, ga: 0 }]),
+  const finalGroupMatches = allMatches.filter(
+    (m) => m.stage === 'group' && m.groupId === groupId && m.status === 'final',
   );
 
-  for (const m of allMatches) {
-    if (m.stage !== 'group' || m.groupId !== groupId || m.status !== 'final') continue;
+  const scores: GroupScore[] = finalGroupMatches
+    .filter((m) => m.homeTeamId && m.awayTeamId)
+    .map((m) => ({ matchId: matchId(m.id), home: m.homeGoals!, away: m.awayGoals! }));
+
+  // Engine applies the tournament's tiebreak rules (standingsTiebreak config).
+  const orderedIds = computeStandings(def, groupId, scores);
+  const metrics = teamMetrics(def, groupId, scores);
+
+  // W/D/L are display-only stats not tracked by teamMetrics; accumulate here.
+  const group = def.groups.find((g) => g.id === groupId);
+  if (!group) return [];
+  const wdl = new Map<string, { w: number; d: number; l: number }>(
+    group.teams.map((t) => [t, { w: 0, d: 0, l: 0 }]),
+  );
+  for (const m of finalGroupMatches) {
     if (!m.homeTeamId || !m.awayTeamId) continue;
-
-    const h = stats.get(m.homeTeamId);
-    const a = stats.get(m.awayTeamId);
+    const h = wdl.get(m.homeTeamId);
+    const a = wdl.get(m.awayTeamId);
     if (!h || !a) continue;
-
-    const hg = m.homeGoals!;
-    const ag = m.awayGoals!;
-    h.gf += hg;
-    h.ga += ag;
-    a.gf += ag;
-    a.ga += hg;
-
-    if (hg > ag) {
+    if (m.homeGoals! > m.awayGoals!) {
       h.w++;
       a.l++;
-    } else if (hg < ag) {
+    } else if (m.homeGoals! < m.awayGoals!) {
       a.w++;
       h.l++;
     } else {
@@ -498,21 +501,9 @@ function buildGroupStanding(
 
   const autoQualify = def.qualification.autoQualifyPerGroup;
 
-  // Sort: points → GD → GF → seed order
-  const ranked = group.teams
-    .map((tid, seed) => {
-      const s = stats.get(tid) ?? { w: 0, d: 0, l: 0, gf: 0, ga: 0 };
-      const pts = s.w * 3 + s.d;
-      return { tid, seed, s, pts, gd: s.gf - s.ga };
-    })
-    .sort((a, b) => {
-      if (b.pts !== a.pts) return b.pts - a.pts;
-      if (b.gd !== a.gd) return b.gd - a.gd;
-      if (b.s.gf !== a.s.gf) return b.s.gf - a.s.gf;
-      return a.seed - b.seed;
-    });
-
-  return ranked.map(({ tid, s, pts, gd }, i) => {
+  return orderedIds.map((tid, i) => {
+    const m = metrics.get(tid) ?? { points: 0, gf: 0, ga: 0 };
+    const r = wdl.get(tid) ?? { w: 0, d: 0, l: 0 };
     let qualifies: 'auto' | 'best-third' | false = false;
     if (i < autoQualify) {
       qualifies = 'auto';
@@ -523,14 +514,14 @@ function buildGroupStanding(
       position: i + 1,
       teamId: tid,
       teamName: teamMap.get(tid) ?? tid,
-      played: s.w + s.d + s.l,
-      won: s.w,
-      drawn: s.d,
-      lost: s.l,
-      goalsFor: s.gf,
-      goalsAgainst: s.ga,
-      goalDifference: gd,
-      points: pts,
+      played: r.w + r.d + r.l,
+      won: r.w,
+      drawn: r.d,
+      lost: r.l,
+      goalsFor: m.gf,
+      goalsAgainst: m.ga,
+      goalDifference: m.gf - m.ga,
+      points: m.points,
       qualifies,
     };
   });
