@@ -48,19 +48,15 @@ import {
 } from '../application/pool-backup';
 import type { PoolBackup } from '../application/pool-backup';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
-async function getOwnerPoolOrThrow(poolId: PoolId) {
+async function getPoolOrThrow(poolId: PoolId) {
   const pool = await getPoolById(db, poolId);
   if (!pool) throw new Error(`Pool ${poolId} not found`);
   return pool;
 }
 
-// ---------------------------------------------------------------------------
 // Create pool
-// ---------------------------------------------------------------------------
 
 const CreatePoolSchema = z.object({
   name: z.string().min(1).max(100),
@@ -103,9 +99,7 @@ export async function createPool(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Join pool
-// ---------------------------------------------------------------------------
 
 const JoinPoolSchema = z.object({ token: z.string().min(1) });
 
@@ -143,9 +137,7 @@ export async function joinPool(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Kick member
-// ---------------------------------------------------------------------------
 
 const KickMemberSchema = z.object({
   poolId: z.string(),
@@ -163,7 +155,7 @@ export async function kickMember(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     assertIsOwner(pool, actor.userId);
 
     if (targetUserId === pool.ownerId) {
@@ -180,9 +172,7 @@ export async function kickMember(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Leave pool (member self-removal)
-// ---------------------------------------------------------------------------
 
 const LeavePoolSchema = z.object({ poolId: z.string() });
 
@@ -196,7 +186,7 @@ export async function leavePool(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
 
     if (actor.userId === pool.ownerId) {
       return { ok: false, error: 'Pool owners cannot leave. Delete the pool instead.' };
@@ -215,9 +205,7 @@ export async function leavePool(
   redirect('/pools');
 }
 
-// ---------------------------------------------------------------------------
 // Clear invite link
-// ---------------------------------------------------------------------------
 
 const ClearInviteLinkSchema = z.object({ poolId: z.string() });
 
@@ -231,7 +219,7 @@ export async function clearInviteLink(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     assertIsOwner(pool, actor.userId);
 
     await clearInviteToken(db, poolId);
@@ -242,9 +230,7 @@ export async function clearInviteLink(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Rotate token
-// ---------------------------------------------------------------------------
 
 const RotateTokenSchema = z.object({ poolId: z.string() });
 
@@ -258,7 +244,7 @@ export async function rotateToken(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     assertIsOwner(pool, actor.userId);
 
     const newToken = generateInviteToken();
@@ -271,9 +257,7 @@ export async function rotateToken(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Rotate view token
-// ---------------------------------------------------------------------------
 
 const RotateViewTokenSchema = z.object({ poolId: z.string() });
 
@@ -287,7 +271,7 @@ export async function rotateViewToken(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     assertIsOwner(pool, actor.userId);
 
     const newToken = generateViewToken();
@@ -300,9 +284,7 @@ export async function rotateViewToken(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Clear view link
-// ---------------------------------------------------------------------------
 
 const ClearViewLinkSchema = z.object({ poolId: z.string() });
 
@@ -316,7 +298,7 @@ export async function clearViewLink(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     assertIsOwner(pool, actor.userId);
 
     await dbClearViewToken(db, poolId);
@@ -327,9 +309,7 @@ export async function clearViewLink(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Delete pool
-// ---------------------------------------------------------------------------
 
 const DeletePoolSchema = z.object({ poolId: z.string() });
 
@@ -343,7 +323,7 @@ export async function deletePool(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     assertIsOwner(pool, actor.userId);
 
     await dbDeletePool(db, poolId);
@@ -355,9 +335,7 @@ export async function deletePool(
   redirect('/pools');
 }
 
-// ---------------------------------------------------------------------------
 // Join as guest (no email required — name only)
-// ---------------------------------------------------------------------------
 
 const JoinAsGuestSchema = z.object({
   displayName: z.string().trim().min(2, 'Name must be at least 2 characters').max(50),
@@ -415,9 +393,7 @@ export async function joinAsGuest(raw: unknown): Promise<{ ok: false; error: str
   return { ok: false, error: 'Unexpected error.' };
 }
 
-// ---------------------------------------------------------------------------
 // Generate member login link (owner only)
-// ---------------------------------------------------------------------------
 
 const GenerateMemberLoginLinkSchema = z.object({
   poolId: z.string(),
@@ -435,7 +411,7 @@ export async function generateMemberLoginLink(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     assertIsOwner(pool, actor.userId);
 
     if (targetUserId === pool.ownerId) {
@@ -454,9 +430,7 @@ export async function generateMemberLoginLink(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Rotate own login token (guest users only)
-// ---------------------------------------------------------------------------
 
 export async function rotateMyLoginToken(): Promise<
   { ok: true; token: string } | { ok: false; error: string }
@@ -471,9 +445,7 @@ export async function rotateMyLoginToken(): Promise<
   }
 }
 
-// ---------------------------------------------------------------------------
 // Export pool (backup)
-// ---------------------------------------------------------------------------
 
 const ExportPoolSchema = z.object({ poolId: z.string() });
 
@@ -487,7 +459,7 @@ export async function exportPool(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     await assertIsMember(db, poolId, actor.userId);
 
     const backup = await buildPoolExport(db, poolId, pool.name, pool.tournamentId);
@@ -497,9 +469,7 @@ export async function exportPool(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Import pool (restore from backup)
-// ---------------------------------------------------------------------------
 
 const ImportPoolSchema = z.object({
   poolId: z.string(),
@@ -516,7 +486,7 @@ export async function importPool(
 
   try {
     const actor = await getActorOrThrow();
-    const pool = await getOwnerPoolOrThrow(poolId);
+    const pool = await getPoolOrThrow(poolId);
     assertIsOwner(pool, actor.userId);
 
     if (backupData.tournamentId !== pool.tournamentId) {

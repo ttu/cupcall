@@ -45,9 +45,7 @@ import type {
 import { rescoreAfterEdit } from './rescore-helper';
 import { applyCardImport } from '../application/import-card';
 
-// ---------------------------------------------------------------------------
 // Shared helpers
-// ---------------------------------------------------------------------------
 
 /** Load pool, tournament, and assert pool/tournament exist. */
 async function loadPoolAndTournament(poolId: PoolId) {
@@ -64,11 +62,6 @@ async function loadPoolAndTournament(poolId: PoolId) {
   return { pool, tournament };
 }
 
-/**
- * Fetch pool + tournament + actual results in two parallel stages.
- * Stage 1: pool (need its tournamentId first)
- * Stage 2: tournament + actual results in parallel (both need tournamentId)
- */
 async function loadPoolTournamentAndActual(poolId: PoolId) {
   const pool = await getPoolById(db, poolId);
   if (!pool) throw new Error(`Pool ${poolId} not found`);
@@ -199,9 +192,7 @@ async function invalidatePicksAfterGroupScoreChange(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Save group score (own card)
-// ---------------------------------------------------------------------------
 
 const SaveGroupScoreSchema = z.object({
   poolId: z.string(),
@@ -219,14 +210,12 @@ export async function saveGroupScore(
   const poolId = asPoolId(rawPoolId);
 
   try {
-    // Stage 1 (parallel): actor + pool
     const [actor, pool] = await Promise.all([getCurrentActor(), getPoolById(db, poolId)]);
     if (!actor) throw new Error('Not signed in');
     if (!pool) throw new Error(`Pool ${poolId} not found`);
     const { userId } = actor;
     const now = new Date();
 
-    // Stage 2 (parallel): tournament + lock check + actual results
     const [tournament, itemHasResult, actual] = await Promise.all([
       getTournamentById(db, pool.tournamentId),
       matchHasResult(db, pool.tournamentId, mId),
@@ -290,9 +279,7 @@ export async function saveGroupScore(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Save knockout pick (own card)
-// ---------------------------------------------------------------------------
 
 const SaveKnockoutPickSchema = z.object({
   poolId: z.string(),
@@ -309,14 +296,12 @@ export async function saveKnockoutPick(
   const poolId = asPoolId(rawPoolId2);
 
   try {
-    // Stage 1 (parallel): actor + pool
     const [actor, pool] = await Promise.all([getCurrentActor(), getPoolById(db, poolId)]);
     if (!actor) throw new Error('Not signed in');
     if (!pool) throw new Error(`Pool ${poolId} not found`);
     const { userId } = actor;
     const now = new Date();
 
-    // Stage 2 (parallel): tournament + lock check + actual results
     // bracketMatchKey IS the match id in the matches table (e.g. "qf-1", "final")
     const [tournament, itemHasResult, actual] = await Promise.all([
       getTournamentById(db, pool.tournamentId),
@@ -368,9 +353,7 @@ export async function saveKnockoutPick(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Save finish score (own card)
-// ---------------------------------------------------------------------------
 
 const SaveFinishScoreSchema = z.object({
   poolId: z.string(),
@@ -388,7 +371,6 @@ export async function saveFinishScore(
   const poolId = asPoolId(rawPoolId3);
 
   try {
-    // Stage 1 (parallel): actor + pool + actual results
     const [actor, { pool, tournament, actual }] = await Promise.all([
       getCurrentActor(),
       loadPoolTournamentAndActual(poolId),
@@ -442,9 +424,7 @@ export async function saveFinishScore(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Save special bet (own card)
-// ---------------------------------------------------------------------------
 
 const SaveSpecialBetSchema = z.object({
   poolId: z.string(),
@@ -461,7 +441,6 @@ export async function saveSpecialBet(
   const poolId = asPoolId(rawPoolId4);
 
   try {
-    // Stage 1 (parallel): actor + pool + actual results
     const [actor, { pool, tournament, actual }] = await Promise.all([
       getCurrentActor(),
       loadPoolTournamentAndActual(poolId),
@@ -495,9 +474,7 @@ export async function saveSpecialBet(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Owner: save group score for a member
-// ---------------------------------------------------------------------------
 
 const OwnerSaveGroupScoreSchema = z.object({
   poolId: z.string(),
@@ -525,7 +502,6 @@ export async function ownerSaveGroupScore(
   const targetUserId = userId(rawTargetUserId);
 
   try {
-    // Stage 1 (parallel): editor actor + pool + actual results
     const [actor, { pool, tournament, actual }] = await Promise.all([
       getCurrentActor(),
       loadPoolTournamentAndActual(poolId),
@@ -590,9 +566,7 @@ export async function ownerSaveGroupScore(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Owner: save special bet for a member
-// ---------------------------------------------------------------------------
 
 const OwnerSaveSpecialBetSchema = z.object({
   poolId: z.string(),
@@ -612,7 +586,6 @@ export async function ownerSaveSpecialBet(
   const targetUserId = userId(rawTargetUserId);
 
   try {
-    // Stage 1 (parallel): editor actor + pool + actual results
     const [actor, { pool, tournament, actual }] = await Promise.all([
       getCurrentActor(),
       loadPoolTournamentAndActual(poolId),
@@ -651,9 +624,7 @@ export async function ownerSaveSpecialBet(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Owner: save knockout pick for a member
-// ---------------------------------------------------------------------------
 
 const OwnerSaveKnockoutPickSchema = z.object({
   poolId: z.string(),
@@ -679,7 +650,6 @@ export async function ownerSaveKnockoutPick(
   const targetUserId = userId(rawTargetUserId);
 
   try {
-    // Stage 1 (parallel): editor actor + pool + actual results
     const [actor, { pool, tournament, actual }] = await Promise.all([
       getCurrentActor(),
       loadPoolTournamentAndActual(poolId),
@@ -729,9 +699,7 @@ export async function ownerSaveKnockoutPick(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Owner: save finish score for a member
-// ---------------------------------------------------------------------------
 
 const OwnerSaveFinishScoreSchema = z.object({
   poolId: z.string(),
@@ -759,7 +727,6 @@ export async function ownerSaveFinishScore(
   const targetUserId = userId(rawTargetUserId);
 
   try {
-    // Stage 1 (parallel): editor actor + pool + actual results
     const [actor, { pool, tournament, actual }] = await Promise.all([
       getCurrentActor(),
       loadPoolTournamentAndActual(poolId),
@@ -811,9 +778,7 @@ export async function ownerSaveFinishScore(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Export card
-// ---------------------------------------------------------------------------
 
 const ExportCardSchema = z.object({ poolId: z.string(), targetUserId: z.string().optional() });
 
@@ -860,9 +825,7 @@ export async function exportCard(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Import card (member: before lock; owner: any time)
-// ---------------------------------------------------------------------------
 
 const ImportCardSchema = z.object({
   poolId: z.string(),
@@ -901,7 +864,6 @@ export async function importCard(
   const poolId = asPoolId(rawPoolId10);
 
   try {
-    // Stage 1 (parallel): actor + pool + actual results
     const [actor, { pool, tournament, actual }] = await Promise.all([
       getCurrentActor(),
       loadPoolTournamentAndActual(poolId),
@@ -962,9 +924,7 @@ export async function importCard(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Clear all predictions (own card)
-// ---------------------------------------------------------------------------
 
 const ClearAllPredictionsSchema = z.object({ poolId: z.string() });
 
@@ -977,7 +937,6 @@ export async function clearAllPredictions(
   const poolId = asPoolId(rawPoolId11);
 
   try {
-    // Stage 1 (parallel): actor + pool + actual results
     const [actor, { pool, tournament, actual }] = await Promise.all([
       getCurrentActor(),
       loadPoolTournamentAndActual(poolId),

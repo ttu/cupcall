@@ -89,14 +89,6 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   );
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch);
 
-  const pointsRaceView = buildPointsRaceView({
-    leaderboard,
-    userId: userId ?? null,
-    allMatches,
-    poolGroupScores,
-    def,
-  });
-
   const specialBets = buildSpecialBetResults(
     def,
     inputs,
@@ -118,7 +110,15 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     (userGroupSummary?.canStillGet ?? 0) +
     (userKnockoutSummary?.canStillGet ?? 0) +
     (userSpecialsSummary?.canStillGet ?? 0);
-  pointsRaceView.myTotalCanStillGet = myTotalCanStillGet;
+
+  const pointsRaceView = buildPointsRaceView({
+    leaderboard,
+    userId: userId ?? null,
+    allMatches,
+    poolGroupScores,
+    def,
+    myTotalCanStillGet,
+  });
 
   return {
     poolName: pool.name,
@@ -141,9 +141,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   };
 }
 
-// ---------------------------------------------------------------------------
 // User rank
-// ---------------------------------------------------------------------------
 
 function buildUserRank(leaderboard: LeaderboardEntry[], userId: string): UserRankChip | null {
   const idx = leaderboard.findIndex((e) => e.userId === userId);
@@ -162,9 +160,7 @@ function deriveCurrentStage(progress: StageProgress[]): StageKey {
   return first?.key ?? 'group';
 }
 
-// ---------------------------------------------------------------------------
 // User points summary (earned / missed / canStillGet)
-// ---------------------------------------------------------------------------
 
 function makeSummaryFromCategories(
   earnedTotal: number,

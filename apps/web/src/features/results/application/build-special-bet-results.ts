@@ -37,8 +37,9 @@ export function buildSpecialBetResults(
       actualRaw = (actual.answers as Record<string, unknown>)[d.key];
     }
 
-    const userPickDisplay = resolveSpecialDisplay(userRaw, d.kind, teamMap, playerMap);
-    const actualAnswerDisplay = resolveSpecialDisplay(actualRaw, d.kind, teamMap, playerMap);
+    const display = makeDisplayResolver(d.kind, teamMap, playerMap);
+    const userPickDisplay = display(userRaw);
+    const actualAnswerDisplay = display(actualRaw);
 
     let hit: SpecialBetResultRow['hit'];
     let pointsAwarded: number;
@@ -117,7 +118,7 @@ function computeSpecialBetPoolStats(
     const typedVal: unknown =
       kind === 'bool' ? rawKey === 'true' : kind === 'number' ? Number(rawKey) : rawKey;
 
-    const display = resolveSpecialDisplay(typedVal, kind, teamMap, playerMap);
+    const display = makeDisplayResolver(kind, teamMap, playerMap)(typedVal);
     const displayValue =
       display === null
         ? '?'
@@ -159,15 +160,16 @@ function computeCurrentLeaderFor(
   }
 }
 
-function resolveSpecialDisplay(
-  raw: unknown,
+function makeDisplayResolver(
   kind: 'player' | 'team' | 'number' | 'bool',
   teamMap: Map<string, string>,
   playerMap: Map<string, string>,
-): string | number | boolean | null {
-  if (raw === undefined || raw === null) return null;
-  if (kind === 'team') return teamMap.get(String(raw)) ?? String(raw);
-  if (kind === 'player') return playerMap.get(String(raw)) ?? String(raw);
-  if (kind === 'bool') return raw as boolean;
-  return raw as number;
+): (raw: unknown) => string | number | boolean | null {
+  return (raw) => {
+    if (raw === undefined || raw === null) return null;
+    if (kind === 'team') return teamMap.get(String(raw)) ?? String(raw);
+    if (kind === 'player') return playerMap.get(String(raw)) ?? String(raw);
+    if (kind === 'bool') return raw as boolean;
+    return raw as number;
+  };
 }

@@ -22,6 +22,7 @@ type RaceParams = {
   allMatches: MatchRow[];
   poolGroupScores: PoolGroupScore[];
   def: Tournament;
+  myTotalCanStillGet: number;
 };
 
 /**
@@ -43,7 +44,7 @@ function projectStillLive(banked: number, maxFromResolved: number, remainingMax:
 }
 
 export function buildPointsRaceView(params: RaceParams): PointsRaceView {
-  const { leaderboard, userId, allMatches, poolGroupScores, def } = params;
+  const { leaderboard, userId, allMatches, poolGroupScores, def, myTotalCanStillGet } = params;
 
   const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
   const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
@@ -126,7 +127,7 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     myBanked,
     myStillLive,
     myProjected,
-    myTotalCanStillGet: 0, // overwritten by getResultsView after per-tab summaries are built
+    myTotalCanStillGet,
     projectedEntries,
     matchMatrix,
     matrixMatches,
