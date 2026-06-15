@@ -1,7 +1,7 @@
 import type { UserId, Points, Scoring, PoolId, TournamentId } from '@cup/engine';
 import type { LeaderboardEntry } from '@cup/db';
 import type { StageProgress } from '@/shared/stage-progress';
-import type { RaceChartData } from '@/features/results';
+import type { RaceChartData } from '@/shared/race-chart';
 
 export type { LeaderboardEntry, StageProgress };
 

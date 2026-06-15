@@ -8,7 +8,7 @@ import {
 } from '@cup/db';
 import type { Tournament, PoolId } from '@cup/engine';
 import type { PoolDetail } from '../domain/types';
-import { buildRaceChartData } from '@/features/results';
+import { buildRaceChartData } from '@/shared/race-chart';
 import { buildStageProgress } from '@/shared/stage-progress';
 
 // getSpecialBetDefs always produces 11 bets for any standard tournament scoring config.

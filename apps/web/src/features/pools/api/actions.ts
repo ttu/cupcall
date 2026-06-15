@@ -32,7 +32,7 @@ import {
 } from '@cup/db';
 import { assertIsMember } from '@/shared/authz';
 import { signInAsExistingGuest } from '@/features/auth';
-import { rescoreCard } from '@/features/predictions';
+import { rescoreCard } from '@/shared/card-scoring';
 import { createPool as appCreatePool } from '../application/create-pool';
 import { joinPool as appJoinPool } from '../application/join-pool';
 import {

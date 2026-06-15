@@ -1,4 +1,5 @@
-export type MatchHit = 'exact' | 'outcome' | 'missed' | 'pending';
+import type { MatchHit, RaceChartPlayer } from '@/shared/race-chart';
+export type { MatchHit, RaceChartPlayer };
 
 export type GroupMatchResultRow = {
   matchId: string;
@@ -163,15 +164,6 @@ export type MatrixMatch = {
   awayTeamName: string;
   actualHome: number;
   actualAway: number;
-};
-
-export type RaceChartPlayer = {
-  userId: string;
-  displayName: string;
-  isCurrentUser: boolean;
-  color: string;
-  /** Cumulative points at each stage (parallel to PointsRaceView.chartStages). */
-  points: number[];
 };
 
 export type ProjectedEntry = {
