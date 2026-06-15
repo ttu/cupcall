@@ -1,6 +1,5 @@
 /**
- * Integration tests for getCardView.
- * Uses a real in-memory PGlite database — no mocks.
+ * Tests for getCardView (integration, real DB) and buildCardView (pure unit, fixture data).
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { makeTestDb } from '@cup/db/testing';
@@ -14,9 +13,26 @@ import {
   getOrCreatePrediction,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
-import { groupId, teamId, bracketMatchKey, tournamentId as asTournamentId } from '@cup/engine';
-import type { UserId, PoolId, TournamentId, PredictionId } from '@cup/engine';
-import { getCardView } from './get-card';
+import {
+  deriveCard,
+  groupId,
+  teamId,
+  matchId,
+  bracketMatchKey,
+  tournamentId as asTournamentId,
+  predictionId as asPredictionId,
+  poolId as asPoolId,
+} from '@cup/engine';
+import type {
+  UserId,
+  PoolId,
+  TournamentId,
+  PredictionId,
+  CardInputs,
+  DerivedCard,
+} from '@cup/engine';
+import { getCardView, buildCardView } from './get-card';
+import type { CardData } from './get-card';
 
 const firstKickoff = new Date('2030-06-11T18:00:00Z');
 const now = new Date('2025-01-01T00:00:00Z');
@@ -551,5 +567,198 @@ describe('getCardView — late joiner per-item lock', () => {
     const match = card?.groups.flatMap((g) => g.matches).find((m) => m.matchId === matchId);
     expect(match?.locked).toBe(false);
     expect(card?.status).toBe('editable');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pure unit tests for buildCardView — no DB required
+// ---------------------------------------------------------------------------
+
+const miniTournamentId2: TournamentId = asTournamentId(miniTournament.id);
+const fixturePredictionId: PredictionId = asPredictionId('pred-fixture');
+const fixturePoolId: PoolId = asPoolId('pool-fixture');
+const fixtureFirstKickoff = new Date('2026-06-11T18:00:00Z');
+
+const emptyInputs: CardInputs = {
+  groupScores: [],
+  knockoutPicks: [],
+  finishScores: {},
+  specials: {},
+};
+
+function makeCardData(overrides: Partial<CardData> = {}): CardData {
+  const firstKickoff = fixtureFirstKickoff;
+  const now = new Date('2025-01-01T00:00:00Z'); // before lock → editable
+  const inputs = emptyInputs;
+  const augmentedGroupScores = inputs.groupScores;
+  const derived: DerivedCard = deriveCard(inputs, miniTournament);
+  return {
+    predictionId: fixturePredictionId,
+    poolId: fixturePoolId,
+    tournamentId: miniTournamentId2,
+    tournament: miniTournament,
+    status: 'editable',
+    lateJoinerDeadline: null,
+    firstKickoff,
+    now,
+    isLateJoiner: false,
+    lateJoinerExpired: false,
+    knownResultMatchIds: new Set(),
+    answeredBetKeys: new Set(),
+    derived,
+    inputs,
+    augmentedGroupScores,
+    ...overrides,
+  };
+}
+
+function groupMatchIds2(g: string) {
+  return miniTournament.groupMatches.filter((m) => m.group === groupId(g)).map((m) => m.id);
+}
+
+describe('buildCardView — lock state (early joiner / no late-joiner)', () => {
+  it('leaves all matches editable before firstKickoff', () => {
+    const card = buildCardView(
+      makeCardData({ now: new Date('2026-06-11T17:59:00Z'), isLateJoiner: false }),
+    );
+    const allMatches = card.groups.flatMap((g) => g.matches);
+    expect(allMatches.every((m) => m.locked === false)).toBe(true);
+  });
+
+  it('locks all matches after firstKickoff for a non-late-joiner', () => {
+    const card = buildCardView(
+      makeCardData({ now: new Date('2026-06-12T00:00:00Z'), isLateJoiner: false }),
+    );
+    const allMatches = card.groups.flatMap((g) => g.matches);
+    expect(allMatches.every((m) => m.locked === true)).toBe(true);
+  });
+});
+
+describe('buildCardView — lock state (late joiner)', () => {
+  const afterLock = new Date('2026-06-12T00:00:00Z');
+  const firstMatchId = groupMatchIds2('A')[0]!;
+
+  it('locks a match whose ID is in knownResultMatchIds (within window)', () => {
+    const card = buildCardView(
+      makeCardData({
+        now: afterLock,
+        isLateJoiner: true,
+        lateJoinerExpired: false,
+        knownResultMatchIds: new Set([firstMatchId]),
+      }),
+    );
+    const match = card.groups.flatMap((g) => g.matches).find((m) => m.matchId === firstMatchId);
+    expect(match?.locked).toBe(true);
+  });
+
+  it('leaves a match editable when it has no result (within window)', () => {
+    const card = buildCardView(
+      makeCardData({
+        now: afterLock,
+        isLateJoiner: true,
+        lateJoinerExpired: false,
+        knownResultMatchIds: new Set(), // no results known
+      }),
+    );
+    const match = card.groups.flatMap((g) => g.matches).find((m) => m.matchId === firstMatchId);
+    expect(match?.locked).toBe(false);
+  });
+
+  it('locks all matches when the late-joiner window has expired', () => {
+    const card = buildCardView(
+      makeCardData({
+        now: afterLock,
+        isLateJoiner: true,
+        lateJoinerExpired: true,
+        knownResultMatchIds: new Set(), // empty — expiry takes precedence
+      }),
+    );
+    const allMatches = card.groups.flatMap((g) => g.matches);
+    expect(allMatches.every((m) => m.locked === true)).toBe(true);
+  });
+});
+
+describe('buildCardView — status and lateJoinerDeadline pass-through', () => {
+  it('reflects the status from CardData', () => {
+    expect(buildCardView(makeCardData({ status: 'editable' })).status).toBe('editable');
+    expect(buildCardView(makeCardData({ status: 'locked' })).status).toBe('locked');
+    expect(
+      buildCardView(
+        makeCardData({
+          status: 'partial',
+          lateJoinerDeadline: new Date('2026-06-12T14:00:00Z'),
+        }),
+      ).lateJoinerDeadline,
+    ).toEqual(new Date('2026-06-12T14:00:00Z'));
+  });
+});
+
+describe('buildCardView — qualifying highlights', () => {
+  it('marks no team as qualifying when the group is incomplete', () => {
+    const card = buildCardView(makeCardData());
+    const groupA = card.groups.find((g) => g.groupId === groupId('A'))!;
+    expect(groupA.complete).toBe(false);
+    expect(groupA.derivedOrder.every((e) => e.qualifies === false)).toBe(true);
+  });
+
+  it('marks top-2 as qualifying when a group is fully predicted', () => {
+    const groupAMatchIds = groupMatchIds2('A');
+    const groupScores = groupAMatchIds.map((mid) => ({ matchId: mid, home: 0, away: 0 }));
+    const inputs: CardInputs = { ...emptyInputs, groupScores };
+    const derived: DerivedCard = deriveCard(inputs, miniTournament);
+    const card = buildCardView(
+      makeCardData({ inputs, derived, augmentedGroupScores: groupScores }),
+    );
+
+    const groupA = card.groups.find((g) => g.groupId === groupId('A'))!;
+    expect(groupA.complete).toBe(true);
+    expect(groupA.derivedOrder[0]!.qualifies).toBe('auto');
+    expect(groupA.derivedOrder[1]!.qualifies).toBe('auto');
+    expect(groupA.derivedOrder[2]!.qualifies).toBe(false);
+    expect(groupA.derivedOrder[3]!.qualifies).toBe(false);
+  });
+});
+
+describe('buildCardView — completion percentage', () => {
+  it('returns 0% for an empty card', () => {
+    const card = buildCardView(makeCardData());
+    expect(card.completionPercent).toBe(0);
+  });
+
+  it('increases completionPercent when group scores are present', () => {
+    const groupAMatchIds = groupMatchIds2('A');
+    const groupScores = groupAMatchIds.map((mid) => ({ matchId: mid, home: 1, away: 0 }));
+    const inputs: CardInputs = { ...emptyInputs, groupScores };
+    const derived: DerivedCard = deriveCard(inputs, miniTournament);
+    const filledCard = buildCardView(
+      makeCardData({ inputs, derived, augmentedGroupScores: groupScores }),
+    );
+    expect(filledCard.completionPercent).toBeGreaterThan(0);
+  });
+});
+
+describe('buildCardView — bracket slot resolution', () => {
+  it('shows null teams for entry-round slots when groups are incomplete', () => {
+    const card = buildCardView(makeCardData());
+    const qfRound = card.bracket.rounds.find((r) => r.label === 'QF')!;
+    const qf1 = qfRound.ties.find((t) => t.bracketMatchKey === bracketMatchKey('qf1'))!;
+    expect(qf1.homeTeamId).toBeNull();
+    expect(qf1.awayTeamId).toBeNull();
+  });
+
+  it('resolves slot teams when all groups are complete', () => {
+    const allGroupScores = ['A', 'B', 'C', 'D'].flatMap((g) =>
+      groupMatchIds2(g).map((mid) => ({ matchId: mid, home: 0, away: 0 })),
+    );
+    const inputs: CardInputs = { ...emptyInputs, groupScores: allGroupScores };
+    const derived: DerivedCard = deriveCard(inputs, miniTournament);
+    const card = buildCardView(
+      makeCardData({ inputs, derived, augmentedGroupScores: allGroupScores }),
+    );
+    const qfRound = card.bracket.rounds.find((r) => r.label === 'QF')!;
+    const qf1 = qfRound.ties.find((t) => t.bracketMatchKey === bracketMatchKey('qf1'))!;
+    // qf1 = 1A vs 2B; all draws → seed order: A1=1A, B2=2B
+    expect(qf1.homeTeamId).toBe(teamId('A1'));
+    expect(qf1.awayTeamId).toBe(teamId('B2'));
   });
 });

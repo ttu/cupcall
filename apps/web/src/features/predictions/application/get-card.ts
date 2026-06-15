@@ -6,7 +6,16 @@ import type { AppSchema } from '@/shared/db';
 import type { Db } from '@cup/db';
 import { getPrediction, getOrCreatePrediction, getPredictionInputs } from '@cup/db';
 import { deriveCard, deriveGroupOrders, matchId, userId as brandUserId } from '@cup/engine';
-import type { Tournament, GroupId, TeamId, PoolId, TournamentId } from '@cup/engine';
+import type {
+  Tournament,
+  GroupId,
+  TeamId,
+  PoolId,
+  TournamentId,
+  PredictionId,
+  CardInputs,
+  DerivedCard,
+} from '@cup/engine';
 import type {
   CardView,
   GroupView,
@@ -16,6 +25,7 @@ import type {
   BracketRoundView,
   FinishMatchView,
   SpecialBetView,
+  PredictionStatus,
 } from '../domain/types';
 import { getSpecialBetDefs } from '../domain/special-bet-defs';
 import { LATE_JOINER_WINDOW_MS } from '@/shared/authz';
@@ -48,10 +58,38 @@ type Params = {
 };
 
 /**
+ * All data needed to build a CardView — no DB references.
+ * fetchCardData produces this; buildCardView consumes it.
+ */
+export type CardData = {
+  predictionId: PredictionId;
+  poolId: PoolId;
+  tournamentId: TournamentId;
+  tournament: Tournament;
+  status: PredictionStatus;
+  lateJoinerDeadline: Date | null;
+  firstKickoff: Date;
+  now: Date;
+  isLateJoiner: boolean;
+  lateJoinerExpired: boolean;
+  knownResultMatchIds: Set<string>;
+  answeredBetKeys: Set<string>;
+  derived: DerivedCard;
+  inputs: CardInputs;
+  augmentedGroupScores: CardInputs['groupScores'];
+};
+
+/**
  * Builds the full CardView for the given (poolId, userId).
  * Returns null if no prediction exists and createIfMissing is false.
  */
 export async function getCardView(params: Params): Promise<CardView | null> {
+  const data = await fetchCardData(params);
+  if (!data) return null;
+  return buildCardView(data);
+}
+
+async function fetchCardData(params: Params): Promise<CardData | null> {
   const {
     db,
     poolId,
@@ -67,25 +105,11 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     actualGroupMatchScores,
   } = params;
 
-  // A late joiner is someone who joined at or after the tournament lock.
-  // They get per-item lock state within a 4-hour window from joining.
   const isLateJoiner = joinedAt !== undefined && now >= firstKickoff && joinedAt >= firstKickoff;
   const lateJoinerDeadline = isLateJoiner
     ? new Date(joinedAt!.getTime() + LATE_JOINER_WINDOW_MS)
     : null;
   const lateJoinerExpired = lateJoinerDeadline !== null && now >= lateJoinerDeadline;
-
-  function itemLocked(matchIdOrKey: string): boolean {
-    if (!isLateJoiner) return now >= firstKickoff;
-    if (lateJoinerExpired) return true;
-    return knownResultMatchIds.has(matchIdOrKey);
-  }
-
-  function betLocked(betKey: string): boolean {
-    if (!isLateJoiner) return now >= firstKickoff;
-    if (lateJoinerExpired) return true;
-    return answeredBetKeys.has(betKey);
-  }
 
   // 1. Get or create the prediction row
   let prediction: Awaited<ReturnType<typeof getPrediction>> | undefined;
@@ -123,11 +147,67 @@ export async function getCardView(params: Params): Promise<CardView | null> {
   // 4. Derive the card (using augmented group scores so group orders reflect actual results)
   const derived = deriveCard({ ...inputs, groupScores: augmentedGroupScores }, tournament);
 
-  // 5. Build team lookup map
-  const teamMap = new Map<TeamId, string>(tournament.teams.map((t) => [t.id, t.name]));
-  const teamName = (id: TeamId | null) => (id ? (teamMap.get(id) ?? id) : null);
+  const status: PredictionStatus =
+    now < firstKickoff ? 'editable' : isLateJoiner && !lateJoinerExpired ? 'partial' : 'locked';
 
-  // 6. Build group score views
+  return {
+    predictionId: prediction.id,
+    poolId,
+    tournamentId,
+    tournament,
+    status,
+    lateJoinerDeadline: status === 'partial' ? lateJoinerDeadline : null,
+    firstKickoff,
+    now,
+    isLateJoiner,
+    lateJoinerExpired,
+    knownResultMatchIds,
+    answeredBetKeys,
+    derived,
+    inputs,
+    augmentedGroupScores,
+  };
+}
+
+/**
+ * Builds a CardView from pre-fetched, pre-derived domain data.
+ * Pure — no DB access, deterministic, unit-testable with fixture data.
+ */
+export function buildCardView(data: CardData): CardView {
+  const {
+    predictionId,
+    poolId,
+    tournamentId,
+    tournament,
+    status,
+    lateJoinerDeadline,
+    firstKickoff,
+    now,
+    isLateJoiner,
+    lateJoinerExpired,
+    knownResultMatchIds,
+    answeredBetKeys,
+    derived,
+    inputs,
+    augmentedGroupScores,
+  } = data;
+
+  function itemLocked(matchIdOrKey: string): boolean {
+    if (!isLateJoiner) return now >= firstKickoff;
+    if (lateJoinerExpired) return true;
+    return knownResultMatchIds.has(matchIdOrKey);
+  }
+
+  function betLocked(betKey: string): boolean {
+    if (!isLateJoiner) return now >= firstKickoff;
+    if (lateJoinerExpired) return true;
+    return answeredBetKeys.has(betKey);
+  }
+
+  // Build team lookup map
+  const teamMap = new Map<TeamId, string>(tournament.teams.map((t) => [t.id, t.name]));
+
+  // Build group score views
   const groupScoreMap = new Map(augmentedGroupScores.map((gs) => [gs.matchId, gs]));
 
   const autoQualify = tournament.qualification.autoQualifyPerGroup;
@@ -185,20 +265,16 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     };
   });
 
-  // 6. Build bracket view
-
+  // Build bracket view
   const knockoutPickMap = new Map(
     inputs.knockoutPicks.map((kp) => [kp.bracketMatchKey, kp.winner]),
   );
   const { bracket } = tournament;
 
   // Build rounds: group ties by round (order: entry round → ... → SF), exclude Final/bronze
-  const roundKeys = bracket.rounds.filter((r) => r !== 'Final' && r !== 'bronze');
-
   const tiesByRound = new Map<string, TieView[]>();
   for (const slot of bracket.slots) {
-    // Determine which round this slot belongs to by matching against bracket rounds
-    // The slot's match key starts with a prefix (e.g., "ro32-", "ro16-", "qf-", "sf-")
+    // The slot's match key prefix determines its round (e.g., "ro32-", "ro16-", "qf-", "sf-")
     const roundLabel = getRoundLabel(slot.match, bracket.rounds);
     if (!tiesByRound.has(roundLabel)) tiesByRound.set(roundLabel, []);
 
@@ -303,7 +379,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     })),
   };
 
-  // 7. Special bets
+  // Special bets
   const defs = getSpecialBetDefs(tournament.scoring);
   const playerMap = new Map(tournament.players.map((p) => [p.id, p.name]));
 
@@ -326,7 +402,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     return { ...def, value: displayValue, storedValue, locked: betLocked(def.key) };
   });
 
-  // 8. Completion
+  // Completion
   const finalFilled = isFinishFilled(
     inputs.finishScores.final,
     knockoutPickMap.get(bracket.finalMatch),
@@ -355,11 +431,8 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     Object.keys(inputs.specials).length;
   const completionPercent = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
-  const status =
-    now < firstKickoff ? 'editable' : isLateJoiner && !lateJoinerExpired ? 'partial' : 'locked';
-
   return {
-    predictionId: prediction.id,
+    predictionId,
     poolId,
     tournamentId,
     status,
@@ -367,7 +440,7 @@ export async function getCardView(params: Params): Promise<CardView | null> {
     groups,
     bracket: bracketView,
     specials,
-    lateJoinerDeadline: status === 'partial' ? lateJoinerDeadline : null,
+    lateJoinerDeadline,
   };
 }
 

@@ -19,7 +19,8 @@ export type {
 export { getSpecialBetDefs } from './domain/special-bet-defs';
 export type { MatchScore } from './ui/ReadOnlyCard';
 
-export { getCardView } from './application/get-card';
+export { getCardView, buildCardView } from './application/get-card';
+export type { CardData } from './application/get-card';
 export { loadActualResults } from './application/load-actual-results';
 export { rescoreCard } from './application/rescore';
 
