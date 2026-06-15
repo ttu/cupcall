@@ -11,6 +11,14 @@
 /** Late joiners have this many ms from joinedAt to fill in predictions. */
 export const LATE_JOINER_WINDOW_MS = 4 * 60 * 60 * 1000;
 
+/**
+ * Whether a specific prediction item is editable by a late joiner.
+ *  - 'unlocked'  — item has no known result yet; late joiners may edit it.
+ *  - 'locked'    — item already has a result; late joiners are blocked.
+ *  - 'pending'   — result status unknown; blocked (safe default for bulk ops).
+ */
+export type ItemLockState = 'locked' | 'unlocked' | 'pending';
+
 import type { UserId, PoolId } from '@cup/engine';
 import { isMember, getMember } from '@cup/db';
 import type { Actor } from './actor';
@@ -91,9 +99,9 @@ export async function assertIsMember(db: PolicyDb, poolId: PoolId, userId: UserI
  *  - Before lockTime: always allowed.
  *  - After lockTime, early joiner (joinedAt < lockTime): always locked.
  *  - After lockTime, late joiner (joinedAt >= lockTime): allowed only when
- *    `itemHasResult` is explicitly `false` (the item has no known result yet).
- *    When `itemHasResult` is omitted or `true`, late joiners are blocked too —
- *    this is the safe default for bulk operations (clear, import).
+ *    `itemLock` is `'unlocked'` (the item has no known result yet).
+ *    `'locked'`, `'pending'`, or omitted all block late joiners — safe default
+ *    for bulk operations (clear, import).
  *
  * Membership is checked BEFORE the lock so a non-member/kicked caller always
  * gets `ForbiddenError`, never a `LockedError` that would leak pool lock state.
@@ -105,18 +113,15 @@ export async function assertCanEditOwnCard(
     pool,
     lockTime,
     now,
-    itemHasResult,
+    itemLock,
   }: {
     actor: Actor | null;
     pool: PoolRef;
     lockTime: Date;
     now: Date;
-    /**
-     * Whether the specific item being saved already has a known result.
-     * Pass `false` to allow late joiners to edit this item.
-     * Omit (or pass `true`) to block late joiners — safe default for bulk ops.
-     */
-    itemHasResult?: boolean;
+    /** Pass `'unlocked'` to allow late joiners to edit this item. Omit or pass
+     *  `'locked'`/`'pending'` to block them — safe default for bulk ops. */
+    itemLock?: ItemLockState;
   },
 ): Promise<void> {
   assertSignedIn(actor);
@@ -139,7 +144,7 @@ export async function assertCanEditOwnCard(
       throw new LockedError(
         `Late joiner prediction window closed at ${deadline.toISOString()}. Current time: ${now.toISOString()}.`,
       );
-    if (itemHasResult === false) return;
+    if (itemLock === 'unlocked') return;
   }
 
   throw new LockedError(

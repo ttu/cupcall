@@ -283,31 +283,43 @@ describe('authz policy', () => {
     // Late joiner (joined at or after lockTime) — per-item access
     // -------------------------------------------------------------------------
 
-    it('allows a late joiner to edit an item with no result (itemHasResult: false)', async () => {
+    it("allows a late joiner to edit an item with no result (itemLock: 'unlocked')", async () => {
       await expect(
         assertCanEditOwnCard(db, {
           actor: actor(lateMemberId),
           pool: { id: poolId, ownerId },
           lockTime: LOCK_TIME,
           now: AFTER_LOCK,
-          itemHasResult: false,
+          itemLock: 'unlocked',
         }),
       ).resolves.not.toThrow();
     });
 
-    it('blocks a late joiner when itemHasResult is true', async () => {
+    it("blocks a late joiner when itemLock is 'locked'", async () => {
       await expect(
         assertCanEditOwnCard(db, {
           actor: actor(lateMemberId),
           pool: { id: poolId, ownerId },
           lockTime: LOCK_TIME,
           now: AFTER_LOCK,
-          itemHasResult: true,
+          itemLock: 'locked',
         }),
       ).rejects.toThrowError(LockedError);
     });
 
-    it('blocks a late joiner when itemHasResult is omitted (safe default)', async () => {
+    it("blocks a late joiner when itemLock is 'pending'", async () => {
+      await expect(
+        assertCanEditOwnCard(db, {
+          actor: actor(lateMemberId),
+          pool: { id: poolId, ownerId },
+          lockTime: LOCK_TIME,
+          now: AFTER_LOCK,
+          itemLock: 'pending',
+        }),
+      ).rejects.toThrowError(LockedError);
+    });
+
+    it('blocks a late joiner when itemLock is omitted (safe default)', async () => {
       await expect(
         assertCanEditOwnCard(db, {
           actor: actor(lateMemberId),
@@ -318,14 +330,14 @@ describe('authz policy', () => {
       ).rejects.toThrowError(LockedError);
     });
 
-    it('blocks an early joiner after lock even when itemHasResult is false', async () => {
+    it("blocks an early joiner after lock even when itemLock is 'unlocked'", async () => {
       await expect(
         assertCanEditOwnCard(db, {
           actor: actor(memberId),
           pool: { id: poolId, ownerId },
           lockTime: LOCK_TIME,
           now: AFTER_LOCK,
-          itemHasResult: false,
+          itemLock: 'unlocked',
         }),
       ).rejects.toThrowError(LockedError);
     });
@@ -345,7 +357,7 @@ describe('authz policy', () => {
           pool: { id: poolId, ownerId },
           lockTime: LOCK_TIME,
           now: withinWindow,
-          itemHasResult: false,
+          itemLock: 'unlocked',
         }),
       ).resolves.not.toThrow();
     });
@@ -360,7 +372,7 @@ describe('authz policy', () => {
           pool: { id: poolId, ownerId },
           lockTime: LOCK_TIME,
           now: afterWindow,
-          itemHasResult: false,
+          itemLock: 'unlocked',
         }),
       ).rejects.toThrowError(LockedError);
     });

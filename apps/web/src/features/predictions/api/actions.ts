@@ -228,13 +228,13 @@ async function executeSelfSave(
     if (!actor) throw new Error('Not signed in');
     const tournamentDef = tournament.definition!;
 
-    const itemHasResult = await getItemHasResult(pool, tournamentDef);
+    const itemLock = (await getItemHasResult(pool, tournamentDef)) ? 'locked' : 'unlocked';
     await assertCanEditOwnCard(db, {
       actor: { userId: actor.userId },
       pool: { id: pool.id, ownerId: pool.ownerId },
       lockTime: tournament.firstKickoff,
       now: new Date(),
-      itemHasResult,
+      itemLock,
     });
 
     const prediction = await getOrCreatePrediction(db, {
