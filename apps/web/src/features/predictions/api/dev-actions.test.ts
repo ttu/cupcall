@@ -18,12 +18,13 @@ vi.mock('@/shared/db', () => ({
   },
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
-vi.mock('@/features/auth', () => ({ getCurrentActor: vi.fn() }));
+vi.mock('@/features/auth', () => ({ getCurrentActor: vi.fn(), getActorOrThrow: vi.fn() }));
 
 import { devFillRandomGroupScores } from './dev-actions';
-import { getCurrentActor } from '@/features/auth';
+import { getCurrentActor, getActorOrThrow } from '@/features/auth';
 
 const mockedGetActor = vi.mocked(getCurrentActor);
+const mockedGetActorOrThrow = vi.mocked(getActorOrThrow);
 
 const firstKickoff = new Date('2099-06-11T18:00:00Z');
 const emptyKickoffs = new Map<string, Date | null>();
@@ -60,6 +61,7 @@ describe('devFillRandomGroupScores', () => {
     poolId = pool.id;
 
     mockedGetActor.mockResolvedValue({ userId: actorId });
+    mockedGetActorOrThrow.mockResolvedValue({ userId: actorId });
   });
 
   it('returns ok:false with "Dev only" when NODE_ENV is not development', async () => {
