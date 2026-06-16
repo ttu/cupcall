@@ -88,41 +88,65 @@ function actualGroupScoresMap(actual: ActualResults): Map<string, { home: number
   );
 }
 
-async function invalidatePicksAfterKnockoutPickChange(
-  predictionId: PredictionId,
-  updatedInputs: Awaited<ReturnType<typeof getPredictionInputs>>,
-  tournamentDef: Tournament,
-  actualGroupMatchScores?: Map<string, { home: number; away: number }>,
-) {
-  const savedMatchIds = new Set(updatedInputs.groupScores.map((gs) => gs.matchId as string));
-  const augmentedScores =
-    actualGroupMatchScores && actualGroupMatchScores.size > 0
-      ? [
-          ...updatedInputs.groupScores,
-          ...[...actualGroupMatchScores.entries()]
-            .filter(([mid]) => !savedMatchIds.has(mid))
-            .map(([mid, result]) => ({ matchId: mid, home: result.home, away: result.away })),
-        ]
-      : updatedInputs.groupScores;
+/**
+ * Overlays actual results onto saved group scores, filling in matches that
+ * have a real result but no user prediction yet (late joiners or locked matches).
+ */
+function overlayActualScores(
+  groupScores: CardInputs['groupScores'],
+  actual: Map<string, { home: number; away: number }>,
+): CardInputs['groupScores'] {
+  if (!actual.size) return groupScores;
+  const savedMatchIds = new Set(groupScores.map((gs) => gs.matchId as string));
+  return [
+    ...groupScores,
+    ...[...actual.entries()]
+      .filter(([mid]) => !savedMatchIds.has(mid))
+      .map(([mid, r]) => ({ matchId: mid, home: r.home, away: r.away })),
+  ] as CardInputs['groupScores'];
+}
 
+/**
+ * Derives group orders and qualifiers from augmented group scores, finds any
+ * knockout picks that are now invalid, and deletes them.
+ */
+async function applyPickInvalidation(
+  predictionId: PredictionId,
+  augmentedGroupScores: CardInputs['groupScores'],
+  knockoutPicks: CardInputs['knockoutPicks'],
+  tournamentDef: Tournament,
+): Promise<void> {
   const groupOrders = deriveGroupOrders(
     tournamentDef,
-    augmentedScores as Parameters<typeof deriveGroupOrders>[1],
+    augmentedGroupScores as Parameters<typeof deriveGroupOrders>[1],
   );
   const qualifiers = selectQualifiers(
     tournamentDef,
-    augmentedScores as Parameters<typeof selectQualifiers>[1],
+    augmentedGroupScores as Parameters<typeof selectQualifiers>[1],
     groupOrders,
   );
   const invalidKeys = findInvalidatedPickKeys(
     tournamentDef,
     groupOrders,
     qualifiers,
-    updatedInputs.knockoutPicks,
+    knockoutPicks,
   );
   if (invalidKeys.length > 0) {
     await deleteKnockoutPicks(db, predictionId, invalidKeys);
   }
+}
+
+async function invalidatePicksAfterKnockoutPickChange(
+  predictionId: PredictionId,
+  updatedInputs: Awaited<ReturnType<typeof getPredictionInputs>>,
+  tournamentDef: Tournament,
+  actualGroupMatchScores?: Map<string, { home: number; away: number }>,
+) {
+  const augmented = overlayActualScores(
+    updatedInputs.groupScores,
+    actualGroupMatchScores ?? new Map(),
+  );
+  await applyPickInvalidation(predictionId, augmented, updatedInputs.knockoutPicks, tournamentDef);
 }
 
 /**
@@ -160,38 +184,12 @@ async function invalidatePicksAfterGroupScoreChange(
   tournamentDef: Tournament,
   actualGroupMatchScores?: Map<string, { home: number; away: number }>,
 ) {
-  const savedScores = existingInputs.groupScores.filter((s) => s.matchId !== matchId);
-  const savedMatchIds = new Set(savedScores.map((gs) => gs.matchId as string));
-  savedMatchIds.add(matchId);
-
-  const updatedScores = [
-    ...savedScores,
+  const withNewScore = [
+    ...existingInputs.groupScores.filter((s) => s.matchId !== matchId),
     { matchId, home, away },
-    // Overlay actual scores for locked group matches not covered by user predictions
-    ...(actualGroupMatchScores
-      ? [...actualGroupMatchScores.entries()]
-          .filter(([mid]) => !savedMatchIds.has(mid))
-          .map(([mid, result]) => ({ matchId: mid, home: result.home, away: result.away }))
-      : []),
-  ];
-  const newGroupOrders = deriveGroupOrders(
-    tournamentDef,
-    updatedScores as Parameters<typeof deriveGroupOrders>[1],
-  );
-  const newQualifiers = selectQualifiers(
-    tournamentDef,
-    updatedScores as Parameters<typeof selectQualifiers>[1],
-    newGroupOrders,
-  );
-  const invalidKeys = findInvalidatedPickKeys(
-    tournamentDef,
-    newGroupOrders,
-    newQualifiers,
-    existingInputs.knockoutPicks,
-  );
-  if (invalidKeys.length > 0) {
-    await deleteKnockoutPicks(db, predictionId, invalidKeys);
-  }
+  ] as CardInputs['groupScores'];
+  const augmented = overlayActualScores(withNewScore, actualGroupMatchScores ?? new Map());
+  await applyPickInvalidation(predictionId, augmented, existingInputs.knockoutPicks, tournamentDef);
 }
 
 // ---------------------------------------------------------------------------
