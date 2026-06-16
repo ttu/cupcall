@@ -26,10 +26,12 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   const actor = await getCurrentActor();
   if (!actor) redirect('/');
 
-  const detail = await getPoolDetail(db, poolId);
+  const [detail, memberResult] = await Promise.all([
+    getPoolDetail(db, poolId),
+    isMember(db, poolId, actor.userId),
+  ]);
   if (!detail) notFound();
-
-  if (!(await isMember(db, poolId, actor.userId))) notFound();
+  if (!memberResult) notFound();
 
   const isOwner = actor.userId === detail.ownerId;
   const hasEdits = isOwner ? await hasEditsForPool(db, poolId) : false;
