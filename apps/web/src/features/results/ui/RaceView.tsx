@@ -54,21 +54,39 @@ export function RaceView({
         )}
       </div>
 
-      <div className="border-l border-line pb-6 pl-5.5 bg-transparent md:bg-surface-2">
-        <div className="bg-surface-2 rounded-xl pt-4 overflow-hidden">
-          <div className="px-4.5 pb-3">
-            <div className="section-label mb-1">Projected final table</div>
-            <p className="text-xs text-ink-muted mt-1.5 leading-[1.5] m-0">
-              If every surviving bracket pick lands. Updates after each result.
-            </p>
-          </div>
-          <ProjectedStandings entries={race.projectedEntries} />
-          {!viewerMode && (
-            <div className="p-[14px_16px_16px]">
-              <SwingCard entries={race.projectedEntries} stillLive={race.myStillLive} />
-            </div>
-          )}
+      <ProjectedFinalSidebar
+        entries={race.projectedEntries}
+        myStillLive={race.myStillLive}
+        viewerMode={viewerMode}
+      />
+    </div>
+  );
+}
+
+function ProjectedFinalSidebar({
+  entries,
+  myStillLive,
+  viewerMode,
+}: {
+  entries: PointsRaceView['projectedEntries'];
+  myStillLive: number;
+  viewerMode: boolean;
+}): ReactElement {
+  return (
+    <div className="border-l border-line pb-6 pl-5.5 bg-transparent md:bg-surface-2">
+      <div className="bg-surface-2 rounded-xl pt-4 overflow-hidden">
+        <div className="px-4.5 pb-3">
+          <div className="section-label mb-1">Projected final table</div>
+          <p className="text-xs text-ink-muted mt-1.5 leading-[1.5] m-0">
+            If every surviving bracket pick lands. Updates after each result.
+          </p>
         </div>
+        <ProjectedStandings entries={entries} />
+        {!viewerMode && (
+          <div className="p-[14px_16px_16px]">
+            <SwingCard entries={entries} stillLive={myStillLive} />
+          </div>
+        )}
       </div>
     </div>
   );

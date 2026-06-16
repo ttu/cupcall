@@ -17,6 +17,65 @@ import { PointsSummaryPanel } from './PointsSummaryPanel';
 
 type Tab = 'group' | 'knockout' | 'race' | 'specials';
 
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'group', label: 'Group Stage' },
+  { id: 'knockout', label: 'Knockout' },
+  { id: 'specials', label: 'Specials' },
+  { id: 'race', label: 'Points Race' },
+];
+
+function ResultsTabNav({
+  active,
+  onSelect,
+}: {
+  active: Tab;
+  onSelect: (t: Tab) => void;
+}): ReactElement {
+  return (
+    <nav aria-label="Results sections" className="flex border-b border-line-soft mb-6">
+      {TABS.map(({ id, label }) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onSelect(id)}
+          data-testid={`results-tab-${id}`}
+          className={cn(
+            'flex-1 p-[11px_12px_14px] bg-none border-0 cursor-pointer font-cup-ui text-[13px] font-bold transition-colors whitespace-nowrap',
+            active === id
+              ? 'shadow-[inset_0_-3px_0_var(--green-500)] text-ink'
+              : 'shadow-none text-ink-muted',
+          )}
+        >
+          {label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function GroupJumpNav({
+  groupIds,
+  onJump,
+}: {
+  groupIds: string[];
+  onJump: (id: string) => void;
+}): ReactElement {
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {groupIds.map((id) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onJump(id)}
+          className="w-9.5 h-9.5 rounded-cup-sm border-0 cursor-pointer font-cup-display text-base font-normal bg-surface-2 text-ink-soft shadow-[inset_0_0_0_1px_var(--line)] transition-[background]"
+        >
+          {id}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 type Props = { view: ResultsView; initialTab?: Tab; viewerMode?: boolean };
 
 export function ResultsPageClient({
@@ -37,57 +96,15 @@ export function ResultsPageClient({
 
   return (
     <div>
-      {/* Tabs */}
-      <nav aria-label="Results sections" className="flex border-b border-line-soft mb-6">
-        {(['group', 'knockout', 'specials', 'race'] as Tab[]).map((tab) => {
-          const active = activeTab === tab;
-          const label =
-            tab === 'group'
-              ? 'Group Stage'
-              : tab === 'knockout'
-                ? 'Knockout'
-                : tab === 'specials'
-                  ? 'Specials'
-                  : 'Points Race';
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              data-testid={`results-tab-${tab}`}
-              className={cn(
-                'flex-1 p-[11px_12px_14px] bg-none border-0 cursor-pointer font-cup-ui text-[13px] font-bold transition-colors whitespace-nowrap',
-                active
-                  ? 'shadow-[inset_0_-3px_0_var(--green-500)] text-ink'
-                  : 'shadow-none text-ink-muted',
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </nav>
+      <ResultsTabNav active={activeTab} onSelect={setActiveTab} />
 
       {activeTab === 'group' && (
         <section aria-label="Group stage results" className="flex flex-col gap-6">
           {view.userGroupSummary && <PointsSummaryPanel summary={view.userGroupSummary} />}
           <TodayMatchesFeed groups={view.groupResults} />
 
-          {/* Group jump nav */}
-          <div className="flex gap-1.5 flex-wrap">
-            {view.groupResults.map((g) => (
-              <button
-                key={g.groupId}
-                type="button"
-                onClick={() => jumpToGroup(g.groupId)}
-                className="w-9.5 h-9.5 rounded-cup-sm border-0 cursor-pointer font-cup-display text-base font-normal bg-surface-2 text-ink-soft shadow-[inset_0_0_0_1px_var(--line)] transition-[background]"
-              >
-                {g.groupId}
-              </button>
-            ))}
-          </div>
+          <GroupJumpNav groupIds={view.groupResults.map((g) => g.groupId)} onJump={jumpToGroup} />
 
-          {/* All groups stacked */}
           {view.groupResults.map((group) => (
             <div
               key={group.groupId}
@@ -99,7 +116,6 @@ export function ResultsPageClient({
             </div>
           ))}
 
-          {/* Best third place cross-group standings */}
           {view.best3rdStanding && (
             <div className="grid gap-3 items-start md:grid-cols-[minmax(0,1fr)_326px]">
               <div />

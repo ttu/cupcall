@@ -20,6 +20,48 @@ type Props = {
   bronzeMatch: KnockoutMatchView | null;
 };
 
+function BracketInfoBanner(): ReactElement {
+  return (
+    <div className="flex items-start gap-2.5 p-[10px_14px] rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
+      <span className="font-extrabold">⚡</span>
+      <span>
+        Results drop into your bracket as we enter them.{' '}
+        <strong>Green = your pick survived, red = it&apos;s out.</strong>
+      </span>
+    </div>
+  );
+}
+
+type FinalAndBronzeColumnProps = {
+  finalMatch: KnockoutMatchView | null;
+  bronzeMatch: KnockoutMatchView | null;
+  paddingTop: number;
+};
+
+function FinalAndBronzeColumn({
+  finalMatch,
+  bronzeMatch,
+  paddingTop,
+}: FinalAndBronzeColumnProps): ReactElement | null {
+  if (!finalMatch && !bronzeMatch) return null;
+  return (
+    <div className="min-w-55" style={{ paddingTop }}>
+      {finalMatch && (
+        <>
+          <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>
+          <FinalResultCard match={finalMatch} matchKey="final" />
+        </>
+      )}
+      {bronzeMatch && (
+        <>
+          <div className="eyebrow text-ink-muted mt-4 mb-2 pl-0.5">3rd Place</div>
+          <FinalResultCard match={bronzeMatch} matchKey="bronze" />
+        </>
+      )}
+    </div>
+  );
+}
+
 export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
   if (rounds.length === 0) {
     return (
@@ -40,16 +82,8 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Info banner */}
-      <div className="flex items-start gap-2.5 p-[10px_14px] rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
-        <span className="font-extrabold">⚡</span>
-        <span>
-          Results drop into your bracket as we enter them.{' '}
-          <strong>Green = your pick survived, red = it&apos;s out.</strong>
-        </span>
-      </div>
+      <BracketInfoBanner />
 
-      {/* Bracket columns */}
       <div className="overflow-x-auto pb-2">
         <div className="flex gap-4 items-start min-w-max">
           {mainRounds.map((round, i) => (
@@ -68,23 +102,11 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
             </div>
           ))}
 
-          {/* Final + Bronze column */}
-          {(finalMatch || bronzeMatch) && (
-            <div className="min-w-55" style={{ paddingTop: columnPaddingTop(finalColumnIndex) }}>
-              {finalMatch && (
-                <>
-                  <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>
-                  <FinalResultCard match={finalMatch} matchKey="final" />
-                </>
-              )}
-              {bronzeMatch && (
-                <>
-                  <div className="eyebrow text-ink-muted mt-4 mb-2 pl-0.5">3rd Place</div>
-                  <FinalResultCard match={bronzeMatch} matchKey="bronze" />
-                </>
-              )}
-            </div>
-          )}
+          <FinalAndBronzeColumn
+            finalMatch={finalMatch}
+            bronzeMatch={bronzeMatch}
+            paddingTop={columnPaddingTop(finalColumnIndex)}
+          />
         </div>
       </div>
     </div>

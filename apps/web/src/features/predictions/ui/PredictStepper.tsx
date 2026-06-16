@@ -17,6 +17,51 @@ const STEPS: { id: Step; label: string; n: number }[] = [
   { id: 'specials', label: 'Special Bets', n: 3 },
 ];
 
+type StepNavItem = { id: Step; label: string; n: number; done: boolean };
+
+type StepNavProps = {
+  steps: StepNavItem[];
+  active: Step;
+  onSelect: (s: Step) => void;
+};
+
+function PredictStepNav({ steps, active, onSelect }: StepNavProps): ReactElement {
+  return (
+    <nav aria-label="Card sections" className="flex border-b border-line-soft">
+      {steps.map(({ id, label, n, done }) => {
+        const isActive = active === id;
+        const isDone = done && !isActive;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onSelect(id)}
+            aria-current={isActive ? 'step' : undefined}
+            className={cn(
+              'flex-1 pt-[11px] px-3 pb-3.5 bg-transparent border-0 cursor-pointer flex items-center justify-center gap-2 font-cup-ui text-[13px] font-bold transition-colors',
+              isActive ? 'text-ink shadow-[inset_0_-3px_0_var(--green-500)]' : 'text-ink-muted',
+            )}
+          >
+            <span
+              className={cn(
+                'w-5.5 h-5.5 rounded-full grid place-items-center text-[11px] font-extrabold shrink-0',
+                isActive
+                  ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
+                  : isDone
+                    ? 'bg-green-050 text-green-700 shadow-[inset_0_0_0_1px_var(--green-300)]'
+                    : 'bg-surface-2 text-ink-muted',
+              )}
+            >
+              {isDone ? <Icon name="check" size={11} color="var(--green-700)" /> : n}
+            </span>
+            <span className="hidden sm:inline">{label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 type Props = {
   card: CardView;
   teams: { id: string; name: string }[];
@@ -38,46 +83,14 @@ export function PredictStepper({ card, teams, players, isDev }: Props): ReactEle
     return false;
   }
 
+  const stepItems = STEPS.map((s) => ({ ...s, done: isStepDone(s.id) }));
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Dev controls */}
       <DevControls poolId={card.poolId} isDev={isDev} locked={locked} />
 
-      {/* Step indicator tabs */}
-      <nav aria-label="Card sections" className="flex border-b border-line-soft">
-        {STEPS.map(({ id, label, n }) => {
-          const active = step === id;
-          const done = isStepDone(id) && !active;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setStep(id)}
-              aria-current={active ? 'step' : undefined}
-              className={cn(
-                'flex-1 pt-[11px] px-3 pb-3.5 bg-transparent border-0 cursor-pointer flex items-center justify-center gap-2 font-cup-ui text-[13px] font-bold transition-colors',
-                active ? 'text-ink shadow-[inset_0_-3px_0_var(--green-500)]' : 'text-ink-muted',
-              )}
-            >
-              <span
-                className={cn(
-                  'w-5.5 h-5.5 rounded-full grid place-items-center text-[11px] font-extrabold shrink-0',
-                  active
-                    ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
-                    : done
-                      ? 'bg-green-050 text-green-700 shadow-[inset_0_0_0_1px_var(--green-300)]'
-                      : 'bg-surface-2 text-ink-muted',
-                )}
-              >
-                {done ? <Icon name="check" size={11} color="var(--green-700)" /> : n}
-              </span>
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      <PredictStepNav steps={stepItems} active={step} onSelect={setStep} />
 
-      {/* Section content */}
       {step === 'groups' && (
         <GroupScoresSection groups={card.groups} poolId={card.poolId} locked={locked} />
       )}

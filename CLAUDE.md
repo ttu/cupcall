@@ -61,6 +61,11 @@ Working agreement for all code in this repo. These are **requirements**, not sug
 ## UI
 
 - **Small, composable, focused components**; prefer composition over monolithic components.
+- **Extract named sub-components** when a JSX block is complex or deep enough to deserve its own
+  name. Signals to extract: a JSX comment labelling a section (`{/* Header strip */}`), a
+  conditional branch with 15+ lines of JSX, nesting 4+ levels deep, or a repeated inline pattern.
+  A well-named component makes the comment unnecessary — if you still need a comment to explain
+  what the block does, extract it instead.
 - **Storybook** for every reusable UI component (in `shared/ui`). Stories are part of "done".
 - **Accessibility is required:** semantic HTML, full keyboard access, properly labelled inputs,
   sufficient contrast, accessible component patterns (Radix/shadcn).

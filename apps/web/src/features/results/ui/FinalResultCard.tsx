@@ -12,6 +12,28 @@ function teamLabel(name: string | null, id: string | null): string {
   return name ?? id ?? '—';
 }
 
+type ChampionPillProps = { championId: string; championName: string; isFinal: boolean };
+
+function ChampionPill({ championId, championName, isFinal }: ChampionPillProps): ReactElement {
+  const pillBgClass = isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]';
+  const pillTextClass = isFinal ? 'text-[oklch(0.28_0.06_80)]' : 'text-[oklch(0.32_0.06_55)]';
+  return (
+    <div className="flex justify-center px-2 pb-2.5">
+      <div
+        className={cn(
+          'inline-flex items-center gap-1.5 py-1 pr-2.5 pl-1.5 rounded-full',
+          pillBgClass,
+        )}
+      >
+        <TeamBadge teamId={championId} size="sm" />
+        <span className={cn('display text-[11px] tracking-[0.04em]', pillTextClass)}>
+          {championName}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function FinalResultCard({ match, matchKey }: Props): ReactElement {
   const isFinal = matchKey === 'final';
   const hasActualScore = match.actualHome !== null && match.actualAway !== null;
@@ -25,9 +47,6 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         ? (match.pickedWinnerName ?? match.pickedWinnerId)
         : null) ?? null;
 
-  const pillBgClass = isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]';
-  const pillTextClass = isFinal ? 'text-[oklch(0.28_0.06_80)]' : 'text-[oklch(0.32_0.06_55)]';
-
   return (
     <div
       data-testid={`${matchKey}-result-card`}
@@ -36,7 +55,6 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
       )}
     >
-      {/* Header strip */}
       <div className="flex items-center justify-between gap-1.5 p-[8px_10px_6px]">
         {hasActualScore ? (
           <span
@@ -69,7 +87,6 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         <HitChip hit={match.hit} />
       </div>
 
-      {/* Predicted-score line (only when the user predicted) */}
       {hasPredictedScore && (
         <div
           className={cn(
@@ -81,7 +98,6 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         </div>
       )}
 
-      {/* Teams */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 p-[6px_10px_10px]">
         <div className="flex items-center justify-end gap-[5px] min-w-0">
           <span
@@ -125,21 +141,8 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         </div>
       </div>
 
-      {/* Champion pill */}
       {championId !== null && championName !== null && (
-        <div className="flex justify-center px-2 pb-2.5">
-          <div
-            className={cn(
-              'inline-flex items-center gap-1.5 py-1 pr-2.5 pl-1.5 rounded-full',
-              pillBgClass,
-            )}
-          >
-            <TeamBadge teamId={championId} size="sm" />
-            <span className={cn('display text-[11px] tracking-[0.04em]', pillTextClass)}>
-              {championName}
-            </span>
-          </div>
-        </div>
+        <ChampionPill championId={championId} championName={championName} isFinal={isFinal} />
       )}
     </div>
   );
