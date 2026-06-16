@@ -37,10 +37,8 @@ export function OwnerCardEditor({
     });
   }
 
-  function handlePick(bracketMatchKey: string, winner: string) {
-    startTransition(() => {
-      void ownerSaveKnockoutPick({ poolId, targetUserId, bracketMatchKey, winner });
-    });
+  async function handlePick(bracketMatchKey: string, winner: string): Promise<void> {
+    await ownerSaveKnockoutPick({ poolId, targetUserId, bracketMatchKey, winner });
   }
 
   function handleFinishSave(match: 'final' | 'bronze', home: number, away: number) {

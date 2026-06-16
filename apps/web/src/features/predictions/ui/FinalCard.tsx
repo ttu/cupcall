@@ -49,6 +49,7 @@ type Props = {
   locked: boolean;
   onSave: (match: 'final' | 'bronze', home: number, away: number) => void | Promise<void>;
   onPickWinner: (matchKey: 'final' | 'bronze', winner: string) => void;
+  isPending?: boolean;
 };
 
 export function FinalCard({
@@ -58,6 +59,7 @@ export function FinalCard({
   locked,
   onSave,
   onPickWinner,
+  isPending = false,
 }: Props): ReactElement {
   const isFinal = matchKey === 'final';
 
@@ -126,7 +128,8 @@ export function FinalCard({
       {needsTiebreak && !locked && (
         <div
           data-testid={`${matchKey}-winner-picker`}
-          className="flex flex-col gap-1.5 px-2.5 pt-1.5 pb-2.5"
+          className="relative flex flex-col gap-1.5 px-2.5 pt-1.5 pb-2.5"
+          aria-busy={isPending}
         >
           <span
             className={cn(
@@ -143,7 +146,7 @@ export function FinalCard({
               isFinal={isFinal}
               pressed={match.pickedWinnerId === match.homeTeamId}
               onClick={() => match.homeTeamId && onPickWinner(matchKey, match.homeTeamId)}
-              disabled={!match.homeTeamId}
+              disabled={!match.homeTeamId || isPending}
               label={match.homeTeamName ?? '—'}
             />
             <TieButton
@@ -152,10 +155,18 @@ export function FinalCard({
               isFinal={isFinal}
               pressed={match.pickedWinnerId === match.awayTeamId}
               onClick={() => match.awayTeamId && onPickWinner(matchKey, match.awayTeamId)}
-              disabled={!match.awayTeamId}
+              disabled={!match.awayTeamId || isPending}
               label={match.awayTeamName ?? '—'}
             />
           </div>
+          {isPending && (
+            <div
+              className="absolute inset-0 rounded-[7px] bg-white/60 grid place-items-center"
+              aria-hidden="true"
+            >
+              <span className="page-spinner" style={{ width: 16, height: 16 }} />
+            </div>
+          )}
         </div>
       )}
 

@@ -23,7 +23,7 @@ type Props = {
   bracket: BracketView;
   poolId: string;
   locked: boolean;
-  onPick?: (bracketMatchKey: string, winner: string) => void;
+  onPick?: (bracketMatchKey: string, winner: string) => void | Promise<void>;
   onFinishSave?: (match: 'final' | 'bronze', home: number, away: number) => void;
 };
 
@@ -37,9 +37,11 @@ export function BracketSection({
   const [pendingMatchKey, setPendingMatchKey] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  function handlePick(bracketMatchKey: string, winner: string) {
+  async function handlePick(bracketMatchKey: string, winner: string) {
     if (onPick) {
-      onPick(bracketMatchKey, winner);
+      setPendingMatchKey(bracketMatchKey);
+      await onPick(bracketMatchKey, winner);
+      setPendingMatchKey(null);
       return;
     }
     setPendingMatchKey(bracketMatchKey);
@@ -109,6 +111,7 @@ export function BracketSection({
               locked={locked || bracket.final.locked}
               onSave={handleFinishSave}
               onPickWinner={handlePick}
+              isPending={pendingMatchKey === 'final'}
             />
             <div className="eyebrow text-ink-muted mt-4 mb-2 pl-0.5">3rd Place</div>
             <FinalCard
@@ -118,6 +121,7 @@ export function BracketSection({
               locked={locked || bracket.bronze.locked}
               onSave={handleFinishSave}
               onPickWinner={handlePick}
+              isPending={pendingMatchKey === 'bronze'}
             />
           </div>
         </div>
