@@ -132,7 +132,9 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
         <ReadOnlyCard card={card} matchScores={matchScores} />
       )}
 
-      {auditEntries.length > 0 && <AuditLog entries={auditEntries} />}
+      {auditEntries.length > 0 && (
+        <AuditLog entries={auditEntries} context={{ tournament: tournamentDef }} />
+      )}
     </main>
   );
 }

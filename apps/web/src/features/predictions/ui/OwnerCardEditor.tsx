@@ -55,19 +55,36 @@ export function OwnerCardEditor({
     });
   }
 
+  // Per-item locked flags reflect the tournament clock, not owner permissions.
+  // Clear them so the OR in each section (locked || item.locked) doesn't block editing.
+  const unlockedGroups = card.groups.map((g) => ({
+    ...g,
+    matches: g.matches.map((m) => ({ ...m, locked: false })),
+  }));
+  const unlockedBracket = {
+    ...card.bracket,
+    rounds: card.bracket.rounds.map((r) => ({
+      ...r,
+      ties: r.ties.map((t) => ({ ...t, locked: false })),
+    })),
+    final: { ...card.bracket.final, locked: false },
+    bronze: { ...card.bracket.bronze, locked: false },
+  };
+  const unlockedSpecials = card.specials.map((s) => ({ ...s, locked: false }));
+
   return (
     <div className="flex flex-col gap-6">
       <CompletionBar percent={card.completionPercent} />
 
       <GroupScoresSection
-        groups={card.groups}
+        groups={unlockedGroups}
         poolId={poolId}
         locked={false}
         onSave={handleGroupSave}
       />
 
       <BracketSection
-        bracket={card.bracket}
+        bracket={unlockedBracket}
         poolId={poolId}
         locked={false}
         onPick={handlePick}
@@ -76,7 +93,7 @@ export function OwnerCardEditor({
 
       {card.specials.length > 0 && (
         <SpecialsSection
-          specials={card.specials}
+          specials={unlockedSpecials}
           poolId={poolId}
           locked={false}
           teams={teams}

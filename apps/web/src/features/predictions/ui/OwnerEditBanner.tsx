@@ -19,10 +19,12 @@ export function OwnerEditBanner({ memberName }: Props): ReactElement {
         <Icon name="edit" size={15} color="var(--orange-400)" />
         {label}
       </span>
-      <Chip variant="dark">
-        <Icon name="history" size={12} />
-        View audit log
-      </Chip>
+      <a href="#audit-log">
+        <Chip variant="dark">
+          <Icon name="history" size={12} />
+          View audit log
+        </Chip>
+      </a>
     </div>
   );
 }

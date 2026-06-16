@@ -308,6 +308,95 @@ export async function listEditsForPrediction(
     }));
 }
 
+export type PoolEditRow = EditRow & {
+  targetUserId: UserId;
+  targetName: string;
+};
+
+/** Returns true if the pool has any owner-edit records (used to gate the audit link). */
+export async function hasEditsForPool(db: Database, poolId: PoolId): Promise<boolean> {
+  const editorAlias = schema.users;
+  const rows = await db
+    .select({ id: schema.predictionEdits.id })
+    .from(schema.predictionEdits)
+    .innerJoin(
+      schema.predictions,
+      and(
+        eq(schema.predictionEdits.predictionId, schema.predictions.id),
+        eq(schema.predictions.poolId, poolId),
+      ),
+    )
+    .leftJoin(editorAlias, eq(schema.predictionEdits.editorUserId, editorAlias.id))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * Returns all edit records across every member's prediction in the pool, most-recent first.
+ * Owner-only; caller is responsible for authorization.
+ */
+export async function listEditsForPool(db: Database, poolId: PoolId): Promise<PoolEditRow[]> {
+  const editorUsers = schema.users;
+  const rows = await db
+    .select({
+      id: schema.predictionEdits.id,
+      predictionId: schema.predictionEdits.predictionId,
+      editorUserId: schema.predictionEdits.editorUserId,
+      editorDisplayName: editorUsers.displayName,
+      editorEmail: editorUsers.email,
+      targetUserId: schema.predictions.userId,
+      fieldPath: schema.predictionEdits.fieldPath,
+      oldValue: schema.predictionEdits.oldValue,
+      newValue: schema.predictionEdits.newValue,
+      reason: schema.predictionEdits.reason,
+      source: schema.predictionEdits.source,
+      editedAt: schema.predictionEdits.editedAt,
+    })
+    .from(schema.predictionEdits)
+    .innerJoin(
+      schema.predictions,
+      and(
+        eq(schema.predictionEdits.predictionId, schema.predictions.id),
+        eq(schema.predictions.poolId, poolId),
+      ),
+    )
+    .leftJoin(editorUsers, eq(schema.predictionEdits.editorUserId, editorUsers.id))
+    .orderBy(schema.predictionEdits.editedAt);
+
+  // Fetch target user names in one query
+  const targetUserIds = [...new Set(rows.map((r) => r.targetUserId))];
+  const targetUsers =
+    targetUserIds.length > 0
+      ? await db
+          .select({
+            id: schema.users.id,
+            displayName: schema.users.displayName,
+            email: schema.users.email,
+          })
+          .from(schema.users)
+          .where(inArray(schema.users.id, targetUserIds))
+      : [];
+  const targetUserMap = new Map(targetUsers.map((u) => [u.id, u.displayName || u.email || u.id]));
+
+  return rows
+    .slice()
+    .reverse()
+    .map((r) => ({
+      id: r.id,
+      predictionId: asPredictionId(r.predictionId),
+      editorUserId: userId(r.editorUserId),
+      editorName: r.editorDisplayName || r.editorEmail || r.editorUserId,
+      targetUserId: userId(r.targetUserId),
+      targetName: targetUserMap.get(r.targetUserId) ?? r.targetUserId,
+      fieldPath: r.fieldPath,
+      oldValue: r.oldValue,
+      newValue: r.newValue,
+      reason: r.reason,
+      source: r.source,
+      editedAt: r.editedAt,
+    }));
+}
+
 export type PoolGroupScore = {
   userId: UserId;
   matchId: string;

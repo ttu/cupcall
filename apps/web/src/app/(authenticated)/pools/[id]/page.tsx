@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { isMember } from '@cup/db';
+import { isMember, hasEditsForPool } from '@cup/db';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
 import {
@@ -32,6 +32,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   if (!(await isMember(db, poolId, actor.userId))) notFound();
 
   const isOwner = actor.userId === detail.ownerId;
+  const hasEdits = isOwner ? await hasEditsForPool(db, poolId) : false;
   const now = new Date();
   const locked = now >= detail.lockTime;
   const myEntry = detail.leaderboard.find((e) => e.userId === actor.userId);
@@ -202,6 +203,26 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           />
         )}
         <PoolBackupControls poolId={poolId} isOwner={isOwner} />
+        {hasEdits && (
+          <div className="rounded-cup border border-line bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+            <div className="px-4 py-2.5 turf">
+              <span className="text-sm font-bold tracking-widest uppercase text-on-dark font-cup-display">
+                Edit History
+              </span>
+            </div>
+            <div className="px-4 py-4 space-y-3">
+              <p className="text-xs text-ink-muted">
+                Owner edits to member predictions are logged. View the full audit trail.
+              </p>
+              <Link
+                href={`/pools/${poolId}/audit`}
+                className="inline-block text-xs font-medium px-3 py-1.5 rounded-lg border border-line bg-white text-ink-soft hover:text-ink hover:border-ink-muted transition-colors no-underline"
+              >
+                View full edit history
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
