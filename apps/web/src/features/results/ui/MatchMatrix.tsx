@@ -27,30 +27,33 @@ export function MatchMatrix({
   return (
     <div>
       <div className="card overflow-x-auto">
-        <div
-          className="grid items-center gap-1 bg-surface-2 border-b border-line"
-          style={{ gridTemplateColumns: colTemplate }}
-        >
-          {/* Sticky placeholder — covers the avatar column so scrolling content doesn't bleed through */}
-          <div className="sticky left-0 z-10 bg-surface-2 self-stretch" />
-          <span className="eyebrow text-ink-muted text-[10px] py-3">Player</span>
-          {matches.map((m) => (
-            <div key={m.matchId} className="flex flex-col items-center gap-0.5 text-[11px] py-3">
-              <span className="font-extrabold text-ink font-cup-display">
-                {m.actualHome}–{m.actualAway}
-              </span>
-              <span className="text-[9.5px] font-bold text-ink-muted">
-                {m.homeTeamId}·{m.awayTeamId}
-              </span>
-            </div>
-          ))}
-          <span className="eyebrow text-ink-muted text-[10px] text-right py-3 pr-4">Total</span>
-        </div>
+        {/* min-w-max forces the inner grids to their full track width so bg-surface-2 covers the entire scrollable area, not just the card's visible width */}
+        <div className="min-w-max">
+          <div
+            className="grid items-center gap-1 bg-surface-2 border-b border-line"
+            style={{ gridTemplateColumns: colTemplate }}
+          >
+            {/* Sticky placeholder — covers the avatar column so scrolling content doesn't bleed through */}
+            <div className="sticky left-0 z-10 bg-surface-2 self-stretch" />
+            <span className="eyebrow text-ink-muted text-[10px] py-3">Player</span>
+            {matches.map((m) => (
+              <div key={m.matchId} className="flex flex-col items-center gap-0.5 text-[11px] py-3">
+                <span className="font-extrabold text-ink font-cup-display">
+                  {m.actualHome}–{m.actualAway}
+                </span>
+                <span className="text-[9.5px] font-bold text-ink-muted">
+                  {m.homeTeamId}·{m.awayTeamId}
+                </span>
+              </div>
+            ))}
+            <span className="eyebrow text-ink-muted text-[10px] text-right py-3 pr-4">Total</span>
+          </div>
 
-        <div className="divide">
-          {entries.map((row, idx) => (
-            <MatrixRow key={row.userId} row={row} avatarIndex={idx} colTemplate={colTemplate} />
-          ))}
+          <div className="divide">
+            {entries.map((row, idx) => (
+              <MatrixRow key={row.userId} row={row} avatarIndex={idx} colTemplate={colTemplate} />
+            ))}
+          </div>
         </div>
       </div>
 
