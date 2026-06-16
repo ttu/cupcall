@@ -143,7 +143,7 @@ export function computeHit(
   return { hit: 'missed', points: 0 };
 }
 
-export function buildGroupMatchDeltas(
+function buildGroupMatchDeltas(
   poolGroupScores: PoolGroupScore[],
   allMatches: MatchRow[],
   scoring: { exactScore: number; correctOutcome: number },
@@ -189,7 +189,7 @@ function raceGroupOrderPts(
   return 0;
 }
 
-export function buildGroupOrderDeltas(
+function buildGroupOrderDeltas(
   poolGroupScores: PoolGroupScore[],
   allMatches: MatchRow[],
   def: Tournament,
@@ -261,7 +261,7 @@ export function buildGroupOrderDeltas(
   return result;
 }
 
-export function buildKnockoutMilestoneDeltas(
+function buildKnockoutMilestoneDeltas(
   leaderboard: LeaderboardEntry[],
   allMatches: MatchRow[],
   def: Tournament,
