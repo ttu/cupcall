@@ -37,8 +37,9 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   const hasEdits = isOwner ? await hasEditsForPool(db, poolId) : false;
   const now = new Date();
   const locked = now >= detail.lockTime;
-  const myEntry = detail.leaderboard.find((e) => e.userId === actor.userId);
-  const myRank = myEntry ? detail.leaderboard.indexOf(myEntry) + 1 : null;
+  const myIndex = detail.leaderboard.findIndex((e) => e.userId === actor.userId);
+  const myEntry = myIndex >= 0 ? detail.leaderboard[myIndex] : undefined;
+  const myRank = myIndex >= 0 ? myIndex + 1 : null;
   const raceChart = locked ? detail.raceChart : null;
 
   return (
