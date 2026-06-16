@@ -55,26 +55,28 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
       ])
     : [new Set<string>(), new Set<string>(), new Map<string, { home: number; away: number }>()];
 
-  const card = await getCardView({
-    db,
-    poolId,
-    userId: actor.userId,
-    tournamentId: pool.tournamentId,
-    tournament: tournamentDef,
-    firstKickoff: tournament.firstKickoff,
-    joinedAt: memberRecord.joinedAt,
-    knownResultMatchIds,
-    answeredBetKeys,
-    actualGroupMatchScores,
-    now,
-    createIfMissing: true,
-  });
+  const [card, prediction] = await Promise.all([
+    getCardView({
+      db,
+      poolId,
+      userId: actor.userId,
+      tournamentId: pool.tournamentId,
+      tournament: tournamentDef,
+      firstKickoff: tournament.firstKickoff,
+      joinedAt: memberRecord.joinedAt,
+      knownResultMatchIds,
+      answeredBetKeys,
+      actualGroupMatchScores,
+      now,
+      createIfMissing: true,
+    }),
+    getPrediction(db, poolId, actor.userId),
+  ]);
 
   if (!card) notFound();
 
   // Audit log — visible to all pool members per functional-spec §8.3
   let auditEntries: AuditEntry[] = [];
-  const prediction = await getPrediction(db, poolId, actor.userId);
   if (prediction) {
     const edits = await listEditsForPrediction(db, prediction.id);
     auditEntries = edits.map((e) => ({
