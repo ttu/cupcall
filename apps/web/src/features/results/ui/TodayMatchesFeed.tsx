@@ -99,7 +99,7 @@ function TodayMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactElemen
 export function TodayMatchesFeed({ groups }: Props): ReactElement | null {
   const allToday = groups
     .flatMap((g) => g.todayMatches)
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       if (!a.kickoff) return 1;
       if (!b.kickoff) return -1;
       return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();

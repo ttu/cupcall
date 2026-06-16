@@ -108,7 +108,9 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
       if (anyStillLive) pts.push(e.pointsTotal + (stillLiveByUser.get(e.userId) ?? 0));
       return { userId: e.userId, displayName: e.displayName, isCurrentUser, color, points: pts };
     });
-    chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
+    chartPlayers = chartPlayers.toSorted(
+      (a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0),
+    );
   }
 
   const projectedEntries = buildProjectedEntries(leaderboard, userId, stillLiveByUser);
@@ -219,7 +221,8 @@ function buildMatchMatrix(
     };
   });
 
-  matchMatrix.sort((a, b) => b.totalPoints - a.totalPoints);
-
-  return { matchMatrix, matrixMatches };
+  return {
+    matchMatrix: matchMatrix.toSorted((a, b) => b.totalPoints - a.totalPoints),
+    matrixMatches,
+  };
 }

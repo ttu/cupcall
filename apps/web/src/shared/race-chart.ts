@@ -85,9 +85,13 @@ export function buildRaceChartData(
     return { userId: e.userId, displayName: e.displayName, isCurrentUser, color, points: pts };
   });
 
-  chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
-
-  return { chartStages, chartNowIndex, chartPlayers };
+  return {
+    chartStages,
+    chartNowIndex,
+    chartPlayers: chartPlayers.toSorted(
+      (a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0),
+    ),
+  };
 }
 
 export function utcDateStr(d: Date): string {
@@ -382,7 +386,11 @@ export function buildDailyChartPlayers(input: DailyChartInput): {
     };
   });
 
-  chartPlayers.sort((a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0));
-
-  return { stages, nowIndex, chartPlayers };
+  return {
+    stages,
+    nowIndex,
+    chartPlayers: chartPlayers.toSorted(
+      (a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0),
+    ),
+  };
 }
