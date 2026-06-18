@@ -4,6 +4,15 @@ import { Avatar, Icon, cn } from '@/shared/ui';
 
 const MATCH_COL_W = 52;
 
+function formatKickoff(isoString: string | null): string {
+  if (!isoString) return '?';
+  return new Date(isoString).toLocaleDateString('en-GB', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 export function MatchMatrix({
   entries,
   matches,
@@ -14,9 +23,7 @@ export function MatchMatrix({
   if (matches.length === 0) {
     return (
       <div className="card p-[32px_24px] text-center">
-        <p className="text-sm text-ink-muted m-0">
-          No completed matches yet — come back after the first results are in.
-        </p>
+        <p className="text-sm text-ink-muted m-0">No group matches found.</p>
       </div>
     );
   }
@@ -38,9 +45,15 @@ export function MatchMatrix({
             <span className="eyebrow text-ink-muted text-[10px] py-3">Player</span>
             {matches.map((m) => (
               <div key={m.matchId} className="flex flex-col items-center gap-0.5 text-[11px] py-3">
-                <span className="font-extrabold text-ink font-cup-display">
-                  {m.actualHome}–{m.actualAway}
-                </span>
+                {m.status === 'final' ? (
+                  <span className="font-extrabold text-ink font-cup-display">
+                    {m.actualHome}–{m.actualAway}
+                  </span>
+                ) : (
+                  <span className="font-bold text-ink-muted font-cup-display text-[10px]">
+                    {formatKickoff(m.kickoff)}
+                  </span>
+                )}
                 <span className="text-[9.5px] font-bold text-ink-muted">
                   {m.homeTeamId}·{m.awayTeamId}
                 </span>
@@ -123,7 +136,11 @@ function MatrixRow({
 
       {row.cells.map((cell) => (
         <span key={cell.matchId} className="grid place-items-center py-[9px]">
-          <MatrixCell hit={cell.hit} points={cell.points} />
+          <MatrixCell
+            hit={cell.hit}
+            points={cell.points}
+            predictedOutcome={cell.predictedOutcome}
+          />
         </span>
       ))}
 
@@ -139,7 +156,29 @@ function MatrixRow({
   );
 }
 
-function MatrixCell({ hit, points }: { hit: MatchHit; points: number }): ReactElement {
+function MatrixCell({
+  hit,
+  points,
+  predictedOutcome,
+}: {
+  hit: MatchHit;
+  points: number;
+  predictedOutcome: '1' | 'X' | '2' | null;
+}): ReactElement {
+  if (hit === 'pending') {
+    return (
+      <span
+        className={cn(
+          'w-9 h-8 rounded-lg grid place-items-center text-sm font-cup-display',
+          predictedOutcome !== null
+            ? 'bg-surface text-[oklch(0.62_0_0)] shadow-[inset_0_0_0_1px_var(--line-strong)]'
+            : 'bg-surface-2 text-ink-muted',
+        )}
+      >
+        {predictedOutcome ?? '·'}
+      </span>
+    );
+  }
   return (
     <span
       className={cn(

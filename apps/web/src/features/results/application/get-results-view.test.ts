@@ -785,31 +785,70 @@ describe('getResultsView', () => {
       userId,
       tournamentId: miniTId,
     });
-    await upsertGroupScore(db, userPred.id, matchId, 2, 0); // exact
+    await upsertGroupScore(db, userPred.id, matchId, 2, 0); // exact → home win → '1'
 
     const ownerPred = await getOrCreatePrediction(db, {
       poolId,
       userId: ownerId,
       tournamentId: miniTId,
     });
-    await upsertGroupScore(db, ownerPred.id, matchId, 1, 0); // outcome
+    await upsertGroupScore(db, ownerPred.id, matchId, 1, 0); // outcome → home win → '1'
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const { matchMatrix, matrixMatches } = view!.pointsRaceView;
 
-    expect(matrixMatches).toHaveLength(1);
-    expect(matrixMatches[0]!.matchId).toBe(matchId);
+    // All group-stage matches appear (4 groups × 6 = 24), not just completed ones
+    expect(matrixMatches).toHaveLength(miniTournament.groupMatches.length);
+
+    const finalizedMatch = matrixMatches.find((m) => m.matchId === matchId)!;
+    expect(finalizedMatch).toBeDefined();
+    expect(finalizedMatch.status).toBe('final');
+    expect(finalizedMatch.actualHome).toBe(2);
+    expect(finalizedMatch.actualAway).toBe(0);
+
+    // An unplayed match has null actual scores
+    const unplayedMatch = matrixMatches.find((m) => m.status === 'scheduled');
+    expect(unplayedMatch?.actualHome).toBeNull();
+    expect(unplayedMatch?.actualAway).toBeNull();
 
     const myRow = matchMatrix.find((r) => r.userId === userId);
     expect(myRow?.isCurrentUser).toBe(true);
-    expect(myRow?.cells[0]?.hit).toBe('exact');
-    expect(myRow?.cells[0]?.points).toBe(miniTournament.scoring.groupMatch.exactScore);
+    const myCell = myRow?.cells.find((c) => c.matchId === matchId);
+    expect(myCell?.hit).toBe('exact');
+    expect(myCell?.points).toBe(miniTournament.scoring.groupMatch.exactScore);
+    expect(myCell?.predictedOutcome).toBe('1'); // predicted 2-0 → home win
 
     const ownerRow = matchMatrix.find((r) => r.userId === ownerId);
-    expect(ownerRow?.cells[0]?.hit).toBe('outcome');
+    const ownerCell = ownerRow?.cells.find((c) => c.matchId === matchId);
+    expect(ownerCell?.hit).toBe('outcome');
+    expect(ownerCell?.predictedOutcome).toBe('1'); // predicted 1-0 → home win
+
+    // Unplayed matches have pending hit and null predictedOutcome when no prediction exists
+    const myUnplayedCell = myRow?.cells.find((c) => c.matchId !== matchId);
+    expect(myUnplayedCell?.hit).toBe('pending');
+    expect(myUnplayedCell?.predictedOutcome).toBeNull();
   });
 
-  it('sorts matchMatrix by totalPoints descending', async () => {
+  it('shows predictedOutcome for upcoming matches when user has a prediction', async () => {
+    const upcomingMatchId = miniTournament.groupMatches.find((m) => m.group === groupId('B'))!.id;
+
+    const userPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTId,
+    });
+    await upsertGroupScore(db, userPred.id, upcomingMatchId, 0, 2); // away win → '2'
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const { matchMatrix } = view!.pointsRaceView;
+
+    const myRow = matchMatrix.find((r) => r.userId === userId);
+    const cell = myRow?.cells.find((c) => c.matchId === upcomingMatchId);
+    expect(cell?.hit).toBe('pending');
+    expect(cell?.predictedOutcome).toBe('2');
+  });
+
+  it('sorts matchMatrix by totalPoints descending (completed matches only)', async () => {
     const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
     await finalizeMatch(db, miniTId, matchId, 2, 0);
 

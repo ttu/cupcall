@@ -169,6 +169,13 @@ function buildProjectedEntries(
   });
 }
 
+function toPredictedOutcome(home: number | null, away: number | null): '1' | 'X' | '2' | null {
+  if (home === null || away === null) return null;
+  if (home > away) return '1';
+  if (home === away) return 'X';
+  return '2';
+}
+
 function buildMatchMatrix(
   leaderboard: LeaderboardEntry[],
   userId: string | null,
@@ -179,18 +186,20 @@ function buildMatchMatrix(
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const scoring = def.scoring.groupMatch;
 
-  const completedGroupMatches = allMatches
-    .filter((m) => m.stage === 'group' && m.status === 'final')
+  const allGroupMatches = allMatches
+    .filter((m) => m.stage === 'group')
     .sort((a, b) => (a.kickoff?.getTime() ?? 0) - (b.kickoff?.getTime() ?? 0));
 
-  const matrixMatches: MatrixMatch[] = completedGroupMatches.map((m) => ({
+  const matrixMatches: MatrixMatch[] = allGroupMatches.map((m) => ({
     matchId: m.id,
     homeTeamId: m.homeTeamId ?? '',
     homeTeamName: teamMap.get(m.homeTeamId ?? '') ?? m.homeTeamId ?? '',
     awayTeamId: m.awayTeamId ?? '',
     awayTeamName: teamMap.get(m.awayTeamId ?? '') ?? m.awayTeamId ?? '',
-    actualHome: m.homeGoals!,
-    actualAway: m.awayGoals!,
+    status: m.status,
+    kickoff: m.kickoff?.toISOString() ?? null,
+    actualHome: m.homeGoals ?? null,
+    actualAway: m.awayGoals ?? null,
   }));
 
   const predMap = new Map<string, { home: number; away: number }>();
@@ -200,8 +209,14 @@ function buildMatchMatrix(
 
   const matchMatrix: MatchMatrixEntry[] = leaderboard.map((e) => {
     let totalPoints = 0;
-    const cells: MatchMatrixCell[] = completedGroupMatches.map((m) => {
+    const cells: MatchMatrixCell[] = allGroupMatches.map((m) => {
       const pred = predMap.get(`${e.userId}::${m.id}`) ?? null;
+      const predictedOutcome = toPredictedOutcome(pred?.home ?? null, pred?.away ?? null);
+
+      if (m.status !== 'final') {
+        return { matchId: m.id, hit: 'pending', points: 0, predictedOutcome };
+      }
+
       const hit = computeHit(
         m.homeGoals!,
         m.awayGoals!,
@@ -210,7 +225,7 @@ function buildMatchMatrix(
         scoring,
       );
       totalPoints += hit.points;
-      return { matchId: m.id, hit: hit.hit, points: hit.points };
+      return { matchId: m.id, hit: hit.hit, points: hit.points, predictedOutcome };
     });
     return {
       userId: e.userId,
