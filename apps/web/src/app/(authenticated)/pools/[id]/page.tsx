@@ -170,8 +170,8 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
 
           {/* Tournament timeline */}
           {detail.stageProgress.length > 0 && (
-            <div className="card p-[14px_16px_0] overflow-x-auto">
-              <StageBar stages={detail.stageProgress} />
+            <div className="card p-[14px_16px_0]">
+              <StageBar stages={detail.stageProgress} vertical />
             </div>
           )}
 
