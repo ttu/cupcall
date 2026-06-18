@@ -25,8 +25,86 @@ import {
 } from '@cup/engine';
 import type { ActualResults } from '@cup/engine';
 import type { SimulationCheckpoint } from '../application/get-dev-state';
+import type { GroupId, TeamId } from '@cup/engine';
 
 const TOURNAMENT_ID = asTournamentId('test-wc-2026');
+
+// ── Group match kickoff dates ──────────────────────────────────────────────────
+
+const GROUP_MATCH_KICKOFFS: Record<string, string> = {
+  mA1: '2026-06-11',
+  mA2: '2026-06-12',
+  mA3: '2026-06-18',
+  mA4: '2026-06-19',
+  mA5: '2026-06-25',
+  mA6: '2026-06-25',
+  mB1: '2026-06-12',
+  mB2: '2026-06-13',
+  mB3: '2026-06-18',
+  mB4: '2026-06-18',
+  mB5: '2026-06-24',
+  mB6: '2026-06-24',
+  mC1: '2026-06-13',
+  mC2: '2026-06-14',
+  mC3: '2026-06-19',
+  mC4: '2026-06-20',
+  mC5: '2026-06-24',
+  mC6: '2026-06-24',
+  mD1: '2026-06-13',
+  mD2: '2026-06-14',
+  mD3: '2026-06-19',
+  mD4: '2026-06-20',
+  mD5: '2026-06-26',
+  mD6: '2026-06-26',
+  mE1: '2026-06-14',
+  mE2: '2026-06-14',
+  mE3: '2026-06-20',
+  mE4: '2026-06-21',
+  mE5: '2026-06-25',
+  mE6: '2026-06-25',
+  mF1: '2026-06-14',
+  mF2: '2026-06-15',
+  mF3: '2026-06-20',
+  mF4: '2026-06-21',
+  mF5: '2026-06-25',
+  mF6: '2026-06-25',
+  mG1: '2026-06-15',
+  mG2: '2026-06-16',
+  mG3: '2026-06-21',
+  mG4: '2026-06-22',
+  mG5: '2026-06-27',
+  mG6: '2026-06-27',
+  mH1: '2026-06-15',
+  mH2: '2026-06-15',
+  mH3: '2026-06-21',
+  mH4: '2026-06-21',
+  mH5: '2026-06-27',
+  mH6: '2026-06-27',
+  mI1: '2026-06-16',
+  mI2: '2026-06-16',
+  mI3: '2026-06-22',
+  mI4: '2026-06-23',
+  mI5: '2026-06-26',
+  mI6: '2026-06-26',
+  mJ1: '2026-06-17',
+  mJ2: '2026-06-17',
+  mJ3: '2026-06-22',
+  mJ4: '2026-06-23',
+  mJ5: '2026-06-28',
+  mJ6: '2026-06-28',
+  mK1: '2026-06-17',
+  mK2: '2026-06-18',
+  mK3: '2026-06-23',
+  mK4: '2026-06-24',
+  mK5: '2026-06-27',
+  mK6: '2026-06-27',
+  mL1: '2026-06-17',
+  mL2: '2026-06-17',
+  mL3: '2026-06-23',
+  mL4: '2026-06-23',
+  mL5: '2026-06-27',
+  mL6: '2026-06-27',
+};
 
 // ── Group match scores ─────────────────────────────────────────────────────────
 
@@ -171,26 +249,33 @@ const FINAL_MATCH = {
   awayGoals: 1,
 } as const;
 
+// ── Group orders ───────────────────────────────────────────────────────────────
+
+const GROUP_ORDER_A_F: Record<GroupId, TeamId[]> = {
+  [groupId('A')]: ['MEX', 'KOR', 'CZE', 'RSA'].map(teamId),
+  [groupId('B')]: ['SUI', 'CAN', 'QAT', 'BIH'].map(teamId),
+  [groupId('C')]: ['BRA', 'MAR', 'SCO', 'HAI'].map(teamId),
+  [groupId('D')]: ['USA', 'TUR', 'AUS', 'PAR'].map(teamId),
+  [groupId('E')]: ['GER', 'ECU', 'CIV', 'CUW'].map(teamId),
+  [groupId('F')]: ['NED', 'SWE', 'JPN', 'TUN'].map(teamId),
+};
+
+const GROUP_ORDER_G_L: Record<GroupId, TeamId[]> = {
+  [groupId('G')]: ['BEL', 'EGY', 'IRN', 'NZL'].map(teamId),
+  [groupId('H')]: ['ESP', 'URU', 'KSA', 'CPV'].map(teamId),
+  [groupId('I')]: ['FRA', 'NOR', 'SEN', 'IRQ'].map(teamId),
+  [groupId('J')]: ['ARG', 'AUT', 'ALG', 'JOR'].map(teamId),
+  [groupId('K')]: ['POR', 'COL', 'COD', 'UZB'].map(teamId),
+  [groupId('L')]: ['ENG', 'CRO', 'GHA', 'PAN'].map(teamId),
+};
+
+const ALL_GROUP_ORDERS: Record<GroupId, TeamId[]> = { ...GROUP_ORDER_A_F, ...GROUP_ORDER_G_L };
+
 // ── Checkpoint ActualResults builder ──────────────────────────────────────────
 
 function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
-  const groupOrderAF = {
-    [groupId('A')]: ['MEX', 'KOR', 'CZE', 'RSA'].map(teamId),
-    [groupId('B')]: ['SUI', 'CAN', 'QAT', 'BIH'].map(teamId),
-    [groupId('C')]: ['BRA', 'MAR', 'SCO', 'HAI'].map(teamId),
-    [groupId('D')]: ['USA', 'TUR', 'AUS', 'PAR'].map(teamId),
-    [groupId('E')]: ['GER', 'ECU', 'CIV', 'CUW'].map(teamId),
-    [groupId('F')]: ['NED', 'SWE', 'JPN', 'TUN'].map(teamId),
-  };
-
-  const groupOrderGL = {
-    [groupId('G')]: ['BEL', 'EGY', 'IRN', 'NZL'].map(teamId),
-    [groupId('H')]: ['ESP', 'URU', 'KSA', 'CPV'].map(teamId),
-    [groupId('I')]: ['FRA', 'NOR', 'SEN', 'IRQ'].map(teamId),
-    [groupId('J')]: ['ARG', 'AUT', 'ALG', 'JOR'].map(teamId),
-    [groupId('K')]: ['POR', 'COL', 'COD', 'UZB'].map(teamId),
-    [groupId('L')]: ['ENG', 'CRO', 'GHA', 'PAN'].map(teamId),
-  };
+  const groupOrderAF = GROUP_ORDER_A_F;
+  const groupOrderGL = GROUP_ORDER_G_L;
 
   if (checkpoint === 'groups-half') {
     return {
@@ -383,6 +468,61 @@ export async function loginAsUserAction(formData: FormData): Promise<never> {
     throw new Error('userId is required');
   }
   return signInAsExistingGuest(toUserId(uid), '/pools');
+}
+
+export async function resetToFreshAction(): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Dev reset is not available in production');
+  }
+  await resetTournamentResults(db, TOURNAMENT_ID);
+  await rescoreAll({ matchResults: [], groupOrder: {}, answers: {} });
+  revalidatePath('/');
+  redirect('/dev');
+}
+
+export async function applyGroupStageDayAction(formData: FormData): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Dev group stage day is not available in production');
+  }
+
+  const day = formData.get('day');
+  if (typeof day !== 'string' || !day) throw new Error('day is required');
+
+  const playedScores = ALL_GROUP_SCORES.filter((s) => (GROUP_MATCH_KICKOFFS[s.id] ?? '') <= day);
+
+  const groupOrder: Record<GroupId, TeamId[]> = {} as Record<GroupId, TeamId[]>;
+  for (const letter of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const) {
+    const allPlayed = [1, 2, 3, 4, 5, 6].every(
+      (n) => (GROUP_MATCH_KICKOFFS[`m${letter}${n}`] ?? '') <= day,
+    );
+    if (allPlayed) {
+      const key = groupId(letter);
+      groupOrder[key] = ALL_GROUP_ORDERS[key]!;
+    }
+  }
+
+  const playedGoals = playedScores.map((s) => s.home + s.away);
+  const highestMatchGoals = playedGoals.length > 0 ? Math.max(...playedGoals) : 0;
+
+  const allGroupsDone = Object.keys(groupOrder).length === 12;
+  const answers: ActualResults['answers'] = { highestMatchGoals };
+  if (allGroupsDone) {
+    answers.groupTopScoringTeam = teamId('BRA');
+    answers.groupTopConcedingTeam = teamId('CUW');
+  }
+
+  const actual: ActualResults = {
+    matchResults: playedScores.map((r) => ({ matchId: matchId(r.id), home: r.home, away: r.away })),
+    groupOrder,
+    answers,
+  };
+
+  await resetTournamentResults(db, TOURNAMENT_ID);
+  await upsertTournamentResults(db, TOURNAMENT_ID, actual);
+  await rescoreAll(actual);
+
+  revalidatePath('/');
+  redirect('/dev');
 }
 
 export async function applyCheckpointAction(formData: FormData): Promise<void> {

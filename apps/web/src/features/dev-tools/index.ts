@@ -1,3 +1,10 @@
 export { getDevState } from './application/get-dev-state';
-export { loginAsUserAction, applyCheckpointAction } from './api/dev-actions';
+export { GROUP_STAGE_DAYS } from './constants';
+export type { GroupStageDay } from './constants';
+export {
+  loginAsUserAction,
+  applyCheckpointAction,
+  applyGroupStageDayAction,
+  resetToFreshAction,
+} from './api/dev-actions';
 export { DevPage } from './ui/DevPage';

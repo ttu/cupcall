@@ -3,7 +3,35 @@
 import { useTransition } from 'react';
 import type { ReactElement } from 'react';
 import type { DevState, SimulationCheckpoint } from '../application/get-dev-state';
-import { loginAsUserAction, applyCheckpointAction } from '../api/dev-actions';
+import { GROUP_STAGE_DAYS } from '../constants';
+import {
+  loginAsUserAction,
+  applyCheckpointAction,
+  applyGroupStageDayAction,
+  resetToFreshAction,
+} from '../api/dev-actions';
+
+const GROUP_STAGE_MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+function formatGroupStageDay(day: string): string {
+  const parts = day.split('-');
+  const month = parseInt(parts[1]!, 10);
+  const dayNum = parseInt(parts[2]!, 10);
+  return `${GROUP_STAGE_MONTH_NAMES[month - 1]} ${dayNum}`;
+}
 
 type Props = { initialState: DevState };
 
@@ -45,7 +73,21 @@ export function DevPage({ initialState }: Props): ReactElement {
     });
   }
 
-  const { users, checkpoint: current, stats } = initialState;
+  function handleGroupStageDay(day: string) {
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set('day', day);
+      await applyGroupStageDayAction(formData);
+    });
+  }
+
+  function handleResetToFresh() {
+    startTransition(async () => {
+      await resetToFreshAction();
+    });
+  }
+
+  const { users, checkpoint: current, groupStageDay, stats } = initialState;
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8 space-y-10">
@@ -94,6 +136,59 @@ export function DevPage({ initialState }: Props): ReactElement {
                     {isCurrent && <span className="ml-2 text-xs opacity-80">&#x2713; current</span>}
                   </button>
                 </div>
+              );
+            })}
+          </div>
+
+          {isPending && <p className="text-xs text-ink-soft animate-pulse">Applying changes...</p>}
+        </div>
+      </section>
+
+      {/* ── Group Stage Days ───────────────────────────────────────────────── */}
+      <section aria-labelledby="group-days-heading">
+        <h2
+          id="group-days-heading"
+          className="text-xs font-bold tracking-widest uppercase text-ink-muted mb-3 font-cup-display"
+        >
+          Group Stage Day
+        </h2>
+        <div className="rounded-cup border border-line bg-surface-2 p-4 space-y-3">
+          <div className="text-xs text-ink-soft mb-4">
+            Apply all group match results up to and including the selected day.
+            {groupStageDay && (
+              <span className="ml-2">
+                Current:{' '}
+                <span className="font-semibold text-ink">{formatGroupStageDay(groupStageDay)}</span>
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={handleResetToFresh}
+              className="px-3 py-1.5 rounded-cup text-xs font-medium bg-surface border border-line text-ink-muted hover:bg-surface-2 disabled:opacity-50 transition-colors"
+            >
+              Clear
+            </button>
+            {GROUP_STAGE_DAYS.map((day) => {
+              const isCurrent = day === groupStageDay;
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => handleGroupStageDay(day)}
+                  className={[
+                    'px-3 py-1.5 rounded-cup text-xs font-medium transition-colors',
+                    isCurrent
+                      ? 'bg-[var(--brand)] text-white cursor-default'
+                      : 'bg-surface border border-line text-ink hover:bg-surface-2 disabled:opacity-50',
+                  ].join(' ')}
+                >
+                  {formatGroupStageDay(day)}
+                </button>
               );
             })}
           </div>

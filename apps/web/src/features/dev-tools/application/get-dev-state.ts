@@ -17,6 +17,7 @@ export type DevUser = { id: string; displayName: string; email: string | null };
 export type DevState = {
   users: DevUser[];
   checkpoint: SimulationCheckpoint;
+  groupStageDay: string | null;
   stats: { groupFinal: number; groupTotal: number; knockoutFinal: number };
 };
 
@@ -31,6 +32,12 @@ export async function getDevState(db: Db<AppSchema>): Promise<DevState> {
   const knockoutFinal = matches.filter((m) => m.stage !== 'group' && m.status === 'final').length;
 
   const stats = { groupFinal, groupTotal, knockoutFinal };
+
+  const finalGroupKickoffs = matches
+    .filter((m) => m.stage === 'group' && m.status === 'final' && m.kickoff !== null)
+    .map((m) => m.kickoff!.toISOString().slice(0, 10))
+    .sort();
+  const groupStageDay = finalGroupKickoffs.at(-1) ?? null;
 
   let checkpoint: SimulationCheckpoint;
   if (groupFinal < 36) {
@@ -52,6 +59,7 @@ export async function getDevState(db: Db<AppSchema>): Promise<DevState> {
   return {
     users: users.map((u) => ({ id: u.id, displayName: u.displayName, email: u.email })),
     checkpoint,
+    groupStageDay,
     stats,
   };
 }
