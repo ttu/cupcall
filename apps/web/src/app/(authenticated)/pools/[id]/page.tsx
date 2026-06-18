@@ -66,6 +66,28 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
         </div>
       </div>
 
+      {/* Your standing — mobile only (above grid) */}
+      {myEntry && myRank && (
+        <div className="card bg-green-050 border border-green-300 p-4.5 mb-6 md:hidden">
+          <div className="eyebrow text-green-700 mb-2.5">Your standing</div>
+          <div className="flex items-baseline gap-2.5">
+            <span className="display text-[44px] text-green-700">#{myRank}</span>
+            <span className="display text-[24px] text-ink">{myEntry.pointsTotal}</span>
+            <span className="text-xs font-bold text-green-700">pts</span>
+          </div>
+          {myEntry.completionPercent !== null && myEntry.completionPercent < 100 && (
+            <div className="mt-2.5">
+              <div className="bar mb-1">
+                <i style={{ width: `${myEntry.completionPercent}%` }} />
+              </div>
+              <div className="text-[11px] text-green-700 font-bold">
+                {myEntry.completionPercent}% filled
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Two-column layout */}
       <div className="grid gap-6 items-start md:grid-cols-[1fr_300px]">
         {/* Left: Leaderboard + Points Race chart */}
@@ -100,9 +122,9 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
 
         {/* Right rail */}
         <div className="flex flex-col gap-4 min-w-0">
-          {/* Your standing */}
+          {/* Your standing — desktop only (mobile version is above the grid) */}
           {myEntry && myRank && (
-            <div className="card bg-green-050 border border-green-300 p-4.5">
+            <div className="card bg-green-050 border border-green-300 p-4.5 hidden md:block">
               <div className="eyebrow text-green-700 mb-2.5">Your standing</div>
               <div className="flex items-baseline gap-2.5">
                 <span className="display text-[44px] text-green-700">#{myRank}</span>
