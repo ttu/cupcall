@@ -90,11 +90,28 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
       {hasPredictedScore && (
         <div
           className={cn(
-            'px-2.5 pb-1.5 text-[11px] font-bold tracking-[0.02em]',
+            'flex items-center gap-1.5 px-2.5 pb-1.5 text-[11px] font-bold tracking-[0.02em]',
             isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
           )}
         >
-          Your pick: {match.predictedHome}–{match.predictedAway}
+          <span>Your pick:</span>
+          {match.homeTeamId && match.awayTeamId ? (
+            <>
+              <TeamBadge teamId={match.homeTeamId} size="sm" />
+              <span>
+                {match.predictedHome}–{match.predictedAway}
+              </span>
+              <TeamBadge teamId={match.awayTeamId} size="sm" />
+            </>
+          ) : (
+            <>
+              {match.pickedWinnerId && <TeamBadge teamId={match.pickedWinnerId} size="sm" />}
+              <span>
+                {match.predictedHome}–{match.predictedAway}
+              </span>
+              {match.pickedOpponentId && <TeamBadge teamId={match.pickedOpponentId} size="sm" />}
+            </>
+          )}
         </div>
       )}
 

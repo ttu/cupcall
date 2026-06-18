@@ -78,6 +78,9 @@ export function buildBracketRounds(
 
     const isEntryRound = entryRoundKeys.has(key);
 
+    const isFinale = key === finalMatchKey || key === bronzeMatchKey;
+    const pickedOpponentId = isFinale ? derivePredictedOpponent(key, bracket, pickMap) : null;
+
     return {
       bracketMatchKey: key,
       round,
@@ -93,6 +96,10 @@ export function buildBracketRounds(
       status: actual?.status === 'final' ? 'final' : 'scheduled',
       pickedWinnerId: pickedId,
       pickedWinnerName: pickedId ? (teamMap.get(pickedId) ?? pickedId) : null,
+      pickedOpponentId,
+      pickedOpponentName: pickedOpponentId
+        ? (teamMap.get(pickedOpponentId) ?? pickedOpponentId)
+        : null,
       pickStatus,
       predictedHome,
       predictedAway,
@@ -281,6 +288,54 @@ function computeEntryRoundPredictionPcts(
       Math.round((count / total) * 100),
     ]),
   );
+}
+
+/**
+ * For Final: both participants are SF winners — return the SF winner that is NOT the picked Final winner.
+ * For Bronze: both participants are SF losers — for each SF, find the team the user did NOT pick to win.
+ */
+function derivePredictedOpponent(
+  matchKey: string,
+  bracket: Tournament['bracket'],
+  pickMap: Map<string, string>,
+): string | null {
+  const prog = bracket.progression.find((p) => p.match === matchKey);
+  if (!prog || prog.from.length !== 2) return null;
+  const sf1Key = prog.from[0];
+  const sf2Key = prog.from[1];
+  if (!sf1Key || !sf2Key) return null;
+  const pickedWinner = pickMap.get(matchKey) ?? null;
+
+  if (matchKey !== bracket.bronzeMatch) {
+    // Final: participants are SF winners
+    const finalist1 = pickMap.get(sf1Key) ?? null;
+    const finalist2 = pickMap.get(sf2Key) ?? null;
+    if (finalist1 && finalist2) {
+      return finalist1 === pickedWinner ? finalist2 : finalist1;
+    }
+    return null;
+  }
+
+  // Bronze: participants are SF losers
+  const sfLoser = (sfKey: string): string | null => {
+    const sfProg = bracket.progression.find((p) => p.match === sfKey);
+    if (!sfProg || sfProg.from.length !== 2) return null;
+    const qf1Key = sfProg.from[0];
+    const qf2Key = sfProg.from[1];
+    if (!qf1Key || !qf2Key) return null;
+    const sfWinner = pickMap.get(sfKey) ?? null;
+    if (!sfWinner) return null;
+    const team1 = pickMap.get(qf1Key) ?? null;
+    const team2 = pickMap.get(qf2Key) ?? null;
+    if (team1 && sfWinner !== team1) return team1;
+    if (team2 && sfWinner !== team2) return team2;
+    return null;
+  };
+
+  const loser1 = sfLoser(sf1Key);
+  const loser2 = sfLoser(sf2Key);
+  if (!loser1 || !loser2) return null;
+  return loser1 === pickedWinner ? loser2 : loser1;
 }
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {

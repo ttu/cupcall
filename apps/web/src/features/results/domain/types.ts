@@ -98,6 +98,9 @@ export type KnockoutMatchView = {
   status: 'scheduled' | 'final';
   pickedWinnerId: string | null;
   pickedWinnerName: string | null;
+  /** The predicted opponent in Final/Bronze — the non-winner pick derived from SF bracket picks. Null for all other rounds or when picks are incomplete. */
+  pickedOpponentId: string | null;
+  pickedOpponentName: string | null;
   pickStatus: PickStatus;
   /** User's predicted score — only populated for Final and Bronze ties. */
   predictedHome: number | null;
@@ -146,6 +149,8 @@ export type MatchMatrixCell = {
   matchId: string;
   hit: MatchHit;
   points: number;
+  /** The user's predicted outcome derived from their predicted score. Null when no prediction was made. */
+  predictedOutcome: '1' | 'X' | '2' | null;
 };
 
 export type MatchMatrixEntry = {
@@ -162,8 +167,13 @@ export type MatrixMatch = {
   homeTeamName: string;
   awayTeamId: string;
   awayTeamName: string;
-  actualHome: number;
-  actualAway: number;
+  status: 'scheduled' | 'in_progress' | 'final' | 'cancelled';
+  /** ISO-8601 string. Null when kickoff is not set. */
+  kickoff: string | null;
+  /** Null for unplayed matches. */
+  actualHome: number | null;
+  /** Null for unplayed matches. */
+  actualAway: number | null;
 };
 
 export type ProjectedEntry = {
@@ -195,7 +205,7 @@ export type PointsRaceView = {
   projectedEntries: ProjectedEntry[];
   /** Rows of the per-match scoring matrix, sorted by totalPoints DESC. */
   matchMatrix: MatchMatrixEntry[];
-  /** Completed group-stage matches that form the matrix columns, in kickoff order. */
+  /** All group-stage matches that form the matrix columns, in kickoff order. */
   matrixMatches: MatrixMatch[];
 };
 
