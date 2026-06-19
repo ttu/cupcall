@@ -34,24 +34,40 @@ export function GroupTable({ standing }: Props): ReactElement {
               : row.qualifies === 'best-third'
                 ? 'text-orange-600'
                 : 'text-ink-muted';
+          const hasSubRow =
+            row.predictedPosition !== null || row.poolMostPredictedPosition !== null;
           return (
-            <div
-              key={row.teamId}
-              className={cn(
-                'grid grid-cols-[20px_1fr_26px_26px_36px] items-center p-[8px_12px]',
-                bg,
+            <div key={row.teamId} className={cn('p-[8px_12px]', hasSubRow && 'pb-[6px]', bg)}>
+              <div className="grid grid-cols-[20px_1fr_26px_26px_36px] items-center">
+                <span className={cn('display text-sm', positionColor)}>{row.position}</span>
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <TeamBadge teamId={row.teamId} size="sm" />
+                  <span className="text-[13px] font-bold text-ink truncate">{row.teamName}</span>
+                </span>
+                <span className="tnum text-[13px] text-center text-ink-muted">{row.played}</span>
+                <span className="tnum text-[13px] text-center text-ink-soft">
+                  {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+                </span>
+                <span className="display tnum text-base text-center text-ink">{row.points}</span>
+              </div>
+              {hasSubRow && (
+                <div className="grid grid-cols-[20px_1fr] mt-[3px]">
+                  <span />
+                  <div className="flex items-center gap-2.5">
+                    {row.predictedPosition !== null && (
+                      <span className="text-[10px] font-semibold text-ink-muted">
+                        you · {row.predictedPosition}
+                      </span>
+                    )}
+                    {row.poolMostPredictedPosition !== null && (
+                      <span className="text-[10px] font-semibold text-ink-muted">
+                        pool · {row.poolMostPredictedPosition}{' '}
+                        <span className="font-normal">({row.poolMostPredictedPct}%)</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
               )}
-            >
-              <span className={cn('display text-sm', positionColor)}>{row.position}</span>
-              <span className="flex items-center gap-1.5">
-                <TeamBadge teamId={row.teamId} size="sm" />
-                <span className="text-[13px] font-bold text-ink truncate">{row.teamName}</span>
-              </span>
-              <span className="tnum text-[13px] text-center text-ink-muted">{row.played}</span>
-              <span className="tnum text-[13px] text-center text-ink-soft">
-                {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
-              </span>
-              <span className="display tnum text-base text-center text-ink">{row.points}</span>
             </div>
           );
         })}

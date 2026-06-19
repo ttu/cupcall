@@ -93,12 +93,25 @@ export function buildGroupResults(
         poolPredictionStats: computeMatchPredictionStats(m.id, poolGroupScores),
       }));
 
+    const predictedGroupScores: GroupScore[] = (inputs?.groupScores ?? [])
+      .filter((gs) => def.groupMatches.some((gm) => gm.id === gs.matchId && gm.group === group.id))
+      .map((gs) => ({ matchId: matchId(gs.matchId), home: gs.home, away: gs.away }));
+
+    const predictedOrder =
+      predictedGroupScores.length > 0
+        ? computeStandings(def, group.id as GroupId, predictedGroupScores)
+        : null;
+
+    const poolPositions = computePoolPositions(def, group.id as GroupId, poolGroupScores);
+
     const standing = buildGroupStanding(
       def,
       group.id as GroupId,
       allMatches,
       teamMap,
       bestThirdsSet,
+      predictedOrder,
+      poolPositions,
     );
 
     return { groupId: group.id, completedMatches, todayMatches, standing };
@@ -186,12 +199,67 @@ function computeBestThirds(def: Tournament, allMatches: MatchRow[]): Set<string>
   return new Set(qualifiers.slice(autoCount));
 }
 
+/**
+ * For each team in a group, returns the modal predicted position across all pool members
+ * plus the percentage who predicted it. Users who have predicted at least one match in the
+ * group are included; unpredicted matches count as 0–0 for their ranking.
+ */
+function computePoolPositions(
+  def: Tournament,
+  groupId: GroupId,
+  poolGroupScores: PoolGroupScore[],
+): Map<string, { position: number; pct: number }> {
+  const groupMatchIds = new Set<string>(
+    def.groupMatches.filter((gm) => gm.group === groupId).map((gm) => String(gm.id)),
+  );
+
+  const byUser = new Map<string, GroupScore[]>();
+  for (const s of poolGroupScores) {
+    if (!groupMatchIds.has(s.matchId)) continue;
+    const existing = byUser.get(s.userId) ?? [];
+    existing.push({ matchId: matchId(s.matchId), home: s.home, away: s.away });
+    byUser.set(s.userId, existing);
+  }
+
+  const result = new Map<string, { position: number; pct: number }>();
+  if (byUser.size === 0) return result;
+
+  const positionCounts = new Map<string, Map<number, number>>();
+  for (const scores of byUser.values()) {
+    const order = computeStandings(def, groupId, scores);
+    for (let i = 0; i < order.length; i++) {
+      const tid = order[i];
+      if (!tid) continue;
+      if (!positionCounts.has(tid)) positionCounts.set(tid, new Map());
+      const counts = positionCounts.get(tid)!;
+      counts.set(i + 1, (counts.get(i + 1) ?? 0) + 1);
+    }
+  }
+
+  const total = byUser.size;
+  for (const [tid, counts] of positionCounts) {
+    let modalPos = 0;
+    let maxCount = 0;
+    for (const [pos, count] of counts) {
+      if (count > maxCount) {
+        maxCount = count;
+        modalPos = pos;
+      }
+    }
+    result.set(tid, { position: modalPos, pct: Math.round((maxCount / total) * 100) });
+  }
+
+  return result;
+}
+
 function buildGroupStanding(
   def: Tournament,
   groupId: GroupId,
   allMatches: MatchRow[],
   teamMap: Map<string, string>,
   bestThirdsSet: Set<string>,
+  predictedOrder: string[] | null,
+  poolPositions: Map<string, { position: number; pct: number }>,
 ): GroupStandingRow[] {
   const finalGroupMatches = allMatches.filter(
     (m) => m.stage === 'group' && m.groupId === groupId && m.status === 'final',
@@ -239,6 +307,8 @@ function buildGroupStanding(
     } else if (i === autoQualify && bestThirdsSet.has(tid)) {
       qualifies = 'best-third';
     }
+    const predictedIdx = predictedOrder?.indexOf(tid) ?? -1;
+    const poolPos = poolPositions.get(tid) ?? null;
     return {
       position: i + 1,
       teamId: tid,
@@ -252,6 +322,9 @@ function buildGroupStanding(
       goalDifference: m.gf - m.ga,
       points: m.points,
       qualifies,
+      predictedPosition: predictedIdx >= 0 ? predictedIdx + 1 : null,
+      poolMostPredictedPosition: poolPos?.position ?? null,
+      poolMostPredictedPct: poolPos?.pct ?? null,
     };
   });
 }
