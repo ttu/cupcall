@@ -162,7 +162,9 @@ export async function kickMember(
       return { ok: false, error: 'The pool owner cannot be kicked.' };
     }
 
-    await removeMember(db, poolId, actor.userId === targetUserId ? actor.userId : targetUserId);
+    await deletePrediction(db, poolId, targetUserId);
+    await deleteScore(db, poolId, targetUserId);
+    await removeMember(db, poolId, targetUserId);
     await recordKick(db, poolId, targetUserId);
 
     revalidatePath(`/pools/${poolId}`);

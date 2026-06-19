@@ -446,3 +446,90 @@ describe('leavePool (via removeMember / isMember)', () => {
     expect(detailAfter?.leaderboard.find((e) => e.userId === memberId)).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// kickMember — owner-initiated removal
+// ---------------------------------------------------------------------------
+
+describe('kickMember — prediction and score cleanup', () => {
+  let db: Db;
+  let ownerId: UserId;
+  let memberId: UserId;
+  let poolId: PoolId;
+  let poolToken: string;
+
+  beforeEach(async () => {
+    db = await makeTestDb();
+    await seedTournament(db);
+    ownerId = await seedUser(db, 'owner');
+    memberId = await seedUser(db, 'member');
+
+    const result = await createPool(db, { ownerId, name: 'Kick Test Pool', now: NOW });
+    if (!result.ok) throw new Error('setup: pool creation failed');
+    poolId = result.pool.id;
+
+    const detail = await getPoolDetail(db, poolId);
+    if (!detail?.inviteToken) throw new Error('setup: pool has no invite token');
+    poolToken = detail.inviteToken;
+
+    await joinPool(db, { userId: memberId, token: poolToken, now: NOW });
+  });
+
+  it("removes the kicked member's prediction", async () => {
+    const { deletePrediction, getPrediction } = await import('@cup/db');
+
+    expect(await getPrediction(db, poolId, memberId)).toBeDefined();
+
+    await deletePrediction(db, poolId, memberId);
+
+    expect(await getPrediction(db, poolId, memberId)).toBeUndefined();
+  });
+
+  it("removes the kicked member's score and they disappear from the leaderboard", async () => {
+    const { deleteScore, removeMember, recordKick: doRecordKick } = await import('@cup/db');
+
+    await upsertScore(db, {
+      poolId,
+      userId: memberId,
+      pointsTotal: points(10),
+      breakdown: {} as import('@cup/engine').ScoreBreakdown,
+    });
+
+    const before = await getPoolDetail(db, poolId);
+    expect(before?.leaderboard.find((e) => e.userId === memberId)).toBeDefined();
+
+    await deleteScore(db, poolId, memberId);
+    await removeMember(db, poolId, memberId);
+    await doRecordKick(db, poolId, memberId);
+
+    const after = await getPoolDetail(db, poolId);
+    expect(after?.leaderboard.find((e) => e.userId === memberId)).toBeUndefined();
+  });
+
+  it('records a kick so the member cannot rejoin', async () => {
+    const { removeMember, recordKick: doRecordKick } = await import('@cup/db');
+
+    await removeMember(db, poolId, memberId);
+    await doRecordKick(db, poolId, memberId);
+
+    expect(await isKicked(db, poolId, memberId)).toBe(true);
+    const rejoin = await joinPool(db, { userId: memberId, token: poolToken, now: NOW });
+    expect(rejoin.ok).toBe(false);
+    if (rejoin.ok) return;
+    expect(rejoin.error.code).toBe('kicked');
+  });
+
+  it("does not affect the owner's prediction when a member is kicked", async () => {
+    const { deletePrediction, getPrediction, getOrCreatePrediction } = await import('@cup/db');
+
+    await getOrCreatePrediction(db, {
+      poolId,
+      userId: ownerId,
+      tournamentId: asTournamentId('wc-test'),
+    });
+
+    await deletePrediction(db, poolId, memberId);
+
+    expect(await getPrediction(db, poolId, ownerId)).toBeDefined();
+  });
+});
