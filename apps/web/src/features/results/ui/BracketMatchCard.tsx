@@ -74,7 +74,7 @@ export function BracketMatchCard({ match }: Props): ReactElement {
     <div
       data-testid="bracket-tie-row"
       className={cn(
-        'card overflow-hidden min-w-37.5 p-1 border',
+        'card overflow-hidden min-w-37.5 min-h-[114px] p-1 border',
         borderClassForHit(match.hit, match.projected),
       )}
     >
