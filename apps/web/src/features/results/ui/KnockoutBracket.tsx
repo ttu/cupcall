@@ -71,6 +71,7 @@ function BracketConnector({
 type Props = {
   rounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
+  userPredictedKnockoutTeamIds: string[] | null;
 };
 
 function BracketInfoBanner(): ReactElement {
@@ -107,7 +108,11 @@ function FinalCards({ finalMatch, bronzeMatch, paddingTop }: FinalCardsProps): R
   );
 }
 
-export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
+export function KnockoutBracket({
+  rounds,
+  bronzeMatch,
+  userPredictedKnockoutTeamIds,
+}: Props): ReactElement {
   if (rounds.length === 0) {
     return (
       <div className="card p-[32px_24px] text-center">
@@ -117,6 +122,13 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
       </div>
     );
   }
+
+  const pickedTeamIds = new Set<string>([
+    ...[...rounds.flatMap((r) => r.matches), ...(bronzeMatch ? [bronzeMatch] : [])]
+      .map((m) => m.pickedWinnerId)
+      .filter((id): id is string => id !== null),
+    ...(userPredictedKnockoutTeamIds ?? []),
+  ]);
 
   const finalRound = rounds.find((r) => r.label === 'Final') ?? null;
   const finalMatch = finalRound?.matches[0] ?? null;
@@ -162,7 +174,11 @@ export function KnockoutBracket({ rounds, bronzeMatch }: Props): ReactElement {
               >
                 <div className="flex flex-col" style={{ gap: columnItemGap(i) }}>
                   {round.matches.map((match) => (
-                    <BracketMatchCard key={match.bracketMatchKey} match={match} />
+                    <BracketMatchCard
+                      key={match.bracketMatchKey}
+                      match={match}
+                      pickedTeamIds={pickedTeamIds}
+                    />
                   ))}
                 </div>
               </div>

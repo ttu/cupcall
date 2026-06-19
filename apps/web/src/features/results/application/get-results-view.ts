@@ -12,7 +12,7 @@ import {
   getActualResults,
 } from '@cup/db';
 import type { MatchRow, LeaderboardEntry } from '@cup/db';
-import { computeRemainingMaxPoints } from '@cup/engine';
+import { computeRemainingMaxPoints, deriveGroupOrders, selectQualifiers } from '@cup/engine';
 import type { Tournament, ActualResults, ScoreBreakdown, PoolId } from '@cup/engine';
 import type {
   ResultsView,
@@ -89,6 +89,15 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   );
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch);
 
+  const userPredictedKnockoutTeamIds: string[] | null = inputs
+    ? (() => {
+        const groupOrders = deriveGroupOrders(def, inputs.groupScores);
+        const qualifiers = selectQualifiers(def, inputs.groupScores, groupOrders);
+        const knockoutWinners = inputs.knockoutPicks.map((p) => p.winner as string);
+        return [...new Set([...qualifiers, ...knockoutWinners])];
+      })()
+    : null;
+
   const specialBets = buildSpecialBetResults(
     def,
     inputs,
@@ -135,6 +144,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     bracketRounds,
     bronzeMatch,
     bracketHealth,
+    userPredictedKnockoutTeamIds,
     leaderboard,
     pointsRaceView,
     specialBets,

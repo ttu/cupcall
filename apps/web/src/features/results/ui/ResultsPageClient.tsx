@@ -134,7 +134,11 @@ export function ResultsPageClient({
         <div className="flex flex-col gap-6">
           {view.userKnockoutSummary && <PointsSummaryPanel summary={view.userKnockoutSummary} />}
           <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_240px]">
-            <KnockoutBracket rounds={view.bracketRounds} bronzeMatch={view.bronzeMatch} />
+            <KnockoutBracket
+              rounds={view.bracketRounds}
+              bronzeMatch={view.bronzeMatch}
+              userPredictedKnockoutTeamIds={view.userPredictedKnockoutTeamIds}
+            />
             <div className="flex flex-col gap-4">
               <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
               <KnockoutPointsPanel breakdown={view.userBreakdown} />

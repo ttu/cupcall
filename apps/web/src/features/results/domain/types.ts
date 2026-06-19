@@ -31,6 +31,12 @@ export type GroupStandingRow = {
   goalDifference: number;
   points: number;
   qualifies: 'auto' | 'best-third' | false;
+  /** Position the current user predicted for this team. Null when no predictions exist (viewer mode or unpredicted group). */
+  predictedPosition: number | null;
+  /** Most commonly predicted position for this team across the pool. Null when no pool predictions exist. */
+  poolMostPredictedPosition: number | null;
+  /** % of pool members who predicted the most common position above. */
+  poolMostPredictedPct: number | null;
 };
 
 export type Best3rdStandingRow = {
@@ -281,6 +287,8 @@ export type ResultsView = {
   bracketRounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
   bracketHealth: BracketHealth;
+  /** Team IDs the current user predicted would reach the knockout stage (qualify from groups) plus bracket winner picks. Null in viewer mode. */
+  userPredictedKnockoutTeamIds: string[] | null;
   leaderboard: LeaderboardEntry[];
   pointsRaceView: PointsRaceView;
   specialBets: SpecialBetResultRow[];

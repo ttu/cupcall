@@ -3,7 +3,7 @@ import type { KnockoutMatchView, MatchHit } from '../domain/types';
 import { HitChip } from './HitChip';
 import { TeamBadge, Icon, cn } from '@/shared/ui';
 
-type Props = { match: KnockoutMatchView };
+type Props = { match: KnockoutMatchView; pickedTeamIds: Set<string> };
 
 function borderClassForHit(hit: MatchHit, projected: boolean): string {
   if (projected) return 'border-line-soft border-dashed';
@@ -16,6 +16,7 @@ function TeamRow({
   teamId,
   teamName,
   isPick,
+  showCheckmark,
   isActualWinner,
   r32Pct,
   projected,
@@ -23,6 +24,7 @@ function TeamRow({
   teamId: string | null;
   teamName: string | null;
   isPick: boolean;
+  showCheckmark: boolean;
   isActualWinner: boolean;
   r32Pct: number | null;
   projected: boolean;
@@ -55,7 +57,7 @@ function TeamRow({
           {r32Pct}%
         </span>
       )}
-      {isPick && !projected && <Icon name="check" size={11} color="var(--green-700)" />}
+      {showCheckmark && !projected && <Icon name="check" size={11} color="var(--green-700)" />}
       {isActualWinner && (
         <span className="text-[11px] font-bold text-green-600 ml-0.5" aria-label="winner">
           ✓
@@ -65,7 +67,7 @@ function TeamRow({
   );
 }
 
-export function BracketMatchCard({ match }: Props): ReactElement {
+export function BracketMatchCard({ match, pickedTeamIds }: Props): ReactElement {
   const noTeams = !match.homeTeamId && !match.awayTeamId;
   const hasScore = match.actualHome !== null && match.actualAway !== null;
   const isFinal = match.status === 'final';
@@ -105,7 +107,10 @@ export function BracketMatchCard({ match }: Props): ReactElement {
           <TeamRow
             teamId={match.homeTeamId}
             teamName={match.homeTeamName}
-            isPick={match.pickedWinnerId === match.homeTeamId && match.pickedWinnerId !== null}
+            isPick={match.homeTeamId !== null && pickedTeamIds.has(match.homeTeamId)}
+            showCheckmark={
+              match.pickedWinnerId === match.homeTeamId && match.pickedWinnerId !== null
+            }
             isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
             r32Pct={match.homeTeamR32Pct}
             projected={match.projected}
@@ -113,7 +118,10 @@ export function BracketMatchCard({ match }: Props): ReactElement {
           <TeamRow
             teamId={match.awayTeamId}
             teamName={match.awayTeamName}
-            isPick={match.pickedWinnerId === match.awayTeamId && match.pickedWinnerId !== null}
+            isPick={match.awayTeamId !== null && pickedTeamIds.has(match.awayTeamId)}
+            showCheckmark={
+              match.pickedWinnerId === match.awayTeamId && match.pickedWinnerId !== null
+            }
             isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
             r32Pct={match.awayTeamR32Pct}
             projected={match.projected}
