@@ -154,7 +154,14 @@ export function ResultsPageClient({
         </div>
       )}
 
-      {activeTab === 'race' && <PointsRaceTab race={view.pointsRaceView} viewerMode={viewerMode} />}
+      {activeTab === 'race' && (
+        <PointsRaceTab
+          race={view.pointsRaceView}
+          userBreakdown={view.userBreakdown}
+          scoring={view.scoring}
+          viewerMode={viewerMode}
+        />
+      )}
     </div>
   );
 }

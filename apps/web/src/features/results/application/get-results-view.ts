@@ -132,6 +132,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   return {
     poolName: pool.name,
     tournamentName: tournament.name,
+    scoring: def.scoring,
     userRank,
     userBreakdown,
     userGroupSummary,

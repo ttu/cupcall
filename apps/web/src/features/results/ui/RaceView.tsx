@@ -1,16 +1,21 @@
 import type { ReactElement } from 'react';
-import type { PointsRaceView, RaceChartPlayer } from '../domain/types';
+import type { PointsRaceView, RaceChartPlayer, ScoreBreakdown, Scoring } from '../domain/types';
 import { RaceChart } from './RaceChart';
 import { StatCard } from './StatCard';
 import { ProjectedStandings, projectedSubLabel } from './ProjectedStandings';
 import { SwingCard } from './SwingCard';
+import { ScoreBreakdownCard } from './ScoreBreakdownCard';
 
 export function RaceView({
   race,
   viewerMode,
+  userBreakdown,
+  scoring,
 }: {
   race: PointsRaceView;
   viewerMode: boolean;
+  userBreakdown: ScoreBreakdown | null;
+  scoring: Scoring | null;
 }): ReactElement {
   return (
     <div className="grid gap-0 md:grid-cols-[1fr_322px]">
@@ -31,26 +36,29 @@ export function RaceView({
         </div>
 
         {!viewerMode && (
-          <div className="grid grid-cols-3 gap-3">
-            <StatCard
-              label="Banked so far"
-              value={String(race.myBanked)}
-              sub="your actual points scored"
-              color="var(--ink)"
-            />
-            <StatCard
-              label="Still available"
-              value={`+${race.myTotalCanStillGet}`}
-              sub="max pts still attainable"
-              color={race.myTotalCanStillGet > 0 ? 'var(--green-600)' : 'var(--ink-muted)'}
-            />
-            <StatCard
-              label="Projected total"
-              value={String(race.myProjected)}
-              sub={projectedSubLabel(race.projectedEntries)}
-              color={race.myStillLive > 0 ? 'var(--green-600)' : 'var(--ink)'}
-            />
-          </div>
+          <>
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard
+                label="Banked so far"
+                value={String(race.myBanked)}
+                sub="your actual points scored"
+                color="var(--ink)"
+              />
+              <StatCard
+                label="Still available"
+                value={`+${race.myTotalCanStillGet}`}
+                sub="max pts still attainable"
+                color={race.myTotalCanStillGet > 0 ? 'var(--green-600)' : 'var(--ink-muted)'}
+              />
+              <StatCard
+                label="Projected total"
+                value={String(race.myProjected)}
+                sub={projectedSubLabel(race.projectedEntries)}
+                color={race.myStillLive > 0 ? 'var(--green-600)' : 'var(--ink)'}
+              />
+            </div>
+            {userBreakdown && <ScoreBreakdownCard breakdown={userBreakdown} scoring={scoring} />}
+          </>
         )}
       </div>
 

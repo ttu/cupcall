@@ -138,8 +138,8 @@ export type BracketHealth = {
 
 import type { StageKey, StageProgress } from '@/shared/stage-progress';
 import type { LeaderboardEntry } from '@cup/db';
-import type { ScoreBreakdown } from '@cup/engine';
-export type { StageKey, StageProgress, LeaderboardEntry, ScoreBreakdown };
+import type { ScoreBreakdown, Scoring } from '@cup/engine';
+export type { StageKey, StageProgress, LeaderboardEntry, ScoreBreakdown, Scoring };
 
 export type UserRankChip = {
   rank: number;
@@ -270,6 +270,7 @@ export type UserPointsSummary = {
 export type ResultsView = {
   poolName: string;
   tournamentName: string;
+  scoring: Scoring;
   userRank: UserRankChip | null;
   /** The current user's score breakdown — null when the user has no scored prediction yet. */
   userBreakdown: ScoreBreakdown | null;

@@ -2,16 +2,26 @@
 
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import type { PointsRaceView } from '../domain/types';
+import type { PointsRaceView, ScoreBreakdown, Scoring } from '../domain/types';
 import { cn } from '@/shared/ui';
 import { RaceView } from './RaceView';
 import { MatchMatrix } from './MatchMatrix';
 
 type RaceSubTab = 'race' | 'by-match';
 
-type Props = { race: PointsRaceView; viewerMode?: boolean };
+type Props = {
+  race: PointsRaceView;
+  userBreakdown?: ScoreBreakdown | null;
+  scoring?: Scoring | null;
+  viewerMode?: boolean;
+};
 
-export function PointsRaceTab({ race, viewerMode = false }: Props): ReactElement {
+export function PointsRaceTab({
+  race,
+  userBreakdown = null,
+  scoring = null,
+  viewerMode = false,
+}: Props): ReactElement {
   const [subTab, setSubTab] = useState<RaceSubTab>('race');
 
   return (
@@ -38,7 +48,14 @@ export function PointsRaceTab({ race, viewerMode = false }: Props): ReactElement
         })}
       </div>
 
-      {subTab === 'race' && <RaceView race={race} viewerMode={viewerMode} />}
+      {subTab === 'race' && (
+        <RaceView
+          race={race}
+          viewerMode={viewerMode}
+          userBreakdown={userBreakdown}
+          scoring={scoring}
+        />
+      )}
       {subTab === 'by-match' && (
         <MatchMatrix entries={race.matchMatrix} matches={race.matrixMatches} />
       )}
