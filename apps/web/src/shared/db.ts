@@ -25,14 +25,17 @@ type AppSchema = typeof schema;
  * Created on first access (not at module load time) so that the module can be
  * imported during Next.js build without requiring env vars.
  * The `server-only` guard above ensures this module is never bundled for the client.
+ *
+ * Stored on globalThis so Next.js HMR doesn't create a new connection pool on
+ * every hot-reload (which exhausts Postgres max_connections in dev).
  */
-let _db: Db<AppSchema> | undefined;
+const globalForDb = globalThis as unknown as { _db: Db<AppSchema> | undefined };
 
 function getDb(): Db<AppSchema> {
-  if (!_db) {
-    _db = createDb(getEnv().DATABASE_URL, schema, { logger: otelLogger });
+  if (!globalForDb._db) {
+    globalForDb._db = createDb(getEnv().DATABASE_URL, schema, { logger: otelLogger });
   }
-  return _db;
+  return globalForDb._db;
 }
 
 /**

@@ -21,7 +21,7 @@ export function createDb<TSchema extends Record<string, unknown> = Record<string
   schema?: TSchema,
   options?: { logger?: Logger },
 ): Db<TSchema> {
-  const client = postgres(connectionString);
+  const client = postgres(connectionString, { max: 10 });
   return drizzlePostgres(client, {
     schema: schema ?? ({} as TSchema),
     ...(options?.logger ? { logger: options.logger } : {}),
