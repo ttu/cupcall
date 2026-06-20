@@ -62,6 +62,7 @@ const tournament: Tournament = {
     'h2hGoalsFor',
     'goalDifference',
     'goalsFor',
+    'conductScore',
   ],
   bracket: {
     rounds: ['R32', 'Final'],

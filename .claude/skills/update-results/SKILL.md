@@ -8,9 +8,10 @@ description: Fetch the latest World Cup 2026 match results from openfootball and
 ## What this does
 
 1. Find which group matches are missing from `data/tournaments/wc-2026/results.json`
-2. Fetch the openfootball feed
-3. Map completed matches to our match IDs
-4. Write new results into `results.json`
+2. Fetch the openfootball feed for scores
+3. Fetch Wikipedia group pages for conduct (card) data
+4. Map completed matches to our match IDs
+5. Write new results into `results.json`
 
 ## Step 1 — find missing matches
 

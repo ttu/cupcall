@@ -11,6 +11,8 @@ const actualMatchResultSchema = z.object({
   matchId: matchIdSchema,
   home: z.number().int().nonnegative(),
   away: z.number().int().nonnegative(),
+  homeConduct: z.number().int().optional(),
+  awayConduct: z.number().int().optional(),
 });
 
 const actualFinishMatchSchema = z.object({
@@ -67,7 +69,13 @@ export const resultsSchema: z.ZodType<ActualResults, z.ZodTypeDef, unknown> =
   rawResultsSchema.transform((v): ActualResults => {
     // Build with exactOptionalPropertyTypes compliance — only include properties that are present
     const base: ActualResults = {
-      matchResults: v.matchResults,
+      matchResults: v.matchResults.map((r) => ({
+        matchId: r.matchId,
+        home: r.home,
+        away: r.away,
+        ...(r.homeConduct !== undefined && { homeConduct: r.homeConduct }),
+        ...(r.awayConduct !== undefined && { awayConduct: r.awayConduct }),
+      })),
       groupOrder: v.groupOrder,
       answers: {
         ...(v.answers.roundOf8 !== undefined && { roundOf8: v.answers.roundOf8 }),
@@ -119,7 +127,13 @@ export const resultsSchema: z.ZodType<ActualResults, z.ZodTypeDef, unknown> =
   });
 
 export type ResultsInput = {
-  matchResults: Array<{ matchId: string; home: number; away: number }>;
+  matchResults: Array<{
+    matchId: string;
+    home: number;
+    away: number;
+    homeConduct?: number;
+    awayConduct?: number;
+  }>;
   groupOrder: Record<string, string[]>;
   bronzeMatch?: { home: string; away: string; homeGoals: number; awayGoals: number };
   finalMatch?: {

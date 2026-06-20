@@ -33,6 +33,7 @@ export function selectQualifiers(
     points: number;
     gf: number;
     ga: number;
+    conduct: number;
     seed: number;
   };
 
@@ -43,14 +44,22 @@ export function selectQualifiers(
       // Compute this group's per-team metrics to rank its third-placed team across groups.
       const metricsMap = teamMetrics(t, g.id, scores);
       const m = metricsMap.get(thirdTeam)!;
-      return { team: thirdTeam, groupIndex, points: m.points, gf: m.gf, ga: m.ga, seed: m.seed };
+      return {
+        team: thirdTeam,
+        groupIndex,
+        points: m.points,
+        gf: m.gf,
+        ga: m.ga,
+        conduct: m.conduct,
+        seed: m.seed,
+      };
     })
     .filter((x): x is ThirdEntry => x !== null);
 
   // Rank thirds: same tiebreak metrics, then group index (stable / deterministic)
   const thirdsMetricKeys = t.standingsTiebreak.filter(
-    (k): k is 'points' | 'goalDifference' | 'goalsFor' =>
-      k === 'points' || k === 'goalDifference' || k === 'goalsFor',
+    (k): k is 'points' | 'goalDifference' | 'goalsFor' | 'conductScore' =>
+      k === 'points' || k === 'goalDifference' || k === 'goalsFor' || k === 'conductScore',
   );
 
   thirds.sort((a, b) => {

@@ -99,6 +99,7 @@ export const miniTournament: Tournament = {
     'h2hGoalsFor',
     'goalDifference',
     'goalsFor',
+    'conductScore',
   ],
   bracket: {
     rounds: ['QF', 'SF', 'Final'],

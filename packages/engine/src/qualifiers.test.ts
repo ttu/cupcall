@@ -146,4 +146,89 @@ describe('selectQualifiers', () => {
     expect(thirds).not.toContain(teamId('C3'));
     expect(thirds).not.toContain(teamId('D3'));
   });
+
+  it('breaks ties among best thirds by conduct score when points and GD/GF are equal', () => {
+    const t: Tournament = {
+      ...miniTournament,
+      qualification: { autoQualifyPerGroup: 2, bestThirdPlaced: 2 },
+    };
+
+    // All groups follow the same structure so that each 3rd-placed team ends up with
+    // 3 pts, GD=−3, GF=1. The only differentiator is conduct score from card data.
+    // B3: homeConduct=-1 in one of its lost matches (one yellow) → total conduct −1
+    // A3, C3, D3: no cards → conduct 0  (but group-index fallback: A < B < C < D)
+    // → B3 (conduct −1) should rank BELOW A3 (conduct 0); A3 and C3 are both 0
+    //   but group-index A<C means A3 wins the 2nd spot over C3.
+    // Expected order: A3 (0 pts tiebreak wins first), then C3 beats B3 on conduct.
+    //
+    // All thirds have 3 pts, GD=-3: so conductScore is the 4th tiebreaker here.
+    //
+    // Group pattern for each: seed-1 beats seed-2,3,4; seed-2 beats seed-3,4; seed-3 beats seed-4.
+    // That gives seed-3 exactly 3 pts, GF=1 (beat seed-4), GA=4, GD=-3.
+
+    function groupScores(
+      prefix: string,
+      ids: [string, string, string, string],
+      cardMatchIndex: number | null,
+      cardConduct: number,
+    ): GroupScore[] {
+      const [t1, t2, t3, t4] = ids;
+      // matches: m1=1v2, m2=1v3, m3=1v4, m4=2v3, m5=2v4, m6=3v4
+      const base: GroupScore[] = [
+        { matchId: matchId(`m${prefix}1`), home: 2, away: 0 },
+        { matchId: matchId(`m${prefix}2`), home: 2, away: 0 },
+        { matchId: matchId(`m${prefix}3`), home: 2, away: 0 },
+        { matchId: matchId(`m${prefix}4`), home: 2, away: 0 },
+        { matchId: matchId(`m${prefix}5`), home: 2, away: 0 },
+        { matchId: matchId(`m${prefix}6`), home: 1, away: 0 },
+      ];
+      if (cardMatchIndex !== null) {
+        // Apply conduct penalty to the AWAY team of match at cardMatchIndex.
+        // match index 1 = 1v2: t3 is away in match 2 (1v3) → seed-3 is away
+        // match 4 = 2v3: t3 is away → conduct applies to t3
+        base[cardMatchIndex]!.awayConduct = cardConduct;
+      }
+      return base;
+    }
+
+    // A3: no cards, conduct=0
+    const aScores = groupScores(
+      'A',
+      ['A1', 'A2', 'A3', 'A4'] as [string, string, string, string],
+      null,
+      0,
+    );
+    // B3: gets a yellow in match mB4 (B2 vs B3, B3 is away) → conduct -1
+    const bScores = groupScores(
+      'B',
+      ['B1', 'B2', 'B3', 'B4'] as [string, string, string, string],
+      3,
+      -1,
+    );
+    // C3: no cards, conduct=0
+    const cScores = groupScores(
+      'C',
+      ['C1', 'C2', 'C3', 'C4'] as [string, string, string, string],
+      null,
+      0,
+    );
+    // D3: no cards, conduct=0
+    const dScores = groupScores(
+      'D',
+      ['D1', 'D2', 'D3', 'D4'] as [string, string, string, string],
+      null,
+      0,
+    );
+
+    const scores: GroupScore[] = [...aScores, ...bScores, ...cScores, ...dScores];
+    const groupOrders = deriveGroupOrders(t, scores);
+    const qualifiers = selectQualifiers(t, scores, groupOrders);
+
+    const thirds = qualifiers.slice(8);
+    expect(thirds).toHaveLength(2);
+    // A3 (conduct 0, group index 0) wins, then C3 (conduct 0, group index 2) over B3 (conduct -1)
+    expect(thirds[0]).toBe(teamId('A3'));
+    expect(thirds[1]).toBe(teamId('C3'));
+    expect(thirds).not.toContain(teamId('B3'));
+  });
 });

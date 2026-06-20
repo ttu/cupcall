@@ -100,6 +100,7 @@ const tiebreakKeySchema = z.enum([
   'h2hGoalsFor',
   'goalDifference',
   'goalsFor',
+  'conductScore',
 ]);
 
 // Internal (non-exported) schema retains Zod's inferred output type so we can drift-check it

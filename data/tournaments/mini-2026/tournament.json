@@ -91,7 +91,8 @@
     "h2hGoalDifference",
     "h2hGoalsFor",
     "goalDifference",
-    "goalsFor"
+    "goalsFor",
+    "conductScore"
   ],
   "bracket": {
     "rounds": ["QF", "SF", "Final"],

@@ -6,7 +6,8 @@ export type TiebreakKey =
   | 'h2hGoalDifference'
   | 'h2hGoalsFor'
   | 'goalDifference'
-  | 'goalsFor';
+  | 'goalsFor'
+  | 'conductScore';
 
 export interface Team {
   id: TeamId;
@@ -94,6 +95,9 @@ export interface GroupScore {
   matchId: MatchId;
   home: number;
   away: number;
+  /** Pre-computed conduct score delta for this match. Yellow: -1, red for two yellows: -3, straight red: -4, yellow + straight red: -5. */
+  homeConduct?: number;
+  awayConduct?: number;
 }
 export interface KnockoutPick {
   bracketMatchKey: BracketMatchKey;
@@ -136,6 +140,8 @@ export interface ActualMatchResult {
   matchId: MatchId;
   home: number;
   away: number;
+  homeConduct?: number;
+  awayConduct?: number;
 }
 export interface ActualFinishMatch {
   home: TeamId;

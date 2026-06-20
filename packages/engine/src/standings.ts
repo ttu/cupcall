@@ -12,6 +12,7 @@ export interface TeamMetrics {
   points: number;
   gf: number;
   ga: number;
+  conduct: number;
 }
 
 /**
@@ -19,7 +20,10 @@ export interface TeamMetrics {
  * H2h variants map to their overall counterparts — the caller is responsible
  * for passing head-to-head computed data when an h2h key is used.
  */
-export function metric(key: TiebreakKey, r: { points: number; gf: number; ga: number }): number {
+export function metric(
+  key: TiebreakKey,
+  r: { points: number; gf: number; ga: number; conduct?: number },
+): number {
   switch (key) {
     case 'points':
     case 'h2hPoints':
@@ -30,6 +34,8 @@ export function metric(key: TiebreakKey, r: { points: number; gf: number; ga: nu
     case 'goalsFor':
     case 'h2hGoalsFor':
       return r.gf;
+    case 'conductScore':
+      return r.conduct ?? 0;
   }
 }
 
@@ -46,7 +52,7 @@ export function teamMetrics(
   if (!grp) throw new Error(`Unknown group ${groupId}`);
 
   const rows = new Map<TeamId, TeamMetrics>(
-    grp.teams.map((team, i) => [team, { team, seed: i, points: 0, gf: 0, ga: 0 }]),
+    grp.teams.map((team, i) => [team, { team, seed: i, points: 0, gf: 0, ga: 0, conduct: 0 }]),
   );
 
   const byId = new Map(scores.map((s) => [s.matchId, s]));
@@ -62,6 +68,8 @@ export function teamMetrics(
     home.ga += s.away;
     away.gf += s.away;
     away.ga += s.home;
+    home.conduct += s.homeConduct ?? 0;
+    away.conduct += s.awayConduct ?? 0;
 
     if (s.home > s.away) {
       home.points += 3;
