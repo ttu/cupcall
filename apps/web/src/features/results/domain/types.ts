@@ -37,6 +37,7 @@ export type GroupStandingRow = {
   poolMostPredictedPosition: number | null;
   /** % of pool members who predicted the most common position above. */
   poolMostPredictedPct: number | null;
+  fifaRanking: number | null;
 };
 
 export type Best3rdStandingRow = {

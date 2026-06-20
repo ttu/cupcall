@@ -235,6 +235,17 @@ describe('getResultsView', () => {
     expect(groupA.standing[0]!.teamId).toBe('A1');
   });
 
+  it('includes fifaRanking on standing rows', async () => {
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;
+    for (const row of groupA.standing) {
+      const team = miniTournament.teams.find((t) => t.id === row.teamId)!;
+      expect(row.fifaRanking).toBe(team.fifaRanking ?? null);
+    }
+    // Sanity-check a concrete value: A1 has ranking 1
+    expect(groupA.standing.find((r) => r.teamId === 'A1')!.fifaRanking).toBe(1);
+  });
+
   it('marks qualifying positions correctly', async () => {
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     const groupA = view!.groupResults.find((g) => g.groupId === 'A')!;

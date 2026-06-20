@@ -43,6 +43,9 @@ export function GroupTable({ standing }: Props): ReactElement {
                 <span className="flex items-center gap-1.5 min-w-0">
                   <TeamBadge teamId={row.teamId} size="sm" />
                   <span className="text-[13px] font-bold text-ink truncate">{row.teamName}</span>
+                  {row.fifaRanking !== null && (
+                    <span className="text-[10px] text-ink-muted shrink-0">#{row.fifaRanking}</span>
+                  )}
                 </span>
                 <span className="tnum text-[13px] text-center text-ink-muted">{row.played}</span>
                 <span className="tnum text-[13px] text-center text-ink-soft">

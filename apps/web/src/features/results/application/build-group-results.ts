@@ -297,6 +297,11 @@ function buildGroupStanding(
   }
 
   const autoQualify = def.qualification.autoQualifyPerGroup;
+  const rankingMap = new Map<string, number>(
+    def.teams
+      .filter((t): t is typeof t & { fifaRanking: number } => t.fifaRanking !== undefined)
+      .map((t) => [t.id, t.fifaRanking]),
+  );
 
   return orderedIds.map((tid, i) => {
     const m = metrics.get(tid) ?? { points: 0, gf: 0, ga: 0 };
@@ -325,6 +330,7 @@ function buildGroupStanding(
       predictedPosition: predictedIdx >= 0 ? predictedIdx + 1 : null,
       poolMostPredictedPosition: poolPos?.position ?? null,
       poolMostPredictedPct: poolPos?.pct ?? null,
+      fifaRanking: rankingMap.get(tid) ?? null,
     };
   });
 }

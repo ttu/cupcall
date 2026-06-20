@@ -11,6 +11,7 @@ const bracketMatchKeySchema = z.string().transform(bracketMatchKey);
 const teamSchema = z.object({
   id: teamIdSchema,
   name: z.string(),
+  fifaRanking: z.number().optional(),
 });
 
 const playerSchema = z.object({

@@ -11,6 +11,7 @@ export type TiebreakKey =
 export interface Team {
   id: TeamId;
   name: string;
+  fifaRanking?: number | undefined;
 }
 export interface Player {
   id: PlayerId;

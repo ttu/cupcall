@@ -79,7 +79,11 @@ export const miniTournament: Tournament = {
   id: 'mini-2026',
   name: 'Mini Tournament',
   teams: groups.flatMap((g) =>
-    [1, 2, 3, 4].map((n) => ({ id: teamId(`${g}${n}`), name: `Team ${g}${n}` })),
+    [1, 2, 3, 4].map((n) => ({
+      id: teamId(`${g}${n}`),
+      name: `Team ${g}${n}`,
+      fifaRanking: (g.charCodeAt(0) - 65) * 4 + n, // A1=1 … D4=16
+    })),
   ),
   players,
   groups: groups.map((g) => ({
