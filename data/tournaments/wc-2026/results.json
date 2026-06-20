@@ -28,7 +28,11 @@
     { "matchId": "mA3", "home": 1, "away": 1 },
     { "matchId": "mB3", "home": 4, "away": 1 },
     { "matchId": "mB4", "home": 6, "away": 0 },
-    { "matchId": "mA4", "home": 1, "away": 0 }
+    { "matchId": "mA4", "home": 1, "away": 0 },
+    { "matchId": "mC3", "home": 0, "away": 1 },
+    { "matchId": "mC4", "home": 3, "away": 0 },
+    { "matchId": "mD3", "home": 2, "away": 0 },
+    { "matchId": "mD4", "home": 0, "away": 1 }
   ],
   "groupOrder": {},
   "answers": {
