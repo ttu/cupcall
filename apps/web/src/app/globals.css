@@ -448,54 +448,160 @@ body {
   }
 }
 
-.badge.c-mex { background: oklch(0.55 0.16 150); }
-.badge.c-arg { background: oklch(0.66 0.11 235); }
-.badge.c-bra { background: oklch(0.74 0.16 130); color: oklch(0.25 0.05 260); }
-.badge.c-fra { background: oklch(0.45 0.13 260); }
-.badge.c-esp { background: oklch(0.55 0.18 25); }
-.badge.c-eng { background: oklch(0.94 0.01 250); color: oklch(0.45 0.18 25); }
-.badge.c-ned { background: oklch(0.68 0.18 55); }
-.badge.c-por { background: oklch(0.52 0.17 22); }
-.badge.c-ger { background: oklch(0.28 0.02 160); }
-.badge.c-usa { background: oklch(0.94 0.01 250); color: oklch(0.35 0.12 25); }
-.badge.c-can { background: oklch(0.55 0.18 25); }
-.badge.c-alg { background: oklch(0.52 0.17 145); }
-.badge.c-aus { background: oklch(0.74 0.17 95); color: oklch(0.28 0.1 260); }
-.badge.c-aut { background: oklch(0.5 0.18 25); }
-.badge.c-bel { background: oklch(0.2 0.02 55); color: oklch(0.87 0.16 90); }
-.badge.c-bih { background: oklch(0.42 0.14 255); }
-.badge.c-civ { background: oklch(0.65 0.18 50); color: oklch(0.22 0.04 50); }
-.badge.c-cod { background: oklch(0.4 0.15 255); }
-.badge.c-col { background: oklch(0.82 0.17 95); color: oklch(0.22 0.06 95); }
-.badge.c-cpv { background: oklch(0.4 0.14 250); }
-.badge.c-cro { background: oklch(0.55 0.17 22); }
-.badge.c-cuw { background: oklch(0.44 0.16 240); }
-.badge.c-cze { background: oklch(0.44 0.16 258); }
-.badge.c-ecu { background: oklch(0.78 0.17 95); color: oklch(0.22 0.06 95); }
-.badge.c-egy { background: oklch(0.24 0.02 0); }
-.badge.c-gha { background: oklch(0.73 0.14 78); color: oklch(0.22 0.06 80); }
-.badge.c-hai { background: oklch(0.38 0.15 255); }
-.badge.c-irn { background: oklch(0.5 0.17 145); }
-.badge.c-irq { background: oklch(0.46 0.17 145); }
-.badge.c-jor { background: oklch(0.4 0.14 148); }
-.badge.c-jpn { background: oklch(0.4 0.16 260); }
-.badge.c-kor { background: oklch(0.32 0.14 255); }
-.badge.c-ksa { background: oklch(0.44 0.17 145); }
-.badge.c-mar { background: oklch(0.48 0.18 22); }
-.badge.c-nor { background: oklch(0.54 0.19 22); }
-.badge.c-nzl { background: oklch(0.28 0.13 255); }
-.badge.c-pan { background: oklch(0.46 0.16 250); }
-.badge.c-par { background: oklch(0.5 0.12 220); }
-.badge.c-qat { background: oklch(0.33 0.12 15); }
-.badge.c-rsa { background: oklch(0.44 0.17 145); }
-.badge.c-sco { background: oklch(0.36 0.14 255); }
-.badge.c-sen { background: oklch(0.44 0.16 145); }
-.badge.c-sui { background: oklch(0.53 0.2 20); }
-.badge.c-swe { background: oklch(0.4 0.14 255); color: oklch(0.82 0.17 95); }
-.badge.c-tun { background: oklch(0.46 0.17 18); }
-.badge.c-tur { background: oklch(0.52 0.18 18); }
-.badge.c-uru { background: oklch(0.6 0.12 230); }
-.badge.c-uzb { background: oklch(0.46 0.14 240); }
+.badge.c-mex {
+  background: oklch(0.55 0.16 150);
+}
+.badge.c-arg {
+  background: oklch(0.66 0.11 235);
+}
+.badge.c-bra {
+  background: oklch(0.74 0.16 130);
+  color: oklch(0.25 0.05 260);
+}
+.badge.c-fra {
+  background: oklch(0.45 0.13 260);
+}
+.badge.c-esp {
+  background: oklch(0.55 0.18 25);
+}
+.badge.c-eng {
+  background: oklch(0.94 0.01 250);
+  color: oklch(0.45 0.18 25);
+}
+.badge.c-ned {
+  background: oklch(0.68 0.18 55);
+}
+.badge.c-por {
+  background: oklch(0.52 0.17 22);
+}
+.badge.c-ger {
+  background: oklch(0.28 0.02 160);
+}
+.badge.c-usa {
+  background: oklch(0.94 0.01 250);
+  color: oklch(0.35 0.12 25);
+}
+.badge.c-can {
+  background: oklch(0.55 0.18 25);
+}
+.badge.c-alg {
+  background: oklch(0.52 0.17 145);
+}
+.badge.c-aus {
+  background: oklch(0.74 0.17 95);
+  color: oklch(0.28 0.1 260);
+}
+.badge.c-aut {
+  background: oklch(0.5 0.18 25);
+}
+.badge.c-bel {
+  background: oklch(0.2 0.02 55);
+  color: oklch(0.87 0.16 90);
+}
+.badge.c-bih {
+  background: oklch(0.42 0.14 255);
+}
+.badge.c-civ {
+  background: oklch(0.65 0.18 50);
+  color: oklch(0.22 0.04 50);
+}
+.badge.c-cod {
+  background: oklch(0.4 0.15 255);
+}
+.badge.c-col {
+  background: oklch(0.82 0.17 95);
+  color: oklch(0.22 0.06 95);
+}
+.badge.c-cpv {
+  background: oklch(0.4 0.14 250);
+}
+.badge.c-cro {
+  background: oklch(0.55 0.17 22);
+}
+.badge.c-cuw {
+  background: oklch(0.44 0.16 240);
+}
+.badge.c-cze {
+  background: oklch(0.44 0.16 258);
+}
+.badge.c-ecu {
+  background: oklch(0.78 0.17 95);
+  color: oklch(0.22 0.06 95);
+}
+.badge.c-egy {
+  background: oklch(0.24 0.02 0);
+}
+.badge.c-gha {
+  background: oklch(0.73 0.14 78);
+  color: oklch(0.22 0.06 80);
+}
+.badge.c-hai {
+  background: oklch(0.38 0.15 255);
+}
+.badge.c-irn {
+  background: oklch(0.5 0.17 145);
+}
+.badge.c-irq {
+  background: oklch(0.46 0.17 145);
+}
+.badge.c-jor {
+  background: oklch(0.4 0.14 148);
+}
+.badge.c-jpn {
+  background: oklch(0.4 0.16 260);
+}
+.badge.c-kor {
+  background: oklch(0.32 0.14 255);
+}
+.badge.c-ksa {
+  background: oklch(0.44 0.17 145);
+}
+.badge.c-mar {
+  background: oklch(0.48 0.18 22);
+}
+.badge.c-nor {
+  background: oklch(0.54 0.19 22);
+}
+.badge.c-nzl {
+  background: oklch(0.28 0.13 255);
+}
+.badge.c-pan {
+  background: oklch(0.46 0.16 250);
+}
+.badge.c-par {
+  background: oklch(0.5 0.12 220);
+}
+.badge.c-qat {
+  background: oklch(0.33 0.12 15);
+}
+.badge.c-rsa {
+  background: oklch(0.44 0.17 145);
+}
+.badge.c-sco {
+  background: oklch(0.36 0.14 255);
+}
+.badge.c-sen {
+  background: oklch(0.44 0.16 145);
+}
+.badge.c-sui {
+  background: oklch(0.53 0.2 20);
+}
+.badge.c-swe {
+  background: oklch(0.4 0.14 255);
+  color: oklch(0.82 0.17 95);
+}
+.badge.c-tun {
+  background: oklch(0.46 0.17 18);
+}
+.badge.c-tur {
+  background: oklch(0.52 0.18 18);
+}
+.badge.c-uru {
+  background: oklch(0.6 0.12 230);
+}
+.badge.c-uzb {
+  background: oklch(0.46 0.14 240);
+}
 
 /* ── Cards & section labels ───────────────────────────────── */
 @utility card {
@@ -605,9 +711,15 @@ body {
   color: var(--ink-muted);
   text-align: center;
 
-  &.t1 { color: var(--gold); }
-  &.t2 { color: var(--silver); }
-  &.t3 { color: var(--bronze); }
+  &.t1 {
+    color: var(--gold);
+  }
+  &.t2 {
+    color: var(--silver);
+  }
+  &.t3 {
+    color: var(--bronze);
+  }
 }
 
 @utility lb-pts {
