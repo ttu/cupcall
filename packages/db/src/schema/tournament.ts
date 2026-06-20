@@ -98,6 +98,8 @@ export const matches = pgTable(
     kickoff: timestamp('kickoff', { withTimezone: true }), // nullable: knockout matches don't have scheduled kickoffs in advance
     homeGoals: integer('home_goals'),
     awayGoals: integer('away_goals'),
+    homeConduct: integer('home_conduct'),
+    awayConduct: integer('away_conduct'),
     winnerTeamId: text('winner_team_id'),
     decidedBy: decidedByEnum('decided_by'),
     status: matchStatusEnum('status').notNull().default('scheduled'),

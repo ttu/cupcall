@@ -50,6 +50,13 @@
       "when": 1781200000000,
       "tag": "0006_pending_email_links",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781989000000,
+      "tag": "0007_match_conduct_scores",
+      "breakpoints": true
     }
   ]
 }

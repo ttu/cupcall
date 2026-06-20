@@ -49,6 +49,8 @@ export async function getActualResults(
     matchId: matchId(r.id),
     home: r.homeGoals!,
     away: r.awayGoals!,
+    ...(r.homeConduct !== null && { homeConduct: r.homeConduct }),
+    ...(r.awayConduct !== null && { awayConduct: r.awayConduct }),
   }));
 
   const groupOrder: Record<GroupId, TeamId[]> = {};

@@ -30,6 +30,7 @@ export type GroupStandingRow = {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
+  conduct: number;
   qualifies: 'auto' | 'best-third' | false;
   /** Position the current user predicted for this team. Null when no predictions exist (viewer mode or unpredicted group). */
   predictedPosition: number | null;

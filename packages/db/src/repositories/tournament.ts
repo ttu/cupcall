@@ -202,6 +202,8 @@ export type MatchRow = {
   kickoff: Date | null;
   homeGoals: number | null;
   awayGoals: number | null;
+  homeConduct: number | null;
+  awayConduct: number | null;
   winnerTeamId: string | null;
   decidedBy: 'regulation' | 'extraTime' | 'penalties' | null;
   status: 'scheduled' | 'in_progress' | 'final' | 'cancelled';
@@ -229,6 +231,8 @@ export async function getMatchesForTournament(
     kickoff: r.kickoff ?? null,
     homeGoals: r.homeGoals ?? null,
     awayGoals: r.awayGoals ?? null,
+    homeConduct: r.homeConduct ?? null,
+    awayConduct: r.awayConduct ?? null,
     winnerTeamId: r.winnerTeamId ?? null,
     decidedBy: r.decidedBy ?? null,
     status: r.status,
@@ -252,7 +256,13 @@ export async function upsertTournamentResults(
   for (const result of actual.matchResults) {
     await db
       .update(schema.matches)
-      .set({ homeGoals: result.home, awayGoals: result.away, status: 'final' })
+      .set({
+        homeGoals: result.home,
+        awayGoals: result.away,
+        ...(result.homeConduct !== undefined && { homeConduct: result.homeConduct }),
+        ...(result.awayConduct !== undefined && { awayConduct: result.awayConduct }),
+        status: 'final',
+      })
       .where(
         and(eq(schema.matches.tournamentId, tournamentId), eq(schema.matches.id, result.matchId)),
       );

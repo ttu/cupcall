@@ -144,14 +144,15 @@ export function buildBest3rdStanding(
 
   // H2h keys don't apply across groups — filter to overall metrics only.
   const metricKeys = def.standingsTiebreak.filter(
-    (k): k is 'points' | 'goalDifference' | 'goalsFor' =>
-      k === 'points' || k === 'goalDifference' || k === 'goalsFor',
+    (k): k is 'points' | 'goalDifference' | 'goalsFor' | 'conductScore' =>
+      k === 'points' || k === 'goalDifference' || k === 'goalsFor' || k === 'conductScore',
   );
 
   const toMetricRow = (row: (typeof thirds)[number]['row']) => ({
     points: row.points,
     gf: row.goalsFor,
     ga: row.goalsAgainst,
+    conduct: row.conduct,
   });
 
   const sorted = [...thirds].sort((a, b) => {
@@ -267,7 +268,13 @@ function buildGroupStanding(
 
   const scores: GroupScore[] = finalGroupMatches
     .filter((m) => m.homeTeamId && m.awayTeamId)
-    .map((m) => ({ matchId: matchId(m.id), home: m.homeGoals!, away: m.awayGoals! }));
+    .map((m) => ({
+      matchId: matchId(m.id),
+      home: m.homeGoals!,
+      away: m.awayGoals!,
+      ...(m.homeConduct !== null && { homeConduct: m.homeConduct }),
+      ...(m.awayConduct !== null && { awayConduct: m.awayConduct }),
+    }));
 
   // Engine applies the tournament's tiebreak rules (standingsTiebreak config).
   const orderedIds = computeStandings(def, groupId, scores);
@@ -304,7 +311,7 @@ function buildGroupStanding(
   );
 
   return orderedIds.map((tid, i) => {
-    const m = metrics.get(tid) ?? { points: 0, gf: 0, ga: 0 };
+    const m = metrics.get(tid) ?? { points: 0, gf: 0, ga: 0, conduct: 0 };
     const r = wdl.get(tid) ?? { w: 0, d: 0, l: 0 };
     let qualifies: 'auto' | 'best-third' | false = false;
     if (i < autoQualify) {
@@ -326,6 +333,7 @@ function buildGroupStanding(
       goalsAgainst: m.ga,
       goalDifference: m.gf - m.ga,
       points: m.points,
+      conduct: m.conduct,
       qualifies,
       predictedPosition: predictedIdx >= 0 ? predictedIdx + 1 : null,
       poolMostPredictedPosition: poolPos?.position ?? null,
