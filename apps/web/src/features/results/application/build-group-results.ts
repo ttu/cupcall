@@ -253,6 +253,37 @@ function computePoolPositions(
   return result;
 }
 
+/**
+ * Simulate the best-case outcome for a team (they win all remaining matches
+ * by a large margin; all other remaining matches end 0–0) and check whether
+ * they can still finish at or above lastAdvancingIdx.
+ *
+ * This correctly handles h2h tiebreakers: even if the team can match the
+ * third-place team's points, a prior head-to-head defeat means the engine
+ * will still rank them lower.
+ */
+function isBestCaseEliminated(
+  def: Tournament,
+  groupId: GroupId,
+  tid: string,
+  completedScores: GroupScore[],
+  remainingDefs: Tournament['groupMatches'],
+  lastAdvancingIdx: number,
+): boolean {
+  const simScores: GroupScore[] = [...completedScores];
+  for (const gm of remainingDefs) {
+    if (gm.home === tid) {
+      simScores.push({ matchId: gm.id, home: 5, away: 0 });
+    } else if (gm.away === tid) {
+      simScores.push({ matchId: gm.id, home: 0, away: 5 });
+    } else {
+      simScores.push({ matchId: gm.id, home: 0, away: 0 });
+    }
+  }
+  const simOrder = computeStandings(def, groupId, simScores);
+  return simOrder.indexOf(tid as (typeof simOrder)[number]) > lastAdvancingIdx;
+}
+
 function buildGroupStanding(
   def: Tournament,
   groupId: GroupId,
@@ -307,12 +338,12 @@ function buildGroupStanding(
   const hasBestThird = def.qualification.bestThirdPlaced > 0;
   // Index of the last position that can still advance (best-third slot if applicable)
   const lastAdvancingIdx = hasBestThird ? autoQualify : autoQualify - 1;
-  const matchesPerTeam = group.teams.length - 1;
-  // Points of the team currently occupying the last advancing position
-  const lastAdvancingTeamId = orderedIds[lastAdvancingIdx];
-  const lastAdvancingPoints = lastAdvancingTeamId
-    ? (metrics.get(lastAdvancingTeamId)?.points ?? 0)
-    : 0;
+
+  // Remaining group match definitions (not yet played)
+  const completedMatchIdSet = new Set(scores.map((s) => String(s.matchId)));
+  const groupRemainingDefs = def.groupMatches.filter(
+    (gm) => gm.group === groupId && !completedMatchIdSet.has(String(gm.id)),
+  );
 
   const rankingMap = new Map<string, number>(
     def.teams
@@ -330,14 +361,16 @@ function buildGroupStanding(
       qualifies = 'best-third';
     }
     const played = r.w + r.d + r.l;
-    const remaining = matchesPerTeam - played;
-    const maxPossiblePoints = m.points + remaining * 3;
-    // Eliminated when below the last advancing position and can't reach its points,
-    // or when sitting exactly at the best-third slot but all groups are done and they didn't advance.
-    const cannotReachLastSlot = i > lastAdvancingIdx && maxPossiblePoints < lastAdvancingPoints;
+    // Eliminated when below the last advancing position even in the best-case simulation
+    // (they win all remaining; others draw 0-0). The simulation applies h2h tiebreakers,
+    // catching cases where tying on points still isn't enough due to prior head-to-head losses.
+    // Also eliminated when sitting at the best-third slot but all groups are done and they didn't advance.
+    const cannotAdvance =
+      i > lastAdvancingIdx &&
+      isBestCaseEliminated(def, groupId, tid, scores, groupRemainingDefs, lastAdvancingIdx);
     const thirdButMissedBestThird =
       i === lastAdvancingIdx && hasBestThird && bestThirdsSet.size > 0 && qualifies === false;
-    const eliminated = cannotReachLastSlot || thirdButMissedBestThird;
+    const eliminated = cannotAdvance || thirdButMissedBestThird;
     const predictedIdx = predictedOrder?.indexOf(tid) ?? -1;
     const poolPos = poolPositions.get(tid) ?? null;
     return {
