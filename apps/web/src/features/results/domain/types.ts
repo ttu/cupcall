@@ -32,6 +32,8 @@ export type GroupStandingRow = {
   points: number;
   conduct: number;
   qualifies: 'auto' | 'best-third' | false;
+  /** True when the team is mathematically eliminated from the group stage. */
+  eliminated: boolean;
   /** Position the current user predicted for this team. Null when no predictions exist (viewer mode or unpredicted group). */
   predictedPosition: number | null;
   /** Most commonly predicted position for this team across the pool. Null when no pool predictions exist. */

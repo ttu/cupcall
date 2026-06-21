@@ -27,13 +27,17 @@ export function GroupTable({ standing }: Props): ReactElement {
               ? 'bg-green-050'
               : row.qualifies === 'best-third'
                 ? 'bg-orange-050'
-                : 'bg-surface';
+                : row.eliminated
+                  ? 'bg-red-050'
+                  : 'bg-surface';
           const positionColor =
             row.qualifies === 'auto'
               ? 'text-green-600'
               : row.qualifies === 'best-third'
                 ? 'text-orange-600'
-                : 'text-ink-muted';
+                : row.eliminated
+                  ? 'text-red-400'
+                  : 'text-ink-muted';
           const hasSubRow =
             row.predictedPosition !== null || row.poolMostPredictedPosition !== null;
           return (
@@ -77,7 +81,8 @@ export function GroupTable({ standing }: Props): ReactElement {
       </div>
 
       {(standing.some((r) => r.qualifies === 'auto') ||
-        standing.some((r) => r.qualifies === 'best-third')) && (
+        standing.some((r) => r.qualifies === 'best-third') ||
+        standing.some((r) => r.eliminated)) && (
         <div className="flex items-center gap-3.5 flex-wrap p-[7px_12px] bg-surface border-t border-line-soft text-[11px] font-semibold text-ink-muted">
           {standing.some((r) => r.qualifies === 'auto') && (
             <span className="flex items-center gap-2">
@@ -89,6 +94,12 @@ export function GroupTable({ standing }: Props): ReactElement {
             <span className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-[3px] bg-orange-400 shrink-0 inline-block" />
               Best third advances
+            </span>
+          )}
+          {standing.some((r) => r.eliminated) && (
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-[3px] bg-red-400 shrink-0 inline-block" />
+              Eliminated
             </span>
           )}
         </div>

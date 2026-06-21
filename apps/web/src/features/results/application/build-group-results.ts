@@ -304,6 +304,16 @@ function buildGroupStanding(
   }
 
   const autoQualify = def.qualification.autoQualifyPerGroup;
+  const hasBestThird = def.qualification.bestThirdPlaced > 0;
+  // Index of the last position that can still advance (best-third slot if applicable)
+  const lastAdvancingIdx = hasBestThird ? autoQualify : autoQualify - 1;
+  const matchesPerTeam = group.teams.length - 1;
+  // Points of the team currently occupying the last advancing position
+  const lastAdvancingTeamId = orderedIds[lastAdvancingIdx];
+  const lastAdvancingPoints = lastAdvancingTeamId
+    ? (metrics.get(lastAdvancingTeamId)?.points ?? 0)
+    : 0;
+
   const rankingMap = new Map<string, number>(
     def.teams
       .filter((t): t is typeof t & { fifaRanking: number } => t.fifaRanking !== undefined)
@@ -319,13 +329,22 @@ function buildGroupStanding(
     } else if (i === autoQualify && bestThirdsSet.has(tid)) {
       qualifies = 'best-third';
     }
+    const played = r.w + r.d + r.l;
+    const remaining = matchesPerTeam - played;
+    const maxPossiblePoints = m.points + remaining * 3;
+    // Eliminated when below the last advancing position and can't reach its points,
+    // or when sitting exactly at the best-third slot but all groups are done and they didn't advance.
+    const cannotReachLastSlot = i > lastAdvancingIdx && maxPossiblePoints < lastAdvancingPoints;
+    const thirdButMissedBestThird =
+      i === lastAdvancingIdx && hasBestThird && bestThirdsSet.size > 0 && qualifies === false;
+    const eliminated = cannotReachLastSlot || thirdButMissedBestThird;
     const predictedIdx = predictedOrder?.indexOf(tid) ?? -1;
     const poolPos = poolPositions.get(tid) ?? null;
     return {
       position: i + 1,
       teamId: tid,
       teamName: teamMap.get(tid) ?? tid,
-      played: r.w + r.d + r.l,
+      played,
       won: r.w,
       drawn: r.d,
       lost: r.l,
@@ -335,6 +354,7 @@ function buildGroupStanding(
       points: m.points,
       conduct: m.conduct,
       qualifies,
+      eliminated,
       predictedPosition: predictedIdx >= 0 ? predictedIdx + 1 : null,
       poolMostPredictedPosition: poolPos?.position ?? null,
       poolMostPredictedPct: poolPos?.pct ?? null,
