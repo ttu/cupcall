@@ -875,8 +875,8 @@ const PROFILES: Record<
     groupScores: GROUP_SCORES_BOB,
     picks: PICKS_BOB,
     finishScores: {
-      final: { home: 2, away: 1 }, // ESP vs ARG predicted → ARG wins, outcome correct ✓ (not exact)
-      bronze: { home: 2, away: 1 }, // NED vs BRA predicted (wrong teams)
+      final: { home: 1, away: 2 }, // ARG wins 2-1, outcome correct ✓ (not exact — actual 1-1 pens)
+      bronze: { home: 1, away: 2 }, // NED vs BRA predicted, BRA wins 2-1 (wrong teams)
     },
     specials: {
       topScorerPlayer: 'arg-messi',
@@ -896,8 +896,8 @@ const PROFILES: Record<
     groupScores: GROUP_SCORES_CHARLIE,
     picks: PICKS_CHARLIE,
     finishScores: {
-      final: { home: 1, away: 0 }, // MEX vs ARG predicted → ARG wins, outcome correct ✓ (not exact)
-      bronze: { home: 2, away: 1 }, // ENG vs BRA predicted (wrong teams)
+      final: { home: 0, away: 2 }, // ARG wins 2-0, outcome correct ✓ (not exact — actual 1-1 pens)
+      bronze: { home: 0, away: 2 }, // ENG vs BRA predicted, BRA wins 2-0 (wrong teams)
     },
     specials: {
       topScorerPlayer: 'arg-messi',
@@ -917,7 +917,7 @@ const PROFILES: Record<
     groupScores: GROUP_SCORES_DIANA,
     picks: PICKS_DIANA,
     finishScores: {
-      final: { home: 2, away: 1 }, // BRA vs ARG predicted → ARG wins, outcome correct ✓ (not exact)
+      final: { home: 1, away: 3 }, // ARG wins 3-1, outcome correct ✓ (not exact — actual 1-1 pens)
       bronze: { home: 2, away: 0 }, // ENG vs GER predicted → GER wins, outcome correct ✓ (not exact)
     },
     specials: {
@@ -938,7 +938,7 @@ const PROFILES: Record<
     groupScores: GROUP_SCORES_EVE,
     picks: PICKS_EVE,
     finishScores: {
-      final: { home: 2, away: 1 }, // ARG vs GER predicted → ARG wins, outcome correct ✓ (not exact)
+      final: { home: 0, away: 1 }, // ARG wins 1-0, outcome correct ✓ (not exact — actual 1-1 pens)
       bronze: { home: 2, away: 0 }, // ECU vs BEL predicted (wrong teams)
     },
     specials: {
@@ -1103,11 +1103,11 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
   }
   console.log('\nExpected leaderboard (approx):');
   console.log('  1. Alice   — near-perfect group scores, all bracket picks correct');
-  console.log('  2. Bob     — 1 wrong R32 pick (SCO); final winner correct (ARG)');
-  console.log('  3. Charlie — 2 wrong R32 picks (SCO, QAT); SCO wins final (wrong)');
-  console.log('  4. Diana   — 3 wrong R32 picks (SCO, AUS, IRN); SCO wins final (wrong)');
-  console.log('  5. Eve     — 4 wrong R32 picks (SCO, ECU, AUS, EGY); ECU wins final (wrong)');
-  console.log('  6. Frank   — 3 wrong R32 picks (ECU, AUT, URU); worst group predictions');
+  console.log('  2. Bob     — 6 wrong R32 picks; final winner correct (ARG)');
+  console.log('  3. Charlie — 8 wrong R32 picks; final winner correct (ARG)');
+  console.log('  4. Diana   — 10 wrong R32 picks; final winner correct (ARG)');
+  console.log('  5. Eve     — 12 wrong R32 picks; final winner correct (ARG)');
+  console.log('  6. Frank   — wrong teams in final (CIV); worst group predictions');
 }
 
 // ── CLI entry point ────────────────────────────────────────────────────────────
