@@ -16,11 +16,11 @@ import { buildBracket } from './bracket.js';
 export function deriveCard(input: CardInputs, t: Tournament): DerivedCard {
   const groupOrders = deriveGroupOrders(t, input.groupScores);
   const qualifiers = selectQualifiers(t, input.groupScores, groupOrders);
-  const { roundOf8, finalists, bronzePair, topFour } = buildBracket(
+  const { roundOf16, roundOf8, finalists, bronzePair, topFour } = buildBracket(
     t,
     groupOrders,
     qualifiers,
     input.knockoutPicks,
   );
-  return { groupOrders, qualifiers, roundOf8, finalists, bronzePair, topFour };
+  return { groupOrders, qualifiers, roundOf16, roundOf8, finalists, bronzePair, topFour };
 }

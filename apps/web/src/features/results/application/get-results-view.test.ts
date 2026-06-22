@@ -1086,6 +1086,7 @@ describe('getResultsView', () => {
       breakdown: {
         groupMatches: points(30),
         groupOrder: points(20),
+        roundOf16: points(0),
         roundOf8: points(0),
         topFour: points(0),
         bronze: points(0),
@@ -1155,6 +1156,7 @@ describe('getResultsView', () => {
       breakdown: {
         groupMatches: points(exactPts + outcomePts),
         groupOrder: points(0),
+        roundOf16: points(0),
         roundOf8: points(0),
         topFour: points(0),
         bronze: points(0),
@@ -1213,6 +1215,7 @@ describe('getResultsView', () => {
       breakdown: {
         groupMatches: points(0),
         groupOrder: points(groupOrderAllPts),
+        roundOf16: points(0),
         roundOf8: points(0),
         topFour: points(0),
         bronze: points(0),
@@ -1501,6 +1504,7 @@ describe('getResultsView', () => {
         groupOrder: points(0),
         bronze: points(0),
         final: points(0),
+        roundOf16: points(0),
         roundOf8: points(0),
         topFour: points(0),
         specials: points(0),
@@ -1814,6 +1818,7 @@ describe('getResultsView', () => {
         breakdown: {
           groupMatches: points(exactPts),
           groupOrder: points(0),
+          roundOf16: points(0),
           roundOf8: points(0),
           topFour: points(0),
           bronze: points(0),
@@ -1844,6 +1849,7 @@ describe('getResultsView', () => {
         breakdown: {
           groupMatches: points(0),
           groupOrder: points(0),
+          roundOf16: points(0),
           roundOf8: points(0),
           topFour: points(0),
           bronze: points(0),
@@ -1887,7 +1893,11 @@ describe('getResultsView', () => {
       expect(s.earned).toBe(0);
       expect(s.missed).toBe(0);
       expect(s.canStillGet).toBe(
-        totalMax.roundOf8 + totalMax.topFour + totalMax.bronze + totalMax.final,
+        totalMax.roundOf16 +
+          totalMax.roundOf8 +
+          totalMax.topFour +
+          totalMax.bronze +
+          totalMax.final,
       );
     });
 
@@ -1899,6 +1909,7 @@ describe('getResultsView', () => {
         breakdown: {
           groupMatches: points(0),
           groupOrder: points(0),
+          roundOf16: points(0),
           roundOf8: points(20),
           topFour: points(15),
           bronze: points(10),
@@ -1937,8 +1948,8 @@ describe('getResultsView', () => {
       const s = view!.userKnockoutSummary!;
       const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
 
-      // topFour/bronze/final are resolved → 0 remaining; roundOf8 still open (no group matches)
-      expect(s.canStillGet).toBe(totalMax.roundOf8);
+      // topFour/bronze/final are resolved → 0 remaining; roundOf16 + roundOf8 still open (no group matches)
+      expect(s.canStillGet).toBe(totalMax.roundOf16 + totalMax.roundOf8);
       // earned=0, all resolved max is missed
       expect(s.missed).toBe(totalMax.topFour + totalMax.bronze + totalMax.final);
     });

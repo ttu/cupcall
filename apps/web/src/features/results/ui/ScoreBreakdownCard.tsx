@@ -27,6 +27,11 @@ const ROWS: Row[] = [
       `all 4 correct +${s.groupOrder.allCorrect} · 2 correct +${s.groupOrder.twoCorrect} · 1 correct +${s.groupOrder.oneCorrect}`,
   },
   {
+    label: 'Round of 16',
+    key: 'roundOf16',
+    hint: (s) => `per correct team +${s.roundOf16PerTeam} (max +${s.roundOf16PerTeam * 16})`,
+  },
+  {
     label: 'Round of 8',
     key: 'roundOf8',
     hint: (s) => `per correct team +${s.roundOf8PerTeam} (max +${s.roundOf8PerTeam * 8})`,

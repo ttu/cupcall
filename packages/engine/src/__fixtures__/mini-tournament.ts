@@ -7,6 +7,7 @@ export const miniScoring: Scoring = {
   groupOrder: { allCorrect: 6, twoCorrect: 3, oneCorrect: 1 },
   groupTopScoringTeam: 10,
   groupTopConcedingTeam: 10,
+  roundOf16PerTeam: 2,
   roundOf8PerTeam: 3,
   bronze: { exactScore: 5, perTeam: 5 },
   final: { exactScore: 5, perTeam: 5 },
@@ -104,6 +105,7 @@ export const miniTournament: Tournament = {
   bracket: {
     rounds: ['QF', 'SF', 'Final'],
     entryRound: 'QF',
+    roundOf16Matches: [],
     roundOf8Matches: [qf1, qf2, qf3, qf4],
     slots: [
       { match: qf1, home: '1A', away: '2B' },

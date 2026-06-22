@@ -46,6 +46,7 @@ const progressionSchema = z.object({
 const bracketDefSchema = z.object({
   rounds: z.array(z.string()),
   entryRound: z.string(),
+  roundOf16Matches: z.array(bracketMatchKeySchema).optional().default([]),
   roundOf8Matches: z.array(bracketMatchKeySchema),
   slots: z.array(bracketSlotSchema),
   progression: z.array(progressionSchema),
@@ -66,6 +67,7 @@ const scoringSchema = z.object({
   }),
   groupTopScoringTeam: z.number(),
   groupTopConcedingTeam: z.number(),
+  roundOf16PerTeam: z.number(),
   roundOf8PerTeam: z.number(),
   bronze: z.object({
     exactScore: z.number(),

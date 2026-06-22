@@ -10,6 +10,7 @@ export function KnockoutPointsPanel({ breakdown }: Props): ReactElement | null {
   if (!breakdown) return null;
 
   const rows: Row[] = [
+    { label: 'Round of 16', points: breakdown.roundOf16 },
     { label: 'Round of 8', points: breakdown.roundOf8 },
     { label: 'Top 4', points: breakdown.topFour },
     { label: 'Final', points: breakdown.final },

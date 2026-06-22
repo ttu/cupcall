@@ -50,8 +50,12 @@ export function computeRemainingMaxPoints(
     return sum + (allDone ? 0 : scoring.groupOrder.allCorrect);
   }, 0);
 
-  // Round of 8: once group stage is complete, QF participants are fixed.
+  // R16 / roundOf8: once group stage is complete, bracket slots are fixed so
+  // participants for both R16 and QF are fully deterministic from user picks.
   const groupStageComplete = groupMatches.every((gm) => isFinal(gm.id));
+  const roundOf16Max = groupStageComplete
+    ? 0
+    : bracket.roundOf16Matches.length * 2 * scoring.roundOf16PerTeam;
   const roundOf8Max = groupStageComplete
     ? 0
     : bracket.roundOf8Matches.length * 2 * scoring.roundOf8PerTeam;
@@ -79,13 +83,21 @@ export function computeRemainingMaxPoints(
   const specialsMax = tournamentComplete ? 0 : sumSpecialsMax(scoring);
 
   const total =
-    groupMatchesMax + groupOrderMax + roundOf8Max + topFourMax + bronzeMax + finalMax + specialsMax;
+    groupMatchesMax +
+    groupOrderMax +
+    roundOf16Max +
+    roundOf8Max +
+    topFourMax +
+    bronzeMax +
+    finalMax +
+    specialsMax;
 
   return {
     groupMatches: points(groupMatchesMax),
     groupOrder: points(groupOrderMax),
     bronze: points(bronzeMax),
     final: points(finalMax),
+    roundOf16: points(roundOf16Max),
     roundOf8: points(roundOf8Max),
     topFour: points(topFourMax),
     specials: points(specialsMax),

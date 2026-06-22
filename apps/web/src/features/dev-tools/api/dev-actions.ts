@@ -311,10 +311,32 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
     return baseGroupsDone;
   }
 
+  const r16Teams = [
+    'GER',
+    'NED',
+    'FRA',
+    'POR',
+    'ESP',
+    'BEL',
+    'BRA',
+    'ENG',
+    'ARG',
+    'MEX',
+    'URU',
+    'COL',
+    'USA',
+    'CAN',
+    'JPN',
+    'MAR',
+  ].map(teamId);
+
   if (checkpoint === 'r32-done') {
     return {
       ...baseGroupsDone,
-      answers: { ...baseGroupsDone.answers },
+      answers: {
+        ...baseGroupsDone.answers,
+        roundOf16: r16Teams,
+      },
     };
   }
 
@@ -323,6 +345,7 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
       ...baseGroupsDone,
       answers: {
         ...baseGroupsDone.answers,
+        roundOf16: r16Teams,
         roundOf8: ['GER', 'NED', 'ESP', 'BEL', 'BRA', 'ENG', 'ARG', 'POR'].map(teamId),
       },
     };
@@ -333,6 +356,7 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
       ...baseGroupsDone,
       answers: {
         ...baseGroupsDone.answers,
+        roundOf16: r16Teams,
         roundOf8: ['GER', 'NED', 'ESP', 'BEL', 'BRA', 'ENG', 'ARG', 'POR'].map(teamId),
       },
     };
@@ -359,6 +383,7 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
       firstRedCardPlayer: playerId('mex-alvarez'),
       penaltyShootoutCount: 1,
       topScorerPlayer: playerId('arg-messi'),
+      roundOf16: r16Teams,
       roundOf8: ['GER', 'NED', 'ESP', 'BEL', 'BRA', 'ENG', 'ARG', 'POR'].map(teamId),
       topFourOrder: ['ARG', 'ESP', 'GER', 'BRA'].map(teamId),
     },

@@ -14,6 +14,7 @@ function makeDerived(finalists: TeamId[], bronzePair: TeamId[]): DerivedCard {
   return {
     groupOrders: {},
     qualifiers: [],
+    roundOf16: [],
     roundOf8: [],
     finalists,
     bronzePair,

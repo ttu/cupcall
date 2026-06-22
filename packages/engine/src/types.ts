@@ -44,6 +44,7 @@ export interface Progression {
 export interface BracketDef {
   rounds: string[];
   entryRound: string;
+  roundOf16Matches: BracketMatchKey[];
   roundOf8Matches: BracketMatchKey[];
   slots: BracketSlot[];
   progression: Progression[];
@@ -57,6 +58,7 @@ export interface Scoring {
   groupOrder: { allCorrect: number; twoCorrect: number; oneCorrect: number };
   groupTopScoringTeam: number;
   groupTopConcedingTeam: number;
+  roundOf16PerTeam: number;
   roundOf8PerTeam: number;
   bronze: { exactScore: number; perTeam: number };
   final: { exactScore: number; perTeam: number };
@@ -130,6 +132,7 @@ export interface CardInputs {
 export interface DerivedCard {
   groupOrders: Record<GroupId, TeamId[]>;
   qualifiers: TeamId[];
+  roundOf16: TeamId[];
   roundOf8: TeamId[];
   finalists: TeamId[];
   bronzePair: TeamId[];
@@ -158,6 +161,7 @@ export interface ActualResults {
     decisiveGoalPlayer?: PlayerId;
   };
   answers: {
+    roundOf16?: TeamId[];
     roundOf8?: TeamId[];
     topFourOrder?: TeamId[];
     groupTopScoringTeam?: TeamId;
@@ -177,6 +181,7 @@ export interface ScoreBreakdown {
   groupOrder: Points;
   bronze: Points;
   final: Points;
+  roundOf16: Points;
   roundOf8: Points;
   topFour: Points;
   specials: Points;

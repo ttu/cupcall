@@ -18,6 +18,7 @@ const testBreakdown: ScoreBreakdown = {
   groupOrder: 0 as Points,
   bronze: 0 as Points,
   final: 0 as Points,
+  roundOf16: 0 as Points,
   roundOf8: 0 as Points,
   topFour: 0 as Points,
   specials: 0 as Points,

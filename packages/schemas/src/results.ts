@@ -30,6 +30,7 @@ const finalMatchSchema = actualFinishMatchSchema.extend({
 });
 
 const answersSchema = z.object({
+  roundOf16: z.array(teamIdSchema).optional(),
   roundOf8: z.array(teamIdSchema).optional(),
   topFourOrder: z.array(teamIdSchema).optional(),
   groupTopScoringTeam: teamIdSchema.optional(),
@@ -78,6 +79,7 @@ export const resultsSchema: z.ZodType<ActualResults, z.ZodTypeDef, unknown> =
       })),
       groupOrder: v.groupOrder,
       answers: {
+        ...(v.answers.roundOf16 !== undefined && { roundOf16: v.answers.roundOf16 }),
         ...(v.answers.roundOf8 !== undefined && { roundOf8: v.answers.roundOf8 }),
         ...(v.answers.topFourOrder !== undefined && { topFourOrder: v.answers.topFourOrder }),
         ...(v.answers.groupTopScoringTeam !== undefined && {
@@ -145,6 +147,7 @@ export type ResultsInput = {
     decisiveGoalPlayer?: string;
   };
   answers: {
+    roundOf16?: string[];
     roundOf8?: string[];
     topFourOrder?: string[];
     groupTopScoringTeam?: string;

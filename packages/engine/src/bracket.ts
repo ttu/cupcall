@@ -3,6 +3,8 @@ import type { BracketMatchKey, GroupId, TeamId } from './brand.js';
 import type { KnockoutPick, Tournament } from './types.js';
 
 export interface BracketResult {
+  /** The 16 teams placed into the R16 slots, in slot order. Empty when bracket has no R16. */
+  roundOf16: TeamId[];
   /** The 8 teams placed into the entry-round (QF) slots, in slot order. */
   roundOf8: TeamId[];
   /** The two SF winners who contest the final. */
@@ -140,6 +142,13 @@ export function buildBracket(
     }
   }
 
+  // ── Derive roundOf16 ─────────────────────────────────────────────────────────
+  // All teams in R16 slots, in slot order. Empty for brackets without an R16 round.
+  const roundOf16: TeamId[] = bracket.roundOf16Matches.flatMap((key) => {
+    const pair = participantsByMatch.get(key);
+    return pair ?? [];
+  });
+
   // ── Derive roundOf8 ──────────────────────────────────────────────────────────
   // All teams in entry-round slots, in slot order (home then away for each match).
   // Matches whose participants aren't yet resolved (partial card) are omitted.
@@ -186,7 +195,7 @@ export function buildBracket(
     if (bronzeLoser) topFour.push(bronzeLoser);
   }
 
-  return { roundOf8, finalists, bronzePair, topFour };
+  return { roundOf16, roundOf8, finalists, bronzePair, topFour };
 }
 
 /** Helper exported for tests: resolve a slot reference (exposed for bracket.test.ts). */

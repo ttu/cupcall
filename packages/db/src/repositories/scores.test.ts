@@ -18,6 +18,7 @@ function makeBreakdown(total: number): ScoreBreakdown {
     groupOrder: points(0),
     bronze: points(0),
     final: points(0),
+    roundOf16: points(0),
     roundOf8: points(0),
     topFour: points(0),
     specials: points(0),

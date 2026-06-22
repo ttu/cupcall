@@ -151,6 +151,7 @@ const actualGroupOrder: ActualResults['groupOrder'] = {
 const derived77: DerivedCard = {
   groupOrders: derivedGroupOrders,
   qualifiers: [],
+  roundOf16: [],
   roundOf8: DERIVED_R8,
   finalists: [ARG, FRA],
   bronzePair: [NED, POR],
@@ -297,6 +298,7 @@ describe('scoreCard — integration sanity', () => {
     expect(typeof breakdown.groupOrder).toBe('number');
     expect(typeof breakdown.bronze).toBe('number');
     expect(typeof breakdown.final).toBe('number');
+    expect(typeof breakdown.roundOf16).toBe('number');
     expect(typeof breakdown.roundOf8).toBe('number');
     expect(typeof breakdown.topFour).toBe('number');
     expect(typeof breakdown.specials).toBe('number');
@@ -306,6 +308,7 @@ describe('scoreCard — integration sanity', () => {
     expect(breakdown.groupOrder).toBeGreaterThanOrEqual(0);
     expect(breakdown.bronze).toBeGreaterThanOrEqual(0);
     expect(breakdown.final).toBeGreaterThanOrEqual(0);
+    expect(breakdown.roundOf16).toBeGreaterThanOrEqual(0);
     expect(breakdown.roundOf8).toBeGreaterThanOrEqual(0);
     expect(breakdown.topFour).toBeGreaterThanOrEqual(0);
     expect(breakdown.specials).toBeGreaterThanOrEqual(0);
@@ -317,6 +320,7 @@ describe('scoreCard — integration sanity', () => {
       breakdown.groupOrder +
       breakdown.bronze +
       breakdown.final +
+      breakdown.roundOf16 +
       breakdown.roundOf8 +
       breakdown.topFour +
       breakdown.specials;

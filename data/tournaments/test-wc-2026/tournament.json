@@ -8,6 +8,7 @@
     "groupOrder": { "allCorrect": 6, "twoCorrect": 3, "oneCorrect": 1 },
     "groupTopScoringTeam": 10,
     "groupTopConcedingTeam": 10,
+    "roundOf16PerTeam": 2,
     "roundOf8PerTeam": 3,
     "bronze": { "exactScore": 5, "perTeam": 5 },
     "final": { "exactScore": 5, "perTeam": 5 },
@@ -342,6 +343,16 @@
   "bracket": {
     "rounds": ["R32", "R16", "QF", "SF", "Final"],
     "entryRound": "R32",
+    "roundOf16Matches": [
+      "r16m89",
+      "r16m90",
+      "r16m91",
+      "r16m92",
+      "r16m93",
+      "r16m94",
+      "r16m95",
+      "r16m96"
+    ],
     "roundOf8Matches": ["qf97", "qf98", "qf99", "qf100"],
     "slots": [
       { "match": "r32m74", "home": "1E", "away": "3rd[0]" },

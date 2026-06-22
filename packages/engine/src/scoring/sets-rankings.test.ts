@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { teamId, type TeamId } from '../brand.js';
 import { miniScoring } from '../__fixtures__/mini-tournament.js';
 import type { DerivedCard, ActualResults } from '../types.js';
-import { scoreRoundOf8, scoreTopFour } from './sets-rankings.js';
+import { scoreRoundOf16, scoreRoundOf8, scoreTopFour } from './sets-rankings.js';
 
 // Team ids used in tests
 const A1 = teamId('A1');
@@ -21,10 +21,11 @@ const NED = teamId('NED');
 const POR = teamId('POR');
 const BRA = teamId('BRA');
 
-function makeDerived(roundOf8: TeamId[], topFour: TeamId[]): DerivedCard {
+function makeDerived(roundOf8: TeamId[], topFour: TeamId[], roundOf16: TeamId[] = []): DerivedCard {
   return {
     groupOrders: {},
     qualifiers: [],
+    roundOf16,
     roundOf8,
     finalists: [],
     bronzePair: [],
@@ -32,16 +33,120 @@ function makeDerived(roundOf8: TeamId[], topFour: TeamId[]): DerivedCard {
   };
 }
 
-function makeActual(opts: { roundOf8?: TeamId[]; topFourOrder?: TeamId[] }): ActualResults {
+function makeActual(opts: {
+  roundOf16?: TeamId[];
+  roundOf8?: TeamId[];
+  topFourOrder?: TeamId[];
+}): ActualResults {
   return {
     matchResults: [],
     groupOrder: {},
     answers: {
+      ...(opts.roundOf16 !== undefined ? { roundOf16: opts.roundOf16 } : {}),
       ...(opts.roundOf8 !== undefined ? { roundOf8: opts.roundOf8 } : {}),
       ...(opts.topFourOrder !== undefined ? { topFourOrder: opts.topFourOrder } : {}),
     },
   };
 }
+
+describe('scoreRoundOf16', () => {
+  it('12 of 16 correct → 12 × 2 = 24', () => {
+    const r16 = [
+      A1,
+      A2,
+      A3,
+      A4,
+      B1,
+      B2,
+      B3,
+      B4,
+      teamId('C1'),
+      teamId('C2'),
+      teamId('C3'),
+      teamId('C4'),
+      teamId('D1'),
+      teamId('D2'),
+      teamId('D3'),
+      teamId('D4'),
+    ];
+    const actual16 = [
+      A1,
+      A2,
+      A3,
+      A4,
+      B1,
+      B2,
+      B3,
+      B4,
+      teamId('C1'),
+      teamId('C2'),
+      teamId('C3'),
+      teamId('C4'),
+      teamId('E1'),
+      teamId('E2'),
+      teamId('E3'),
+      teamId('E4'),
+    ];
+    const derived = makeDerived([], [], r16);
+    const actual = makeActual({ roundOf16: actual16 });
+    expect(scoreRoundOf16(derived, actual, miniScoring)).toBe(24);
+  });
+
+  it('all 16 correct → 16 × 2 = 32', () => {
+    const r16 = [
+      A1,
+      A2,
+      A3,
+      A4,
+      B1,
+      B2,
+      B3,
+      B4,
+      teamId('C1'),
+      teamId('C2'),
+      teamId('C3'),
+      teamId('C4'),
+      teamId('D1'),
+      teamId('D2'),
+      teamId('D3'),
+      teamId('D4'),
+    ];
+    const derived = makeDerived([], [], r16);
+    const actual = makeActual({ roundOf16: r16 });
+    expect(scoreRoundOf16(derived, actual, miniScoring)).toBe(32);
+  });
+
+  it('absent actual roundOf16 → 0', () => {
+    const r16 = [
+      A1,
+      A2,
+      A3,
+      A4,
+      B1,
+      B2,
+      B3,
+      B4,
+      teamId('C1'),
+      teamId('C2'),
+      teamId('C3'),
+      teamId('C4'),
+      teamId('D1'),
+      teamId('D2'),
+      teamId('D3'),
+      teamId('D4'),
+    ];
+    const derived = makeDerived([], [], r16);
+    const actual = makeActual({});
+    expect(scoreRoundOf16(derived, actual, miniScoring)).toBe(0);
+  });
+
+  it('order is irrelevant — set membership only', () => {
+    const r16 = [A1, A2, B1, B2];
+    const derived = makeDerived([], [], r16);
+    const actual = makeActual({ roundOf16: [B2, B1, A2, A1] });
+    expect(scoreRoundOf16(derived, actual, miniScoring)).toBe(8);
+  });
+});
 
 describe('scoreRoundOf8', () => {
   it('6 of 8 correct → 6 × 3 = 18', () => {

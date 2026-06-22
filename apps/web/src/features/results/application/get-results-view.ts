@@ -212,21 +212,28 @@ function buildKnockoutSummary(
   if (userId === undefined) return null;
   const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
   const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
-  // roundOf8 uses group match IDs (present in DB) — engine correctly detects resolution.
-  // topFour/bronze/final use KO match IDs that are never inserted into the matches table by
-  // the sync pipeline, so we detect their resolution from actualResults instead.
+  // roundOf16/roundOf8 lock once all group matches are complete (engine uses groupStageComplete).
+  // topFour/bronze/final/roundOf16 resolution is also checked from actualResults since KO match
+  // IDs are never inserted into the matches table by the sync pipeline.
   const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
   const earned =
+    (userBreakdown?.roundOf16 ?? 0) +
     (userBreakdown?.roundOf8 ?? 0) +
     (userBreakdown?.topFour ?? 0) +
     (userBreakdown?.bronze ?? 0) +
     (userBreakdown?.final ?? 0);
+  const roundOf16Remaining = actualResults.answers.roundOf16 !== undefined ? 0 : totalMax.roundOf16;
   const topFourRemaining = actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour;
   const bronzeRemaining = actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze;
   const finalRemaining = actualResults.finalMatch !== undefined ? 0 : totalMax.final;
-  const totalMaxCat = totalMax.roundOf8 + totalMax.topFour + totalMax.bronze + totalMax.final;
+  const totalMaxCat =
+    totalMax.roundOf16 + totalMax.roundOf8 + totalMax.topFour + totalMax.bronze + totalMax.final;
   const remainingMaxCat =
-    remainingMax.roundOf8 + topFourRemaining + bronzeRemaining + finalRemaining;
+    roundOf16Remaining +
+    remainingMax.roundOf8 +
+    topFourRemaining +
+    bronzeRemaining +
+    finalRemaining;
   return makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat);
 }
 

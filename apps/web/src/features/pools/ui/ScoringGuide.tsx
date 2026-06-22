@@ -56,6 +56,7 @@ function Divider({ label }: { label: string }): ReactElement {
 
 export function ScoringGuide({ scoring }: Props): ReactElement {
   const finishMatchMax = scoring.final.perTeam * 2 + scoring.final.exactScore;
+  const roundOf16Max = scoring.roundOf16PerTeam * 16;
   const roundOf8Max = scoring.roundOf8PerTeam * 8;
 
   return (
@@ -80,6 +81,12 @@ export function ScoringGuide({ scoring }: Props): ReactElement {
         <Row label="Correct team in the match" pts={scoring.final.perTeam} note="up to 2 teams" />
         <Row label="Exact score" pts={scoring.final.exactScore} />
         <Row label="Maximum per match" pts={finishMatchMax} />
+      </SectionCard>
+
+      {/* Round of 16 */}
+      <SectionCard title="Round of 16 teams">
+        <Row label="Per correct team that reaches the Round of 16" pts={scoring.roundOf16PerTeam} />
+        <Row label="Maximum (all 16 correct)" pts={roundOf16Max} />
       </SectionCard>
 
       {/* Round of 8 */}

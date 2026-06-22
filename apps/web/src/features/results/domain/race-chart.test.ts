@@ -12,6 +12,7 @@ const baseEntries: LeaderboardEntry[] = [
     breakdown: {
       groupMatches: points(6),
       groupOrder: points(0),
+      roundOf16: points(0),
       roundOf8: points(6),
       topFour: points(0),
       final: points(0),
@@ -28,6 +29,7 @@ const baseEntries: LeaderboardEntry[] = [
     breakdown: {
       groupMatches: points(4),
       groupOrder: points(0),
+      roundOf16: points(0),
       roundOf8: points(5),
       topFour: points(0),
       final: points(0),

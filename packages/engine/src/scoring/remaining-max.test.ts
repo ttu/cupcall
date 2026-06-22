@@ -22,6 +22,8 @@ const NUM_QF_MATCHES = QF_KEYS.length; // 4
 // expected numbers are derived rather than hand-rolled.
 const MAX_GROUP_MATCHES = NUM_GROUP_MATCHES * miniScoring.groupMatch.exactScore;
 const MAX_GROUP_ORDER = NUM_GROUPS * miniScoring.groupOrder.allCorrect;
+const MAX_ROUND_OF_16 =
+  miniTournament.bracket.roundOf16Matches.length * 2 * miniScoring.roundOf16PerTeam; // 0 for mini-tournament
 const MAX_ROUND_OF_8 = NUM_QF_MATCHES * 2 * miniScoring.roundOf8PerTeam;
 const MAX_TOP_FOUR = miniScoring.topFourOrder.allCorrect;
 const MAX_BRONZE = 2 * miniScoring.bronze.perTeam + miniScoring.bronze.exactScore;
@@ -42,6 +44,7 @@ const MAX_SPECIALS =
 const MAX_TOTAL =
   MAX_GROUP_MATCHES +
   MAX_GROUP_ORDER +
+  MAX_ROUND_OF_16 +
   MAX_ROUND_OF_8 +
   MAX_TOP_FOUR +
   MAX_BRONZE +
@@ -62,6 +65,7 @@ describe('computeRemainingMaxPoints — overall', () => {
     expect(result.total).toBe(MAX_TOTAL);
     expect(result.groupMatches).toBe(MAX_GROUP_MATCHES);
     expect(result.groupOrder).toBe(MAX_GROUP_ORDER);
+    expect(result.roundOf16).toBe(MAX_ROUND_OF_16);
     expect(result.roundOf8).toBe(MAX_ROUND_OF_8);
     expect(result.topFour).toBe(MAX_TOP_FOUR);
     expect(result.bronze).toBe(MAX_BRONZE);
@@ -75,6 +79,7 @@ describe('computeRemainingMaxPoints — overall', () => {
     expect(result.total).toBe(0);
     expect(result.groupMatches).toBe(0);
     expect(result.groupOrder).toBe(0);
+    expect(result.roundOf16).toBe(0);
     expect(result.roundOf8).toBe(0);
     expect(result.topFour).toBe(0);
     expect(result.bronze).toBe(0);
@@ -95,7 +100,14 @@ describe('computeRemainingMaxPoints — overall', () => {
     for (const snapshot of snapshots) {
       const r = computeRemainingMaxPoints(miniTournament, progress(snapshot));
       const sum =
-        r.groupMatches + r.groupOrder + r.roundOf8 + r.topFour + r.bronze + r.final + r.specials;
+        r.groupMatches +
+        r.groupOrder +
+        r.roundOf16 +
+        r.roundOf8 +
+        r.topFour +
+        r.bronze +
+        r.final +
+        r.specials;
       expect(r.total).toBe(sum);
     }
   });
@@ -269,6 +281,7 @@ describe('computeRemainingMaxPoints — stage transitions', () => {
     expect(result.total).toBe(
       MAX_GROUP_MATCHES +
         MAX_GROUP_ORDER +
+        MAX_ROUND_OF_16 +
         MAX_ROUND_OF_8 +
         MAX_TOP_FOUR +
         MAX_BRONZE +
@@ -277,10 +290,11 @@ describe('computeRemainingMaxPoints — stage transitions', () => {
     );
   });
 
-  it('end of group stage: group + roundOf8 locked, knockout & specials open', () => {
+  it('end of group stage: group + roundOf16 + roundOf8 locked, knockout & specials open', () => {
     const result = computeRemainingMaxPoints(miniTournament, progress(ALL_GROUP_MATCH_IDS));
     expect(result.groupMatches).toBe(0);
     expect(result.groupOrder).toBe(0);
+    expect(result.roundOf16).toBe(0);
     expect(result.roundOf8).toBe(0);
     expect(result.topFour).toBe(MAX_TOP_FOUR);
     expect(result.bronze).toBe(MAX_BRONZE);
@@ -385,6 +399,7 @@ describe('computeRemainingMaxPoints — scoring config sensitivity', () => {
         groupOrder: { allCorrect: 0, twoCorrect: 0, oneCorrect: 0 },
         groupTopScoringTeam: 0,
         groupTopConcedingTeam: 0,
+        roundOf16PerTeam: 0,
         roundOf8PerTeam: 0,
         bronze: { exactScore: 0, perTeam: 0 },
         final: { exactScore: 0, perTeam: 0 },

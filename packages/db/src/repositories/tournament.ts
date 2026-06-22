@@ -292,6 +292,9 @@ export async function upsertTournamentResults(
 
   const { answers } = actual;
 
+  if (answers.roundOf16 !== undefined) {
+    answerEntries.push({ tournamentId, betKey: 'roundOf16', value: answers.roundOf16 });
+  }
   if (answers.roundOf8 !== undefined) {
     answerEntries.push({ tournamentId, betKey: 'roundOf8', value: answers.roundOf8 });
   }

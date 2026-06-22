@@ -9,6 +9,7 @@ function makeDerived(groupOrders: DerivedCard['groupOrders']): DerivedCard {
   return {
     groupOrders,
     qualifiers: [],
+    roundOf16: [],
     roundOf8: [],
     finalists: [],
     bronzePair: [],
