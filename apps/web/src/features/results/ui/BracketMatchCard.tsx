@@ -117,8 +117,7 @@ export function BracketMatchCard({
             teamName={match.homeTeamName}
             isPick={
               match.homeTeamId !== null &&
-              (pickedTeamIds.has(match.homeTeamId) ||
-                (match.isEntryRound && predictedQualifierIds.has(match.homeTeamId)))
+              (pickedTeamIds.has(match.homeTeamId) || predictedQualifierIds.has(match.homeTeamId))
             }
             showCheckmark={
               isFinal && match.pickedWinnerId === match.homeTeamId && match.pickedWinnerId !== null
@@ -132,8 +131,7 @@ export function BracketMatchCard({
             teamName={match.awayTeamName}
             isPick={
               match.awayTeamId !== null &&
-              (pickedTeamIds.has(match.awayTeamId) ||
-                (match.isEntryRound && predictedQualifierIds.has(match.awayTeamId)))
+              (pickedTeamIds.has(match.awayTeamId) || predictedQualifierIds.has(match.awayTeamId))
             }
             showCheckmark={
               isFinal && match.pickedWinnerId === match.awayTeamId && match.pickedWinnerId !== null
