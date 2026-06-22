@@ -55,5 +55,5 @@ jobs:
         with: { node-version: 20, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:migrate
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm -C apps/web exec playwright install --with-deps chromium
       - run: pnpm e2e
