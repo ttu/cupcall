@@ -119,6 +119,7 @@ export function buildBracketRounds(
       predictedAway,
       hit,
       projected: projectedKeys.has(key),
+      isEntryRound,
       homeTeamR32Pct: isEntryRound && homeId ? (r32PredPcts.get(homeId) ?? null) : null,
       awayTeamR32Pct: isEntryRound && awayId ? (r32PredPcts.get(awayId) ?? null) : null,
     };
