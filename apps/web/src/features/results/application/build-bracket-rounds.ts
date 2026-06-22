@@ -36,6 +36,16 @@ export function buildBracketRounds(
   const finalMatchKey = def.bracket.finalMatch;
   const bronzeMatchKey = def.bracket.bronzeMatch;
 
+  // For each stage, collect actual winners across all matches in that stage.
+  // Used to credit a pick when the picked team won in a different slot of the same round.
+  const stageWinnersMap = new Map<string, Set<string>>();
+  for (const m of allMatches) {
+    if (m.winnerTeamId) {
+      if (!stageWinnersMap.has(m.stage)) stageWinnersMap.set(m.stage, new Set());
+      stageWinnersMap.get(m.stage)!.add(m.winnerTeamId);
+    }
+  }
+
   const buildMatchView = (key: BracketMatchKey, round: string): KnockoutMatchView => {
     const actual = matchByKey.get(key) ?? null;
     const pickedId = pickMap.get(key) ?? null;
@@ -67,9 +77,11 @@ export function buildBracketRounds(
       predictedAway = finishScores.bronze.away;
     }
 
+    const stageWinners = actual?.stage ? (stageWinnersMap.get(actual.stage) ?? null) : null;
     const hit = computeKnockoutHit({
       pickedWinnerId: pickedId,
       actualWinnerId: winnerId,
+      stageWinners,
       predictedHome,
       predictedAway,
       actualHome: actual?.homeGoals ?? null,
@@ -163,13 +175,22 @@ export function buildBracketHealth(
 function computeKnockoutHit(args: {
   pickedWinnerId: string | null;
   actualWinnerId: string | null;
+  /** All actual winners for this stage — credit a pick even when the team played in a different slot. */
+  stageWinners: Set<string> | null;
   predictedHome: number | null;
   predictedAway: number | null;
   actualHome: number | null;
   actualAway: number | null;
 }): MatchHit {
-  const { pickedWinnerId, actualWinnerId, predictedHome, predictedAway, actualHome, actualAway } =
-    args;
+  const {
+    pickedWinnerId,
+    actualWinnerId,
+    stageWinners,
+    predictedHome,
+    predictedAway,
+    actualHome,
+    actualAway,
+  } = args;
 
   if (actualWinnerId === null) return 'pending';
 
@@ -185,7 +206,13 @@ function computeKnockoutHit(args: {
     return 'exact';
   }
 
-  if (pickedWinnerId !== null && pickedWinnerId === actualWinnerId) return 'outcome';
+  // Credit the pick if the chosen team won any match in this stage (not necessarily this slot).
+  if (
+    pickedWinnerId !== null &&
+    (stageWinners?.has(pickedWinnerId) ?? pickedWinnerId === actualWinnerId)
+  ) {
+    return 'outcome';
+  }
   return 'missed';
 }
 

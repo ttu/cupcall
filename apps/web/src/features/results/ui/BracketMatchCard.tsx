@@ -109,7 +109,7 @@ export function BracketMatchCard({ match, pickedTeamIds }: Props): ReactElement 
             teamName={match.homeTeamName}
             isPick={match.homeTeamId !== null && pickedTeamIds.has(match.homeTeamId)}
             showCheckmark={
-              match.pickedWinnerId === match.homeTeamId && match.pickedWinnerId !== null
+              isFinal && match.pickedWinnerId === match.homeTeamId && match.pickedWinnerId !== null
             }
             isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
             r32Pct={match.homeTeamR32Pct}
@@ -120,7 +120,7 @@ export function BracketMatchCard({ match, pickedTeamIds }: Props): ReactElement 
             teamName={match.awayTeamName}
             isPick={match.awayTeamId !== null && pickedTeamIds.has(match.awayTeamId)}
             showCheckmark={
-              match.pickedWinnerId === match.awayTeamId && match.pickedWinnerId !== null
+              isFinal && match.pickedWinnerId === match.awayTeamId && match.pickedWinnerId !== null
             }
             isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
             r32Pct={match.awayTeamR32Pct}

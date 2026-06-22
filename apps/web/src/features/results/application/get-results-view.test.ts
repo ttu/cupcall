@@ -1308,6 +1308,42 @@ describe('getResultsView', () => {
     expect(match.hit).toBe('missed');
   });
 
+  it('sets hit=outcome when picked winner won a different slot in the same round', async () => {
+    // User picks A1 to win qf1, but A1 ends up playing (and winning) qf2 instead.
+    const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+    // qf1 is played without A1 — B2 wins
+    await upsertKnockoutMatch(db, {
+      id: 'qf1',
+      tournamentId: miniTId,
+      stage: 'QF',
+      homeTeamId: 'C1',
+      awayTeamId: 'B2',
+      homeGoals: 0,
+      awayGoals: 1,
+      winnerTeamId: 'B2',
+      status: 'final',
+    });
+    // A1 actually plays and wins qf2
+    await upsertKnockoutMatch(db, {
+      id: 'qf2',
+      tournamentId: miniTId,
+      stage: 'QF',
+      homeTeamId: 'A1',
+      awayTeamId: 'D2',
+      homeGoals: 2,
+      awayGoals: 0,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const qf1Match = view!.bracketRounds
+      .find((r) => r.label === 'QF')!
+      .matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Match.hit).toBe('outcome');
+  });
+
   it('sets hit=pending on non-final knockout tie when match has not yet finalized', async () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,
