@@ -39,6 +39,24 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
   const hasActualScore = match.actualHome !== null && match.actualAway !== null;
   const hasPredictedScore = match.predictedHome !== null && match.predictedAway !== null;
 
+  const pickLeftId = match.homeTeamId ?? match.pickedOpponentId;
+  const pickRightId = match.awayTeamId ?? match.pickedWinnerId;
+  // Explicit winner pick takes priority; fall back to whichever team has more predicted goals
+  const pickWinnerId: string | null =
+    match.pickedWinnerId ??
+    (match.predictedHome !== null &&
+    match.predictedAway !== null &&
+    match.homeTeamId &&
+    match.awayTeamId
+      ? match.predictedHome > match.predictedAway
+        ? match.homeTeamId
+        : match.predictedAway > match.predictedHome
+          ? match.awayTeamId
+          : null
+      : null);
+  const leftIsWinner = pickLeftId !== null && pickLeftId === pickWinnerId;
+  const rightIsWinner = pickRightId !== null && pickRightId === pickWinnerId;
+
   const championId = match.actualWinnerId ?? match.pickedWinnerId;
   const championName =
     (match.actualWinnerId
@@ -95,21 +113,19 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
           )}
         >
           <span>Your pick:</span>
-          {match.homeTeamId && match.awayTeamId ? (
+          {pickLeftId && (
             <>
-              <TeamBadge teamId={match.homeTeamId} size="sm" />
-              <span>
-                {match.predictedHome}–{match.predictedAway}
-              </span>
-              <TeamBadge teamId={match.awayTeamId} size="sm" />
+              <TeamBadge teamId={pickLeftId} size="sm" />
+              {leftIsWinner && <Icon name="check" size={11} color="var(--green-600)" />}
             </>
-          ) : (
+          )}
+          <span>
+            {match.predictedHome}–{match.predictedAway}
+          </span>
+          {pickRightId && (
             <>
-              {match.pickedWinnerId && <TeamBadge teamId={match.pickedWinnerId} size="sm" />}
-              <span>
-                {match.predictedHome}–{match.predictedAway}
-              </span>
-              {match.pickedOpponentId && <TeamBadge teamId={match.pickedOpponentId} size="sm" />}
+              <TeamBadge teamId={pickRightId} size="sm" />
+              {rightIsWinner && <Icon name="check" size={11} color="var(--green-600)" />}
             </>
           )}
         </div>
@@ -158,7 +174,7 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         </div>
       </div>
 
-      {championId !== null && championName !== null && (
+      {match.actualWinnerId !== null && championId !== null && championName !== null && (
         <ChampionPill championId={championId} championName={championName} isFinal={isFinal} />
       )}
     </div>
