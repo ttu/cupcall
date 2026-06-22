@@ -36,7 +36,11 @@
     { "matchId": "mE3", "home": 2, "away": 1 },
     { "matchId": "mE4", "home": 0, "away": 0, "homeConduct": -1, "awayConduct": -5 },
     { "matchId": "mF3", "home": 5, "away": 1, "homeConduct": -1, "awayConduct": -3 },
-    { "matchId": "mF4", "home": 0, "away": 4, "homeConduct": -1 }
+    { "matchId": "mF4", "home": 0, "away": 4, "homeConduct": -1 },
+    { "matchId": "mG3", "home": 0, "away": 0, "homeConduct": -6, "awayConduct": -2 },
+    { "matchId": "mG4", "home": 1, "away": 3, "homeConduct": -2, "awayConduct": -1 },
+    { "matchId": "mH3", "home": 4, "away": 0, "homeConduct": -1, "awayConduct": -2 },
+    { "matchId": "mH4", "home": 2, "away": 2, "homeConduct": -2, "awayConduct": -2 }
   ],
   "groupOrder": {},
   "answers": {
