@@ -36,13 +36,15 @@ export function buildBracketRounds(
   const finalMatchKey = def.bracket.finalMatch;
   const bronzeMatchKey = def.bracket.bronzeMatch;
 
-  // For each stage, collect actual winners across all matches in that stage.
-  // Used to credit a pick when the picked team won in a different slot of the same round.
-  const stageWinnersMap = new Map<string, Set<string>>();
-  for (const m of allMatches) {
-    if (m.winnerTeamId) {
-      if (!stageWinnersMap.has(m.stage)) stageWinnersMap.set(m.stage, new Set());
-      stageWinnersMap.get(m.stage)!.add(m.winnerTeamId);
+  // For each stage, collect all teams the user picked to advance.
+  // A card shows "correct" when the actual winner of that match appears in the user's stage picks,
+  // regardless of which slot the user assigned them to.
+  const stagePicksMap = new Map<string, Set<string>>();
+  for (const [matchKey, pickedId] of pickMap.entries()) {
+    const m = matchByKey.get(matchKey);
+    if (m?.stage) {
+      if (!stagePicksMap.has(m.stage)) stagePicksMap.set(m.stage, new Set());
+      stagePicksMap.get(m.stage)!.add(pickedId);
     }
   }
 
@@ -77,11 +79,11 @@ export function buildBracketRounds(
       predictedAway = finishScores.bronze.away;
     }
 
-    const stageWinners = actual?.stage ? (stageWinnersMap.get(actual.stage) ?? null) : null;
+    const stagePicks = actual?.stage ? (stagePicksMap.get(actual.stage) ?? null) : null;
     const hit = computeKnockoutHit({
       pickedWinnerId: pickedId,
       actualWinnerId: winnerId,
-      stageWinners,
+      stagePicks,
       predictedHome,
       predictedAway,
       actualHome: actual?.homeGoals ?? null,
@@ -175,8 +177,8 @@ export function buildBracketHealth(
 function computeKnockoutHit(args: {
   pickedWinnerId: string | null;
   actualWinnerId: string | null;
-  /** All actual winners for this stage — credit a pick even when the team played in a different slot. */
-  stageWinners: Set<string> | null;
+  /** All teams the user picked to advance in this stage — show "correct" when the actual winner is in this set. */
+  stagePicks: Set<string> | null;
   predictedHome: number | null;
   predictedAway: number | null;
   actualHome: number | null;
@@ -185,7 +187,7 @@ function computeKnockoutHit(args: {
   const {
     pickedWinnerId,
     actualWinnerId,
-    stageWinners,
+    stagePicks,
     predictedHome,
     predictedAway,
     actualHome,
@@ -206,11 +208,9 @@ function computeKnockoutHit(args: {
     return 'exact';
   }
 
-  // Credit the pick if the chosen team won any match in this stage (not necessarily this slot).
-  if (
-    pickedWinnerId !== null &&
-    (stageWinners?.has(pickedWinnerId) ?? pickedWinnerId === actualWinnerId)
-  ) {
+  // Credit the pick on the card where the predicted team actually played and won,
+  // regardless of which slot the user assigned them to.
+  if (stagePicks?.has(actualWinnerId) ?? pickedWinnerId === actualWinnerId) {
     return 'outcome';
   }
   return 'missed';

@@ -1308,8 +1308,9 @@ describe('getResultsView', () => {
     expect(match.hit).toBe('missed');
   });
 
-  it('sets hit=outcome when picked winner won a different slot in the same round', async () => {
-    // User picks A1 to win qf1, but A1 ends up playing (and winning) qf2 instead.
+  it('shows hit=outcome on the actual match where the predicted team played and won', async () => {
+    // User picks A1 for qf1, but A1 ends up playing qf2 instead (and wins there).
+    // The "correct" signal should appear on qf2 (A1's actual match), not qf1.
     const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
     // qf1 is played without A1 — B2 wins
@@ -1338,10 +1339,13 @@ describe('getResultsView', () => {
     });
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
-    const qf1Match = view!.bracketRounds
-      .find((r) => r.label === 'QF')!
-      .matches.find((m) => m.bracketMatchKey === 'qf1')!;
-    expect(qf1Match.hit).toBe('outcome');
+    const qfMatches = view!.bracketRounds.find((r) => r.label === 'QF')!.matches;
+    const qf1Match = qfMatches.find((m) => m.bracketMatchKey === 'qf1')!;
+    const qf2Match = qfMatches.find((m) => m.bracketMatchKey === 'qf2')!;
+    // qf1 winner is B2, which the user never picked → missed
+    expect(qf1Match.hit).toBe('missed');
+    // qf2 winner is A1, which the user picked for this QF stage → outcome
+    expect(qf2Match.hit).toBe('outcome');
   });
 
   it('sets hit=pending on non-final knockout tie when match has not yet finalized', async () => {
