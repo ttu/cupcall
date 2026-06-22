@@ -123,13 +123,7 @@ export function KnockoutBracket({
     );
   }
 
-  // Explicit per-slot picks — highlight wherever the picked team appears.
-  const pickedTeamIds = new Set<string>(
-    [...rounds.flatMap((r) => r.matches), ...(bronzeMatch ? [bronzeMatch] : [])]
-      .map((m) => m.pickedWinnerId)
-      .filter((id): id is string => id !== null),
-  );
-  // Predicted group qualifiers — only highlighted in entry-round (R32/QF) cards,
+  // Predicted group qualifiers — only highlighted in entry-round cards,
   // not in later rounds where the team may appear without the user having picked them.
   const predictedQualifierIds = new Set<string>(userPredictedKnockoutTeamIds ?? []);
 
@@ -180,8 +174,7 @@ export function KnockoutBracket({
                     <BracketMatchCard
                       key={match.bracketMatchKey}
                       match={match}
-                      pickedTeamIds={pickedTeamIds}
-                      predictedQualifierIds={predictedQualifierIds}
+                      predictedQualifierIds={i === 0 ? predictedQualifierIds : new Set()}
                     />
                   ))}
                 </div>

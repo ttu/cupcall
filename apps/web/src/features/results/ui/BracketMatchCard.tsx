@@ -5,7 +5,6 @@ import { TeamBadge, Icon, cn } from '@/shared/ui';
 
 type Props = {
   match: KnockoutMatchView;
-  pickedTeamIds: Set<string>;
   predictedQualifierIds: Set<string>;
 };
 
@@ -71,11 +70,7 @@ function TeamRow({
   );
 }
 
-export function BracketMatchCard({
-  match,
-  pickedTeamIds,
-  predictedQualifierIds,
-}: Props): ReactElement {
+export function BracketMatchCard({ match, predictedQualifierIds }: Props): ReactElement {
   const noTeams = !match.homeTeamId && !match.awayTeamId;
   const hasScore = match.actualHome !== null && match.actualAway !== null;
   const isFinal = match.status === 'final';
@@ -117,7 +112,8 @@ export function BracketMatchCard({
             teamName={match.homeTeamName}
             isPick={
               match.homeTeamId !== null &&
-              (pickedTeamIds.has(match.homeTeamId) || predictedQualifierIds.has(match.homeTeamId))
+              (match.pickedWinnerId === match.homeTeamId ||
+                predictedQualifierIds.has(match.homeTeamId))
             }
             showCheckmark={
               isFinal && match.pickedWinnerId === match.homeTeamId && match.pickedWinnerId !== null
@@ -131,7 +127,8 @@ export function BracketMatchCard({
             teamName={match.awayTeamName}
             isPick={
               match.awayTeamId !== null &&
-              (pickedTeamIds.has(match.awayTeamId) || predictedQualifierIds.has(match.awayTeamId))
+              (match.pickedWinnerId === match.awayTeamId ||
+                predictedQualifierIds.has(match.awayTeamId))
             }
             showCheckmark={
               isFinal && match.pickedWinnerId === match.awayTeamId && match.pickedWinnerId !== null
