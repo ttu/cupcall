@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import type { KnockoutMatchView, MatchHit } from '../domain/types';
 import { HitChip } from './HitChip';
-import { TeamBadge, Icon, cn } from '@/shared/ui';
+import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = {
   match: KnockoutMatchView;
@@ -19,7 +19,6 @@ function TeamRow({
   teamId,
   teamName,
   isPick,
-  showCheckmark,
   isActualWinner,
   r32Pct,
   projected,
@@ -27,7 +26,6 @@ function TeamRow({
   teamId: string | null;
   teamName: string | null;
   isPick: boolean;
-  showCheckmark: boolean;
   isActualWinner: boolean;
   r32Pct: number | null;
   projected: boolean;
@@ -60,7 +58,6 @@ function TeamRow({
           {r32Pct}%
         </span>
       )}
-      {showCheckmark && !projected && <Icon name="check" size={11} color="var(--green-700)" />}
       {isActualWinner && (
         <span className="text-[11px] font-bold text-green-600 ml-0.5" aria-label="winner">
           ✓
@@ -115,9 +112,6 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
               (match.pickedWinnerId === match.homeTeamId ||
                 predictedQualifierIds.has(match.homeTeamId))
             }
-            showCheckmark={
-              isFinal && match.pickedWinnerId === match.homeTeamId && match.pickedWinnerId !== null
-            }
             isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
             r32Pct={match.homeTeamR32Pct}
             projected={match.projected}
@@ -129,9 +123,6 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
               match.awayTeamId !== null &&
               (match.pickedWinnerId === match.awayTeamId ||
                 predictedQualifierIds.has(match.awayTeamId))
-            }
-            showCheckmark={
-              isFinal && match.pickedWinnerId === match.awayTeamId && match.pickedWinnerId !== null
             }
             isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
             r32Pct={match.awayTeamR32Pct}
