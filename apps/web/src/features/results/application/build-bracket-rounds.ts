@@ -29,6 +29,9 @@ export function buildBracketRounds(
     def,
     allMatches,
   );
+  const userPredictedParticipants = inputs
+    ? computeUserPredictedParticipants(def, allMatches, pickMap, projectedKeys, derivedParticipants)
+    : new Map<string, [string | null, string | null]>();
   const entryRoundKeys = new Set(def.bracket.slots.map((s) => s.match as string));
   const r32PredPcts = computeEntryRoundPredictionPcts(def, poolGroupScores);
 
@@ -122,6 +125,7 @@ export function buildBracketRounds(
       isEntryRound,
       homeTeamR32Pct: isEntryRound && homeId ? (r32PredPcts.get(homeId) ?? null) : null,
       awayTeamR32Pct: isEntryRound && awayId ? (r32PredPcts.get(awayId) ?? null) : null,
+      ...resolvePredictedTeams(key, homeId, awayId, userPredictedParticipants, teamMap),
     };
   };
 
@@ -380,4 +384,168 @@ function getRoundLabel(matchKey: string, rounds: string[]): string {
     if (matchKey.toLowerCase().startsWith(r.toLowerCase().replace(/\s+/g, '-'))) return r;
   }
   return matchKey;
+}
+
+/**
+ * Builds a map of user-predicted (home, away) team IDs for every bracket match,
+ * walking the bracket in topological order.
+ *
+ * Entry-round picks are resolved against actual/projected slot participants so that
+ * each prediction appears in the slot where the team actually plays, not where the
+ * user originally placed their pick:
+ *
+ * - Groups ongoing (slot in projectedKeys): direct pick validated against projected
+ *   participants. Picks for teams not currently projected into that slot are rejected.
+ *
+ * - Groups done: any entry-round pick that is an actual participant in a slot is
+ *   placed there, regardless of which slot the pick was originally made for.
+ *   E.g. if the user picked GER for slot r32m78 but GER is actually in r32m74,
+ *   GER is shown in the R16 position fed by r32m74.
+ *   Direct picks that match are preferred; cross-slot matching is the fallback.
+ *
+ * Progression picks (R16+) are validated against predicted participants of their
+ * feeding matches to ensure the chain is internally consistent.
+ */
+function computeUserPredictedParticipants(
+  def: Tournament,
+  allMatches: MatchRow[],
+  pickMap: Map<string, string>,
+  projectedKeys: Set<BracketMatchKey>,
+  derivedParticipants: Map<BracketMatchKey, [string, string]>,
+): Map<string, [string | null, string | null]> {
+  const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
+
+  // Collect every team the user picked across all entry-round matches.
+  // Used when groups are done to find picks by actual slot participants.
+  const allEntryPickedTeams = new Set<string>();
+  for (const slot of def.bracket.slots) {
+    const pick = pickMap.get(slot.match);
+    if (pick) allEntryPickedTeams.add(pick);
+  }
+
+  // Resolve the predicted advancing team for each entry-round slot.
+  const entryWinner = new Map<BracketMatchKey, string | null>();
+  for (const slot of def.bracket.slots) {
+    const actual = matchByKey.get(slot.match);
+    if (actual?.winnerTeamId) {
+      entryWinner.set(slot.match, actual.winnerTeamId);
+      continue;
+    }
+    const derived = derivedParticipants.get(slot.match);
+    if (!derived) {
+      entryWinner.set(slot.match, null);
+      continue;
+    }
+    if (projectedKeys.has(slot.match)) {
+      // Groups ongoing: direct pick must match projected participants.
+      const pick = pickMap.get(slot.match) ?? null;
+      entryWinner.set(
+        slot.match,
+        pick && (derived[0] === pick || derived[1] === pick) ? pick : null,
+      );
+    } else {
+      // Groups done: prefer a direct pick that matches actual participants; fall back
+      // to any entry-round pick that is an actual participant in this slot.
+      const directPick = pickMap.get(slot.match) ?? null;
+      const directValid = directPick && (derived[0] === directPick || derived[1] === directPick);
+      if (directValid) {
+        entryWinner.set(slot.match, directPick);
+      } else {
+        const crossMatch = allEntryPickedTeams.has(derived[0])
+          ? derived[0]
+          : allEntryPickedTeams.has(derived[1])
+            ? derived[1]
+            : null;
+        entryWinner.set(slot.match, crossMatch);
+      }
+    }
+  }
+
+  const predicted = new Map<string, [string | null, string | null]>();
+
+  // Returns the predicted advancing team from a given match key.
+  const getPredictedWinner = (fromKey: string): string | null => {
+    // Entry-round: use pre-resolved winner.
+    if (entryWinner.has(fromKey as BracketMatchKey)) {
+      return entryWinner.get(fromKey as BracketMatchKey) ?? null;
+    }
+    // Progression match: actual winner > pick validated against predicted participants.
+    const actual = matchByKey.get(fromKey);
+    if (actual?.winnerTeamId) return actual.winnerTeamId;
+    const pick = pickMap.get(fromKey) ?? null;
+    if (!pick) return null;
+    const parts = predicted.get(fromKey as BracketMatchKey);
+    if (parts) {
+      return parts[0] === pick || parts[1] === pick ? pick : null;
+    }
+    return null;
+  };
+
+  // Progression matches (excluding bronze) — process in round order so each match's
+  // predicted participants are available when a later round depends on them.
+  const bronzeKey = def.bracket.bronzeMatch;
+  for (const round of def.bracket.rounds) {
+    for (const prog of def.bracket.progression) {
+      if (prog.match === bronzeKey) continue;
+      if (predicted.has(prog.match)) continue;
+      if (getRoundLabel(prog.match, def.bracket.rounds) !== round) continue;
+      const [fk0, fk1] = prog.from;
+      predicted.set(prog.match, [
+        fk0 ? getPredictedWinner(fk0) : null,
+        fk1 ? getPredictedWinner(fk1) : null,
+      ]);
+    }
+  }
+
+  // Bronze match: participants are the SF losers (the SF team the user did NOT pick to win)
+  const bronzeProg = def.bracket.progression.find((p) => p.match === bronzeKey);
+  if (bronzeProg) {
+    const getSfLoser = (sfKey: string): string | null => {
+      const actual = matchByKey.get(sfKey);
+      const sfParts = predicted.get(sfKey);
+      if (!sfParts) return null;
+      if (actual?.winnerTeamId) {
+        const home = actual.homeTeamId ?? sfParts[0] ?? null;
+        const away = actual.awayTeamId ?? sfParts[1] ?? null;
+        if (!home || !away) return null;
+        return actual.winnerTeamId === home ? away : home;
+      }
+      const sfPick = pickMap.get(sfKey) ?? null;
+      if (!sfPick) return null;
+      if (sfParts[0] === sfPick) return sfParts[1];
+      if (sfParts[1] === sfPick) return sfParts[0];
+      return null;
+    };
+    const [sf1, sf2] = bronzeProg.from;
+    predicted.set(bronzeKey, [sf1 ? getSfLoser(sf1) : null, sf2 ? getSfLoser(sf2) : null]);
+  }
+
+  return predicted;
+}
+
+function resolvePredictedTeams(
+  key: string,
+  homeId: string | null,
+  awayId: string | null,
+  userPredictedParticipants: Map<string, [string | null, string | null]>,
+  teamMap: Map<string, string>,
+): {
+  predictedHomeTeamId: string | null;
+  predictedHomeTeamName: string | null;
+  predictedAwayTeamId: string | null;
+  predictedAwayTeamName: string | null;
+} {
+  const pair = userPredictedParticipants.get(key);
+  const predictedHomeId = homeId === null ? (pair?.[0] ?? null) : null;
+  const predictedAwayId = awayId === null ? (pair?.[1] ?? null) : null;
+  return {
+    predictedHomeTeamId: predictedHomeId,
+    predictedHomeTeamName: predictedHomeId
+      ? (teamMap.get(predictedHomeId) ?? predictedHomeId)
+      : null,
+    predictedAwayTeamId: predictedAwayId,
+    predictedAwayTeamName: predictedAwayId
+      ? (teamMap.get(predictedAwayId) ?? predictedAwayId)
+      : null,
+  };
 }

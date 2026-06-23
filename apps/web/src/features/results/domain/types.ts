@@ -123,6 +123,12 @@ export type KnockoutMatchView = {
   hit: MatchHit;
   /** True when participants are derived from live (partial) group standings during the group stage. */
   projected: boolean;
+  /** User's predicted home team for this slot — populated only when homeTeamId is null and the pick is still alive. */
+  predictedHomeTeamId: string | null;
+  predictedHomeTeamName: string | null;
+  /** User's predicted away team for this slot — populated only when awayTeamId is null and the pick is still alive. */
+  predictedAwayTeamId: string | null;
+  predictedAwayTeamName: string | null;
   /** True when this match is the first knockout round (R32/QF depending on tournament size). */
   isEntryRound: boolean;
   /** % of pool members who predicted the home team to qualify to the entry round. Null when not an entry-round match or no predictions exist. */

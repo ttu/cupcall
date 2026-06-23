@@ -8,8 +8,8 @@ type Props = {
   predictedQualifierIds: Set<string>;
 };
 
-function borderClassForHit(hit: MatchHit, projected: boolean): string {
-  if (projected) return 'border-line-soft border-dashed';
+function borderClassForHit(hit: MatchHit, softCard: boolean): string {
+  if (softCard) return 'border-line-soft border-dashed';
   if (hit === 'outcome' || hit === 'exact') return 'border-green-300';
   if (hit === 'missed') return 'border-[oklch(0.85_0.08_25)]';
   return 'border-line-soft';
@@ -21,28 +21,31 @@ function TeamRow({
   isPick,
   isActualWinner,
   r32Pct,
-  projected,
+  isSoft,
+  isPredictedFill,
 }: {
   teamId: string | null;
   teamName: string | null;
   isPick: boolean;
   isActualWinner: boolean;
   r32Pct: number | null;
-  projected: boolean;
+  isSoft: boolean;
+  isPredictedFill: boolean;
 }): ReactElement {
   return (
     <div
       data-testid="bracket-tie-team-row"
       className={cn(
         'flex items-center gap-1.5 p-[6px_7px] rounded-[7px]',
-        isPick ? 'bg-green-050' : 'bg-transparent',
+        isPick && !isSoft ? 'bg-green-050' : 'bg-transparent',
+        isPredictedFill && 'opacity-60',
       )}
     >
       <TeamBadge teamId={teamId} size="sm" />
       <span
         className={cn(
           'flex-1 text-xs font-bold truncate',
-          projected
+          isSoft
             ? 'text-ink-soft'
             : isPick
               ? 'text-green-700'
@@ -68,7 +71,17 @@ function TeamRow({
 }
 
 export function BracketMatchCard({ match, predictedQualifierIds }: Props): ReactElement {
-  const noTeams = !match.homeTeamId && !match.awayTeamId;
+  // Merge actual teams with user-predicted teams for TBD slots
+  const effectiveHomeId = match.homeTeamId ?? match.predictedHomeTeamId;
+  const effectiveHomeName = match.homeTeamName ?? match.predictedHomeTeamName;
+  const effectiveAwayId = match.awayTeamId ?? match.predictedAwayTeamId;
+  const effectiveAwayName = match.awayTeamName ?? match.predictedAwayTeamName;
+
+  const hasPredictedParticipants = !!(match.predictedHomeTeamId || match.predictedAwayTeamId);
+  // Card shows soft styling (dashed border, muted text, "Predicted" label) when teams are not
+  // yet confirmed — either projected from live group standings or filled from user's picks.
+  const softCard = match.projected || hasPredictedParticipants;
+
   const hasScore = match.actualHome !== null && match.actualAway !== null;
   const isFinal = match.status === 'final';
 
@@ -77,7 +90,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
       data-testid="bracket-tie-row"
       className={cn(
         'card overflow-hidden min-w-37.5 min-h-[114px] p-1 border',
-        borderClassForHit(match.hit, match.projected),
+        borderClassForHit(match.hit, softCard),
       )}
     >
       {/* Header strip */}
@@ -88,6 +101,8 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           </span>
         ) : match.projected ? (
           <span className="text-[11px] font-semibold text-ink-muted italic">Projected</span>
+        ) : hasPredictedParticipants ? (
+          <span className="text-[11px] font-semibold text-ink-muted italic">Predicted</span>
         ) : match.kickoff ? (
           <span className="text-[11px] font-bold text-ink-muted">
             {new Date(match.kickoff).toLocaleDateString('en-GB', {
@@ -98,42 +113,36 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
         ) : (
           <span className="text-[11px] font-bold text-ink-muted">{match.round}</span>
         )}
-        {!match.projected && <HitChip hit={match.hit} />}
+        {!softCard && <HitChip hit={match.hit} />}
       </div>
 
       {/* Team rows */}
-      {!noTeams ? (
-        <div className="flex flex-col gap-0.5">
-          <TeamRow
-            teamId={match.homeTeamId}
-            teamName={match.homeTeamName}
-            isPick={
-              match.homeTeamId !== null &&
-              (match.pickedWinnerId === match.homeTeamId ||
-                predictedQualifierIds.has(match.homeTeamId))
-            }
-            isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
-            r32Pct={match.homeTeamR32Pct}
-            projected={match.projected}
-          />
-          <TeamRow
-            teamId={match.awayTeamId}
-            teamName={match.awayTeamName}
-            isPick={
-              match.awayTeamId !== null &&
-              (match.pickedWinnerId === match.awayTeamId ||
-                predictedQualifierIds.has(match.awayTeamId))
-            }
-            isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
-            r32Pct={match.awayTeamR32Pct}
-            projected={match.projected}
-          />
-        </div>
-      ) : (
-        <div className="p-[10px_8px] text-center text-xs font-bold text-ink-muted">
-          To be determined
-        </div>
-      )}
+      <div className="flex flex-col gap-0.5">
+        <TeamRow
+          teamId={effectiveHomeId}
+          teamName={effectiveHomeName}
+          isPick={
+            effectiveHomeId !== null &&
+            (match.pickedWinnerId === effectiveHomeId || predictedQualifierIds.has(effectiveHomeId))
+          }
+          isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
+          r32Pct={match.homeTeamR32Pct}
+          isSoft={softCard}
+          isPredictedFill={match.homeTeamId === null}
+        />
+        <TeamRow
+          teamId={effectiveAwayId}
+          teamName={effectiveAwayName}
+          isPick={
+            effectiveAwayId !== null &&
+            (match.pickedWinnerId === effectiveAwayId || predictedQualifierIds.has(effectiveAwayId))
+          }
+          isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
+          r32Pct={match.awayTeamR32Pct}
+          isSoft={softCard}
+          isPredictedFill={match.awayTeamId === null}
+        />
+      </div>
     </div>
   );
 }

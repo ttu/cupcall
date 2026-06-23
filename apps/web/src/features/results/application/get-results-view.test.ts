@@ -2074,4 +2074,150 @@ describe('getResultsView', () => {
       expect(row.hit).toBe('pending');
     });
   });
+
+  describe('predicted knockout path', () => {
+    // miniTournament bracket: QF entry round (qf1..qf4) → SF (sf1 from [qf1,qf2], sf2 from [qf3,qf4])
+    // Default seed order: qf1 = A1 vs B2, qf2 = C1 vs D2, qf3 = B1 vs A2, qf4 = D1 vs C2
+
+    it('shows user QF pick as predicted SF participant when QF is still pending', async () => {
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
+      const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+
+      expect(sf1.homeTeamId).toBeNull(); // no actual SF row yet
+      expect(sf1.predictedHomeTeamId).toBe('A1');
+      expect(sf1.predictedHomeTeamName).toBeTruthy();
+      expect(sf1.predictedAwayTeamId).toBeNull(); // no pick for qf2
+    });
+
+    it('shows null predicted slot when user has no pick for the feeding QF', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
+      const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+
+      expect(sf1.predictedHomeTeamId).toBeNull();
+      expect(sf1.predictedAwayTeamId).toBeNull();
+    });
+
+    it('propagates actual QF winner (not user pick) into SF slot once QF is final', async () => {
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1'); // user picks A1
+
+      // QF1 played — B2 wins, A1 is busted
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 0,
+        awayGoals: 2,
+        winnerTeamId: 'B2',
+        status: 'final',
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
+      const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+
+      // Actual QF1 winner (B2) propagates — user's busted pick (A1) is not shown
+      expect(sf1.predictedHomeTeamId).toBe('B2');
+    });
+
+    it('does not show pick for a team not projected into that QF slot (groups ongoing)', async () => {
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      // qf1 projected participants (seed order, no matches played): A1 (1A) vs B2 (2B).
+      // C1 is 1C and belongs to qf2 — picking C1 for qf1 is inconsistent with projections.
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'C1');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
+      const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+
+      expect(sf1.predictedHomeTeamId).toBeNull();
+    });
+
+    it('places pick in the correct slot based on actual participants once groups are done', async () => {
+      // C1 is 1C → actual qf2 participants are [C1, D2]. User picked C1 for qf1 (wrong slot).
+      // With groups done we look at actual participants: C1 is found in qf2, which feeds sf1 away.
+      // So C1 should appear as sf1 predictedAway (not predictedHome which comes from qf1).
+      const miniGroupMatchIds = [
+        'mA1',
+        'mA2',
+        'mA3',
+        'mA4',
+        'mA5',
+        'mA6',
+        'mB1',
+        'mB2',
+        'mB3',
+        'mB4',
+        'mB5',
+        'mB6',
+        'mC1',
+        'mC2',
+        'mC3',
+        'mC4',
+        'mC5',
+        'mC6',
+        'mD1',
+        'mD2',
+        'mD3',
+        'mD4',
+        'mD5',
+        'mD6',
+      ];
+      for (const id of miniGroupMatchIds) {
+        await finalizeMatch(db, miniTId, id, 1, 0); // home wins → seed order preserved
+      }
+
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'C1');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
+      const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+
+      expect(sf1.predictedHomeTeamId).toBeNull(); // qf1 [A1, B2] — no pick matches
+      expect(sf1.predictedAwayTeamId).toBe('C1'); // qf2 [C1, D2] — C1 found here
+    });
+
+    it('propagates predicted path through two rounds to the Final', async () => {
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf2'), 'C1');
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf3'), 'B1');
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf4'), 'D1');
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('sf1'), 'A1');
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('sf2'), 'B1');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+
+      // SF1: predicted home = qf1 pick (A1), predicted away = qf2 pick (C1)
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
+      const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+      expect(sf1.predictedHomeTeamId).toBe('A1');
+      expect(sf1.predictedAwayTeamId).toBe('C1');
+
+      // Final: predicted home = sf1 pick (A1) — A1 is a valid sf1 participant (predicted above)
+      const finalRound = view!.bracketRounds.find((r) => r.label === 'Final')!;
+      const finalMatch = finalRound.matches[0]!;
+      expect(finalMatch.predictedHomeTeamId).toBe('A1');
+      expect(finalMatch.predictedAwayTeamId).toBe('B1');
+    });
+
+    it('returns null predicted fields for entry-round cards (actual teams always known)', async () => {
+      // Entry-round (QF) teams come from group stage — always actual, never predicted
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const qfRound = view!.bracketRounds.find((r) => r.label === 'QF')!;
+      for (const match of qfRound.matches) {
+        // Teams may be projected from live standings, but they're never "predicted" (user picks)
+        expect(match.predictedHomeTeamId).toBeNull();
+        expect(match.predictedAwayTeamId).toBeNull();
+      }
+    });
+  });
 });
