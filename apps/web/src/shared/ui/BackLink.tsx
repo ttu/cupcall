@@ -4,7 +4,7 @@ import { Icon } from './Icon';
 
 type Props = { href: string; children: ReactNode };
 
-export function BackLink({ href, children }: Props) {
+export function BackLink({ href, children }: Props): JSX.Element {
   return (
     <Link href={href} className="eyebrow back-link">
       <Icon name="chevleft" size={13} stroke={2.5} />

@@ -5,7 +5,11 @@ import { db } from '@/shared/db';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 
-export default async function AuthenticatedLayout({ children }: { children: ReactNode }) {
+export default async function AuthenticatedLayout({
+  children,
+}: {
+  children: ReactNode;
+}): Promise<JSX.Element> {
   const actor = await getCurrentActor();
   const pools = actor ? await getUserPools(db, actor.userId) : [];
 

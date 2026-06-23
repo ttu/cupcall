@@ -30,7 +30,7 @@ function isActive(tab: Tab, pathname: string): boolean {
   return pathname.startsWith(tab.href);
 }
 
-export function MobileNav() {
+export function MobileNav(): JSX.Element {
   const pathname = usePathname();
   const poolId = pathname.match(/^\/pools\/([^/]+)/)?.[1];
   const tabs = poolId ? poolTabs(poolId) : TOP_LEVEL_TABS;

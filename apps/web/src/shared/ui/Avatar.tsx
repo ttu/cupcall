@@ -21,7 +21,7 @@ type AvatarProps = {
   size?: number;
 };
 
-export function Avatar({ name, index = 0, size = 36 }: AvatarProps) {
+export function Avatar({ name, index = 0, size = 36 }: AvatarProps): JSX.Element {
   const bg = AVATAR_PALETTE[index % AVATAR_PALETTE.length];
   return (
     <span

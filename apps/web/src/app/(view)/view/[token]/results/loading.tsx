@@ -1,4 +1,4 @@
-export default function Loading() {
+export default function Loading(): JSX.Element {
   return (
     <main className="max-w-5xl mx-auto px-4 py-6">
       <div className="animate-pulse space-y-4">

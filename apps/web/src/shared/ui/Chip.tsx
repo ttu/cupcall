@@ -10,7 +10,13 @@ type ChipProps = {
   className?: string;
 };
 
-export function Chip({ variant = 'default', dot, children, style, className }: ChipProps) {
+export function Chip({
+  variant = 'default',
+  dot,
+  children,
+  style,
+  className,
+}: ChipProps): JSX.Element {
   const parts = ['chip'];
   if (variant !== 'default') parts.push(variant);
   if (dot) parts.push('dot');

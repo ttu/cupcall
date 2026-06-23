@@ -10,7 +10,7 @@ type Props = {
   pools: PoolSummary[];
 };
 
-export function Sidebar({ pools }: Props) {
+export function Sidebar({ pools }: Props): JSX.Element {
   const pathname = usePathname();
 
   return (

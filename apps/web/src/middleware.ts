@@ -11,7 +11,7 @@ const SESSION_COOKIES = ['authjs.session-token', '__Secure-authjs.session-token'
  * without hitting the DB. We check for existence only; actual session validation
  * happens in server components/actions via auth() from auth.ts.
  */
-export function middleware(request: NextRequest) {
+export function middleware(request: NextRequest): NextResponse {
   const { pathname, origin } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 

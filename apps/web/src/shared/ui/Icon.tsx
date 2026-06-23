@@ -68,7 +68,12 @@ const PATHS: Record<IconName, string> = {
   clock: 'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 6v4l3 3',
 };
 
-export function Icon({ name, size = 20, stroke = 2, color = 'currentColor' }: IconProps) {
+export function Icon({
+  name,
+  size = 20,
+  stroke = 2,
+  color = 'currentColor',
+}: IconProps): JSX.Element {
   return (
     <svg
       width={size}

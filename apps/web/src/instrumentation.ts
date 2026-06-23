@@ -1,4 +1,4 @@
-export async function register() {
+export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === 'edge') return;
 
   const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;

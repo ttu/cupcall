@@ -5,7 +5,7 @@ type LogoProps = {
 
 import { cn } from './cn';
 
-export function Logo({ size, dark = false }: LogoProps) {
+export function Logo({ size, dark = false }: LogoProps): JSX.Element {
   return (
     <span className={cn('logo', dark ? 'text-on-dark' : 'text-ink')}>
       <span className={`logo-mark${size === 'lg' ? ' lg' : ''}`} />
