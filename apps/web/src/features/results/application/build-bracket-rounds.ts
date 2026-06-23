@@ -30,7 +30,7 @@ export function buildBracketRounds(
     allMatches,
   );
   const userPredictedParticipants = inputs
-    ? computeUserPredictedParticipants(def, allMatches, pickMap, projectedKeys, derivedParticipants)
+    ? computeUserPredictedParticipants(def, allMatches, pickMap, derivedParticipants)
     : new Map<string, [string | null, string | null]>();
   const entryRoundKeys = new Set(def.bracket.slots.map((s) => s.match as string));
   const r32PredPcts = computeEntryRoundPredictionPcts(def, poolGroupScores);
@@ -391,17 +391,17 @@ function getRoundLabel(matchKey: string, rounds: string[]): string {
  * walking the bracket in topological order.
  *
  * Entry-round picks are resolved against actual/projected slot participants so that
- * each prediction appears in the slot where the team actually plays, not where the
- * user originally placed their pick:
+ * each prediction appears in the slot where the team is currently projected/confirmed
+ * to play, not necessarily where the user originally placed their pick.
  *
- * - Groups ongoing (slot in projectedKeys): direct pick validated against projected
- *   participants. Picks for teams not currently projected into that slot are rejected.
+ * This applies in both states:
+ * - Groups ongoing: resolved against current projected standings.
+ * - Groups done: resolved against final actual standings.
  *
- * - Groups done: any entry-round pick that is an actual participant in a slot is
- *   placed there, regardless of which slot the pick was originally made for.
- *   E.g. if the user picked GER for slot r32m78 but GER is actually in r32m74,
- *   GER is shown in the R16 position fed by r32m74.
- *   Direct picks that match are preferred; cross-slot matching is the fallback.
+ * For each slot: prefer the direct pick if it matches that slot's participants;
+ * otherwise scan all entry-round picks for a team that is a participant here
+ * (cross-slot matching). E.g. if the user picked GER for r32m78 but GER is
+ * actually projected into r32m74, GER appears in the R16 position fed by r32m74.
  *
  * Progression picks (R16+) are validated against predicted participants of their
  * feeding matches to ensure the chain is internally consistent.
@@ -410,7 +410,6 @@ function computeUserPredictedParticipants(
   def: Tournament,
   allMatches: MatchRow[],
   pickMap: Map<string, string>,
-  projectedKeys: Set<BracketMatchKey>,
   derivedParticipants: Map<BracketMatchKey, [string, string]>,
 ): Map<string, [string | null, string | null]> {
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
@@ -436,28 +435,20 @@ function computeUserPredictedParticipants(
       entryWinner.set(slot.match, null);
       continue;
     }
-    if (projectedKeys.has(slot.match)) {
-      // Groups ongoing: direct pick must match projected participants.
-      const pick = pickMap.get(slot.match) ?? null;
-      entryWinner.set(
-        slot.match,
-        pick && (derived[0] === pick || derived[1] === pick) ? pick : null,
-      );
+    // Prefer a direct pick that matches actual/projected participants; fall back
+    // to any entry-round pick that is a participant in this slot (cross-slot matching).
+    // Applies whether groups are ongoing (projected) or done (actual).
+    const directPick = pickMap.get(slot.match) ?? null;
+    const directValid = directPick && (derived[0] === directPick || derived[1] === directPick);
+    if (directValid) {
+      entryWinner.set(slot.match, directPick);
     } else {
-      // Groups done: prefer a direct pick that matches actual participants; fall back
-      // to any entry-round pick that is an actual participant in this slot.
-      const directPick = pickMap.get(slot.match) ?? null;
-      const directValid = directPick && (derived[0] === directPick || derived[1] === directPick);
-      if (directValid) {
-        entryWinner.set(slot.match, directPick);
-      } else {
-        const crossMatch = allEntryPickedTeams.has(derived[0])
-          ? derived[0]
-          : allEntryPickedTeams.has(derived[1])
-            ? derived[1]
-            : null;
-        entryWinner.set(slot.match, crossMatch);
-      }
+      const crossMatch = allEntryPickedTeams.has(derived[0])
+        ? derived[0]
+        : allEntryPickedTeams.has(derived[1])
+          ? derived[1]
+          : null;
+      entryWinner.set(slot.match, crossMatch);
     }
   }
 
