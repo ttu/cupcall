@@ -1,46 +1,284 @@
 {
   "tournamentId": "wc-2026",
   "matchResults": [
-    { "matchId": "mA1", "home": 2, "away": 0, "homeConduct": -5, "awayConduct": -9 },
-    { "matchId": "mA2", "home": 2, "away": 1, "homeConduct": -1 },
-    { "matchId": "mB1", "home": 1, "away": 1, "homeConduct": -2, "awayConduct": -3 },
-    { "matchId": "mB2", "home": 1, "away": 1, "homeConduct": -2, "awayConduct": -1 },
-    { "matchId": "mC1", "home": 1, "away": 1, "homeConduct": -2 },
-    { "matchId": "mC2", "home": 0, "away": 1, "homeConduct": -1, "awayConduct": -1 },
-    { "matchId": "mD1", "home": 4, "away": 1, "homeConduct": -1, "awayConduct": -4 },
-    { "matchId": "mD2", "home": 2, "away": 0 },
-    { "matchId": "mE1", "home": 7, "away": 1 },
-    { "matchId": "mF1", "home": 2, "away": 2, "homeConduct": -3 },
-    { "matchId": "mE2", "home": 1, "away": 0, "homeConduct": -3, "awayConduct": -1 },
-    { "matchId": "mF2", "home": 5, "away": 1, "awayConduct": -1 },
-    { "matchId": "mG1", "home": 1, "away": 1, "homeConduct": -2, "awayConduct": -2 },
-    { "matchId": "mH1", "home": 0, "away": 0, "homeConduct": -1, "awayConduct": -1 },
-    { "matchId": "mH2", "home": 1, "away": 1, "homeConduct": -1 },
-    { "matchId": "mG2", "home": 2, "away": 2, "homeConduct": -1 },
-    { "matchId": "mI1", "home": 3, "away": 1 },
-    { "matchId": "mI2", "home": 1, "away": 4, "homeConduct": -1 },
-    { "matchId": "mJ1", "home": 3, "away": 0 },
-    { "matchId": "mJ2", "home": 3, "away": 1, "homeConduct": -1 },
-    { "matchId": "mK1", "home": 1, "away": 1, "homeConduct": -3, "awayConduct": -1 },
-    { "matchId": "mL1", "home": 4, "away": 2 },
-    { "matchId": "mL2", "home": 1, "away": 0, "homeConduct": -1, "awayConduct": -2 },
-    { "matchId": "mK2", "home": 1, "away": 3, "homeConduct": -1, "awayConduct": -1 },
-    { "matchId": "mA3", "home": 1, "away": 1, "homeConduct": -1, "awayConduct": -2 },
-    { "matchId": "mB3", "home": 4, "away": 1, "homeConduct": -1, "awayConduct": -6 },
-    { "matchId": "mB4", "home": 6, "away": 0, "homeConduct": -1, "awayConduct": -13 },
-    { "matchId": "mA4", "home": 1, "away": 0, "awayConduct": -2 },
-    { "matchId": "mC3", "home": 0, "away": 1, "homeConduct": -1, "awayConduct": -1 },
-    { "matchId": "mC4", "home": 3, "away": 0, "homeConduct": -1, "awayConduct": -3 },
-    { "matchId": "mD3", "home": 2, "away": 0, "homeConduct": -3, "awayConduct": -5 },
-    { "matchId": "mD4", "home": 0, "away": 1, "homeConduct": -1, "awayConduct": -5 },
-    { "matchId": "mE3", "home": 2, "away": 1 },
-    { "matchId": "mE4", "home": 0, "away": 0, "homeConduct": -1, "awayConduct": -5 },
-    { "matchId": "mF3", "home": 5, "away": 1, "homeConduct": -1, "awayConduct": -3 },
-    { "matchId": "mF4", "home": 0, "away": 4, "homeConduct": -1 },
-    { "matchId": "mG3", "home": 0, "away": 0, "homeConduct": -6, "awayConduct": -2 },
-    { "matchId": "mG4", "home": 1, "away": 3, "homeConduct": -2, "awayConduct": -1 },
-    { "matchId": "mH3", "home": 4, "away": 0, "homeConduct": -1, "awayConduct": -2 },
-    { "matchId": "mH4", "home": 2, "away": 2, "homeConduct": -2, "awayConduct": -2 }
+    {
+      "matchId": "mA1",
+      "home": 2,
+      "away": 0,
+      "homeConduct": -5,
+      "awayConduct": -9
+    },
+    {
+      "matchId": "mA2",
+      "home": 2,
+      "away": 1,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mB1",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -2,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mB2",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -2,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mC1",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -2
+    },
+    {
+      "matchId": "mC2",
+      "home": 0,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mD1",
+      "home": 4,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -4
+    },
+    {
+      "matchId": "mD2",
+      "home": 2,
+      "away": 0
+    },
+    {
+      "matchId": "mE1",
+      "home": 7,
+      "away": 1
+    },
+    {
+      "matchId": "mF1",
+      "home": 2,
+      "away": 2,
+      "homeConduct": -3
+    },
+    {
+      "matchId": "mE2",
+      "home": 1,
+      "away": 0,
+      "homeConduct": -3,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mF2",
+      "home": 5,
+      "away": 1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mG1",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -2,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mH1",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mH2",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mG2",
+      "home": 2,
+      "away": 2,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mI1",
+      "home": 3,
+      "away": 1
+    },
+    {
+      "matchId": "mI2",
+      "home": 1,
+      "away": 4,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mJ1",
+      "home": 3,
+      "away": 0
+    },
+    {
+      "matchId": "mJ2",
+      "home": 3,
+      "away": 1,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mK1",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -3,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mL1",
+      "home": 4,
+      "away": 2
+    },
+    {
+      "matchId": "mL2",
+      "home": 1,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mK2",
+      "home": 1,
+      "away": 3,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mA3",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mB3",
+      "home": 4,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -6
+    },
+    {
+      "matchId": "mB4",
+      "home": 6,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -13
+    },
+    {
+      "matchId": "mA4",
+      "home": 1,
+      "away": 0,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mC3",
+      "home": 0,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mC4",
+      "home": 3,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mD3",
+      "home": 2,
+      "away": 0,
+      "homeConduct": -3,
+      "awayConduct": -5
+    },
+    {
+      "matchId": "mD4",
+      "home": 0,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -5
+    },
+    {
+      "matchId": "mE3",
+      "home": 2,
+      "away": 1
+    },
+    {
+      "matchId": "mE4",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -5
+    },
+    {
+      "matchId": "mF3",
+      "home": 5,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mF4",
+      "home": 0,
+      "away": 4,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mG3",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -6,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mG4",
+      "home": 1,
+      "away": 3,
+      "homeConduct": -2,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mH3",
+      "home": 4,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mH4",
+      "home": 2,
+      "away": 2,
+      "homeConduct": -2,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mI3",
+      "home": 3,
+      "away": 0
+    },
+    {
+      "matchId": "mI4",
+      "home": 3,
+      "away": 2
+    },
+    {
+      "matchId": "mJ3",
+      "home": 2,
+      "away": 0
+    },
+    {
+      "matchId": "mJ4",
+      "home": 1,
+      "away": 2
+    }
   ],
   "groupOrder": {},
   "answers": {
