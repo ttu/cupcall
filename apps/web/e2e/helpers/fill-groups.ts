@@ -14,9 +14,12 @@ export async function fillAllGroups(page: Page): Promise<void> {
     // Skip cells that are locked (disabled) — those are auto-filled from actual results
     if (await homeInput.isDisabled()) continue;
     await homeInput.fill('1');
-    await cell.locator('[aria-label="Away goals"]').fill('0');
-    // Tab blurs the away input → handleBlur reads both refs → saveGroupScore fires
-    await cell.locator('[aria-label="Away goals"]').press('Tab');
+    const awayInput = cell.locator('[aria-label="Away goals"]');
+    await awayInput.fill('0');
+    // Explicitly blur the away input via JS so React's onBlur fires reliably across
+    // environments. Relying on press('Tab') to trigger blur can be unreliable for
+    // type="number" inputs in headless Chromium — el.blur() fires the DOM event directly.
+    await awayInput.evaluate((el) => (el as HTMLElement).blur());
   }
 
   // Wait for all in-flight saveGroupScore server actions to complete
