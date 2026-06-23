@@ -420,6 +420,11 @@ export function buildCardView(data: CardData): CardView {
     ).length +
     2 /* final + bronze scores */ +
     specials.length;
+  // A special bet counts as filled if the user predicted it OR if the answer
+  // is already known (answeredBetKeys), since the latter cannot be edited.
+  const filledSpecialsCount = specials.filter(
+    (s) => s.storedValue !== null || answeredBetKeys.has(s.key),
+  ).length;
   const filledFields =
     augmentedGroupScores.length +
     inputs.knockoutPicks.filter(
@@ -428,7 +433,7 @@ export function buildCardView(data: CardData): CardView {
     ).length +
     (finalFilled ? 1 : 0) +
     (bronzeFilled ? 1 : 0) +
-    Object.keys(inputs.specials).length;
+    filledSpecialsCount;
   const completionPercent = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
   return {

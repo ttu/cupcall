@@ -10,7 +10,10 @@ export async function fillAllGroups(page: Page): Promise<void> {
 
   for (let i = 0; i < count; i++) {
     const cell = scoreCells.nth(i);
-    await cell.locator('[aria-label="Home goals"]').fill('1');
+    const homeInput = cell.locator('[aria-label="Home goals"]');
+    // Skip cells that are locked (disabled) — those are auto-filled from actual results
+    if (await homeInput.isDisabled()) continue;
+    await homeInput.fill('1');
     await cell.locator('[aria-label="Away goals"]').fill('0');
     // Tab blurs the away input → handleBlur reads both refs → saveGroupScore fires
     await cell.locator('[aria-label="Away goals"]').press('Tab');

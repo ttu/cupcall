@@ -22,6 +22,7 @@ import {
   tournamentId as asTournamentId,
   predictionId as asPredictionId,
   poolId as asPoolId,
+  playerId,
 } from '@cup/engine';
 import type {
   UserId,
@@ -734,6 +735,27 @@ describe('buildCardView — completion percentage', () => {
       makeCardData({ inputs, derived, augmentedGroupScores: groupScores }),
     );
     expect(filledCard.completionPercent).toBeGreaterThan(0);
+  });
+
+  it('counts an answered (locked) special bet as complete even without a user prediction', () => {
+    const withAnswered = buildCardView(
+      makeCardData({ answeredBetKeys: new Set(['firstRedCardPlayer']) }),
+    );
+    const withoutAnswered = buildCardView(makeCardData());
+    expect(withAnswered.completionPercent).toBeGreaterThan(withoutAnswered.completionPercent);
+  });
+
+  it('does not double-count an answered bet that the user also predicted', () => {
+    const predicted = buildCardView(
+      makeCardData({
+        inputs: { ...emptyInputs, specials: { firstRedCardPlayer: playerId('A1-P') } },
+        answeredBetKeys: new Set(['firstRedCardPlayer']),
+      }),
+    );
+    const answeredOnly = buildCardView(
+      makeCardData({ answeredBetKeys: new Set(['firstRedCardPlayer']) }),
+    );
+    expect(predicted.completionPercent).toBe(answeredOnly.completionPercent);
   });
 });
 

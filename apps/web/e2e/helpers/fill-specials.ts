@@ -8,10 +8,13 @@ import type { Page } from '@playwright/test';
 export async function fillAllSpecials(page: Page): Promise<void> {
   const section = page.locator('[data-testid="specials-section"]');
 
-  // Player selects — selectOption({ index: 1 }) picks the first real option after the placeholder
+  // Player selects — selectOption({ index: 1 }) picks the first real option after the placeholder.
+  // Skip selects that are locked (disabled) — those have known answers already.
   const playerKeys = ['topScorerPlayer', 'finalDecisiveGoalPlayer', 'firstRedCardPlayer'];
   for (const key of playerKeys) {
-    await section.locator(`#special-${key}`).selectOption({ index: 1 });
+    const sel = section.locator(`#special-${key}`);
+    if (await sel.isDisabled()) continue;
+    await sel.selectOption({ index: 1 });
     await page.waitForLoadState('networkidle');
   }
 
@@ -24,21 +27,32 @@ export async function fillAllSpecials(page: Page): Promise<void> {
     'tournamentTopConcedingTeam',
   ];
   for (const key of teamKeys) {
-    await section.locator(`#special-${key}`).selectOption({ index: 1 });
+    const sel = section.locator(`#special-${key}`);
+    if (await sel.isDisabled()) continue;
+    await sel.selectOption({ index: 1 });
     await page.waitForLoadState('networkidle');
   }
 
   // Number inputs — fill then Tab to trigger blur → save
-  await section.locator('#special-highestMatchGoals').fill('5');
-  await section.locator('#special-highestMatchGoals').press('Tab');
-  await page.waitForLoadState('networkidle');
+  const goalsInput = section.locator('#special-highestMatchGoals');
+  if (!(await goalsInput.isDisabled())) {
+    await goalsInput.fill('5');
+    await goalsInput.press('Tab');
+    await page.waitForLoadState('networkidle');
+  }
 
-  await section.locator('#special-penaltyShootoutCount').fill('2');
-  await section.locator('#special-penaltyShootoutCount').press('Tab');
-  await page.waitForLoadState('networkidle');
+  const penaltiesInput = section.locator('#special-penaltyShootoutCount');
+  if (!(await penaltiesInput.isDisabled())) {
+    await penaltiesInput.fill('2');
+    await penaltiesInput.press('Tab');
+    await page.waitForLoadState('networkidle');
+  }
 
   // Bool bet — click "Yes" in the finalDecidedByPenalties bet container
   const boolContainer = section.locator('[data-testid="special-bet-finalDecidedByPenalties"]');
-  await boolContainer.getByRole('button', { name: 'Yes' }).click();
-  await page.waitForLoadState('networkidle');
+  const yesBtn = boolContainer.getByRole('button', { name: 'Yes' });
+  if (!(await yesBtn.isDisabled())) {
+    await yesBtn.click();
+    await page.waitForLoadState('networkidle');
+  }
 }

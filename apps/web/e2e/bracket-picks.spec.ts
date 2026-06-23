@@ -20,7 +20,7 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   await page.getByRole('button', { name: 'Create' }).click();
   await page.waitForURL(/\/pools\/[^/]+$/);
 
-  await page.getByRole('link', { name: 'Fill in my predictions' }).click();
+  await page.getByTestId('pool-predict-link').click();
   await page.waitForURL('**/predict');
 
   // ── Fill all group scores so every R32 slot has real teams ────────────────

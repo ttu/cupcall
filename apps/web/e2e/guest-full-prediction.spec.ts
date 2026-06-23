@@ -17,7 +17,7 @@ test('guest can log in, create a pool, fill all predictions, and reopen them', a
   await page.waitForURL(/\/pools\/[^/]+$/);
 
   // ── 3. Open predictions ────────────────────────────────────────────────────
-  await page.getByRole('link', { name: 'Fill in my predictions' }).click();
+  await page.getByTestId('pool-predict-link').click();
   await page.waitForURL('**/predict');
 
   // ── 4. Fill group stage scores ─────────────────────────────────────────────
