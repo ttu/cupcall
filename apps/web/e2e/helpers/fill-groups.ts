@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 /**
  * Fills every group-stage score cell on the currently-visible Groups tab.
@@ -21,4 +21,10 @@ export async function fillAllGroups(page: Page): Promise<void> {
 
   // Wait for all in-flight saveGroupScore server actions to complete
   await page.waitForLoadState('networkidle');
+
+  // Wait until every "Needs a score" chip has cleared. networkidle confirms the requests
+  // completed, but React processes RSC updates asynchronously after the network layer settles.
+  // The chips disappearing is a reliable DOM signal that the card prop has been re-rendered
+  // with all saved group scores, so bracket slot teams will be populated when we switch tabs.
+  await expect(page.getByText('Needs a score')).toHaveCount(0, { timeout: 20_000 });
 }
