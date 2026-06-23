@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 type IconName =
   | 'lock'
   | 'trophy'
@@ -73,7 +75,7 @@ export function Icon({
   size = 20,
   stroke = 2,
   color = 'currentColor',
-}: IconProps): JSX.Element {
+}: IconProps): ReactElement {
   return (
     <svg
       width={size}

@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 type LogoProps = {
   size?: 'sm' | 'lg';
   dark?: boolean;
@@ -5,7 +7,7 @@ type LogoProps = {
 
 import { cn } from './cn';
 
-export function Logo({ size, dark = false }: LogoProps): JSX.Element {
+export function Logo({ size, dark = false }: LogoProps): ReactElement {
   return (
     <span className={cn('logo', dark ? 'text-on-dark' : 'text-ink')}>
       <span className={`logo-mark${size === 'lg' ? ' lg' : ''}`} />

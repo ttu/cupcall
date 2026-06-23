@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 type ChipVariant = 'default' | 'green' | 'orange' | 'dark';
 
@@ -16,7 +16,7 @@ export function Chip({
   children,
   style,
   className,
-}: ChipProps): JSX.Element {
+}: ChipProps): ReactElement {
   const parts = ['chip'];
   if (variant !== 'default') parts.push(variant);
   if (dot) parts.push('dot');

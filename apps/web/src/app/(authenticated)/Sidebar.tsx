@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactElement } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn, Logo, Icon } from '@/shared/ui';
@@ -10,7 +11,7 @@ type Props = {
   pools: PoolSummary[];
 };
 
-export function Sidebar({ pools }: Props): JSX.Element {
+export function Sidebar({ pools }: Props): ReactElement {
   const pathname = usePathname();
 
   return (

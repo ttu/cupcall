@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 export const AVATAR_PALETTE = [
   'oklch(0.6 0.16 150)',
   'oklch(0.62 0.17 50)',
@@ -21,7 +23,7 @@ type AvatarProps = {
   size?: number;
 };
 
-export function Avatar({ name, index = 0, size = 36 }: AvatarProps): JSX.Element {
+export function Avatar({ name, index = 0, size = 36 }: AvatarProps): ReactElement {
   const bg = AVATAR_PALETTE[index % AVATAR_PALETTE.length];
   return (
     <span

@@ -41,7 +41,7 @@ export function Button({
   children,
   className,
   ...rest
-}: ButtonProps): JSX.Element {
+}: ButtonProps): ReactElement {
   const cls = buildClassName(variant, size, block, className);
 
   if (asChild && children) {

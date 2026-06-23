@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactElement } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn, Icon } from '@/shared/ui';
@@ -30,7 +31,7 @@ function isActive(tab: Tab, pathname: string): boolean {
   return pathname.startsWith(tab.href);
 }
 
-export function MobileNav(): JSX.Element {
+export function MobileNav(): ReactElement {
   const pathname = usePathname();
   const poolId = pathname.match(/^\/pools\/([^/]+)/)?.[1];
   const tabs = poolId ? poolTabs(poolId) : TOP_LEVEL_TABS;

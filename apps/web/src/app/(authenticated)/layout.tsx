@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { getCurrentActor } from '@/features/auth';
 import { getUserPools } from '@/features/pools';
 import { db } from '@/shared/db';
@@ -9,7 +9,7 @@ export default async function AuthenticatedLayout({
   children,
 }: {
   children: ReactNode;
-}): Promise<JSX.Element> {
+}): Promise<ReactElement> {
   const actor = await getCurrentActor();
   const pools = actor ? await getUserPools(db, actor.userId) : [];
 

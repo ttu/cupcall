@@ -5,7 +5,7 @@ type SectionLabelProps = {
   icon?: ReactElement;
 };
 
-export function SectionLabel({ children, icon }: SectionLabelProps): JSX.Element {
+export function SectionLabel({ children, icon }: SectionLabelProps): ReactElement {
   return (
     <div className="section-label">
       {icon}
