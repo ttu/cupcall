@@ -19,6 +19,7 @@ function TeamRow({
   teamId,
   teamName,
   isPick,
+  isQualifierPick,
   isActualWinner,
   r32Pct,
   isSoft,
@@ -27,6 +28,7 @@ function TeamRow({
   teamId: string | null;
   teamName: string | null;
   isPick: boolean;
+  isQualifierPick: boolean;
   isActualWinner: boolean;
   r32Pct: number | null;
   isSoft: boolean;
@@ -37,7 +39,7 @@ function TeamRow({
       data-testid="bracket-tie-team-row"
       className={cn(
         'flex items-center gap-1.5 p-[6px_7px] rounded-[7px]',
-        isPick && !isSoft ? 'bg-green-050' : 'bg-transparent',
+        isPick && (!isSoft || isQualifierPick) ? 'bg-green-050' : 'bg-transparent',
         isPredictedFill && 'opacity-60',
       )}
     >
@@ -125,6 +127,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
             effectiveHomeId !== null &&
             (match.pickedWinnerId === effectiveHomeId || predictedQualifierIds.has(effectiveHomeId))
           }
+          isQualifierPick={effectiveHomeId !== null && predictedQualifierIds.has(effectiveHomeId)}
           isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
           r32Pct={match.homeTeamR32Pct}
           isSoft={softCard}
@@ -137,6 +140,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
             effectiveAwayId !== null &&
             (match.pickedWinnerId === effectiveAwayId || predictedQualifierIds.has(effectiveAwayId))
           }
+          isQualifierPick={effectiveAwayId !== null && predictedQualifierIds.has(effectiveAwayId)}
           isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
           r32Pct={match.awayTeamR32Pct}
           isSoft={softCard}
