@@ -314,6 +314,38 @@ function maxDateStr(a: string | null, b: string | null): string | null {
   return a >= b ? a : b;
 }
 
+export function buildLastDayPoints(
+  leaderboard: LeaderboardEntry[],
+  allMatches: MatchRow[],
+  poolGroupScores: PoolGroupScore[],
+  def: Tournament,
+): { date: string; pointsByUser: Record<string, number> } | null {
+  const eventDates = buildRaceEventDates(allMatches);
+  if (eventDates.length === 0) return null;
+
+  const lastDate = eventDates[eventDates.length - 1]!;
+
+  const groupMatchDeltas = buildGroupMatchDeltas(
+    poolGroupScores,
+    allMatches,
+    def.scoring.groupMatch,
+  );
+  const groupOrderDeltas = buildGroupOrderDeltas(poolGroupScores, allMatches, def, leaderboard);
+  const knockoutDeltas = buildKnockoutMilestoneDeltas(leaderboard, allMatches, def);
+
+  const pointsByUser: Record<string, number> = {};
+  for (const entry of leaderboard) {
+    const pts =
+      (groupMatchDeltas.get(entry.userId)?.get(lastDate) ?? 0) +
+      (groupOrderDeltas.get(entry.userId)?.get(lastDate) ?? 0) +
+      (knockoutDeltas.get(entry.userId)?.get(lastDate) ?? 0);
+    if (pts > 0) pointsByUser[entry.userId] = pts;
+  }
+
+  if (Object.keys(pointsByUser).length === 0) return null;
+  return { date: lastDate, pointsByUser };
+}
+
 export type DailyChartInput = {
   eventDates: string[];
   leaderboard: LeaderboardEntry[];

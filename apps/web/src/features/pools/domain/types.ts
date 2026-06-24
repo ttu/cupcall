@@ -29,4 +29,5 @@ export type PoolDetail = {
   scoring: Scoring | null;
   stageProgress: StageProgress[];
   raceChart: RaceChartData | null;
+  lastDayPoints: { date: string; pointsByUser: Record<string, number> } | null;
 };

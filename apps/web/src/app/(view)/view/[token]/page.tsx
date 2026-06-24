@@ -52,6 +52,7 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
             isOwner={false}
             locked={locked}
             viewToken={token}
+            lastDayPoints={detail.lastDayPoints}
           />
           {raceChart && (
             <Link

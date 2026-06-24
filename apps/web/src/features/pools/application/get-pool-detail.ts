@@ -8,7 +8,7 @@ import {
 } from '@cup/db';
 import type { Tournament, PoolId } from '@cup/engine';
 import type { PoolDetail } from '../domain/types';
-import { buildRaceChartData } from '@/shared/race-chart';
+import { buildRaceChartData, buildLastDayPoints } from '@/shared/race-chart';
 import { buildStageProgress } from '@/shared/stage-progress';
 
 // getSpecialBetDefs always produces 11 bets for any standard tournament scoring config.
@@ -48,6 +48,9 @@ export async function getPoolDetail(
   const raceChart = def
     ? buildRaceChartData(leaderboard, null, { allMatches, poolGroupScores, def })
     : buildRaceChartData(leaderboard, null);
+  const lastDayPoints = def
+    ? buildLastDayPoints(leaderboard, allMatches, poolGroupScores, def)
+    : null;
 
   return {
     id: pool.id,
@@ -63,5 +66,6 @@ export async function getPoolDetail(
     scoring: tournament?.scoringConfig ?? null,
     stageProgress,
     raceChart,
+    lastDayPoints,
   } satisfies PoolDetail;
 }

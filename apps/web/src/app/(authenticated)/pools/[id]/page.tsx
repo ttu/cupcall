@@ -98,6 +98,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
             poolId={poolId}
             isOwner={isOwner}
             locked={locked}
+            lastDayPoints={detail.lastDayPoints}
           />
           {raceChart && (
             <Link

@@ -30,6 +30,7 @@ type Props = {
   poolId: string;
   canViewCards: boolean;
   viewToken?: string;
+  lastDayPoints?: { date: string; pointsByUser: Record<string, number> } | null;
 };
 
 export function Podium({
@@ -38,6 +39,7 @@ export function Podium({
   poolId,
   canViewCards,
   viewToken,
+  lastDayPoints,
 }: Props): ReactElement {
   const top3 = entries.slice(0, 3);
   const ordered = [top3[1], top3[0], top3[2]].filter(Boolean) as LeaderboardEntry[];
@@ -69,6 +71,11 @@ export function Podium({
               <div className="display text-lg" style={{ color: rankColors[i] ?? 'var(--on-dark)' }}>
                 {entry.pointsTotal}
               </div>
+              {(lastDayPoints?.pointsByUser[entry.userId] ?? 0) > 0 && (
+                <div className="text-[11px] font-bold text-green-400 tabular-nums">
+                  +{lastDayPoints!.pointsByUser[entry.userId]}
+                </div>
+              )}
               <div
                 className="w-full flex items-start justify-center pt-3 rounded-t-lg"
                 style={{ height: h, background: podiumColors[i] }}

@@ -10,6 +10,7 @@ type Props = {
   isSelf: boolean;
   href: string;
   canViewCards: boolean;
+  lastDayPts?: number;
 };
 
 export function LeaderboardRow({
@@ -19,6 +20,7 @@ export function LeaderboardRow({
   isSelf,
   href,
   canViewCards,
+  lastDayPts = 0,
 }: Props): ReactElement {
   const row = (
     <div
@@ -39,7 +41,12 @@ export function LeaderboardRow({
           {entry.displayName}
         </span>
       </div>
-      <span className="display tnum text-base text-ink text-right">{entry.pointsTotal}</span>
+      <div className="text-right leading-tight">
+        <div className="display tnum text-base text-ink">{entry.pointsTotal}</div>
+        {lastDayPts > 0 && (
+          <div className="text-[10px] font-bold text-green-600 tabular-nums">+{lastDayPts}</div>
+        )}
+      </div>
       <span className="text-[11px] text-ink-muted text-right">
         {entry.completionPercent ?? '–'}%
       </span>

@@ -3,6 +3,7 @@ import type { LeaderboardEntry } from '../domain/types';
 import type { UserId } from '@cup/engine';
 import { Podium, cardHref } from './Podium';
 import { LeaderboardRow } from './LeaderboardRow';
+import { formatRaceDate } from '@/shared/race-chart';
 
 type Props = {
   entries: LeaderboardEntry[];
@@ -11,6 +12,7 @@ type Props = {
   isOwner: boolean;
   locked: boolean;
   viewToken?: string;
+  lastDayPoints?: { date: string; pointsByUser: Record<string, number> } | null;
 };
 
 export function Leaderboard({
@@ -20,6 +22,7 @@ export function Leaderboard({
   isOwner,
   locked,
   viewToken,
+  lastDayPoints,
 }: Props): ReactElement {
   const canViewCards = isOwner || locked;
 
@@ -41,6 +44,7 @@ export function Leaderboard({
           currentUserId={currentUserId}
           poolId={poolId}
           canViewCards={canViewCards}
+          lastDayPoints={lastDayPoints ?? null}
           {...(viewToken !== undefined ? { viewToken } : {})}
         />
       )}
@@ -50,7 +54,14 @@ export function Leaderboard({
           <div className="eyebrow grid grid-cols-[34px_1fr_60px_60px] gap-2 px-4 pt-2.5 pb-2 text-ink-muted border-b border-line-soft">
             <span>#</span>
             <span>Player</span>
-            <span className="text-right">Pts</span>
+            <div className="text-right leading-tight">
+              <div>Pts</div>
+              {lastDayPoints && (
+                <div className="text-[10px] text-green-600 font-bold">
+                  +{formatRaceDate(lastDayPoints.date)}
+                </div>
+              )}
+            </div>
             <span className="text-right">%</span>
           </div>
           <div className="divide">
@@ -63,6 +74,7 @@ export function Leaderboard({
                 isSelf={currentUserId !== null && entry.userId === currentUserId}
                 href={cardHref(entry, poolId, currentUserId, viewToken)}
                 canViewCards={canViewCards}
+                lastDayPts={lastDayPoints?.pointsByUser[entry.userId] ?? 0}
               />
             ))}
           </div>
