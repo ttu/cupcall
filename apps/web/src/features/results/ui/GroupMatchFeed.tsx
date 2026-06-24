@@ -1,6 +1,12 @@
 import type { ReactElement } from 'react';
-import type { GroupResultView, MatchHit, MatchResultPoolStats } from '../domain/types';
+import type {
+  GroupResultView,
+  GroupUpcomingMatchRow,
+  MatchHit,
+  MatchResultPoolStats,
+} from '../domain/types';
 import { HitChip } from './HitChip';
+import { PredictionStatsBar } from './TodayMatchesFeed';
 import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = { group: GroupResultView };
@@ -109,8 +115,67 @@ function MatchFooter({
   );
 }
 
+function formatKickoff(kickoff: string | null): string {
+  if (!kickoff) return '–';
+  const d = new Date(kickoff);
+  const today = new Date();
+  const isToday = d.toDateString() === today.toDateString();
+  const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  if (isToday) return time;
+  const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `${date} · ${time}`;
+}
+
+function UpcomingMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactElement {
+  const stats = match.poolPredictionStats;
+
+  return (
+    <div>
+      <div
+        className={cn(
+          'grid grid-cols-[1fr_auto_1fr] items-center gap-2',
+          stats ? 'p-[10px_14px_6px]' : 'p-[10px_14px]',
+        )}
+      >
+        <div className="flex items-center justify-end gap-1.5 min-w-0">
+          <span className="text-[13px] font-bold truncate text-ink">{match.homeTeamName}</span>
+          <TeamBadge teamId={match.homeTeamId} size="sm" />
+        </div>
+
+        <div className="flex flex-col items-center gap-0.5 shrink-0">
+          <span className="text-xs text-ink-muted text-center whitespace-nowrap">
+            {formatKickoff(match.kickoff)}
+          </span>
+          {match.predictedHome !== null && (
+            <span className="text-[10px] font-semibold text-ink-soft whitespace-nowrap">
+              you {match.predictedHome}–{match.predictedAway}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 min-w-0">
+          <TeamBadge teamId={match.awayTeamId} size="sm" />
+          <span className="text-[13px] font-bold truncate text-ink">{match.awayTeamName}</span>
+        </div>
+      </div>
+
+      {stats && (
+        <div className="px-3.5 pb-2.5">
+          <PredictionStatsBar stats={stats} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function GroupMatchFeed({ group }: Props): ReactElement {
   const hasCompleted = group.completedMatches.length > 0;
+  const allUpcoming = [...group.todayMatches, ...group.upcomingMatches].toSorted((a, b) => {
+    if (!a.kickoff) return 1;
+    if (!b.kickoff) return -1;
+    return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
+  });
+  const hasUpcoming = allUpcoming.length > 0;
 
   return (
     <div className="card overflow-hidden">
@@ -118,8 +183,8 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
         <span className="display text-xl text-on-dark">Group {group.groupId}</span>
       </div>
 
-      {!hasCompleted && (
-        <p className="text-[13px] py-4 text-center text-ink-muted">No results yet</p>
+      {!hasCompleted && !hasUpcoming && (
+        <p className="text-[13px] py-4 text-center text-ink-muted">No matches yet</p>
       )}
 
       {hasCompleted && (
@@ -142,6 +207,14 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
                 poolMatchStats={m.poolMatchStats}
               />
             </div>
+          ))}
+        </div>
+      )}
+
+      {hasUpcoming && (
+        <div className={cn('divide', hasCompleted && 'border-t border-line-soft')}>
+          {allUpcoming.map((m) => (
+            <UpcomingMatchRow key={m.matchId} match={m} />
           ))}
         </div>
       )}

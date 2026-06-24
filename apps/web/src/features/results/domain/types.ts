@@ -88,6 +88,8 @@ export type GroupResultView = {
   groupId: string;
   completedMatches: GroupMatchResultRow[];
   todayMatches: GroupUpcomingMatchRow[];
+  /** Non-final matches with kickoff beyond the 24h today window, or with no kickoff set yet. */
+  upcomingMatches: GroupUpcomingMatchRow[];
   standing: GroupStandingRow[];
 };
 

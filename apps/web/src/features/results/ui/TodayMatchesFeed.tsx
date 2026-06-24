@@ -4,7 +4,7 @@ import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = { groups: GroupResultView[] };
 
-function PredictionStatsBar({ stats }: { stats: MatchPredictionStats }): ReactElement {
+export function PredictionStatsBar({ stats }: { stats: MatchPredictionStats }): ReactElement {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex rounded-[3px] overflow-hidden h-2 gap-px">
