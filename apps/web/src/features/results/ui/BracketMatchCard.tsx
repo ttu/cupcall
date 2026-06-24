@@ -56,7 +56,7 @@ function TeamRow({
                 : 'text-ink-muted',
         )}
       >
-        {teamName ?? teamId ?? '?'}
+        {teamName ?? teamId ?? <span className="italic font-normal">missed pick</span>}
       </span>
       {r32Pct !== null && (
         <span className="text-[10px] font-bold text-ink-muted tabular-nums shrink-0">
