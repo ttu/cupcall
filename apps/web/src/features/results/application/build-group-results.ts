@@ -93,6 +93,27 @@ export function buildGroupResults(
         poolPredictionStats: computeMatchPredictionStats(m.id, poolGroupScores),
       }));
 
+    const upcomingMatches: GroupUpcomingMatchRow[] = allMatches
+      .filter(
+        (m) =>
+          m.stage === 'group' &&
+          m.groupId === group.id &&
+          m.status !== 'final' &&
+          (m.kickoff === null || m.kickoff.getTime() > now.getTime() + ONE_DAY_MS),
+      )
+      .map((m) => ({
+        matchId: m.id,
+        groupId: group.id,
+        homeTeamId: m.homeTeamId ?? '',
+        homeTeamName: teamMap.get(m.homeTeamId ?? '') ?? m.homeTeamId ?? '',
+        awayTeamId: m.awayTeamId ?? '',
+        awayTeamName: teamMap.get(m.awayTeamId ?? '') ?? m.awayTeamId ?? '',
+        kickoff: m.kickoff?.toISOString() ?? null,
+        predictedHome: predMap.get(m.id)?.home ?? null,
+        predictedAway: predMap.get(m.id)?.away ?? null,
+        poolPredictionStats: computeMatchPredictionStats(m.id, poolGroupScores),
+      }));
+
     const predictedGroupScores: GroupScore[] = (inputs?.groupScores ?? [])
       .filter((gs) => def.groupMatches.some((gm) => gm.id === gs.matchId && gm.group === group.id))
       .map((gs) => ({ matchId: matchId(gs.matchId), home: gs.home, away: gs.away }));
@@ -114,7 +135,7 @@ export function buildGroupResults(
       poolPositions,
     );
 
-    return { groupId: group.id, completedMatches, todayMatches, standing };
+    return { groupId: group.id, completedMatches, todayMatches, upcomingMatches, standing };
   });
 }
 

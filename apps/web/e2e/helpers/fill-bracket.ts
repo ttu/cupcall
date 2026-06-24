@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 /**
  * Picks the home (left) team for every tie in R32 → R16 → QF → SF, then fills
@@ -11,18 +12,20 @@ export async function fillAllBracketPicks(page: Page): Promise<void> {
 
   for (const label of roundLabels) {
     const roundCard = bracketSection.locator(`[data-testid="bracket-round-${label}"]`);
-
-    // Wait until at least one button in this round is enabled (teams populated from prior round)
-    await roundCard.locator('button:not([disabled])').first().waitFor({ timeout: 15_000 });
-
     const tieRows = roundCard.locator('[data-testid="bracket-tie-row"]');
     const tieCount = await tieRows.count();
 
     for (let i = 0; i < tieCount; i++) {
-      await tieRows.nth(i).locator('[data-testid="pick-home"]').click();
+      const homeBtn = tieRows.nth(i).locator('[data-testid="pick-home"]');
+      // Wait for this specific button to be enabled (home team resolved from prior round)
+      await expect(homeBtn).toBeEnabled({ timeout: 15_000 });
+      await homeBtn.click();
+      // Wait for the pick to be confirmed before clicking the next tie, to avoid
+      // concurrent server-action races that leave later rounds with missing teams.
+      await expect(homeBtn).toHaveAttribute('aria-pressed', 'true', { timeout: 15_000 });
     }
 
-    // Wait for saveKnockoutPick server actions to complete so the next round's teams are derived
+    // Wait for RSC revalidation so the next round's teams are derived from fresh DB state
     await page.waitForLoadState('networkidle');
   }
 
