@@ -314,16 +314,30 @@ function maxDateStr(a: string | null, b: string | null): string | null {
   return a >= b ? a : b;
 }
 
+function findLastCompleteMatchDay(allMatches: MatchRow[]): string | null {
+  const matchesByDate = new Map<string, MatchRow[]>();
+  for (const m of allMatches) {
+    if (!m.kickoff) continue;
+    const date = utcDateStr(m.kickoff);
+    if (!matchesByDate.has(date)) matchesByDate.set(date, []);
+    matchesByDate.get(date)!.push(m);
+  }
+  // Walk dates newest-first; return the first date where every match is final.
+  const sorted = [...matchesByDate.keys()].sort().reverse();
+  for (const date of sorted) {
+    if (matchesByDate.get(date)!.every((m) => m.status === 'final')) return date;
+  }
+  return null;
+}
+
 export function buildLastDayPoints(
   leaderboard: LeaderboardEntry[],
   allMatches: MatchRow[],
   poolGroupScores: PoolGroupScore[],
   def: Tournament,
 ): { date: string; pointsByUser: Record<string, number> } | null {
-  const eventDates = buildRaceEventDates(allMatches);
-  if (eventDates.length === 0) return null;
-
-  const lastDate = eventDates[eventDates.length - 1]!;
+  const lastDate = findLastCompleteMatchDay(allMatches);
+  if (!lastDate) return null;
 
   const groupMatchDeltas = buildGroupMatchDeltas(
     poolGroupScores,
