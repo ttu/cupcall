@@ -1,33 +1,24 @@
 import { expect, type Page } from '@playwright/test';
 
 /**
- * Fills every group-stage score cell on the currently-visible Groups tab.
- * Sets each match to 1–0 (home win). Waits for all saves to complete before returning.
+ * Fills every group-stage score via the dev "Fill random scores" button.
+ *
+ * The button calls devFillRandomGroupScores — a server action that bulk-saves
+ * all 72 group predictions in one go without any lock checks — and then calls
+ * router.refresh() to re-render the page from the database.  This is far more
+ * reliable in headless Chromium CI than the per-cell blur approach, which
+ * requires React's synthetic onBlur handler to fire for every number input.
+ *
+ * The button is rendered when isDev=true (process.env.NODE_ENV === 'development'),
+ * which is always the case when pnpm e2e starts the server via `pnpm dev`.
  */
 export async function fillAllGroups(page: Page): Promise<void> {
-  const scoreCells = page.locator('[data-testid^="score-"]');
-  const count = await scoreCells.count();
+  await page.getByRole('button', { name: 'Fill random scores' }).click();
 
-  for (let i = 0; i < count; i++) {
-    const cell = scoreCells.nth(i);
-    const homeInput = cell.locator('[aria-label="Home goals"]');
-    // Skip cells that are locked (disabled) — those are auto-filled from actual results
-    if (await homeInput.isDisabled()) continue;
-    await homeInput.fill('1');
-    const awayInput = cell.locator('[aria-label="Away goals"]');
-    await awayInput.fill('0');
-    // Explicitly blur the away input via JS so React's onBlur fires reliably across
-    // environments. Relying on press('Tab') to trigger blur can be unreliable for
-    // type="number" inputs in headless Chromium — el.blur() fires the DOM event directly.
-    await awayInput.evaluate((el) => (el as HTMLElement).blur());
-  }
-
-  // Wait for all in-flight saveGroupScore server actions to complete
+  // router.refresh() (called by DevControls after the action) re-fetches the RSC
+  // tree; networkidle confirms both the server-action POST and the refresh GET are done.
   await page.waitForLoadState('networkidle');
 
-  // Wait until every "Needs a score" chip has cleared. networkidle confirms the requests
-  // completed, but React processes RSC updates asynchronously after the network layer settles.
-  // The chips disappearing is a reliable DOM signal that the card prop has been re-rendered
-  // with all saved group scores, so bracket slot teams will be populated when we switch tabs.
+  // Confirm the page re-rendered with all group predictions saved.
   await expect(page.getByText('Needs a score')).toHaveCount(0, { timeout: 20_000 });
 }
