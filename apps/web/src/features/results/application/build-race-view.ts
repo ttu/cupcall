@@ -151,7 +151,7 @@ function buildProjectedEntries(
     projectedPoints: e.pointsTotal + (stillLiveByUser.get(e.userId) ?? 0),
   }));
 
-  const sorted = [...withProjected].sort((a, b) => b.projectedPoints - a.projectedPoints);
+  const sorted = withProjected.toSorted((a, b) => b.projectedPoints - a.projectedPoints);
 
   return sorted.map((e, i) => {
     const currentRank = currentRankMap.get(e.userId) ?? 0;
@@ -188,7 +188,7 @@ function buildMatchMatrix(
 
   const allGroupMatches = allMatches
     .filter((m) => m.stage === 'group')
-    .sort((a, b) => (a.kickoff?.getTime() ?? 0) - (b.kickoff?.getTime() ?? 0));
+    .toSorted((a, b) => (a.kickoff?.getTime() ?? 0) - (b.kickoff?.getTime() ?? 0));
 
   const matrixMatches: MatrixMatch[] = allGroupMatches.map((m) => ({
     matchId: m.id,

@@ -71,13 +71,15 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
   const isOwner = actor.userId === pool.ownerId;
   const isSelf = actor.userId === memberUid;
 
-  // Fetch member display name for the banner
-  const memberUser = await getUserById(db, memberUid);
+  const [memberUser, prediction, resultsView] = await Promise.all([
+    getUserById(db, memberUid),
+    getPrediction(db, poolId, memberUid),
+    getResultsView({ db, poolId, userId: memberUid, now }),
+  ]);
+
   const memberName = memberUser?.displayName ?? memberUser?.email ?? memberId;
 
-  // Audit log for all pool members
   let auditEntries: AuditEntry[] = [];
-  const prediction = await getPrediction(db, poolId, memberUid);
   if (prediction) {
     const edits = await listEditsForPrediction(db, prediction.id);
     auditEntries = edits.map((e) => ({
@@ -94,9 +96,6 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
 
   const teams = tournamentDef.teams.map((t) => ({ id: t.id, name: t.name }));
   const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name, team: p.team }));
-
-  // Build per-match scoring data from actual results (only available after tournament starts)
-  const resultsView = await getResultsView({ db, poolId, userId: memberUid, now });
   const matchScores = new Map<string, MatchScore>(
     resultsView?.groupResults.flatMap((g) =>
       g.completedMatches.map((m) => [m.matchId, { hit: m.hit, points: m.pointsAwarded }]),

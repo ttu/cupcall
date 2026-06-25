@@ -33,7 +33,7 @@ export function RaceChart({
 
   // Declutter end labels: enforce min 15px vertical gap.
   const endLabelGap = 15;
-  const byY = players.map((p) => ({ p, y0: Y(p.points[n] ?? 0) })).sort((a, b) => a.y0 - b.y0);
+  const byY = players.map((p) => ({ p, y0: Y(p.points[n] ?? 0) })).toSorted((a, b) => a.y0 - b.y0);
   let prev = -Infinity;
   for (const o of byY) {
     o.y0 = Math.max(o.y0, prev + endLabelGap);

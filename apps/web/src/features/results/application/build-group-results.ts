@@ -176,7 +176,7 @@ export function buildBest3rdStanding(
     conduct: row.conduct,
   });
 
-  const sorted = [...thirds].sort((a, b) => {
+  const sorted = thirds.toSorted((a, b) => {
     for (const key of metricKeys) {
       const d = metric(key, toMetricRow(b.row)) - metric(key, toMetricRow(a.row));
       if (d !== 0) return d;

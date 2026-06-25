@@ -57,7 +57,7 @@ export function PoolListItem({ pool, isOwner }: Props): ReactElement {
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-[17px] font-extrabold text-ink m-0">{pool.name}</h2>
               {isOwner && (
-                <Chip variant="green" style={{ height: 22, fontSize: 10 }}>
+                <Chip variant="green" className="h-[22px] text-[10px]">
                   Owner
                 </Chip>
               )}

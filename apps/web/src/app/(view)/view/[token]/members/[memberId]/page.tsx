@@ -34,10 +34,11 @@ export default async function ViewMemberCardPage({ params }: Props): Promise<Rea
   });
   if (!card) notFound();
 
-  const memberUser = await getUserById(db, memberUid);
+  const [memberUser, resultsView] = await Promise.all([
+    getUserById(db, memberUid),
+    getResultsView({ db, poolId: pool.id, userId: memberUid, now }),
+  ]);
   const memberName = memberUser?.displayName ?? memberUser?.email ?? memberId;
-
-  const resultsView = await getResultsView({ db, poolId: pool.id, userId: memberUid, now });
   const matchScores = new Map<string, MatchScore>(
     resultsView?.groupResults.flatMap((g) =>
       g.completedMatches.map((m) => [m.matchId, { hit: m.hit, points: m.pointsAwarded }]),

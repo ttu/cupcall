@@ -27,12 +27,12 @@ export function DerivedStandingsPanel({
             <TeamBadge teamId={entry.teamId} size="sm" />
             <span className="text-xs font-bold text-ink flex-1 truncate">{entry.teamName}</span>
             {entry.qualifies === 'auto' && (
-              <Chip variant="green" style={{ height: 18, fontSize: 9, padding: '0 6px' }}>
+              <Chip variant="green" className="h-[18px] text-[9px] px-1.5">
                 QUALIFIES
               </Chip>
             )}
             {entry.qualifies === 'best-third' && (
-              <Chip variant="orange" style={{ height: 18, fontSize: 9, padding: '0 6px' }}>
+              <Chip variant="orange" className="h-[18px] text-[9px] px-1.5">
                 QUALIFIES
               </Chip>
             )}

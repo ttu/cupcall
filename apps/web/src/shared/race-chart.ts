@@ -125,7 +125,7 @@ export function buildRaceEventDates(allMatches: MatchRow[]): string[] {
   for (const m of allMatches) {
     if (m.status === 'final' && m.kickoff) dates.add(utcDateStr(m.kickoff));
   }
-  return [...dates].sort();
+  return [...dates].toSorted();
 }
 
 export function computeHit(
@@ -323,7 +323,7 @@ function findLastCompleteMatchDay(allMatches: MatchRow[]): string | null {
     matchesByDate.get(date)!.push(m);
   }
   // Walk dates newest-first; return the first date where every match is final.
-  const sorted = [...matchesByDate.keys()].sort().reverse();
+  const sorted = [...matchesByDate.keys()].toSorted().reverse();
   for (const date of sorted) {
     if (matchesByDate.get(date)!.every((m) => m.status === 'final')) return date;
   }

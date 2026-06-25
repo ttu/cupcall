@@ -32,7 +32,7 @@ function buildSwingText(
   if (!me) return 'Make predictions to see your projection.';
   if (stillLive === 0) return 'No bracket picks still live — your total is final.';
 
-  const sortedByCurrent = [...entries].sort((a, b) => b.currentPoints - a.currentPoints);
+  const sortedByCurrent = entries.toSorted((a, b) => b.currentPoints - a.currentPoints);
   const myCurrentRank = sortedByCurrent.findIndex((e) => e.isCurrentUser) + 1;
 
   if (me.projectedRank === 1 && myCurrentRank === 1) {
