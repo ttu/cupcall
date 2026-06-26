@@ -25,6 +25,7 @@ function TeamRow({
   isSoft,
   isPredictedFill,
   showProjectedBadge,
+  showConfirmedBadge,
 }: {
   teamId: string | null;
   teamName: string | null;
@@ -35,6 +36,7 @@ function TeamRow({
   isSoft: boolean;
   isPredictedFill: boolean;
   showProjectedBadge: boolean;
+  showConfirmedBadge: boolean;
 }): ReactElement {
   return (
     <div
@@ -45,6 +47,16 @@ function TeamRow({
         isPredictedFill && 'opacity-60',
       )}
     >
+      {showProjectedBadge && (
+        <span className="text-[10px] font-bold text-yellow-500 shrink-0" aria-label="projected">
+          ?
+        </span>
+      )}
+      {showConfirmedBadge && (
+        <span className="text-[10px] font-bold text-green-600 shrink-0" aria-label="confirmed">
+          ✓
+        </span>
+      )}
       <TeamBadge teamId={teamId} size="sm" />
       <span
         className={cn(
@@ -60,9 +72,6 @@ function TeamRow({
       >
         {teamName ?? teamId ?? <span className="italic font-normal">missed pick</span>}
       </span>
-      {showProjectedBadge && (
-        <span className="text-[10px] italic text-ink-muted shrink-0">proj.</span>
-      )}
       {r32Pct !== null && (
         <span className="text-[10px] font-bold text-ink-muted tabular-nums shrink-0">
           {r32Pct}%
@@ -92,9 +101,6 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
   // Card uses soft styling (dashed border, no HitChip) whenever any slot is unconfirmed.
   const softCard = homeIsSoft || awayIsSoft;
 
-  // Show "proj." badge on the unconfirmed team only when one slot is confirmed and the other isn't.
-  const partiallyProjected = homeIsSoft !== awayIsSoft;
-
   const hasScore = match.actualHome !== null && match.actualAway !== null;
   const isFinal = match.status === 'final';
 
@@ -112,8 +118,6 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           <span className="tnum text-[11px] font-bold text-ink-muted">
             {match.actualHome}–{match.actualAway}
           </span>
-        ) : match.projected && homeIsSoft && awayIsSoft ? (
-          <span className="text-[11px] font-semibold text-ink-muted italic">Projected</span>
         ) : match.predictedHomeTeamId !== null && match.predictedAwayTeamId !== null ? (
           <span className="text-[11px] font-semibold text-ink-muted italic">Predicted</span>
         ) : match.kickoff ? (
@@ -143,7 +147,8 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           r32Pct={match.homeTeamR32Pct}
           isSoft={homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
-          showProjectedBadge={partiallyProjected && homeIsSoft}
+          showProjectedBadge={homeIsSoft && match.homeTeamId !== null}
+          showConfirmedBadge={!homeIsSoft && match.homeTeamId !== null}
         />
         <TeamRow
           teamId={effectiveAwayId}
@@ -157,7 +162,8 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           r32Pct={match.awayTeamR32Pct}
           isSoft={awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
-          showProjectedBadge={partiallyProjected && awayIsSoft}
+          showProjectedBadge={awayIsSoft && match.awayTeamId !== null}
+          showConfirmedBadge={!awayIsSoft && match.awayTeamId !== null}
         />
       </div>
     </div>
