@@ -26,9 +26,15 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
         <div className="bar mt-1">
           <i style={{ width: `${pct}%` }} />
         </div>
-        {health.bustedPicks > 0 && (
+        {(health.bustedPicks > 0 || health.missedPicks > 0) && (
           <p className="text-[11px] font-semibold mt-2 text-ink-muted">
-            {health.bustedPicks} pick{health.bustedPicks !== 1 ? 's' : ''} busted
+            {[
+              health.bustedPicks > 0 &&
+                `${health.bustedPicks} pick${health.bustedPicks !== 1 ? 's' : ''} busted`,
+              health.missedPicks > 0 && `${health.missedPicks} missed`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
         )}
       </div>

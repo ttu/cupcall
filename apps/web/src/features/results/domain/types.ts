@@ -159,6 +159,7 @@ export type BracketHealth = {
   totalPicks: number;
   alivePicks: number;
   bustedPicks: number;
+  missedPicks: number;
 };
 
 import type { StageKey, StageProgress } from '@/shared/stage-progress';

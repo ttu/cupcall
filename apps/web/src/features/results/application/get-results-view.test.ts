@@ -554,7 +554,10 @@ describe('getResultsView', () => {
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     expect(view!.bracketHealth.alivePicks).toBe(2);
     expect(view!.bracketHealth.bustedPicks).toBe(1);
-    expect(view!.bracketHealth.totalPicks).toBe(4);
+    // sf1, sf2, final, bronze have no picks → counted as missed
+    expect(view!.bracketHealth.missedPicks).toBe(4);
+    // all 8 bracket matches (qf×4 + sf×2 + final + bronze)
+    expect(view!.bracketHealth.totalPicks).toBe(8);
   });
 
   describe('live entry-round participants and prediction percentages', () => {

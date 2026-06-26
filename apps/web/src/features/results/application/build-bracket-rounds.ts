@@ -174,14 +174,13 @@ export function buildBracketHealth(
   rounds: BracketRoundResultView[],
   bronze: KnockoutMatchView | null,
 ): BracketHealth {
-  const allMatches = [...rounds.flatMap((r) => r.matches), ...(bronze ? [bronze] : [])].filter(
-    (m) => m.pickStatus !== 'no-pick',
-  );
+  const allMatches = [...rounds.flatMap((r) => r.matches), ...(bronze ? [bronze] : [])];
 
   return {
     totalPicks: allMatches.length,
     alivePicks: allMatches.filter((m) => m.pickStatus === 'alive').length,
     bustedPicks: allMatches.filter((m) => m.pickStatus === 'busted').length,
+    missedPicks: allMatches.filter((m) => m.pickStatus === 'no-pick').length,
   };
 }
 
