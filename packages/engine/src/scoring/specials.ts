@@ -4,10 +4,26 @@ import { points } from '../brand.js';
 
 /**
  * Award `pts` if `predicted` is defined, `actual` is defined, and they are strictly equal.
- * Works for string ids (TeamId, PlayerId) and numbers.
+ * Used for single-answer bets (numbers, unique events).
  */
 function scoreIfMatch<T>(predicted: T | undefined, actual: T | undefined, pts: number): number {
   if (predicted !== undefined && actual !== undefined && predicted === actual) {
+    return pts;
+  }
+  return 0;
+}
+
+/**
+ * Award `pts` if `predicted` is defined and is one of the `actuals` (tie-aware bets).
+ * An empty `actuals` array is treated as "not yet resolved".
+ */
+function scoreIfInSet<T>(predicted: T | undefined, actuals: T[] | undefined, pts: number): number {
+  if (
+    predicted !== undefined &&
+    actuals !== undefined &&
+    actuals.length > 0 &&
+    actuals.includes(predicted)
+  ) {
     return pts;
   }
   return 0;
@@ -19,27 +35,27 @@ export function scoreSpecials(inputs: CardInputs, actual: ActualResults, scoring
 
   let total = 0;
 
-  total += scoreIfMatch(specials.topScorerPlayer, answers.topScorerPlayer, scoring.topScorerPlayer);
+  total += scoreIfInSet(specials.topScorerPlayer, answers.topScorerPlayer, scoring.topScorerPlayer);
 
-  total += scoreIfMatch(
+  total += scoreIfInSet(
     specials.groupTopScoringTeam,
     answers.groupTopScoringTeam,
     scoring.groupTopScoringTeam,
   );
 
-  total += scoreIfMatch(
+  total += scoreIfInSet(
     specials.groupTopConcedingTeam,
     answers.groupTopConcedingTeam,
     scoring.groupTopConcedingTeam,
   );
 
-  total += scoreIfMatch(
+  total += scoreIfInSet(
     specials.tournamentTopScoringTeam,
     answers.tournamentTopScoringTeam,
     scoring.tournamentTopScoringTeam,
   );
 
-  total += scoreIfMatch(
+  total += scoreIfInSet(
     specials.tournamentTopConcedingTeam,
     answers.tournamentTopConcedingTeam,
     scoring.tournamentTopConcedingTeam,
@@ -51,7 +67,7 @@ export function scoreSpecials(inputs: CardInputs, actual: ActualResults, scoring
     scoring.highestMatchGoals,
   );
 
-  total += scoreIfMatch(
+  total += scoreIfInSet(
     specials.mostYellowCardsTeam,
     answers.mostYellowCardsTeam,
     scoring.mostYellowCardsTeam,

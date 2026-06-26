@@ -54,7 +54,8 @@ describe('resultsSchema', () => {
     expect(result.finalMatch?.decisiveGoalPlayer).toBe('ARG-10');
 
     expect(result.answers.roundOf8).toHaveLength(8);
-    expect(result.answers.groupTopScoringTeam).toBe('ESP');
+    // Single-string answers are normalised to single-element arrays
+    expect(result.answers.groupTopScoringTeam).toEqual(['ESP']);
     expect(result.answers.penaltyShootoutCount).toBe(5);
   });
 
@@ -105,5 +106,23 @@ describe('resultsSchema', () => {
       finalMatch: { ...validResultsJson.finalMatch, decidedBy: 'overtime' },
     };
     expect(() => resultsSchema.parse(bad)).toThrow();
+  });
+
+  it('accepts an array of team ids for groupTopScoringTeam (tie scenario)', () => {
+    const withTie = {
+      ...validResultsJson,
+      answers: { ...validResultsJson.answers, groupTopScoringTeam: ['ESP', 'GER'] },
+    };
+    const result = resultsSchema.parse(withTie);
+    expect(result.answers.groupTopScoringTeam).toEqual(['ESP', 'GER']);
+  });
+
+  it('accepts an array of player ids for topScorerPlayer (tied top scorers)', () => {
+    const withTie = {
+      ...validResultsJson,
+      answers: { ...validResultsJson.answers, topScorerPlayer: ['FRA-9', 'ARG-10'] },
+    };
+    const result = resultsSchema.parse(withTie);
+    expect(result.answers.topScorerPlayer).toEqual(['FRA-9', 'ARG-10']);
   });
 });

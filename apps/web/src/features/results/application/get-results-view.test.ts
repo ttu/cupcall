@@ -1661,7 +1661,7 @@ describe('getResultsView', () => {
       await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
-        answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
+        answers: { groupTopScoringTeam: ['A1' as import('@cup/engine').TeamId] },
       });
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -1683,7 +1683,7 @@ describe('getResultsView', () => {
       await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
-        answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
+        answers: { groupTopScoringTeam: ['A1' as import('@cup/engine').TeamId] },
       });
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -1698,7 +1698,7 @@ describe('getResultsView', () => {
       await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
-        answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
+        answers: { groupTopScoringTeam: ['A1' as import('@cup/engine').TeamId] },
       });
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -1706,6 +1706,33 @@ describe('getResultsView', () => {
       expect(bet.hit).toBe('missed');
       expect(bet.userPickDisplay).toBeNull();
       expect(bet.actualAnswerDisplay).toBe('Team A1');
+    });
+
+    it('marks hit when user pick is one of multiple tied correct answers', async () => {
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'A1');
+
+      await upsertTournamentResults(db, miniTId, {
+        matchResults: [],
+        groupOrder: {},
+        // A1 and B1 both tied at the top
+        answers: {
+          groupTopScoringTeam: [
+            'A1' as import('@cup/engine').TeamId,
+            'B1' as import('@cup/engine').TeamId,
+          ],
+        },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.hit).toBe('hit');
+      expect(bet.pointsAwarded).toBe(miniTournament.scoring.groupTopScoringTeam);
+      // Display shows both tied teams
+      expect(bet.actualAnswerDisplay).toContain('Team A1');
+      expect(bet.actualAnswerDisplay).toContain('Team B1');
+      expect(bet.actualAnswerTeamIds).toContain('A1');
+      expect(bet.actualAnswerTeamIds).toContain('B1');
     });
 
     it('resolves player display name from tournament player list', async () => {
@@ -1720,7 +1747,7 @@ describe('getResultsView', () => {
       await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
-        answers: { topScorerPlayer: player.id as import('@cup/engine').PlayerId },
+        answers: { topScorerPlayer: [player.id as import('@cup/engine').PlayerId] },
       });
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -1742,13 +1769,13 @@ describe('getResultsView', () => {
       await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
-        answers: { topScorerPlayer: player.id as import('@cup/engine').PlayerId },
+        answers: { topScorerPlayer: [player.id as import('@cup/engine').PlayerId] },
       });
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const bet = view!.specialBets.find((b) => b.key === 'topScorerPlayer')!;
       expect(bet.userPickTeamId).toBe(player.team);
-      expect(bet.actualAnswerTeamId).toBe(player.team);
+      expect(bet.actualAnswerTeamIds).toEqual([player.team]);
     });
 
     it('shows all bets as pending in view mode (no userId)', async () => {
@@ -1790,7 +1817,7 @@ describe('getResultsView', () => {
       await upsertTournamentResults(db, miniTId, {
         matchResults: [],
         groupOrder: {},
-        answers: { groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId },
+        answers: { groupTopScoringTeam: ['A1' as import('@cup/engine').TeamId] },
       });
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
@@ -2073,8 +2100,8 @@ describe('getResultsView', () => {
         matchResults: [],
         groupOrder: {},
         answers: {
-          groupTopScoringTeam: 'A1' as import('@cup/engine').TeamId,
-          groupTopConcedingTeam: 'C1' as import('@cup/engine').TeamId,
+          groupTopScoringTeam: ['A1' as import('@cup/engine').TeamId],
+          groupTopConcedingTeam: ['C1' as import('@cup/engine').TeamId],
         },
       });
 

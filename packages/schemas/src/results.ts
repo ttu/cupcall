@@ -29,19 +29,29 @@ const finalMatchSchema = actualFinishMatchSchema.extend({
   decisiveGoalPlayer: playerIdSchema.optional(),
 });
 
+// Accepts either a single id string or an array; always normalises to array.
+// This makes results.json backward-compatible (existing single-value entries still parse).
+const singleOrArrayTeam = z
+  .union([teamIdSchema, z.array(teamIdSchema)])
+  .transform((v) => (Array.isArray(v) ? v : [v]));
+
+const singleOrArrayPlayer = z
+  .union([playerIdSchema, z.array(playerIdSchema)])
+  .transform((v) => (Array.isArray(v) ? v : [v]));
+
 const answersSchema = z.object({
   roundOf16: z.array(teamIdSchema).optional(),
   roundOf8: z.array(teamIdSchema).optional(),
   topFourOrder: z.array(teamIdSchema).optional(),
-  groupTopScoringTeam: teamIdSchema.optional(),
-  groupTopConcedingTeam: teamIdSchema.optional(),
-  tournamentTopScoringTeam: teamIdSchema.optional(),
-  tournamentTopConcedingTeam: teamIdSchema.optional(),
+  groupTopScoringTeam: singleOrArrayTeam.optional(),
+  groupTopConcedingTeam: singleOrArrayTeam.optional(),
+  tournamentTopScoringTeam: singleOrArrayTeam.optional(),
+  tournamentTopConcedingTeam: singleOrArrayTeam.optional(),
   highestMatchGoals: z.number().optional(),
-  mostYellowCardsTeam: teamIdSchema.optional(),
+  mostYellowCardsTeam: singleOrArrayTeam.optional(),
   firstRedCardPlayer: playerIdSchema.optional(),
   penaltyShootoutCount: z.number().optional(),
-  topScorerPlayer: playerIdSchema.optional(),
+  topScorerPlayer: singleOrArrayPlayer.optional(),
 });
 
 // groupOrder is a Record<GroupId, TeamId[]> — validated as a record of string arrays
@@ -150,15 +160,16 @@ export type ResultsInput = {
     roundOf16?: string[];
     roundOf8?: string[];
     topFourOrder?: string[];
-    groupTopScoringTeam?: string;
-    groupTopConcedingTeam?: string;
-    tournamentTopScoringTeam?: string;
-    tournamentTopConcedingTeam?: string;
+    /** Single string or array — ties are represented as an array. */
+    groupTopScoringTeam?: string | string[];
+    groupTopConcedingTeam?: string | string[];
+    tournamentTopScoringTeam?: string | string[];
+    tournamentTopConcedingTeam?: string | string[];
     highestMatchGoals?: number;
-    mostYellowCardsTeam?: string;
+    mostYellowCardsTeam?: string | string[];
     firstRedCardPlayer?: string;
     penaltyShootoutCount?: number;
-    topScorerPlayer?: string;
+    topScorerPlayer?: string | string[];
   };
   [key: string]: unknown;
 };

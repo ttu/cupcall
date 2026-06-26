@@ -37,19 +37,25 @@ function makeActual(
 describe('scoreSpecials — each bet in isolation', () => {
   it('topScorerPlayer correct → 15', () => {
     const inputs = makeInputs({ topScorerPlayer: SCORER });
-    const actual = makeActual({ topScorerPlayer: SCORER });
+    const actual = makeActual({ topScorerPlayer: [SCORER] });
+    expect(scoreSpecials(inputs, actual, miniScoring)).toBe(15);
+  });
+
+  it('topScorerPlayer correct when one of several tied scorers → 15', () => {
+    const inputs = makeInputs({ topScorerPlayer: SCORER });
+    const actual = makeActual({ topScorerPlayer: [SCORER, playerId('ESP-7')] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(15);
   });
 
   it('topScorerPlayer wrong → 0', () => {
     const inputs = makeInputs({ topScorerPlayer: playerId('ESP-7') });
-    const actual = makeActual({ topScorerPlayer: SCORER });
+    const actual = makeActual({ topScorerPlayer: [SCORER] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(0);
   });
 
   it('topScorerPlayer absent prediction → 0', () => {
     const inputs = makeInputs({});
-    const actual = makeActual({ topScorerPlayer: SCORER });
+    const actual = makeActual({ topScorerPlayer: [SCORER] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(0);
   });
 
@@ -61,31 +67,37 @@ describe('scoreSpecials — each bet in isolation', () => {
 
   it('groupTopScoringTeam correct → 10', () => {
     const inputs = makeInputs({ groupTopScoringTeam: ESP });
-    const actual = makeActual({ groupTopScoringTeam: ESP });
+    const actual = makeActual({ groupTopScoringTeam: [ESP] });
+    expect(scoreSpecials(inputs, actual, miniScoring)).toBe(10);
+  });
+
+  it('groupTopScoringTeam correct when one of tied teams → 10', () => {
+    const inputs = makeInputs({ groupTopScoringTeam: ESP });
+    const actual = makeActual({ groupTopScoringTeam: [ESP, ARG] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(10);
   });
 
   it('groupTopScoringTeam wrong → 0', () => {
     const inputs = makeInputs({ groupTopScoringTeam: ARG });
-    const actual = makeActual({ groupTopScoringTeam: ESP });
+    const actual = makeActual({ groupTopScoringTeam: [ESP] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(0);
   });
 
   it('groupTopConcedingTeam correct → 10', () => {
     const inputs = makeInputs({ groupTopConcedingTeam: RSA });
-    const actual = makeActual({ groupTopConcedingTeam: RSA });
+    const actual = makeActual({ groupTopConcedingTeam: [RSA] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(10);
   });
 
   it('tournamentTopScoringTeam correct → 10', () => {
     const inputs = makeInputs({ tournamentTopScoringTeam: ARG });
-    const actual = makeActual({ tournamentTopScoringTeam: ARG });
+    const actual = makeActual({ tournamentTopScoringTeam: [ARG] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(10);
   });
 
   it('tournamentTopConcedingTeam correct → 10', () => {
     const inputs = makeInputs({ tournamentTopConcedingTeam: RSA });
-    const actual = makeActual({ tournamentTopConcedingTeam: RSA });
+    const actual = makeActual({ tournamentTopConcedingTeam: [RSA] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(10);
   });
 
@@ -103,7 +115,7 @@ describe('scoreSpecials — each bet in isolation', () => {
 
   it('mostYellowCardsTeam correct → 15', () => {
     const inputs = makeInputs({ mostYellowCardsTeam: CRO });
-    const actual = makeActual({ mostYellowCardsTeam: CRO });
+    const actual = makeActual({ mostYellowCardsTeam: [CRO] });
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(15);
   });
 
@@ -244,13 +256,13 @@ describe('scoreSpecials — full house', () => {
     });
     const actual = makeActual(
       {
-        topScorerPlayer: SCORER,
-        groupTopScoringTeam: ESP,
-        groupTopConcedingTeam: RSA,
-        tournamentTopScoringTeam: ARG,
-        tournamentTopConcedingTeam: RSA,
+        topScorerPlayer: [SCORER],
+        groupTopScoringTeam: [ESP],
+        groupTopConcedingTeam: [RSA],
+        tournamentTopScoringTeam: [ARG],
+        tournamentTopConcedingTeam: [RSA],
         highestMatchGoals: 7,
-        mostYellowCardsTeam: CRO,
+        mostYellowCardsTeam: [CRO],
         firstRedCardPlayer: RED_CARD,
         penaltyShootoutCount: 5,
       },

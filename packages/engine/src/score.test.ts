@@ -90,10 +90,10 @@ describe('scoreCard — partial prediction', () => {
       matchResults: [],
       groupOrder: {},
       answers: {
-        topScorerPlayer: playerId('A1-P'),
+        topScorerPlayer: [playerId('A1-P')],
         penaltyShootoutCount: 2,
         highestMatchGoals: 5,
-        groupTopScoringTeam: teamId('A1'),
+        groupTopScoringTeam: [teamId('A1')],
       },
     };
 
@@ -196,7 +196,7 @@ const actual77: ActualResults = {
   answers: {
     roundOf8: ACTUAL_R8,
     topFourOrder: [ARG, NED, FRA, BRA], // tier: ARG@0=1 correct=5; consolation: ARG,FRA,NED=3×2=6 → max=6
-    topScorerPlayer: FRA9,
+    topScorerPlayer: [FRA9],
   },
 };
 

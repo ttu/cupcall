@@ -56,17 +56,40 @@ Our team names (from `tournament.json` `teams[].name`) versus openfootball names
 
 Build a lookup: for each of our `groupMatches`, the pair `(home team name, away team name)` → match ID. Match openfootball entries by team name pair (try both orderings in case home/away is swapped in openfootball).
 
-## Step 4 — add missing results
+## Step 4 — fetch conduct (card) data
+
+For each group with new results, fetch the corresponding Wikipedia page:
+
+```
+https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_Group_A
+https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_Group_B
+... (through Group L)
+```
+
+Ask: "List all matches played with yellow and red cards per team. For each card event show: player name, team, card type (yellow, second yellow/indirect red, straight red, yellow+straight red)."
+
+Compute a `homeConduct` and `awayConduct` integer per match using these point deductions:
+
+| Card event | Points |
+|---|---|
+| Yellow card | −1 |
+| Red card for two yellows | −3 |
+| Straight red card | −4 |
+| Yellow card + straight red card | −5 |
+
+Sum all card events per team per match. **Only include the field in the JSON when the value is non-zero** (omit the field entirely for a clean team, since the engine treats absent as 0).
+
+## Step 5 — add missing results
 
 For each openfootball match that maps to one of our missing match IDs, append to `matchResults`:
 
 ```json
-{ "matchId": "mX9", "home": 2, "away": 1 }
+{ "matchId": "mX9", "home": 2, "away": 1, "homeConduct": -1, "awayConduct": -3 }
 ```
 
-`home` = score for the team listed as `home` in our `tournament.json` (not necessarily openfootball's `team1`).
+`home`/`away` = goals for the team listed as `home`/`away` in our `tournament.json` (not necessarily openfootball's `team1`). Same applies to `homeConduct`/`awayConduct`.
 
-## Step 5 — commit
+## Step 6 — commit
 
 ```
 git add data/tournaments/wc-2026/results.json
@@ -76,5 +99,6 @@ git commit -m "data(wc-2026): add match results for <date> (<groups>)"
 ## Notes
 
 - Openfootball may lag 1–12 hours behind live results. If a match is missing there, note it and move on.
-- Do not guess scores. Only add results present in the openfootball feed.
+- Do not guess scores or card data. Only add what is present in the sources.
+- Wikipedia group pages may not list cards for the bench/technical staff — only player cards shown on the pitch are recorded.
 - Knockout matches use a different results structure — this skill covers group stage only.

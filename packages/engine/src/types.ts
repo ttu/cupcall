@@ -164,15 +164,17 @@ export interface ActualResults {
     roundOf16?: TeamId[];
     roundOf8?: TeamId[];
     topFourOrder?: TeamId[];
-    groupTopScoringTeam?: TeamId;
-    groupTopConcedingTeam?: TeamId;
-    tournamentTopScoringTeam?: TeamId;
-    tournamentTopConcedingTeam?: TeamId;
+    /** One or more teams when there is a tie for the top spot. */
+    groupTopScoringTeam?: TeamId[];
+    groupTopConcedingTeam?: TeamId[];
+    tournamentTopScoringTeam?: TeamId[];
+    tournamentTopConcedingTeam?: TeamId[];
     highestMatchGoals?: number;
-    mostYellowCardsTeam?: TeamId;
+    mostYellowCardsTeam?: TeamId[];
     firstRedCardPlayer?: PlayerId;
     penaltyShootoutCount?: number;
-    topScorerPlayer?: PlayerId;
+    /** One or more players when there is a tie for the top scorer. */
+    topScorerPlayer?: PlayerId[];
   };
 }
 

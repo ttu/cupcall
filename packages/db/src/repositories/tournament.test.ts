@@ -165,7 +165,7 @@ describe('tournament repository', () => {
         matchResults: [],
         groupOrder: {},
         answers: {
-          groupTopScoringTeam: teamId('A1'),
+          groupTopScoringTeam: [teamId('A1')],
           penaltyShootoutCount: 3,
         },
       };

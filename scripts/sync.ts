@@ -58,16 +58,24 @@ const rawTournamentMetaSchema = z
 function assertResultsPlayerIdsKnown(tournament: Tournament, actual: ActualResults): void {
   const knownPlayerIds = new Set<string>(tournament.players.map((p) => p.id));
 
-  const references: Array<{ betKey: string; playerId: string | undefined }> = [
+  const singleRefs: Array<{ betKey: string; playerId: string | undefined }> = [
     { betKey: 'firstRedCardPlayer', playerId: actual.answers.firstRedCardPlayer },
-    { betKey: 'topScorerPlayer', playerId: actual.answers.topScorerPlayer },
     { betKey: 'finalMatch.decisiveGoalPlayer', playerId: actual.finalMatch?.decisiveGoalPlayer },
   ];
 
-  for (const { betKey, playerId: pid } of references) {
+  for (const { betKey, playerId: pid } of singleRefs) {
     if (pid !== undefined && !knownPlayerIds.has(pid)) {
       throw new Error(
         `results.json references unknown player id "${pid}" in ${betKey}. ` +
+          `Add the player to tournament.json → players[] (with id, name, team), or fix the typo in results.json.`,
+      );
+    }
+  }
+
+  for (const pid of actual.answers.topScorerPlayer ?? []) {
+    if (!knownPlayerIds.has(pid)) {
+      throw new Error(
+        `results.json references unknown player id "${pid}" in topScorerPlayer. ` +
           `Add the player to tournament.json → players[] (with id, name, team), or fix the typo in results.json.`,
       );
     }

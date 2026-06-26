@@ -27,32 +27,67 @@ export function buildSpecialBetResults(
   return defs.map((d) => {
     const userRaw = specials[d.key];
 
+    // Array-answer bets support ties; single-answer bets stay as scalars.
+    const isArrayAnswerBet = [
+      'groupTopScoringTeam',
+      'groupTopConcedingTeam',
+      'tournamentTopScoringTeam',
+      'tournamentTopConcedingTeam',
+      'mostYellowCardsTeam',
+      'topScorerPlayer',
+    ].includes(d.key);
+
     let actualRaw: unknown;
+    let actualArray: unknown[] | undefined;
+
     if (d.key === 'finalDecidedByPenalties') {
       actualRaw =
         actual.finalMatch !== undefined ? actual.finalMatch.decidedBy === 'penalties' : undefined;
     } else if (d.key === 'finalDecisiveGoalPlayer') {
       actualRaw = actual.finalMatch?.decisiveGoalPlayer;
+    } else if (isArrayAnswerBet) {
+      actualArray = (actual.answers as Record<string, unknown[]>)[d.key];
+      // For display purposes, use the first element as the "raw" value only if single
+      actualRaw = actualArray;
     } else {
       actualRaw = (actual.answers as Record<string, unknown>)[d.key];
     }
 
     const display = makeDisplayResolver(d.kind, teamMap, playerMap);
     const userPickDisplay = display(userRaw);
-    const actualAnswerDisplay = display(actualRaw);
+
+    // For array bets, join multiple correct answers (ties) with " / "
+    const actualAnswerDisplay: string | number | boolean | null = isArrayAnswerBet
+      ? actualArray && actualArray.length > 0
+        ? actualArray.map((v) => display(v) ?? String(v)).join(' / ')
+        : null
+      : display(actualRaw);
 
     let hit: SpecialBetResultRow['hit'];
     let pointsAwarded: number;
 
-    if (actualRaw === undefined || actualRaw === null) {
-      hit = 'pending';
-      pointsAwarded = 0;
-    } else if (userRaw !== undefined && userRaw !== null && userRaw === actualRaw) {
-      hit = 'hit';
-      pointsAwarded = d.points;
+    if (isArrayAnswerBet) {
+      if (!actualArray || actualArray.length === 0) {
+        hit = 'pending';
+        pointsAwarded = 0;
+      } else if (userRaw !== undefined && userRaw !== null && actualArray.includes(userRaw)) {
+        hit = 'hit';
+        pointsAwarded = d.points;
+      } else {
+        hit = 'missed';
+        pointsAwarded = 0;
+      }
     } else {
-      hit = 'missed';
-      pointsAwarded = 0;
+      if (actualRaw === undefined || actualRaw === null) {
+        hit = 'pending';
+        pointsAwarded = 0;
+      } else if (userRaw !== undefined && userRaw !== null && userRaw === actualRaw) {
+        hit = 'hit';
+        pointsAwarded = d.points;
+      } else {
+        hit = 'missed';
+        pointsAwarded = 0;
+      }
     }
 
     const currentLeader: CurrentLeader | null =
@@ -67,6 +102,26 @@ export function buildSpecialBetResults(
       playerTeamMap,
     );
 
+    // For array-answer bets, collect all correct team IDs for badge display.
+    const actualAnswerTeamIds: string[] =
+      isArrayAnswerBet && actualArray && actualArray.length > 0
+        ? actualArray.flatMap((v) => {
+            if (d.kind === 'team') return [String(v)];
+            if (d.kind === 'player') {
+              const tid = playerTeamMap.get(String(v));
+              return tid ? [tid] : [];
+            }
+            return [];
+          })
+        : d.kind === 'team' && actualRaw != null
+          ? [String(actualRaw)]
+          : d.kind === 'player' && actualRaw != null
+            ? (() => {
+                const tid = playerTeamMap.get(String(actualRaw));
+                return tid ? [tid] : [];
+              })()
+            : [];
+
     return {
       key: d.key,
       label: d.label,
@@ -80,12 +135,7 @@ export function buildSpecialBetResults(
           : d.kind === 'player' && userRaw != null
             ? (playerTeamMap.get(String(userRaw)) ?? null)
             : null,
-      actualAnswerTeamId:
-        d.kind === 'team' && actualRaw != null
-          ? String(actualRaw)
-          : d.kind === 'player' && actualRaw != null
-            ? (playerTeamMap.get(String(actualRaw)) ?? null)
-            : null,
+      actualAnswerTeamIds,
       hit,
       pointsAwarded,
       currentLeader,

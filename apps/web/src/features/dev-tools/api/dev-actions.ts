@@ -301,8 +301,8 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
     matchResults: allGroupMatchResults,
     groupOrder: allGroupOrder,
     answers: {
-      groupTopScoringTeam: teamId('BRA'),
-      groupTopConcedingTeam: teamId('CUW'),
+      groupTopScoringTeam: [teamId('BRA')],
+      groupTopConcedingTeam: [teamId('CUW')],
       highestMatchGoals: 7,
     },
   };
@@ -374,15 +374,15 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
       decidedBy: 'penalties',
     },
     answers: {
-      groupTopScoringTeam: teamId('BRA'),
-      groupTopConcedingTeam: teamId('CUW'),
-      tournamentTopScoringTeam: teamId('ARG'),
-      tournamentTopConcedingTeam: teamId('CUW'),
+      groupTopScoringTeam: [teamId('BRA')],
+      groupTopConcedingTeam: [teamId('CUW')],
+      tournamentTopScoringTeam: [teamId('ARG')],
+      tournamentTopConcedingTeam: [teamId('CUW')],
       highestMatchGoals: 7,
-      mostYellowCardsTeam: teamId('ARG'),
+      mostYellowCardsTeam: [teamId('ARG')],
       firstRedCardPlayer: playerId('mex-alvarez'),
       penaltyShootoutCount: 1,
-      topScorerPlayer: playerId('arg-messi'),
+      topScorerPlayer: [playerId('arg-messi')],
       roundOf16: r16Teams,
       roundOf8: ['GER', 'NED', 'ESP', 'BEL', 'BRA', 'ENG', 'ARG', 'POR'].map(teamId),
       topFourOrder: ['ARG', 'ESP', 'GER', 'BRA'].map(teamId),
@@ -532,8 +532,8 @@ export async function applyGroupStageDayAction(formData: FormData): Promise<void
   const allGroupsDone = Object.keys(groupOrder).length === 12;
   const answers: ActualResults['answers'] = { highestMatchGoals };
   if (allGroupsDone) {
-    answers.groupTopScoringTeam = teamId('BRA');
-    answers.groupTopConcedingTeam = teamId('CUW');
+    answers.groupTopScoringTeam = [teamId('BRA')];
+    answers.groupTopConcedingTeam = [teamId('CUW')];
   }
 
   const actual: ActualResults = {

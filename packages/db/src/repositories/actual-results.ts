@@ -62,10 +62,6 @@ export async function getActualResults(
 
   const answerMap = new Map(answerRows.map((r) => [r.betKey, r.value]));
 
-  const getTeamId = (key: string): TeamId | undefined => {
-    const v = answerMap.get(key);
-    return typeof v === 'string' ? teamId(v) : undefined;
-  };
   const getPlayerId = (key: string): PlayerId | undefined => {
     const v = answerMap.get(key);
     return typeof v === 'string' ? playerId(v) : undefined;
@@ -74,9 +70,19 @@ export async function getActualResults(
     const v = answerMap.get(key);
     return typeof v === 'number' ? v : undefined;
   };
+  // Handles both single string (legacy) and array — always returns TeamId[].
   const getTeamIds = (key: string): TeamId[] | undefined => {
     const v = answerMap.get(key);
-    return Array.isArray(v) ? (v as string[]).map((s) => teamId(s)) : undefined;
+    if (Array.isArray(v)) return (v as string[]).map((s) => teamId(s));
+    if (typeof v === 'string') return [teamId(v)];
+    return undefined;
+  };
+  // Handles both single string (legacy) and array — always returns PlayerId[].
+  const getPlayerIds = (key: string): PlayerId[] | undefined => {
+    const v = answerMap.get(key);
+    if (Array.isArray(v)) return (v as string[]).map((s) => playerId(s));
+    if (typeof v === 'string') return [playerId(v)];
+    return undefined;
   };
 
   // bronzeMatch and finalMatch are stored as structured JSON objects in actualAnswers
@@ -117,15 +123,15 @@ export async function getActualResults(
   const roundOf16 = getTeamIds('roundOf16');
   const roundOf8 = getTeamIds('roundOf8');
   const topFourOrder = getTeamIds('topFourOrder');
-  const groupTopScoringTeam = getTeamId('groupTopScoringTeam');
-  const groupTopConcedingTeam = getTeamId('groupTopConcedingTeam');
-  const tournamentTopScoringTeam = getTeamId('tournamentTopScoringTeam');
-  const tournamentTopConcedingTeam = getTeamId('tournamentTopConcedingTeam');
+  const groupTopScoringTeam = getTeamIds('groupTopScoringTeam');
+  const groupTopConcedingTeam = getTeamIds('groupTopConcedingTeam');
+  const tournamentTopScoringTeam = getTeamIds('tournamentTopScoringTeam');
+  const tournamentTopConcedingTeam = getTeamIds('tournamentTopConcedingTeam');
   const highestMatchGoals = getNum('highestMatchGoals');
-  const mostYellowCardsTeam = getTeamId('mostYellowCardsTeam');
+  const mostYellowCardsTeam = getTeamIds('mostYellowCardsTeam');
   const firstRedCardPlayer = getPlayerId('firstRedCardPlayer');
   const penaltyShootoutCount = getNum('penaltyShootoutCount');
-  const topScorerPlayer = getPlayerId('topScorerPlayer');
+  const topScorerPlayer = getPlayerIds('topScorerPlayer');
 
   return {
     matchResults,

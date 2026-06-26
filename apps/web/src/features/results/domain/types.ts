@@ -285,7 +285,8 @@ export type SpecialBetResultRow = {
   actualAnswerDisplay: string | number | boolean | null;
   /** Team ID for flag display — populated for `kind === 'team'` bets and for `kind === 'player'` bets (the player's national team). */
   userPickTeamId: string | null;
-  actualAnswerTeamId: string | null;
+  /** Team IDs for the correct answer(s) — multiple entries when there is a tie. */
+  actualAnswerTeamIds: string[];
   hit: 'hit' | 'missed' | 'pending';
   pointsAwarded: number;
   /** Informational only — derived from match data when the bet is still pending. Never the final answer. */

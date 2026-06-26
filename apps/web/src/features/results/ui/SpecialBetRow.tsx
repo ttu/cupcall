@@ -44,7 +44,7 @@ export function SpecialBetRow({
             <PickDisplay
               value={bet.userPickDisplay}
               label="Your pick"
-              teamId={bet.userPickTeamId}
+              teamIds={bet.userPickTeamId ? [bet.userPickTeamId] : []}
             />
           )}
           {bet.actualAnswerDisplay !== null && (
@@ -54,7 +54,7 @@ export function SpecialBetRow({
                 value={bet.actualAnswerDisplay}
                 label="Actual"
                 actual
-                teamId={bet.actualAnswerTeamId}
+                teamIds={bet.actualAnswerTeamIds}
               />
             </>
           )}
@@ -92,12 +92,12 @@ function PickDisplay({
   value,
   label,
   actual = false,
-  teamId = null,
+  teamIds = [],
 }: {
   value: string | number | boolean | null;
   label: string;
   actual?: boolean;
-  teamId?: string | null;
+  teamIds?: string[];
 }): ReactElement {
   if (value === null) {
     return <span className="text-xs text-ink-muted italic">{label}</span>;
@@ -107,7 +107,9 @@ function PickDisplay({
 
   return (
     <span className="inline-flex items-center gap-[5px]">
-      {teamId && <TeamBadge teamId={teamId} size="sm" />}
+      {teamIds.map((tid) => (
+        <TeamBadge key={tid} teamId={tid} size="sm" />
+      ))}
       <span className={cn('text-xs', actual ? 'font-bold text-ink' : 'font-normal text-ink-soft')}>
         {display}
       </span>
