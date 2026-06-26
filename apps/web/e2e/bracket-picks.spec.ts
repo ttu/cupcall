@@ -61,7 +61,7 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   await fillAllBracketPicks(page);
 
   // ── Cascade: switching an R32 pick clears the dependent R16 pick ──────────
-  // r32m73 is the first R32 slot; it feeds r16m90 (the 2nd R16 tie) as home.
+  // r32m73 is at slot index 2 in the R32 list; it feeds r16m90 (index 1 in R16) as home.
   // After fillAllBracketPicks the home team was picked, so r16m90 home is green.
   const r16Card = bracketSection.locator('[data-testid="bracket-round-R16"]');
   const r16Ties = r16Card.locator('[data-testid="bracket-tie-row"]');
@@ -69,15 +69,15 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   const r16m90HomeBtn = r16Ties.nth(1).locator('[data-testid="pick-home"]');
   await expect(r16m90HomeBtn).toHaveAttribute('aria-pressed', 'true');
 
-  // Now switch r32m73 to the away team — this changes who advances to R16
-  const firstR32Home = r32Ties.first().locator('[data-testid="pick-home"]');
-  const firstR32AwayBtn = r32Ties.first().locator('[data-testid="pick-away"]');
-  // Capture the away team name to confirm it differs from the home pick
-  const awayTeamName = (await firstR32AwayBtn.textContent()) ?? '';
-  const homeTeamName = (await firstR32Home.textContent()) ?? '';
+  // Now switch r32m73 (index 2) to the away team — this changes who advances to R16m90
+  const r32m73Home = r32Ties.nth(2).locator('[data-testid="pick-home"]');
+  const r32m73Away = r32Ties.nth(2).locator('[data-testid="pick-away"]');
+  // Capture team names to confirm they differ (away ≠ home)
+  const awayTeamName = (await r32m73Away.textContent()) ?? '';
+  const homeTeamName = (await r32m73Home.textContent()) ?? '';
   expect(awayTeamName.trim()).not.toBe(homeTeamName.trim());
 
-  await firstR32AwayBtn.click();
+  await r32m73Away.click();
   await page.waitForLoadState('networkidle');
 
   // The R16m90 pick was for the OLD r32m73 winner (home team). Now that r32m73

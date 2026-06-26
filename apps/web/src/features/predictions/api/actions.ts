@@ -447,7 +447,10 @@ export async function saveKnockoutPick(
         tournamentDef,
         actualGroupScoresMap(actual),
       );
-      return { updatedInputs };
+      // Don't return the pre-cascade inputs: the cascade may have deleted picks that
+      // would cause buildBracket's validation to throw on the stale snapshot.
+      // rescoreAfterEdit re-fetches from DB when inputs are omitted.
+      return {};
     },
   );
 }
