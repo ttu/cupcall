@@ -25,10 +25,12 @@ export function buildBracketRounds(
   const pickMap = new Map<string, string>(
     (inputs?.knockoutPicks ?? []).map((kp) => [kp.bracketMatchKey, kp.winner]),
   );
-  const { participants: derivedParticipants, projectedKeys } = computeDerivedParticipants(
-    def,
-    allMatches,
-  );
+  const {
+    participants: derivedParticipants,
+    projectedKeys,
+    confirmedHome,
+    confirmedAway,
+  } = computeDerivedParticipants(def, allMatches);
   const userPredictedParticipants = inputs
     ? computeUserPredictedParticipants(def, allMatches, pickMap, derivedParticipants)
     : new Map<string, [string | null, string | null]>();
@@ -122,6 +124,10 @@ export function buildBracketRounds(
       predictedAway,
       hit,
       projected: projectedKeys.has(key),
+      // Entry-round: confirmed when the team's source group is fully finalised.
+      // Later rounds: confirmed when the actual match row has the team ID (previous match done).
+      homeTeamConfirmed: confirmedHome.get(key) ?? !!actual?.homeTeamId,
+      awayTeamConfirmed: confirmedAway.get(key) ?? !!actual?.awayTeamId,
       isEntryRound,
       homeTeamR32Pct: isEntryRound && homeId ? (r32PredPcts.get(homeId) ?? null) : null,
       awayTeamR32Pct: isEntryRound && awayId ? (r32PredPcts.get(awayId) ?? null) : null,
@@ -224,15 +230,47 @@ function computeKnockoutHit(args: {
 function computeDerivedParticipants(
   def: Tournament,
   allMatches: MatchRow[],
-): { participants: Map<BracketMatchKey, [string, string]>; projectedKeys: Set<BracketMatchKey> } {
+): {
+  participants: Map<BracketMatchKey, [string, string]>;
+  projectedKeys: Set<BracketMatchKey>;
+  /** Per entry-round slot: is the home team's source group fully finalised? */
+  confirmedHome: Map<BracketMatchKey, boolean>;
+  /** Per entry-round slot: is the away team's source group fully finalised? */
+  confirmedAway: Map<BracketMatchKey, boolean>;
+} {
   const participantsByMatch = new Map<BracketMatchKey, [string, string]>();
   const projectedKeys = new Set<BracketMatchKey>();
+  const confirmedHome = new Map<BracketMatchKey, boolean>();
+  const confirmedAway = new Map<BracketMatchKey, boolean>();
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
 
   const finalGroupMatchIds = new Set(
     allMatches.filter((m) => m.stage === 'group' && m.status === 'final').map((m) => m.id),
   );
   const allGroupsFinal = def.groupMatches.every((gm) => finalGroupMatchIds.has(gm.id));
+
+  // Per-group finality: a group is "done" when all its matches are final.
+  const matchIdsByGroup = new Map<string, string[]>();
+  for (const gm of def.groupMatches) {
+    const g = gm.group as string;
+    if (!matchIdsByGroup.has(g)) matchIdsByGroup.set(g, []);
+    matchIdsByGroup.get(g)!.push(gm.id);
+  }
+  const groupIsFinal = new Map<string, boolean>();
+  for (const [g, ids] of matchIdsByGroup.entries()) {
+    groupIsFinal.set(
+      g,
+      ids.every((id) => finalGroupMatchIds.has(id)),
+    );
+  }
+
+  // A slot ref is confirmed when its source group is fully final.
+  // "3rd[i]" needs ALL groups done (best-third ranking spans all groups).
+  function slotRefConfirmed(ref: string): boolean {
+    if (/^3rd\[/.test(ref)) return allGroupsFinal;
+    const m = /^(\d+)([A-Z])$/.exec(ref);
+    return m ? (groupIsFinal.get(m[2]!) ?? false) : false;
+  }
 
   const liveScores: GroupScore[] = def.groupMatches
     .filter((gm) => finalGroupMatchIds.has(gm.id))
@@ -248,6 +286,8 @@ function computeDerivedParticipants(
   const rankedThirds = qualifiers.slice(autoCount);
 
   for (const slot of def.bracket.slots) {
+    confirmedHome.set(slot.match, slotRefConfirmed(slot.home));
+    confirmedAway.set(slot.match, slotRefConfirmed(slot.away));
     try {
       const home = resolveSlot(slot.home, groupOrders, rankedThirds);
       const away = resolveSlot(slot.away, groupOrders, rankedThirds);
@@ -284,7 +324,7 @@ function computeDerivedParticipants(
     }
   }
 
-  return { participants: participantsByMatch, projectedKeys };
+  return { participants: participantsByMatch, projectedKeys, confirmedHome, confirmedAway };
 }
 
 /**

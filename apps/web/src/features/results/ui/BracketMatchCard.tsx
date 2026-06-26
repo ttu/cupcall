@@ -24,6 +24,7 @@ function TeamRow({
   r32Pct,
   isSoft,
   isPredictedFill,
+  showProjectedBadge,
 }: {
   teamId: string | null;
   teamName: string | null;
@@ -33,6 +34,7 @@ function TeamRow({
   r32Pct: number | null;
   isSoft: boolean;
   isPredictedFill: boolean;
+  showProjectedBadge: boolean;
 }): ReactElement {
   return (
     <div
@@ -58,6 +60,9 @@ function TeamRow({
       >
         {teamName ?? teamId ?? <span className="italic font-normal">missed pick</span>}
       </span>
+      {showProjectedBadge && (
+        <span className="text-[10px] italic text-ink-muted shrink-0">proj.</span>
+      )}
       {r32Pct !== null && (
         <span className="text-[10px] font-bold text-ink-muted tabular-nums shrink-0">
           {r32Pct}%
@@ -79,10 +84,16 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
   const effectiveAwayId = match.awayTeamId ?? match.predictedAwayTeamId;
   const effectiveAwayName = match.awayTeamName ?? match.predictedAwayTeamName;
 
-  const hasPredictedParticipants = !!(match.predictedHomeTeamId || match.predictedAwayTeamId);
-  // Card shows soft styling (dashed border, muted text, "Predicted" label) when teams are not
-  // yet confirmed — either projected from live group standings or filled from user's picks.
-  const softCard = match.projected || hasPredictedParticipants;
+  // Per-team softness: a team slot is "soft" when it's projected from live group standings
+  // (not yet confirmed in DB) or filled from the user's pick (TBD actual winner).
+  const homeIsSoft = (match.projected && !match.homeTeamConfirmed) || match.homeTeamId === null;
+  const awayIsSoft = (match.projected && !match.awayTeamConfirmed) || match.awayTeamId === null;
+
+  // Card uses soft styling (dashed border, no HitChip) whenever any slot is unconfirmed.
+  const softCard = homeIsSoft || awayIsSoft;
+
+  // Show "proj." badge on the unconfirmed team only when one slot is confirmed and the other isn't.
+  const partiallyProjected = homeIsSoft !== awayIsSoft;
 
   const hasScore = match.actualHome !== null && match.actualAway !== null;
   const isFinal = match.status === 'final';
@@ -101,9 +112,9 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           <span className="tnum text-[11px] font-bold text-ink-muted">
             {match.actualHome}–{match.actualAway}
           </span>
-        ) : match.projected ? (
+        ) : match.projected && homeIsSoft && awayIsSoft ? (
           <span className="text-[11px] font-semibold text-ink-muted italic">Projected</span>
-        ) : hasPredictedParticipants ? (
+        ) : match.predictedHomeTeamId !== null && match.predictedAwayTeamId !== null ? (
           <span className="text-[11px] font-semibold text-ink-muted italic">Predicted</span>
         ) : match.kickoff ? (
           <span className="text-[11px] font-bold text-ink-muted">
@@ -130,8 +141,9 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           isQualifierPick={effectiveHomeId !== null && predictedQualifierIds.has(effectiveHomeId)}
           isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
           r32Pct={match.homeTeamR32Pct}
-          isSoft={softCard}
+          isSoft={homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
+          showProjectedBadge={partiallyProjected && homeIsSoft}
         />
         <TeamRow
           teamId={effectiveAwayId}
@@ -143,8 +155,9 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           isQualifierPick={effectiveAwayId !== null && predictedQualifierIds.has(effectiveAwayId)}
           isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
           r32Pct={match.awayTeamR32Pct}
-          isSoft={softCard}
+          isSoft={awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
+          showProjectedBadge={partiallyProjected && awayIsSoft}
         />
       </div>
     </div>

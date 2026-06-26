@@ -132,6 +132,10 @@ export type KnockoutMatchView = {
   hit: MatchHit;
   /** True when participants are derived from live (partial) group standings during the group stage. */
   projected: boolean;
+  /** True when homeTeamId comes from the actual confirmed match data, not projected from group standings. Only meaningful when projected=true. */
+  homeTeamConfirmed: boolean;
+  /** True when awayTeamId comes from the actual confirmed match data, not projected from group standings. Only meaningful when projected=true. */
+  awayTeamConfirmed: boolean;
   /** User's predicted home team for this slot — populated only when homeTeamId is null and the pick is still alive. */
   predictedHomeTeamId: string | null;
   predictedHomeTeamName: string | null;
