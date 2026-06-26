@@ -112,7 +112,7 @@ export function ResultsPageClient({
               className="grid gap-3 items-start md:grid-cols-[minmax(0,1fr)_326px]"
             >
               <GroupMatchFeed group={group} />
-              <GroupTable standing={group.standing} />
+              <GroupTable standing={group.standing} groupPoints={group.groupPoints} />
             </div>
           ))}
 

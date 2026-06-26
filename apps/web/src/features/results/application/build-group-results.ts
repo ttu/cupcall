@@ -16,10 +16,24 @@ import type {
   Best3rdStandingRow,
   MatchPredictionStats,
   MatchResultPoolStats,
+  GroupPoints,
 } from '../domain/types';
 import { computeHit } from '../domain/race-chart';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+function calcGroupOrderPoints(positionsCorrect: number, scoring: Tournament['scoring']): number {
+  switch (positionsCorrect) {
+    case 4:
+      return scoring.groupOrder.allCorrect;
+    case 2:
+      return scoring.groupOrder.twoCorrect;
+    case 1:
+      return scoring.groupOrder.oneCorrect;
+    default:
+      return 0;
+  }
+}
 
 export function buildGroupResults(
   def: Tournament,
@@ -135,8 +149,54 @@ export function buildGroupResults(
       poolPositions,
     );
 
-    return { groupId: group.id, completedMatches, todayMatches, upcomingMatches, standing };
+    const groupPoints = computeGroupPoints(
+      def,
+      group.id,
+      allMatches,
+      completedMatches,
+      standing,
+      predictedOrder,
+      inputs,
+    );
+
+    return {
+      groupId: group.id,
+      completedMatches,
+      todayMatches,
+      upcomingMatches,
+      standing,
+      groupPoints,
+    };
   });
+}
+
+function computeGroupPoints(
+  def: Tournament,
+  groupId: string,
+  allMatches: MatchRow[],
+  completedMatches: GroupMatchResultRow[],
+  standing: GroupStandingRow[],
+  predictedOrder: string[] | null,
+  inputs: Parameters<typeof buildGroupResults>[2],
+): GroupPoints | null {
+  if (inputs === null || predictedOrder === null) return null;
+
+  const groupMatchDefs = def.groupMatches.filter((gm) => gm.group === groupId);
+  const isFinalized =
+    groupMatchDefs.length > 0 &&
+    groupMatchDefs.every((gm) => allMatches.some((m) => m.id === gm.id && m.status === 'final'));
+
+  if (!isFinalized) return null;
+
+  const matchPoints = completedMatches.reduce((sum, m) => sum + m.pointsAwarded, 0);
+  const actualOrder = standing.map((r) => r.teamId);
+  let positionsCorrect = 0;
+  for (let i = 0; i < predictedOrder.length; i++) {
+    if (predictedOrder[i] === actualOrder[i]) positionsCorrect++;
+  }
+  const groupOrderPoints = calcGroupOrderPoints(positionsCorrect, def.scoring);
+
+  return { matchPoints, groupOrderPoints };
 }
 
 /**

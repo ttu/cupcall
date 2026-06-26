@@ -84,6 +84,11 @@ export type GroupUpcomingMatchRow = {
   poolPredictionStats: MatchPredictionStats | null;
 };
 
+export type GroupPoints = {
+  matchPoints: number;
+  groupOrderPoints: number;
+};
+
 export type GroupResultView = {
   groupId: string;
   completedMatches: GroupMatchResultRow[];
@@ -91,6 +96,8 @@ export type GroupResultView = {
   /** Non-final matches with kickoff beyond the 24h today window, or with no kickoff set yet. */
   upcomingMatches: GroupUpcomingMatchRow[];
   standing: GroupStandingRow[];
+  /** Points the current user earned from this group once all matches are final. Null when group is not yet finalized or user has no prediction. */
+  groupPoints: GroupPoints | null;
 };
 
 export type PickStatus = 'alive' | 'busted' | 'pending' | 'no-pick';

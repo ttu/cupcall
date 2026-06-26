@@ -1,6 +1,7 @@
 export type {
   ResultsView,
   GroupResultView,
+  GroupPoints,
   GroupMatchResultRow,
   GroupStandingRow,
   Best3rdStandingRow,

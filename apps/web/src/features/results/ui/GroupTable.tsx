@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
-import type { GroupStandingRow } from '../domain/types';
+import type { GroupStandingRow, GroupPoints } from '../domain/types';
 import { TeamBadge, cn } from '@/shared/ui';
 
-type Props = { standing: GroupStandingRow[] };
+type Props = { standing: GroupStandingRow[]; groupPoints?: GroupPoints | null };
 
-export function GroupTable({ standing }: Props): ReactElement {
+export function GroupTable({ standing, groupPoints }: Props): ReactElement {
   if (standing.length === 0) {
     return <p className="text-[13px] py-3 text-center text-ink-muted">No matches played yet</p>;
   }
@@ -102,6 +102,21 @@ export function GroupTable({ standing }: Props): ReactElement {
               Eliminated
             </span>
           )}
+        </div>
+      )}
+
+      {groupPoints != null && (
+        <div className="flex items-center justify-between p-[8px_12px] bg-surface-2 border-t border-line">
+          <span className="text-[11px] font-semibold text-ink-muted">Your group points</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-ink-muted">
+              {groupPoints.matchPoints} matches
+              {groupPoints.groupOrderPoints > 0 && ` + ${groupPoints.groupOrderPoints} standings`}
+            </span>
+            <span className="display text-sm text-ink font-bold">
+              {groupPoints.matchPoints + groupPoints.groupOrderPoints} pts
+            </span>
+          </div>
         </div>
       )}
     </div>
