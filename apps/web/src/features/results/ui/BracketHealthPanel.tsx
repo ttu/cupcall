@@ -1,6 +1,37 @@
 import type { ReactElement } from 'react';
-import type { BracketHealth, KnockoutMatchView } from '../domain/types';
+import type { BracketHealth, BracketRoundHealth, KnockoutMatchView } from '../domain/types';
 import { cn } from '@/shared/ui';
+
+function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement {
+  const possible = round.alivePicks + round.pendingPicks;
+  const hasPicks = round.alivePicks + round.pendingPicks + round.bustedPicks > 0;
+  const allBusted = hasPicks && possible === 0;
+  const someBusted = hasPicks && round.bustedPicks > 0 && possible > 0;
+  const color = allBusted ? 'text-danger' : someBusted ? 'text-amber-600' : 'text-green-700';
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[11px] font-bold text-green-800 w-8 shrink-0">{round.label}</span>
+      <div className="flex-1 h-1 rounded-full bg-green-100 overflow-hidden">
+        <div
+          className={cn(
+            'h-full rounded-full transition-all',
+            allBusted ? 'bg-danger' : someBusted ? 'bg-amber-400' : 'bg-green-500',
+          )}
+          style={{ width: `${round.totalPicks > 0 ? (possible / round.totalPicks) * 100 : 0}%` }}
+        />
+      </div>
+      <span className={cn('text-[11px] font-semibold tabular-nums shrink-0', color)}>
+        {possible}/{round.totalPicks}
+      </span>
+      {round.maxPossiblePoints > 0 && (
+        <span className={cn('text-[10px] font-semibold shrink-0', color)}>
+          · {round.maxPossiblePoints} pts
+        </span>
+      )}
+    </div>
+  );
+}
 
 type Props = {
   health: BracketHealth;
@@ -37,9 +68,16 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
               .join(' · ')}
           </p>
         )}
+        {health.perRound.length > 0 && (
+          <div className="mt-3 pt-2.5 border-t border-green-200 flex flex-col gap-1">
+            {health.perRound.map((r) => (
+              <RoundHealthRow key={r.label} round={r} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Champion card */}
+      {/* Champion pick */}
       {champion && (
         <div className="card py-3 px-3.5">
           <div className="flex items-center gap-1.5 mb-1.5">

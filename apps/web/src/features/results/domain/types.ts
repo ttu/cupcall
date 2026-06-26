@@ -155,11 +155,21 @@ export type BracketRoundResultView = {
   matches: KnockoutMatchView[];
 };
 
+export type BracketRoundHealth = {
+  label: string;
+  alivePicks: number;
+  pendingPicks: number;
+  bustedPicks: number;
+  totalPicks: number;
+  maxPossiblePoints: number;
+};
+
 export type BracketHealth = {
   totalPicks: number;
   alivePicks: number;
   bustedPicks: number;
   missedPicks: number;
+  perRound: BracketRoundHealth[];
 };
 
 import type { StageKey, StageProgress } from '@/shared/stage-progress';

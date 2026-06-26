@@ -8,6 +8,7 @@ export type {
   KnockoutMatchView,
   BracketRoundResultView,
   BracketHealth,
+  BracketRoundHealth,
   StageProgress,
   StageKey,
   UserRankChip,
