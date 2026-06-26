@@ -144,13 +144,17 @@ export function ResultsPageClient({
               <KnockoutPointsPanel breakdown={view.userBreakdown} />
             </div>
           </div>
-          <div className="flex gap-4 text-[11px] text-ink-muted">
+          <div className="flex gap-4 flex-wrap text-[11px] text-ink-muted">
             <span>
               <span className="font-bold text-green-600">✓</span> Confirmed qualifier
             </span>
             <span>
               <span className="font-bold text-yellow-500">?</span> Projected from live standings
               (not yet official)
+            </span>
+            <span>
+              <span className="font-bold">42%</span> Share of pool members whose live scores project
+              this team into the Round of 32
             </span>
           </div>
         </div>
