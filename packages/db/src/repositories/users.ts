@@ -109,6 +109,10 @@ export async function upsertLoginToken(
   return { userId: userId(row.userId), token: row.token, createdAt: row.createdAt };
 }
 
+export async function deleteLoginTokenByToken(db: Database, token: string): Promise<void> {
+  await db.delete(schema.userLoginTokens).where(eq(schema.userLoginTokens.token, token));
+}
+
 export async function getLoginTokenByToken(
   db: Database,
   token: string,
