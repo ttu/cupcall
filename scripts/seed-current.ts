@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import pino from 'pino';
+import { syncTournament } from './sync';
 import { createDb } from '@cup/db';
 import * as schema from '@cup/db/schema';
 import {
@@ -1091,6 +1092,11 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
   }
   if (skipped > 0) logger.warn({ skipped }, 'some predictions skipped due to errors');
   logger.info({ scored }, 'rescore complete');
+
+  // 10. Also import the real wc-2026 tournament so it's available for browsing.
+  logger.info({ tournamentId: REAL_TOURNAMENT_ID }, 'syncing real tournament');
+  const realDataDir = join(cwd, 'data', 'tournaments', REAL_TOURNAMENT_ID);
+  await syncTournament(db, REAL_TOURNAMENT_ID, realDataDir);
 
   logger.info(
     {
