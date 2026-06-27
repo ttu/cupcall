@@ -378,6 +378,46 @@
       "matchId": "mF6",
       "home": 1,
       "away": 3
+    },
+    {
+      "matchId": "mG5",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -3,
+      "awayConduct": -4
+    },
+    {
+      "matchId": "mG6",
+      "home": 1,
+      "away": 5
+    },
+    {
+      "matchId": "mH5",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mH6",
+      "home": 0,
+      "away": 1,
+      "homeConduct": -7,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mI5",
+      "home": 1,
+      "away": 4,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mI6",
+      "home": 5,
+      "away": 0,
+      "homeConduct": -2,
+      "awayConduct": -6
     }
   ],
   "groupOrder": {},
