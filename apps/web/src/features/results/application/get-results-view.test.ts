@@ -553,11 +553,63 @@ describe('getResultsView', () => {
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     expect(view!.bracketHealth.alivePicks).toBe(2);
+    expect(view!.bracketHealth.pendingPicks).toBe(1);
     expect(view!.bracketHealth.bustedPicks).toBe(1);
     // sf1, sf2, final, bronze have no picks → counted as missed
     expect(view!.bracketHealth.missedPicks).toBe(4);
     // all 8 bracket matches (qf×4 + sf×2 + final + bronze)
     expect(view!.bracketHealth.totalPicks).toBe(8);
+  });
+
+  it('R32 qual health classifies confirmed, pending, and busted qualifier picks', async () => {
+    const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+
+    // User predicts A3+A4 to qualify from group A (wrong — group A fully resolved with A1/A2 winning)
+    // Scores that produce predicted order A3=9pts, A4=6pts, A1=1pt, A2=1pt:
+    //   mA1: A1 vs A2 → draw    mA2: A1 vs A3 → A3 wins   mA3: A1 vs A4 → A4 wins
+    //   mA4: A2 vs A3 → A3 wins  mA5: A2 vs A4 → A4 wins   mA6: A3 vs A4 → A3 wins
+    for (const [mid, h, a] of [
+      ['mA1', 0, 0],
+      ['mA2', 0, 2],
+      ['mA3', 0, 2],
+      ['mA4', 0, 2],
+      ['mA5', 0, 2],
+      ['mA6', 2, 0],
+    ] as [string, number, number][]) {
+      await upsertGroupScore(db, pred.id, mid, h, a);
+    }
+
+    // User predicts B3+B4 to qualify from group B (group B not finalized → pending)
+    // Same scoring pattern: B3=9pts, B4=6pts predicted
+    for (const [mid, h, a] of [
+      ['mB1', 0, 0],
+      ['mB2', 0, 2],
+      ['mB3', 0, 2],
+      ['mB4', 0, 2],
+      ['mB5', 0, 2],
+      ['mB6', 2, 0],
+    ] as [string, number, number][]) {
+      await upsertGroupScore(db, pred.id, mid, h, a);
+    }
+
+    // Finalize all group A matches: A1 wins all → A1=9pts, A2=6pts qualify; A3+A4 eliminated
+    for (const mid of ['mA1', 'mA2', 'mA3', 'mA4', 'mA5', 'mA6']) {
+      await finalizeMatch(db, miniTId, mid, 1, 0);
+    }
+    // Group B intentionally NOT finalized → B3/B4 are currently 3rd/4th (pending, not eliminated)
+    // Groups C and D have no score predictions → default FIFA-rank order picks C1,C2,D1,D2 (alive)
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const r32Health = view!.bracketHealth.perRound[0]!;
+
+    expect(r32Health.label).toBe('R32');
+    // C1, C2, D1, D2 — default predicted qualifiers, currently in top-2 by FIFA ranking → alive
+    expect(r32Health.alivePicks).toBe(4);
+    // B3, B4 — predicted to qualify, but currently 3rd/4th in an unfinalized group → pending
+    expect(r32Health.pendingPicks).toBe(2);
+    // A3, A4 — predicted to qualify, but group A is done and they finished 3rd/4th → busted
+    expect(r32Health.bustedPicks).toBe(2);
+    expect(r32Health.totalPicks).toBe(8);
   });
 
   describe('live entry-round participants and prediction percentages', () => {

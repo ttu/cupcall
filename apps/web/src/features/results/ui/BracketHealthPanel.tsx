@@ -1,31 +1,42 @@
 import type { ReactElement } from 'react';
 import type { BracketHealth, BracketRoundHealth, KnockoutMatchView } from '../domain/types';
+import { getRoundHealthDisplay } from '../domain/bracket-health-display';
 import { cn } from '@/shared/ui';
 
+const COLOR_TEXT = { danger: 'text-danger', warning: 'text-amber-600', ok: 'text-green-700' };
+const COLOR_BAR = { danger: 'bg-danger', warning: 'bg-amber-400', ok: 'bg-green-500' };
+
 function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement {
+  const { numerator, notStarted, pendingAnnotation, color } = getRoundHealthDisplay(round);
+  const total = round.totalPicks;
   const possible = round.alivePicks + round.pendingPicks;
-  const hasPicks = round.alivePicks + round.pendingPicks + round.bustedPicks > 0;
-  const allBusted = hasPicks && possible === 0;
-  const someBusted = hasPicks && round.bustedPicks > 0 && possible > 0;
-  const color = allBusted ? 'text-danger' : someBusted ? 'text-amber-600' : 'text-green-700';
 
   return (
     <div className="flex items-center gap-2">
       <span className="text-[11px] font-bold text-green-800 w-8 shrink-0">{round.label}</span>
-      <div className="flex-1 h-1 rounded-full bg-green-100 overflow-hidden">
+      <div className="flex-1 h-1 rounded-full bg-green-100 overflow-hidden relative">
+        {/* Pending segment (lighter, extends further) */}
+        {round.pendingPicks > 0 && (
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-green-300"
+            style={{ width: `${total > 0 ? (possible / total) * 100 : 0}%` }}
+          />
+        )}
+        {/* Alive segment (solid, on top) */}
         <div
-          className={cn(
-            'h-full rounded-full transition-all',
-            allBusted ? 'bg-danger' : someBusted ? 'bg-amber-400' : 'bg-green-500',
-          )}
-          style={{ width: `${round.totalPicks > 0 ? (possible / round.totalPicks) * 100 : 0}%` }}
+          className={cn('absolute inset-y-0 left-0 rounded-full transition-all', COLOR_BAR[color])}
+          style={{ width: `${total > 0 ? (round.alivePicks / total) * 100 : 0}%` }}
         />
       </div>
-      <span className={cn('text-[11px] font-semibold tabular-nums shrink-0', color)}>
-        {possible}/{round.totalPicks}
+      <span className={cn('text-[11px] font-semibold tabular-nums shrink-0', COLOR_TEXT[color])}>
+        {numerator}
+        {notStarted && '?'}/{total}
+        {pendingAnnotation !== null && (
+          <span className="text-green-500"> · {pendingAnnotation}?</span>
+        )}
       </span>
       {round.maxPossiblePoints > 0 && (
-        <span className={cn('text-[10px] font-semibold shrink-0', color)}>
+        <span className={cn('text-[10px] font-semibold shrink-0', COLOR_TEXT[color])}>
           · {round.maxPossiblePoints} pts
         </span>
       )}
@@ -40,6 +51,10 @@ type Props = {
 
 export function BracketHealthPanel({ health, championPick }: Props): ReactElement {
   const pct = health.totalPicks > 0 ? (health.alivePicks / health.totalPicks) * 100 : 0;
+  const pendingPct =
+    health.totalPicks > 0
+      ? ((health.alivePicks + health.pendingPicks) / health.totalPicks) * 100
+      : 0;
   const champion = championPick?.pickedWinnerId;
 
   return (
@@ -54,12 +69,20 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
           </span>
           <span className="text-[13px] font-bold text-green-700">picks alive</span>
         </div>
-        <div className="bar mt-1">
-          <i style={{ width: `${pct}%` }} />
+        {/* Two-segment bar: pending (lighter) behind alive (solid) */}
+        <div className="bar mt-1 relative">
+          {health.pendingPicks > 0 && (
+            <div
+              className="absolute inset-0 rounded-full bg-green-300"
+              style={{ width: `${pendingPct}%` }}
+            />
+          )}
+          <i className="relative" style={{ width: `${pct}%` }} />
         </div>
-        {(health.bustedPicks > 0 || health.missedPicks > 0) && (
+        {(health.pendingPicks > 0 || health.bustedPicks > 0 || health.missedPicks > 0) && (
           <p className="text-[11px] font-semibold mt-2 text-ink-muted">
             {[
+              health.pendingPicks > 0 && `${health.pendingPicks} pending`,
               health.bustedPicks > 0 &&
                 `${health.bustedPicks} pick${health.bustedPicks !== 1 ? 's' : ''} busted`,
               health.missedPicks > 0 && `${health.missedPicks} missed`,

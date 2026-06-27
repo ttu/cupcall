@@ -167,6 +167,7 @@ export type BracketRoundHealth = {
 export type BracketHealth = {
   totalPicks: number;
   alivePicks: number;
+  pendingPicks: number;
   bustedPicks: number;
   missedPicks: number;
   perRound: BracketRoundHealth[];

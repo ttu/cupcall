@@ -19,6 +19,8 @@ import type {
   UserRankChip,
   SpecialBetResultRow,
   UserPointsSummary,
+  BracketRoundHealth,
+  GroupResultView,
 } from '../domain/types';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
@@ -81,6 +83,15 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     }
   }
 
+  let userPredictedQualifiers: string[] | null = null;
+  let userPredictedKnockoutTeamIds: string[] | null = null;
+  if (inputs) {
+    const groupOrders = deriveGroupOrders(def, inputs.groupScores);
+    userPredictedQualifiers = selectQualifiers(def, inputs.groupScores, groupOrders);
+    const knockoutWinners = inputs.knockoutPicks.map((p) => p.winner as string);
+    userPredictedKnockoutTeamIds = [...new Set([...userPredictedQualifiers, ...knockoutWinners])];
+  }
+
   const { bracketRounds, bronzeMatch } = buildBracketRounds(
     def,
     allMatches,
@@ -89,14 +100,9 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   );
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch, def);
 
-  const userPredictedKnockoutTeamIds: string[] | null = inputs
-    ? (() => {
-        const groupOrders = deriveGroupOrders(def, inputs.groupScores);
-        const qualifiers = selectQualifiers(def, inputs.groupScores, groupOrders);
-        const knockoutWinners = inputs.knockoutPicks.map((p) => p.winner as string);
-        return [...new Set([...qualifiers, ...knockoutWinners])];
-      })()
-    : null;
+  if (userPredictedQualifiers) {
+    bracketHealth.perRound.unshift(buildR32QualHealth(userPredictedQualifiers, groupResults));
+  }
 
   const specialBets = buildSpecialBetResults(
     def,
@@ -248,5 +254,46 @@ function buildSpecialsSummary(
     canStillGet: specialBets
       .filter((b) => b.hit === 'pending')
       .reduce((sum, b) => sum + b.points, 0),
+  };
+}
+
+function buildR32QualHealth(
+  predictedQualifiers: string[],
+  groupResults: GroupResultView[],
+): BracketRoundHealth {
+  const teamStanding = new Map<
+    string,
+    { eliminated: boolean; qualifies: 'auto' | 'best-third' | false }
+  >();
+  for (const gr of groupResults) {
+    for (const row of gr.standing) {
+      teamStanding.set(row.teamId, row);
+    }
+  }
+
+  let alivePicks = 0;
+  let bustedPicks = 0;
+  let pendingPicks = 0;
+
+  for (const teamId of predictedQualifiers) {
+    const standing = teamStanding.get(teamId);
+    if (!standing) {
+      pendingPicks++;
+    } else if (standing.eliminated) {
+      bustedPicks++;
+    } else if (standing.qualifies !== false) {
+      alivePicks++;
+    } else {
+      pendingPicks++;
+    }
+  }
+
+  return {
+    label: 'R32',
+    alivePicks,
+    pendingPicks,
+    bustedPicks,
+    totalPicks: predictedQualifiers.length,
+    maxPossiblePoints: 0,
   };
 }

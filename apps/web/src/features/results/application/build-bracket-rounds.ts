@@ -198,6 +198,7 @@ export function buildBracketHealth(
   return {
     totalPicks: allMatches.length,
     alivePicks: allMatches.filter((m) => m.pickStatus === 'alive').length,
+    pendingPicks: allMatches.filter((m) => m.pickStatus === 'pending').length,
     bustedPicks: allMatches.filter((m) => m.pickStatus === 'busted').length,
     missedPicks: allMatches.filter((m) => m.pickStatus === 'no-pick').length,
     perRound,
