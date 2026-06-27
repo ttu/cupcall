@@ -278,7 +278,7 @@ export function buildCardView(data: CardData): CardView {
     const roundLabel = getRoundLabel(slot.match, bracket.rounds);
     if (!tiesByRound.has(roundLabel)) tiesByRound.set(roundLabel, []);
 
-    const picked = knockoutPickMap.get(slot.match) ?? null;
+    const rawPick = knockoutPickMap.get(slot.match) ?? null;
     // Only resolve slot teams when the relevant group is fully predicted
     const homeId =
       resolveSlotTeam(
@@ -298,6 +298,10 @@ export function buildCardView(data: CardData): CardView {
         completeGroupIds,
         allGroupsComplete,
       ) ?? null;
+
+    // A pick that no longer matches either participant (stale after bracket changes
+    // or updated group results) is treated as absent so the UI shows "no pick".
+    const picked = rawPick === homeId || rawPick === awayId ? rawPick : null;
 
     tiesByRound.get(roundLabel)!.push({
       bracketMatchKey: slot.match,

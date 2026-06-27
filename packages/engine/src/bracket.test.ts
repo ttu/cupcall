@@ -144,13 +144,14 @@ describe('buildBracket', () => {
     expect(result.topFour[3]).toBe(teamId('D1')); // bronzeLoser (the other of bronzePair)
   });
 
-  it('throws when a knockout pick names a team not in that match', () => {
+  it('silently drops a knockout pick that names a team not in that match', () => {
     const groupOrders = deriveGroupOrders(miniTournament, allDrawScores);
     const qualifiers = selectQualifiers(miniTournament, allDrawScores, groupOrders);
 
-    // qf1 has A1 vs B2; picking B1 (not a participant) should throw
+    // qf1 has A1 vs B2; picking B1 (not a participant) is stale and should be
+    // dropped — the rest of the card is scored normally.
     const picks: KnockoutPick[] = [
-      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('B1') }, // B1 is NOT in qf1
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('B1') }, // stale — dropped
       { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
       { bracketMatchKey: bracketMatchKey('qf3'), winner: teamId('B1') },
       { bracketMatchKey: bracketMatchKey('qf4'), winner: teamId('D1') },
@@ -160,7 +161,10 @@ describe('buildBracket', () => {
       { bracketMatchKey: bracketMatchKey('bronze'), winner: teamId('C1') },
     ];
 
-    expect(() => buildBracket(miniTournament, groupOrders, qualifiers, picks)).toThrow();
+    // Should not throw; stale qf1 pick is treated as absent.
+    // sf1/sf2/final picks still propagate normally, so finalists come from those.
+    const result = buildBracket(miniTournament, groupOrders, qualifiers, picks);
+    expect(result.finalists).toEqual([teamId('A1'), teamId('B1')]);
   });
 });
 

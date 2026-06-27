@@ -58,8 +58,9 @@ function resolveSlot(
 /**
  * Build the bracket from group results and knockout picks.
  *
- * Pure function — throws a descriptive Error if a pick names a team that is
- * not a participant in that match (caller may re-derive or surface the error).
+ * Pure function. Picks that name a team that is not a participant in a match
+ * are silently dropped — stale picks (e.g. from an earlier bracket projection)
+ * are treated as if no pick was made, so the rest of the card can still be scored.
  */
 export function buildBracket(
   t: Tournament,
@@ -86,6 +87,17 @@ export function buildBracket(
     const home = resolveSlot(slot.home, groupOrders, rankedThirds);
     const away = resolveSlot(slot.away, groupOrders, rankedThirds);
     participantsByMatch.set(slot.match, [home, away]);
+  }
+
+  // ── Drop stale entry-round picks before propagating ──────────────────────────
+  // Picks that don't match the current participants are silently removed so they
+  // don't corrupt derived participants in later rounds.
+  for (const slot of bracket.slots) {
+    const [home, away] = participantsByMatch.get(slot.match)!;
+    const winner = pickByKey.get(slot.match);
+    if (winner !== undefined && winner !== home && winner !== away) {
+      pickByKey.delete(slot.match);
+    }
   }
 
   // ── Propagate winners through non-bronze progression ─────────────────────────
@@ -132,13 +144,13 @@ export function buildBracket(
     }
   }
 
-  // ── Validate all picks against their resolved participants ───────────────────
+  // ── Drop any remaining stale picks for progression matches ──────────────────
+  // After bracket restructuring or updated group results, progression-round picks
+  // can also become stale. Drop them silently so scoring can proceed normally.
   for (const [key, [home, away]] of participantsByMatch) {
     const winner = pickByKey.get(key);
     if (winner !== undefined && winner !== home && winner !== away) {
-      throw new Error(
-        `Invalid pick for "${key}": picked "${winner}" but participants are "${home}" vs "${away}"`,
-      );
+      pickByKey.delete(key);
     }
   }
 
