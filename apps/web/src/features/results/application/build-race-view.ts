@@ -259,7 +259,24 @@ export function buildKnockoutMatrix(params: {
     pickMap.set(`${pick.userId}::${pick.bracketMatchKey}`, pick.winnerTeamId);
   }
 
+  // Map bracketMatchKey → round label for cross-slot pick matching.
+  const matchRoundMap = new Map<string, string>(
+    allKnockoutMatches.map((m) => [m.bracketMatchKey, m.round]),
+  );
+
+  // Per-user, per-round set of all picked team IDs (regardless of which slot).
+  const userRoundPicksMap = new Map<string, Map<string, Set<string>>>();
+  for (const pick of poolKnockoutPicks) {
+    const round = matchRoundMap.get(pick.bracketMatchKey);
+    if (!round) continue;
+    if (!userRoundPicksMap.has(pick.userId)) userRoundPicksMap.set(pick.userId, new Map());
+    const roundMap = userRoundPicksMap.get(pick.userId)!;
+    if (!roundMap.has(round)) roundMap.set(round, new Set());
+    roundMap.get(round)!.add(pick.winnerTeamId);
+  }
+
   const knockoutMatrix: KnockoutMatrixEntry[] = leaderboard.map((e) => {
+    const userRoundPicks = userRoundPicksMap.get(e.userId) ?? new Map<string, Set<string>>();
     let totalPoints = 0;
     const cells: KnockoutMatrixCell[] = sortedMatches.map((m) => {
       const pickedWinnerId = pickMap.get(`${e.userId}::${m.bracketMatchKey}`) ?? null;
@@ -273,16 +290,12 @@ export function buildKnockoutMatrix(params: {
         };
       }
 
-      if (pickedWinnerId === null) {
-        return {
-          bracketMatchKey: m.bracketMatchKey,
-          hit: 'no-pick' as KnockoutMatchHit,
-          points: 0,
-          pickedWinnerId: null,
-        };
-      }
+      // Credit the pick if the actual winner is among the user's picks for this round,
+      // regardless of which specific slot the pick was assigned to.
+      const roundPicks = userRoundPicks.get(m.round);
+      const isHit = m.actualWinnerId !== null && (roundPicks?.has(m.actualWinnerId) ?? false);
 
-      if (pickedWinnerId === m.actualWinnerId) {
+      if (isHit) {
         const pts = hitPoints.get(m.bracketMatchKey) ?? 0;
         totalPoints += pts;
         return {
@@ -290,6 +303,15 @@ export function buildKnockoutMatrix(params: {
           hit: 'hit' as KnockoutMatchHit,
           points: pts,
           pickedWinnerId,
+        };
+      }
+
+      if (pickedWinnerId === null) {
+        return {
+          bracketMatchKey: m.bracketMatchKey,
+          hit: 'no-pick' as KnockoutMatchHit,
+          points: 0,
+          pickedWinnerId: null,
         };
       }
 

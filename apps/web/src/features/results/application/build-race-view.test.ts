@@ -266,6 +266,31 @@ describe('buildKnockoutMatrix', () => {
     expect(bobEntry.isCurrentUser).toBe(false);
   });
 
+  it('credits a hit when the actual winner was picked in a different slot of the same round', () => {
+    // User predicted FRA to win qf1, but FRA actually played and won qf2.
+    // The matrix should still credit a hit for qf2 (and miss for qf1).
+    const alice = makeLeaderboardEntry('u1', 'Alice');
+    const qf1 = makeKnockoutMatch('qf1', 'QF', 'final', { actualWinnerId: 'GER' });
+    const qf2 = makeKnockoutMatch('qf2', 'QF', 'final', { actualWinnerId: 'FRA' });
+
+    const { knockoutMatrix } = buildKnockoutMatrix({
+      leaderboard: [alice],
+      userId: null,
+      bracketRounds: [makeRound('QF', [qf1, qf2])],
+      bronzeMatch: null,
+      // User picked FRA for qf1, GER for qf2 — both teams advanced, just in swapped slots
+      poolKnockoutPicks: [makePick('u1', 'qf1', 'FRA'), makePick('u1', 'qf2', 'GER')],
+      def: miniTournament,
+    });
+
+    const qf1Cell = knockoutMatrix[0]!.cells.find((c) => c.bracketMatchKey === 'qf1')!;
+    const qf2Cell = knockoutMatrix[0]!.cells.find((c) => c.bracketMatchKey === 'qf2')!;
+    // GER won qf1; user had GER in QF picks (for qf2) → hit
+    expect(qf1Cell.hit).toBe('hit');
+    // FRA won qf2; user had FRA in QF picks (for qf1) → hit
+    expect(qf2Cell.hit).toBe('hit');
+  });
+
   it('QF picks give 0 points (topFour is holistic scoring in mini-tournament)', () => {
     const alice = makeLeaderboardEntry('u1', 'Alice');
     const qfMatch = makeKnockoutMatch('qf1', 'QF', 'final', { actualWinnerId: 'A1' });

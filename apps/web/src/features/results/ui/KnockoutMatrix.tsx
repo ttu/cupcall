@@ -49,9 +49,9 @@ export function KnockoutMatrix({
                 <span className="font-extrabold text-ink font-cup-display text-[10px]">
                   {m.round}
                 </span>
-                {m.status === 'final' ? (
+                {m.homeTeamId && m.awayTeamId ? (
                   <span className="text-[9.5px] font-bold text-ink-muted">
-                    {m.homeTeamId ?? '?'}·{m.awayTeamId ?? '?'}
+                    {m.homeTeamId}·{m.awayTeamId}
                   </span>
                 ) : (
                   <span className="font-bold text-ink-muted font-cup-display text-[9.5px]">
