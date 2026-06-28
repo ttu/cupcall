@@ -202,6 +202,7 @@ export function buildBracketHealth(
     bustedPicks: allMatches.filter((m) => m.pickStatus === 'busted').length,
     missedPicks: allMatches.filter((m) => m.pickStatus === 'no-pick').length,
     perRound,
+    groupOrderPoints: null,
   };
 }
 

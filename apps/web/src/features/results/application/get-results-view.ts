@@ -99,6 +99,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     poolGroupScores,
   );
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch, def);
+  bracketHealth.groupOrderPoints = userBreakdown?.groupOrder ?? null;
 
   if (userPredictedQualifiers) {
     bracketHealth.perRound.unshift(buildR32QualHealth(userPredictedQualifiers, groupResults));

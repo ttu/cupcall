@@ -171,6 +171,8 @@ export type BracketHealth = {
   bustedPicks: number;
   missedPicks: number;
   perRound: BracketRoundHealth[];
+  /** Total group-order points the user has earned so far. Null in viewer mode. */
+  groupOrderPoints: number | null;
 };
 
 import type { StageKey, StageProgress } from '@/shared/stage-progress';

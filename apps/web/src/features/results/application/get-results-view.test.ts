@@ -561,6 +561,51 @@ describe('getResultsView', () => {
     expect(view!.bracketHealth.totalPicks).toBe(8);
   });
 
+  it('bracketHealth.groupOrderPoints reflects earned group-order points', async () => {
+    const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+
+    // Finalize all group A matches with A1 winning all → A1=9pts, A2=6pts, A3=3pts, A4=0pts
+    for (const mid of ['mA1', 'mA2', 'mA3', 'mA4', 'mA5', 'mA6']) {
+      await finalizeMatch(db, miniTId, mid, 1, 0);
+    }
+
+    // User predicts the correct order for group A: A1, A2, A3, A4
+    await upsertGroupScore(db, pred.id, 'mA1', 1, 0); // A1 beats A2
+    await upsertGroupScore(db, pred.id, 'mA2', 1, 0); // A1 beats A3
+    await upsertGroupScore(db, pred.id, 'mA3', 1, 0); // A1 beats A4
+    await upsertGroupScore(db, pred.id, 'mA4', 1, 0); // A2 beats A3
+    await upsertGroupScore(db, pred.id, 'mA5', 1, 0); // A2 beats A4
+    await upsertGroupScore(db, pred.id, 'mA6', 1, 0); // A3 beats A4
+
+    // Persist the computed score so getResultsView can read it from the leaderboard
+    const groupOrderAllPts = miniTournament.scoring.groupOrder.allCorrect;
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(groupOrderAllPts),
+      breakdown: {
+        groupMatches: points(0),
+        groupOrder: points(groupOrderAllPts),
+        roundOf16: points(0),
+        roundOf8: points(0),
+        topFour: points(0),
+        bronze: points(0),
+        final: points(0),
+        specials: points(0),
+        total: points(groupOrderAllPts),
+      },
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    // allCorrect for group A = 6 pts; groups B/C/D not finalized → 0
+    expect(view!.bracketHealth.groupOrderPoints).toBe(miniTournament.scoring.groupOrder.allCorrect);
+  });
+
+  it('bracketHealth.groupOrderPoints is null in viewer mode', async () => {
+    const view = await getResultsView({ db, poolId, now: NOW }); // no userId
+    expect(view!.bracketHealth.groupOrderPoints).toBeNull();
+  });
+
   it('R32 qual health classifies confirmed, pending, and busted qualifier picks', async () => {
     const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
 
