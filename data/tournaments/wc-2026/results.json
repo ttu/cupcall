@@ -460,6 +460,8 @@
   ],
   "groupOrder": {},
   "answers": {
-    "firstRedCardPlayer": "rsa-sithole"
+    "firstRedCardPlayer": "rsa-sithole",
+    "groupTopScoringTeam": ["GER", "NED", "FRA"],
+    "groupTopConcedingTeam": ["TUN", "IRQ"]
   }
 }
