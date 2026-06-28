@@ -210,6 +210,22 @@ before calling `assertCanEditOwnCard`. Bulk ops (`clearAllPredictions`, `importC
 
 **UI:** info banner for `status === 'partial'`; sections use `item.locked || globalLocked`.
 
+## What exists — Points race knockout matrix (2026-06-28)
+
+- **`packages/db`** — `getKnockoutPicksByPool(db, poolId)` JOINs `predictions → prediction_knockout_picks`
+  and returns `PoolKnockoutPick[]` (userId, bracketMatchKey, winnerTeamId). Exported from `@cup/db`.
+- **`apps/web/src/features/results/domain/types.ts`** — added `KnockoutMatchHit`, `KnockoutMatrixCell`,
+  `KnockoutMatrixEntry`, `KnockoutMatrixMatch`; `PointsRaceView` gains `knockoutMatrix` + `knockoutMatrixMatches`.
+- **`apps/web/src/features/results/application/build-race-view.ts`** — `buildKnockoutMatrix` (exported for
+  unit tests) derives hit/miss/no-pick/pending cells per player per match; `buildHitPointsMap` maps round
+  keys to per-pick points (R16→roundOf16PerTeam, R8→roundOf8PerTeam, SF/Final→final.perTeam, Bronze→bronze.perTeam,
+  QF→0 when holistic topFour). `buildPointsRaceView` fetches `poolKnockoutPicks` in parallel and passes
+  `bracketRounds`/`bronzeMatch` through.
+- **`apps/web/src/features/results/ui/KnockoutMatrix.tsx`** — matrix component mirroring `MatchMatrix`;
+  four cell states (hit=green+pts, miss=grey·, no-pick=hollow—, pending=outlined+pick).
+- **`apps/web/src/features/results/ui/PointsRaceTab.tsx`** — `RaceSubTab` type is now `'race' | 'by-group' | 'by-knockout'`;
+  "By match" renamed to "By group stage"; new "By knockout" tab renders `KnockoutMatrix`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:
