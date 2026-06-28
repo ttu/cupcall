@@ -295,6 +295,7 @@ function buildR32QualHealth(
     pendingPicks,
     bustedPicks,
     totalPicks: predictedQualifiers.length,
+    earnedPoints: 0,
     maxPossiblePoints: 0,
   };
 }

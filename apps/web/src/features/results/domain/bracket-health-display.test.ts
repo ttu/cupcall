@@ -9,6 +9,7 @@ function round(overrides: Partial<BracketRoundHealth>): BracketRoundHealth {
     pendingPicks: 0,
     bustedPicks: 0,
     totalPicks: 0,
+    earnedPoints: 0,
     maxPossiblePoints: 0,
     ...overrides,
   };

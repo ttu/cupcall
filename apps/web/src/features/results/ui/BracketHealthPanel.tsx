@@ -7,9 +7,18 @@ const COLOR_TEXT = { danger: 'text-danger', warning: 'text-amber-600', ok: 'text
 const COLOR_BAR = { danger: 'bg-danger', warning: 'bg-amber-400', ok: 'bg-green-500' };
 
 function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement {
-  const { numerator, notStarted, pendingAnnotation, color } = getRoundHealthDisplay(round);
+  const { numerator, pendingAnnotation, color } = getRoundHealthDisplay(round);
   const total = round.totalPicks;
   const possible = round.alivePicks + round.pendingPicks;
+
+  const ptsLabel =
+    round.maxPossiblePoints > 0
+      ? round.earnedPoints > 0 && round.earnedPoints < round.maxPossiblePoints
+        ? `${round.earnedPoints} / ${round.maxPossiblePoints} pts`
+        : round.earnedPoints > 0
+          ? `${round.earnedPoints} pts`
+          : `${round.maxPossiblePoints} pts`
+      : null;
 
   return (
     <div className="flex items-center gap-2">
@@ -29,15 +38,14 @@ function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement 
         />
       </div>
       <span className={cn('text-[11px] font-semibold tabular-nums shrink-0', COLOR_TEXT[color])}>
-        {numerator}
-        {notStarted && '?'}/{total}
+        {numerator}/{total}
         {pendingAnnotation !== null && (
-          <span className="text-green-500"> · {pendingAnnotation}?</span>
+          <span className="text-green-500"> · {pendingAnnotation} pending</span>
         )}
       </span>
-      {round.maxPossiblePoints > 0 && (
+      {ptsLabel !== null && (
         <span className={cn('text-[10px] font-semibold shrink-0', COLOR_TEXT[color])}>
-          · {round.maxPossiblePoints} pts
+          · {ptsLabel}
         </span>
       )}
     </div>

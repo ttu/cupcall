@@ -191,6 +191,7 @@ export function buildBracketHealth(
       pendingPicks,
       bustedPicks,
       totalPicks,
+      earnedPoints: alivePicks * ptsPer,
       maxPossiblePoints: (alivePicks + pendingPicks) * ptsPer,
     };
   });

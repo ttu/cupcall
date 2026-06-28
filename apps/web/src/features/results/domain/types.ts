@@ -161,6 +161,7 @@ export type BracketRoundHealth = {
   pendingPicks: number;
   bustedPicks: number;
   totalPicks: number;
+  earnedPoints: number;
   maxPossiblePoints: number;
 };
 
