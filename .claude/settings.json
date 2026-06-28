@@ -1,5 +1,5 @@
 {
-  "enabledMcpjsonServers": ["playwright"],
+  "enabledMcpjsonServers": ["playwright", "postgres"],
   "permissions": {
     "allow": [
       "mcp__playwright__browser_navigate",
