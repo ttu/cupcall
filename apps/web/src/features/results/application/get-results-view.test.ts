@@ -561,7 +561,7 @@ describe('getResultsView', () => {
     expect(view!.bracketHealth.totalPicks).toBe(8);
   });
 
-  it('bracketHealth.groupOrderPoints reflects earned group-order points', async () => {
+  it('userGroupSummary.earnedBreakdown reflects match and order points separately', async () => {
     const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
 
     // Finalize all group A matches with A1 winning all → A1=9pts, A2=6pts, A3=3pts, A4=0pts
@@ -577,14 +577,14 @@ describe('getResultsView', () => {
     await upsertGroupScore(db, pred.id, 'mA5', 1, 0); // A2 beats A4
     await upsertGroupScore(db, pred.id, 'mA6', 1, 0); // A3 beats A4
 
-    // Persist the computed score so getResultsView can read it from the leaderboard
     const groupOrderAllPts = miniTournament.scoring.groupOrder.allCorrect;
+    const matchPts = miniTournament.scoring.groupMatch.exactScore * 6;
     await upsertScore(db, {
       poolId,
       userId,
-      pointsTotal: points(groupOrderAllPts),
+      pointsTotal: points(groupOrderAllPts + matchPts),
       breakdown: {
-        groupMatches: points(0),
+        groupMatches: points(matchPts),
         groupOrder: points(groupOrderAllPts),
         roundOf16: points(0),
         roundOf8: points(0),
@@ -592,18 +592,19 @@ describe('getResultsView', () => {
         bronze: points(0),
         final: points(0),
         specials: points(0),
-        total: points(groupOrderAllPts),
+        total: points(groupOrderAllPts + matchPts),
       },
     });
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
-    // allCorrect for group A = 6 pts; groups B/C/D not finalized → 0
-    expect(view!.bracketHealth.groupOrderPoints).toBe(miniTournament.scoring.groupOrder.allCorrect);
+    const bd = view!.userGroupSummary!.earnedBreakdown!;
+    expect(bd.matchPoints).toBe(matchPts);
+    expect(bd.orderPoints).toBe(groupOrderAllPts);
   });
 
-  it('bracketHealth.groupOrderPoints is null in viewer mode', async () => {
+  it('userGroupSummary.earnedBreakdown is null in viewer mode (no userId)', async () => {
     const view = await getResultsView({ db, poolId, now: NOW }); // no userId
-    expect(view!.bracketHealth.groupOrderPoints).toBeNull();
+    expect(view!.userGroupSummary).toBeNull();
   });
 
   it('R32 qual health classifies confirmed, pending, and busted qualifier picks', async () => {

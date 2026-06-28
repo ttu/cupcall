@@ -102,16 +102,7 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
         {health.perRound.length > 0 && (
           <div className="mt-3 pt-2.5 border-t border-green-200 flex flex-col gap-1">
             {health.perRound.map((r) => (
-              <div key={r.label}>
-                <RoundHealthRow round={r} />
-                {r.label === 'R32' &&
-                  health.groupOrderPoints !== null &&
-                  health.groupOrderPoints > 0 && (
-                    <div className="pl-10 mt-0.5 text-[11px] font-semibold text-green-700">
-                      Group stage order {health.groupOrderPoints} pts
-                    </div>
-                  )}
-              </div>
+              <RoundHealthRow key={r.label} round={r} />
             ))}
           </div>
         )}

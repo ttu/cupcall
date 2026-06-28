@@ -99,8 +99,6 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     poolGroupScores,
   );
   const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch, def);
-  bracketHealth.groupOrderPoints = userBreakdown?.groupOrder ?? null;
-
   if (userPredictedQualifiers) {
     bracketHealth.perRound.unshift(buildR32QualHealth(userPredictedQualifiers, groupResults));
   }
@@ -206,7 +204,12 @@ function buildGroupSummary(
   const earned = (userBreakdown?.groupMatches ?? 0) + (userBreakdown?.groupOrder ?? 0);
   const totalMaxCat = totalMax.groupMatches + totalMax.groupOrder;
   const remainingMaxCat = remainingMax.groupMatches + remainingMax.groupOrder;
-  return makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat);
+  return {
+    ...makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat),
+    earnedBreakdown: userBreakdown
+      ? { matchPoints: userBreakdown.groupMatches, orderPoints: userBreakdown.groupOrder }
+      : null,
+  };
 }
 
 function buildKnockoutSummary(

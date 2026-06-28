@@ -172,8 +172,6 @@ export type BracketHealth = {
   bustedPicks: number;
   missedPicks: number;
   perRound: BracketRoundHealth[];
-  /** Total group-order points the user has earned so far. Null in viewer mode. */
-  groupOrderPoints: number | null;
 };
 
 import type { StageKey, StageProgress } from '@/shared/stage-progress';
@@ -306,6 +304,8 @@ export type UserPointsSummary = {
   missed: number;
   /** Maximum points still attainable from unresolved matches. */
   canStillGet: number;
+  /** Breakdown of earned into match-result points vs. group-order points. Present only on the group summary; absent on knockout/specials. Null in viewer mode. */
+  earnedBreakdown?: { matchPoints: number; orderPoints: number } | null;
 };
 
 export type ResultsView = {
