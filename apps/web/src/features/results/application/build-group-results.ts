@@ -272,7 +272,13 @@ function computeBestThirds(def: Tournament, allMatches: MatchRow[]): Set<string>
 
   const scores: GroupScore[] = def.groupMatches.map((gm) => {
     const m = finalsById.get(gm.id)!;
-    return { matchId: matchId(gm.id), home: m.homeGoals!, away: m.awayGoals! };
+    return {
+      matchId: matchId(gm.id),
+      home: m.homeGoals!,
+      away: m.awayGoals!,
+      ...(m.homeConduct !== null && { homeConduct: m.homeConduct }),
+      ...(m.awayConduct !== null && { awayConduct: m.awayConduct }),
+    };
   });
 
   const groupOrders = deriveGroupOrders(def, scores);

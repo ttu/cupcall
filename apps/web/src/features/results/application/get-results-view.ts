@@ -19,13 +19,12 @@ import type {
   UserRankChip,
   SpecialBetResultRow,
   UserPointsSummary,
-  BracketRoundHealth,
-  GroupResultView,
 } from '../domain/types';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
 import { buildGroupResults, buildBest3rdStanding } from './build-group-results';
-import { buildBracketRounds, buildBracketHealth } from './build-bracket-rounds';
+import { buildBracketRounds, computeBracketHealth } from './build-bracket-rounds';
+import { computeR32QualHealth } from '../domain/bracket-health';
 import { buildPointsRaceView } from './build-race-view';
 import { buildSpecialBetResults } from './build-special-bet-results';
 
@@ -98,9 +97,9 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     inputs,
     poolGroupScores,
   );
-  const bracketHealth = buildBracketHealth(bracketRounds, bronzeMatch, def);
+  const bracketHealth = computeBracketHealth(bracketRounds, bronzeMatch, def);
   if (userPredictedQualifiers) {
-    bracketHealth.perRound.unshift(buildR32QualHealth(userPredictedQualifiers, groupResults));
+    bracketHealth.perRound.unshift(computeR32QualHealth(userPredictedQualifiers, groupResults));
   }
 
   const specialBets = buildSpecialBetResults(
@@ -258,47 +257,5 @@ function buildSpecialsSummary(
     canStillGet: specialBets
       .filter((b) => b.hit === 'pending')
       .reduce((sum, b) => sum + b.points, 0),
-  };
-}
-
-function buildR32QualHealth(
-  predictedQualifiers: string[],
-  groupResults: GroupResultView[],
-): BracketRoundHealth {
-  const teamStanding = new Map<
-    string,
-    { eliminated: boolean; qualifies: 'auto' | 'best-third' | false }
-  >();
-  for (const gr of groupResults) {
-    for (const row of gr.standing) {
-      teamStanding.set(row.teamId, row);
-    }
-  }
-
-  let alivePicks = 0;
-  let bustedPicks = 0;
-  let pendingPicks = 0;
-
-  for (const teamId of predictedQualifiers) {
-    const standing = teamStanding.get(teamId);
-    if (!standing) {
-      pendingPicks++;
-    } else if (standing.eliminated) {
-      bustedPicks++;
-    } else if (standing.qualifies !== false) {
-      alivePicks++;
-    } else {
-      pendingPicks++;
-    }
-  }
-
-  return {
-    label: 'R32',
-    alivePicks,
-    pendingPicks,
-    bustedPicks,
-    totalPicks: predictedQualifiers.length,
-    earnedPoints: 0,
-    maxPossiblePoints: 0,
   };
 }
