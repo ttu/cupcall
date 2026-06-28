@@ -220,6 +220,35 @@ export type MatrixMatch = {
   actualAway: number | null;
 };
 
+export type KnockoutMatchHit = 'hit' | 'miss' | 'no-pick' | 'pending';
+
+export type KnockoutMatrixCell = {
+  bracketMatchKey: string;
+  hit: KnockoutMatchHit;
+  points: number;
+  pickedWinnerId: string | null;
+};
+
+export type KnockoutMatrixEntry = {
+  userId: string;
+  displayName: string;
+  isCurrentUser: boolean;
+  cells: KnockoutMatrixCell[];
+  totalPoints: number;
+};
+
+export type KnockoutMatrixMatch = {
+  bracketMatchKey: string;
+  round: string;
+  homeTeamId: string | null;
+  homeTeamName: string | null;
+  awayTeamId: string | null;
+  awayTeamName: string | null;
+  actualWinnerId: string | null;
+  kickoff: string | null;
+  status: 'scheduled' | 'final';
+};
+
 export type ProjectedEntry = {
   userId: string;
   displayName: string;
@@ -251,6 +280,10 @@ export type PointsRaceView = {
   matchMatrix: MatchMatrixEntry[];
   /** All group-stage matches that form the matrix columns, in kickoff order. */
   matrixMatches: MatrixMatch[];
+  /** Rows of the knockout winner-pick matrix, sorted by totalPoints DESC. */
+  knockoutMatrix: KnockoutMatrixEntry[];
+  /** All knockout matches that form the matrix columns, sorted by kickoff (nulls last). */
+  knockoutMatrixMatches: KnockoutMatrixMatch[];
 };
 
 /**

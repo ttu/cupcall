@@ -2391,4 +2391,66 @@ describe('getResultsView', () => {
       }
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // knockoutMatrix / knockoutMatrixMatches
+  // ---------------------------------------------------------------------------
+
+  it('includes knockoutMatrix and knockoutMatrixMatches in pointsRaceView', async () => {
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(Array.isArray(view!.pointsRaceView.knockoutMatrix)).toBe(true);
+    expect(Array.isArray(view!.pointsRaceView.knockoutMatrixMatches)).toBe(true);
+  });
+
+  it('knockoutMatrix contains one row per pool member', async () => {
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    // pool has owner + user = 2 members
+    expect(view!.pointsRaceView.knockoutMatrix).toHaveLength(2);
+  });
+
+  it('knockoutMatrixMatches contains one entry per knockout match when all are played', async () => {
+    const koMatchKeys = [
+      ...miniTournament.bracket.roundOf8Matches,
+      ...miniTournament.bracket.semiFinals,
+      miniTournament.bracket.finalMatch,
+      miniTournament.bracket.bronzeMatch,
+    ];
+    for (const key of koMatchKeys) {
+      await upsertKnockoutMatch(db, {
+        id: key,
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 1,
+        awayGoals: 0,
+        winnerTeamId: 'A1',
+        status: 'final',
+      });
+    }
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    expect(view!.pointsRaceView.knockoutMatrixMatches).toHaveLength(koMatchKeys.length);
+  });
+
+  it('hit cell appears when pool member picks the correct knockout winner', async () => {
+    const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('sf1'), 'A1');
+    await upsertKnockoutMatch(db, {
+      id: 'sf1',
+      tournamentId: miniTId,
+      stage: 'SF',
+      homeTeamId: 'A1',
+      awayTeamId: 'C1',
+      homeGoals: 2,
+      awayGoals: 0,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const userRow = view!.pointsRaceView.knockoutMatrix.find((r) => r.userId === userId)!;
+    const sf1Cell = userRow.cells.find((c) => c.bracketMatchKey === 'sf1')!;
+    expect(sf1Cell.hit).toBe('hit');
+    expect(sf1Cell.points).toBe(miniTournament.scoring.final.perTeam);
+  });
 });

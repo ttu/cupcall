@@ -268,6 +268,40 @@ export async function getSpecialBetsByPool(
   }));
 }
 
+export type PoolKnockoutPick = {
+  userId: UserId;
+  bracketMatchKey: BracketMatchKey;
+  winnerTeamId: string;
+};
+
+/**
+ * Returns all knockout winner picks for every member of a pool in a single
+ * JOIN query. Used to build the knockout matrix in the results view.
+ */
+export async function getKnockoutPicksByPool(
+  db: Database,
+  poolId: PoolId,
+): Promise<PoolKnockoutPick[]> {
+  const rows = await db
+    .select({
+      userId: schema.predictions.userId,
+      bracketMatchKey: schema.predictionKnockoutPicks.bracketMatchKey,
+      winnerTeamId: schema.predictionKnockoutPicks.winnerTeamId,
+    })
+    .from(schema.predictions)
+    .innerJoin(
+      schema.predictionKnockoutPicks,
+      eq(schema.predictionKnockoutPicks.predictionId, schema.predictions.id),
+    )
+    .where(eq(schema.predictions.poolId, poolId));
+
+  return rows.map((r) => ({
+    userId: userId(r.userId),
+    bracketMatchKey: bracketMatchKey(r.bracketMatchKey),
+    winnerTeamId: r.winnerTeamId,
+  }));
+}
+
 /**
  * Returns all group-score predictions for every member of a pool in a single
  * JOIN query. Used to build the per-match points matrix in the results view.

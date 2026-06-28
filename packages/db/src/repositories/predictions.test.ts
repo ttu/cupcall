@@ -7,6 +7,7 @@ import {
   getPredictionInputs,
   clearPredictionInputs,
   getGroupScoresByPool,
+  getKnockoutPicksByPool,
 } from './predictions';
 import { upsertTournamentDef } from './tournament';
 import { createUser } from './users';
@@ -270,6 +271,83 @@ describe('predictions repository', () => {
 
       const result = await getGroupScoresByPool(db, poolId);
       expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('getKnockoutPicksByPool', () => {
+    it('returns empty array when no picks exist', async () => {
+      const result = await getKnockoutPicksByPool(db, poolId);
+      expect(result).toHaveLength(0);
+    });
+
+    it('returns knockout picks for pool members only', async () => {
+      const user2 = await createUser(db, {
+        email: `u2-${crypto.randomUUID()}@x.com`,
+        displayName: 'Bob',
+      });
+
+      const pred1 = await seedPrediction(
+        db,
+        poolId as string,
+        userId1 as string,
+        tournamentId as string,
+      );
+      const pred2 = await seedPrediction(
+        db,
+        poolId as string,
+        user2.id as string,
+        tournamentId as string,
+      );
+
+      await db.insert(schema.predictionKnockoutPicks).values([
+        { predictionId: pred1, bracketMatchKey: bracketMatchKey('qf1'), winnerTeamId: 'A1' },
+        { predictionId: pred2, bracketMatchKey: bracketMatchKey('qf1'), winnerTeamId: 'B1' },
+        { predictionId: pred2, bracketMatchKey: bracketMatchKey('sf1'), winnerTeamId: 'A1' },
+      ]);
+
+      const result = await getKnockoutPicksByPool(db, poolId);
+      expect(result).toHaveLength(3);
+
+      const user1Pick = result.find((r) => r.userId === userId1 && r.bracketMatchKey === 'qf1');
+      expect(user1Pick?.winnerTeamId).toBe('A1');
+
+      const user2Picks = result.filter((r) => r.userId === user2.id);
+      expect(user2Picks).toHaveLength(2);
+    });
+
+    it('does not return picks from a different pool', async () => {
+      const owner2 = await createUser(db, {
+        email: `owner2-${crypto.randomUUID()}@x.com`,
+        displayName: 'Owner2',
+      });
+      const pool2 = await createPool(db, {
+        tournamentId,
+        ownerId: owner2.id,
+        name: 'Other Pool',
+        inviteTokenHash: `h2-${crypto.randomUUID()}`,
+      });
+
+      const pred1 = await seedPrediction(
+        db,
+        poolId as string,
+        userId1 as string,
+        tournamentId as string,
+      );
+      const pred2 = await seedPrediction(
+        db,
+        pool2.id as string,
+        owner2.id as string,
+        tournamentId as string,
+      );
+
+      await db.insert(schema.predictionKnockoutPicks).values([
+        { predictionId: pred1, bracketMatchKey: bracketMatchKey('qf1'), winnerTeamId: 'A1' },
+        { predictionId: pred2, bracketMatchKey: bracketMatchKey('qf1'), winnerTeamId: 'B1' },
+      ]);
+
+      const result = await getKnockoutPicksByPool(db, poolId);
+      expect(result).toHaveLength(1);
+      expect(result[0]?.winnerTeamId).toBe('A1');
     });
   });
 });

@@ -10,6 +10,7 @@ import {
   getGroupScoresByPool,
   getSpecialBetsByPool,
   getActualResults,
+  getKnockoutPicksByPool,
 } from '@cup/db';
 import type { MatchRow, LeaderboardEntry } from '@cup/db';
 import { computeRemainingMaxPoints, deriveGroupOrders, selectQualifiers } from '@cup/engine';
@@ -46,17 +47,25 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
 
   const def = tournament.definition;
 
-  const [leaderboard, prediction, allMatches, poolGroupScores, actualResults, poolSpecialBets] =
-    await Promise.all([
-      getLeaderboard(db, poolId),
-      userId !== undefined
-        ? getPrediction(db, poolId, userId as import('@cup/engine').UserId)
-        : Promise.resolve(null),
-      getMatchesForTournament(db, pool.tournamentId),
-      getGroupScoresByPool(db, poolId),
-      getActualResults(db, pool.tournamentId),
-      getSpecialBetsByPool(db, poolId),
-    ]);
+  const [
+    leaderboard,
+    prediction,
+    allMatches,
+    poolGroupScores,
+    actualResults,
+    poolSpecialBets,
+    poolKnockoutPicks,
+  ] = await Promise.all([
+    getLeaderboard(db, poolId),
+    userId !== undefined
+      ? getPrediction(db, poolId, userId as import('@cup/engine').UserId)
+      : Promise.resolve(null),
+    getMatchesForTournament(db, pool.tournamentId),
+    getGroupScoresByPool(db, poolId),
+    getActualResults(db, pool.tournamentId),
+    getSpecialBetsByPool(db, poolId),
+    getKnockoutPicksByPool(db, poolId),
+  ]);
 
   const inputs = prediction != null ? await getPredictionInputs(db, prediction.id) : null;
 
@@ -131,6 +140,9 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     poolGroupScores,
     def,
     myTotalCanStillGet,
+    bracketRounds,
+    bronzeMatch,
+    poolKnockoutPicks,
   });
 
   return {

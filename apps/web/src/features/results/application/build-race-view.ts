@@ -1,4 +1,4 @@
-import type { MatchRow, LeaderboardEntry, PoolGroupScore } from '@cup/db';
+import type { MatchRow, LeaderboardEntry, PoolGroupScore, PoolKnockoutPick } from '@cup/db';
 import { computeRemainingMaxPoints } from '@cup/engine';
 import type { Tournament } from '@cup/engine';
 import type {
@@ -8,6 +8,12 @@ import type {
   MatchMatrixEntry,
   MatrixMatch,
   MatchMatrixCell,
+  KnockoutMatrixEntry,
+  KnockoutMatrixCell,
+  KnockoutMatrixMatch,
+  KnockoutMatchHit,
+  BracketRoundResultView,
+  KnockoutMatchView,
 } from '../domain/types';
 import {
   computeHit,
@@ -23,6 +29,9 @@ type RaceParams = {
   poolGroupScores: PoolGroupScore[];
   def: Tournament;
   myTotalCanStillGet: number;
+  bracketRounds: BracketRoundResultView[];
+  bronzeMatch: KnockoutMatchView | null;
+  poolKnockoutPicks: PoolKnockoutPick[];
 };
 
 /**
@@ -44,7 +53,17 @@ function projectStillLive(banked: number, maxFromResolved: number, remainingMax:
 }
 
 export function buildPointsRaceView(params: RaceParams): PointsRaceView {
-  const { leaderboard, userId, allMatches, poolGroupScores, def, myTotalCanStillGet } = params;
+  const {
+    leaderboard,
+    userId,
+    allMatches,
+    poolGroupScores,
+    def,
+    myTotalCanStillGet,
+    bracketRounds,
+    bronzeMatch,
+    poolKnockoutPicks,
+  } = params;
 
   const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
   const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
@@ -121,6 +140,14 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     poolGroupScores,
     def,
   );
+  const { knockoutMatrix, knockoutMatrixMatches } = buildKnockoutMatrix({
+    leaderboard,
+    userId,
+    bracketRounds,
+    bronzeMatch,
+    poolKnockoutPicks,
+    def,
+  });
 
   return {
     chartStages: stages,
@@ -133,6 +160,8 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     projectedEntries,
     matchMatrix,
     matrixMatches,
+    knockoutMatrix,
+    knockoutMatrixMatches,
   };
 }
 
@@ -167,6 +196,124 @@ function buildProjectedEntries(
       rankDelta: currentRank - projectedRank,
     };
   });
+}
+
+function buildHitPointsMap(def: Tournament): Map<string, number> {
+  const map = new Map<string, number>();
+  const { bracket, scoring } = def;
+  for (const prog of bracket.progression) {
+    if ((bracket.roundOf16Matches as string[]).includes(prog.match as string)) {
+      for (const fromKey of prog.from) map.set(fromKey as string, scoring.roundOf16PerTeam);
+    }
+    if ((bracket.roundOf8Matches as string[]).includes(prog.match as string)) {
+      for (const fromKey of prog.from) map.set(fromKey as string, scoring.roundOf8PerTeam);
+    }
+  }
+  const finalProg = bracket.progression.find((p) => p.match === bracket.finalMatch);
+  if (finalProg) {
+    for (const sfKey of finalProg.from) map.set(sfKey as string, scoring.final.perTeam);
+  }
+  map.set(bracket.finalMatch as string, scoring.final.perTeam);
+  map.set(bracket.bronzeMatch as string, scoring.bronze.perTeam);
+  return map;
+}
+
+export function buildKnockoutMatrix(params: {
+  leaderboard: LeaderboardEntry[];
+  userId: string | null;
+  bracketRounds: BracketRoundResultView[];
+  bronzeMatch: KnockoutMatchView | null;
+  poolKnockoutPicks: PoolKnockoutPick[];
+  def: Tournament;
+}): { knockoutMatrix: KnockoutMatrixEntry[]; knockoutMatrixMatches: KnockoutMatrixMatch[] } {
+  const { leaderboard, userId, bracketRounds, bronzeMatch, poolKnockoutPicks, def } = params;
+
+  const allKnockoutMatches: KnockoutMatchView[] = [
+    ...bracketRounds.flatMap((r) => r.matches),
+    ...(bronzeMatch ? [bronzeMatch] : []),
+  ];
+
+  const sortedMatches = allKnockoutMatches.toSorted((a, b) => {
+    if (a.kickoff === null && b.kickoff === null) return 0;
+    if (a.kickoff === null) return 1;
+    if (b.kickoff === null) return -1;
+    return a.kickoff.localeCompare(b.kickoff);
+  });
+
+  const knockoutMatrixMatches: KnockoutMatrixMatch[] = sortedMatches.map((m) => ({
+    bracketMatchKey: m.bracketMatchKey,
+    round: m.round,
+    homeTeamId: m.homeTeamId,
+    homeTeamName: m.homeTeamName,
+    awayTeamId: m.awayTeamId,
+    awayTeamName: m.awayTeamName,
+    actualWinnerId: m.actualWinnerId,
+    kickoff: m.kickoff,
+    status: m.status,
+  }));
+
+  const hitPoints = buildHitPointsMap(def);
+
+  const pickMap = new Map<string, string>();
+  for (const pick of poolKnockoutPicks) {
+    pickMap.set(`${pick.userId}::${pick.bracketMatchKey}`, pick.winnerTeamId);
+  }
+
+  const knockoutMatrix: KnockoutMatrixEntry[] = leaderboard.map((e) => {
+    let totalPoints = 0;
+    const cells: KnockoutMatrixCell[] = sortedMatches.map((m) => {
+      const pickedWinnerId = pickMap.get(`${e.userId}::${m.bracketMatchKey}`) ?? null;
+
+      if (m.status !== 'final') {
+        return {
+          bracketMatchKey: m.bracketMatchKey,
+          hit: 'pending' as KnockoutMatchHit,
+          points: 0,
+          pickedWinnerId,
+        };
+      }
+
+      if (pickedWinnerId === null) {
+        return {
+          bracketMatchKey: m.bracketMatchKey,
+          hit: 'no-pick' as KnockoutMatchHit,
+          points: 0,
+          pickedWinnerId: null,
+        };
+      }
+
+      if (pickedWinnerId === m.actualWinnerId) {
+        const pts = hitPoints.get(m.bracketMatchKey) ?? 0;
+        totalPoints += pts;
+        return {
+          bracketMatchKey: m.bracketMatchKey,
+          hit: 'hit' as KnockoutMatchHit,
+          points: pts,
+          pickedWinnerId,
+        };
+      }
+
+      return {
+        bracketMatchKey: m.bracketMatchKey,
+        hit: 'miss' as KnockoutMatchHit,
+        points: 0,
+        pickedWinnerId,
+      };
+    });
+
+    return {
+      userId: e.userId,
+      displayName: e.displayName,
+      isCurrentUser: userId !== null && e.userId === userId,
+      cells,
+      totalPoints,
+    };
+  });
+
+  return {
+    knockoutMatrix: knockoutMatrix.toSorted((a, b) => b.totalPoints - a.totalPoints),
+    knockoutMatrixMatches,
+  };
 }
 
 function toPredictedOutcome(home: number | null, away: number | null): '1' | 'X' | '2' | null {
