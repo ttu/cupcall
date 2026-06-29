@@ -17,11 +17,11 @@ function round(overrides: Partial<BracketRoundHealth>): BracketRoundHealth {
 
 describe('getRoundHealthDisplay', () => {
   describe('not started (alive=0, pending>0)', () => {
-    it('uses pending count as numerator with notStarted=true', () => {
+    it('shows 0 as numerator and pending count as annotation', () => {
       const d = getRoundHealthDisplay(round({ pendingPicks: 13, totalPicks: 16 }));
-      expect(d.numerator).toBe(13);
+      expect(d.numerator).toBe(0);
       expect(d.notStarted).toBe(true);
-      expect(d.pendingAnnotation).toBeNull();
+      expect(d.pendingAnnotation).toBe(13);
       expect(d.color).toBe('ok');
     });
 

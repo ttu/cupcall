@@ -1,11 +1,11 @@
 import type { BracketRoundHealth } from './types';
 
 export type RoundHealthDisplay = {
-  /** The main numeric count to show (pending count when round not started, alive count otherwise). */
+  /** The alive pick count (0 when round hasn't started yet). */
   numerator: number;
-  /** True when the round hasn't started yet (alive=0, pending>0). Main count carries a '?'. */
+  /** True when the round hasn't started yet (alive=0, pending>0). */
   notStarted: boolean;
-  /** Pending count to show as a secondary annotation when round is in progress (alive>0, pending>0). */
+  /** Pending count shown as a secondary annotation whenever there are pending picks. */
   pendingAnnotation: number | null;
   /** Color bucket derived from busted/alive ratio. */
   color: 'danger' | 'warning' | 'ok';
@@ -19,8 +19,8 @@ export function getRoundHealthDisplay(round: BracketRoundHealth): RoundHealthDis
   const someBusted = hasPicks && busted > 0 && possible > 0;
 
   const notStarted = alive === 0 && pending > 0;
-  const numerator = notStarted ? pending : alive;
-  const pendingAnnotation = !notStarted && pending > 0 ? pending : null;
+  const numerator = alive;
+  const pendingAnnotation = pending > 0 ? pending : null;
 
   const color: RoundHealthDisplay['color'] = allBusted ? 'danger' : someBusted ? 'warning' : 'ok';
 
