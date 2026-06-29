@@ -2423,8 +2423,9 @@ describe('getResultsView', () => {
       const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
       const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
 
-      // Actual QF1 winner (B2) propagates — user's busted pick (A1) is not shown
-      expect(sf1.predictedHomeTeamId).toBe('B2');
+      // Actual QF1 winner (B2) is confirmed and appears as homeTeamId, not predictedHomeTeamId
+      expect(sf1.homeTeamId).toBe('B2');
+      expect(sf1.predictedHomeTeamId).toBeNull();
     });
 
     it('does not show pick for a team not projected into that QF slot (groups ongoing)', async () => {

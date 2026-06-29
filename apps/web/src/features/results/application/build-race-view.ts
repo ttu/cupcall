@@ -1,6 +1,12 @@
-import type { MatchRow, LeaderboardEntry, PoolGroupScore, PoolKnockoutPick } from '@cup/db';
-import { computeRemainingMaxPoints } from '@cup/engine';
-import type { Tournament } from '@cup/engine';
+import type {
+  MatchRow,
+  LeaderboardEntry,
+  PoolGroupScore,
+  PoolKnockoutPick,
+  PoolSpecialBet,
+} from '@cup/db';
+import { computeRemainingMaxPoints, getSpecialBetDefs } from '@cup/engine';
+import type { Tournament, ActualResults } from '@cup/engine';
 import type {
   PointsRaceView,
   RaceChartPlayer,
@@ -14,6 +20,9 @@ import type {
   KnockoutMatchHit,
   BracketRoundResultView,
   KnockoutMatchView,
+  SpecialsMatrixEntry,
+  SpecialsMatrixBet,
+  SpecialsMatrixCell,
 } from '../domain/types';
 import {
   computeHit,
@@ -32,6 +41,8 @@ type RaceParams = {
   bracketRounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
   poolKnockoutPicks: PoolKnockoutPick[];
+  poolSpecialBets: PoolSpecialBet[];
+  actualResults: ActualResults;
 };
 
 /**
@@ -63,6 +74,8 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     bracketRounds,
     bronzeMatch,
     poolKnockoutPicks,
+    poolSpecialBets,
+    actualResults,
   } = params;
 
   const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
@@ -149,6 +162,14 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     def,
   });
 
+  const { specialsMatrix, specialsMatrixBets } = buildSpecialsMatrix({
+    leaderboard,
+    userId,
+    poolSpecialBets,
+    actualResults,
+    def,
+  });
+
   return {
     chartStages: stages,
     chartNowIndex: nowIndex,
@@ -162,6 +183,8 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     matrixMatches,
     knockoutMatrix,
     knockoutMatrixMatches,
+    specialsMatrix,
+    specialsMatrixBets,
   };
 }
 
@@ -408,5 +431,141 @@ function buildMatchMatrix(
   return {
     matchMatrix: matchMatrix.toSorted((a, b) => b.totalPoints - a.totalPoints),
     matrixMatches,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Specials matrix
+// ---------------------------------------------------------------------------
+
+const ARRAY_ANSWER_BETS = new Set([
+  'groupTopScoringTeam',
+  'groupTopConcedingTeam',
+  'tournamentTopScoringTeam',
+  'tournamentTopConcedingTeam',
+  'mostYellowCardsTeam',
+  'topScorerPlayer',
+]);
+
+function makePickLabel(
+  raw: unknown,
+  kind: 'player' | 'team' | 'number' | 'bool',
+  playerMap: Map<string, string>,
+): string | null {
+  if (raw === null || raw === undefined) return null;
+  if (kind === 'team') return String(raw);
+  if (kind === 'bool') return raw === true || raw === 'true' ? 'Y' : 'N';
+  if (kind === 'number') return String(raw);
+  // player: last word of display name, uppercased, max 6 chars
+  const name = playerMap.get(String(raw)) ?? String(raw);
+  const parts = name.trim().split(/\s+/);
+  const last = parts[parts.length - 1] ?? name;
+  return last.slice(0, 6).toUpperCase();
+}
+
+function resolveActualForBet(
+  betKey: string,
+  actualResults: ActualResults,
+): { isArray: boolean; scalar: unknown; array: unknown[] } {
+  if (betKey === 'finalDecidedByPenalties') {
+    const val =
+      actualResults.finalMatch !== undefined
+        ? actualResults.finalMatch.decidedBy === 'penalties'
+        : undefined;
+    return { isArray: false, scalar: val, array: [] };
+  }
+  if (betKey === 'finalDecisiveGoalPlayer') {
+    return { isArray: false, scalar: actualResults.finalMatch?.decisiveGoalPlayer, array: [] };
+  }
+  if (ARRAY_ANSWER_BETS.has(betKey)) {
+    const arr = ((actualResults.answers as Record<string, unknown[]>)[betKey] ?? []) as unknown[];
+    return { isArray: true, scalar: undefined, array: arr };
+  }
+  return {
+    isArray: false,
+    scalar: (actualResults.answers as Record<string, unknown>)[betKey],
+    array: [],
+  };
+}
+
+export function buildSpecialsMatrix(params: {
+  leaderboard: LeaderboardEntry[];
+  userId: string | null;
+  poolSpecialBets: PoolSpecialBet[];
+  actualResults: ActualResults;
+  def: Tournament;
+}): { specialsMatrix: SpecialsMatrixEntry[]; specialsMatrixBets: SpecialsMatrixBet[] } {
+  const { leaderboard, userId, poolSpecialBets, actualResults, def } = params;
+
+  const playerMap = new Map<string, string>(def.players.map((p) => [p.id, p.name]));
+
+  const defs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
+
+  const specialsMatrixBets: SpecialsMatrixBet[] = defs.map((d) => {
+    const { isArray, scalar, array } = resolveActualForBet(d.key, actualResults);
+    let actualPickLabel: string | null = null;
+    if (isArray) {
+      if (array.length > 0) {
+        actualPickLabel = array
+          .map((v) => makePickLabel(v, d.kind, playerMap) ?? String(v))
+          .join(' / ');
+      }
+    } else if (scalar !== undefined && scalar !== null) {
+      actualPickLabel = makePickLabel(scalar, d.kind, playerMap);
+    }
+    return { betKey: d.key, label: d.label, points: d.points, kind: d.kind, actualPickLabel };
+  });
+
+  // Build per-user pick index: userId → betKey → raw value
+  const pickIndex = new Map<string, Map<string, unknown>>();
+  for (const sb of poolSpecialBets) {
+    if (!pickIndex.has(sb.userId)) pickIndex.set(sb.userId, new Map());
+    pickIndex.get(sb.userId)!.set(sb.betKey, sb.value);
+  }
+
+  const specialsMatrix: SpecialsMatrixEntry[] = leaderboard.map((e) => {
+    const userPicks = pickIndex.get(e.userId) ?? new Map<string, unknown>();
+    let totalPoints = 0;
+
+    const cells: SpecialsMatrixCell[] = defs.map((d) => {
+      const raw = userPicks.get(d.key);
+      const hasPick = raw !== null && raw !== undefined;
+      const { isArray, scalar, array } = resolveActualForBet(d.key, actualResults);
+      const isResolved = isArray ? array.length > 0 : scalar !== undefined && scalar !== null;
+
+      let hit: SpecialsMatrixCell['hit'];
+      if (!isResolved) {
+        hit = 'pending';
+      } else if (!hasPick) {
+        hit = 'no-pick';
+      } else if (isArray) {
+        hit = array.includes(raw) ? 'hit' : 'missed';
+      } else {
+        hit = raw === scalar ? 'hit' : 'missed';
+      }
+
+      const points = hit === 'hit' ? d.points : 0;
+      totalPoints += points;
+
+      return {
+        betKey: d.key,
+        hit,
+        points,
+        pickLabel: hasPick ? makePickLabel(raw, d.kind, playerMap) : null,
+      };
+    });
+
+    return {
+      userId: e.userId,
+      displayName: e.displayName,
+      isCurrentUser: userId !== null && e.userId === userId,
+      cells,
+      totalPoints,
+    };
+  });
+
+  return {
+    specialsMatrix: specialsMatrix.toSorted((a, b) => b.totalPoints - a.totalPoints),
+    specialsMatrixBets,
   };
 }

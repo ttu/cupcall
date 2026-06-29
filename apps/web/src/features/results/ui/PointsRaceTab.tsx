@@ -7,13 +7,15 @@ import { cn } from '@/shared/ui';
 import { RaceView } from './RaceView';
 import { MatchMatrix } from './MatchMatrix';
 import { KnockoutMatrix } from './KnockoutMatrix';
+import { SpecialsMatrix } from './SpecialsMatrix';
 
-type RaceSubTab = 'race' | 'by-group' | 'by-knockout';
+type RaceSubTab = 'race' | 'by-group' | 'by-knockout' | 'by-specials';
 
 const SUB_TAB_LABELS: Record<RaceSubTab, string> = {
   race: 'Race',
   'by-group': 'By group stage',
   'by-knockout': 'By knockout',
+  'by-specials': 'Specials',
 };
 
 type Props = {
@@ -34,7 +36,7 @@ export function PointsRaceTab({
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        {(['race', 'by-group', 'by-knockout'] as RaceSubTab[]).map((t) => {
+        {(['race', 'by-group', 'by-knockout', 'by-specials'] as RaceSubTab[]).map((t) => {
           const active = subTab === t;
           return (
             <button
@@ -68,6 +70,9 @@ export function PointsRaceTab({
       )}
       {subTab === 'by-knockout' && (
         <KnockoutMatrix entries={race.knockoutMatrix} matches={race.knockoutMatrixMatches} />
+      )}
+      {subTab === 'by-specials' && (
+        <SpecialsMatrix entries={race.specialsMatrix} bets={race.specialsMatrixBets} />
       )}
     </div>
   );

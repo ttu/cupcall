@@ -242,14 +242,14 @@ function computeDerivedParticipants(
   def: Tournament,
   allMatches: MatchRow[],
 ): {
-  participants: Map<BracketMatchKey, [string, string]>;
+  participants: Map<BracketMatchKey, [string | null, string | null]>;
   projectedKeys: Set<BracketMatchKey>;
   /** Per entry-round slot: is the home team's source group fully finalised? */
   confirmedHome: Map<BracketMatchKey, boolean>;
   /** Per entry-round slot: is the away team's source group fully finalised? */
   confirmedAway: Map<BracketMatchKey, boolean>;
 } {
-  const participantsByMatch = new Map<BracketMatchKey, [string, string]>();
+  const participantsByMatch = new Map<BracketMatchKey, [string | null, string | null]>();
   const projectedKeys = new Set<BracketMatchKey>();
   const confirmedHome = new Map<BracketMatchKey, boolean>();
   const confirmedAway = new Map<BracketMatchKey, boolean>();
@@ -311,9 +311,14 @@ function computeDerivedParticipants(
 
   for (const prog of def.bracket.progression) {
     if (prog.match === def.bracket.bronzeMatch) continue;
-    const winners = prog.from.map((k) => matchByKey.get(k)?.winnerTeamId ?? null);
-    if (winners.length === 2 && winners[0] && winners[1]) {
-      participantsByMatch.set(prog.match, [winners[0], winners[1]]);
+    if (prog.from.length !== 2) continue;
+    const [fk0, fk1] = prog.from;
+    const w0 = fk0 ? (matchByKey.get(fk0)?.winnerTeamId ?? null) : null;
+    const w1 = fk1 ? (matchByKey.get(fk1)?.winnerTeamId ?? null) : null;
+    // Populate even when only one feeder match is final so the known team
+    // appears as confirmed in the next round instead of as a predicted fill.
+    if (w0 !== null || w1 !== null) {
+      participantsByMatch.set(prog.match, [w0, w1] as [string | null, string | null]);
     }
   }
 
@@ -330,8 +335,9 @@ function computeDerivedParticipants(
       if (!sfHome || !sfAway) return null;
       return sfWinner === sfHome ? sfAway : sfHome;
     });
-    if (losers.length === 2 && losers[0] && losers[1]) {
-      participantsByMatch.set(def.bracket.bronzeMatch, [losers[0], losers[1]]);
+    const [l0, l1] = losers;
+    if (l0 && l1) {
+      participantsByMatch.set(def.bracket.bronzeMatch, [l0, l1]);
     }
   }
 
@@ -522,7 +528,7 @@ function computeUserPredictedParticipants(
   def: Tournament,
   allMatches: MatchRow[],
   pickMap: Map<string, string>,
-  derivedParticipants: Map<BracketMatchKey, [string, string]>,
+  derivedParticipants: Map<BracketMatchKey, [string | null, string | null]>,
 ): Map<string, [string | null, string | null]> {
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
 
@@ -555,11 +561,12 @@ function computeUserPredictedParticipants(
     if (directValid) {
       entryWinner.set(slot.match, directPick);
     } else {
-      const crossMatch = allEntryPickedTeams.has(derived[0])
-        ? derived[0]
-        : allEntryPickedTeams.has(derived[1])
-          ? derived[1]
-          : null;
+      const crossMatch =
+        derived[0] !== null && allEntryPickedTeams.has(derived[0])
+          ? derived[0]
+          : derived[1] !== null && allEntryPickedTeams.has(derived[1])
+            ? derived[1]
+            : null;
       entryWinner.set(slot.match, crossMatch);
     }
   }
@@ -639,7 +646,7 @@ function computeUserPredictedParticipants(
 function computeUserPickedParticipants(
   def: Tournament,
   pickMap: Map<string, string>,
-  derivedParticipants: Map<BracketMatchKey, [string, string]>,
+  derivedParticipants: Map<BracketMatchKey, [string | null, string | null]>,
 ): Map<string, [string | null, string | null]> {
   const allEntryPickedTeams = new Set<string>();
   for (const slot of def.bracket.slots) {
@@ -661,11 +668,12 @@ function computeUserPickedParticipants(
     if (directValid) {
       entryPickWinner.set(slot.match, directPick);
     } else {
-      const crossMatch = allEntryPickedTeams.has(derived[0])
-        ? derived[0]
-        : allEntryPickedTeams.has(derived[1])
-          ? derived[1]
-          : null;
+      const crossMatch =
+        derived[0] !== null && allEntryPickedTeams.has(derived[0])
+          ? derived[0]
+          : derived[1] !== null && allEntryPickedTeams.has(derived[1])
+            ? derived[1]
+            : null;
       entryPickWinner.set(slot.match, crossMatch);
     }
   }

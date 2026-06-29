@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildKnockoutMatrix } from './build-race-view';
+import { buildKnockoutMatrix, buildSpecialsMatrix } from './build-race-view';
 import { miniTournament } from '@cup/engine/testing';
 import { points } from '@cup/engine';
-import type { UserId, BracketMatchKey } from '@cup/engine';
-import type { LeaderboardEntry, PoolKnockoutPick } from '@cup/db';
+import type { UserId, BracketMatchKey, ActualResults } from '@cup/engine';
+import type { LeaderboardEntry, PoolKnockoutPick, PoolSpecialBet } from '@cup/db';
 import type { KnockoutMatchView, BracketRoundResultView } from '../domain/types';
 
 function makeLeaderboardEntry(uid: string, displayName: string, pointsTotal = 0): LeaderboardEntry {
@@ -310,5 +310,231 @@ describe('buildKnockoutMatrix', () => {
     expect(cell.hit).toBe('hit');
     expect(cell.points).toBe(0);
     expect(knockoutMatrix[0]!.totalPoints).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildSpecialsMatrix
+// ---------------------------------------------------------------------------
+
+function makeSpecialBet(userId: string, betKey: string, value: unknown): PoolSpecialBet {
+  return { userId: userId as UserId, betKey, value };
+}
+
+const emptyActualResults: ActualResults = {
+  matchResults: [],
+  groupOrder: {},
+  answers: {},
+};
+
+describe('buildSpecialsMatrix', () => {
+  it('returns rows for all leaderboard members sorted by totalPoints DESC', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice'), makeLeaderboardEntry('u2', 'Bob')];
+    const poolSpecialBets: PoolSpecialBet[] = [
+      makeSpecialBet('u1', 'groupTopScoringTeam', 'A1'),
+      makeSpecialBet('u2', 'groupTopScoringTeam', 'B1'),
+    ];
+    const actualResults: ActualResults = {
+      ...emptyActualResults,
+      answers: { groupTopScoringTeam: ['A1'] as import('@cup/engine').TeamId[] },
+    };
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: 'u1',
+      poolSpecialBets,
+      actualResults,
+      def: miniTournament,
+    });
+
+    // u1 has a hit, u2 doesn't — u1 should be first
+    expect(specialsMatrix[0]!.userId).toBe('u1');
+    expect(specialsMatrix[0]!.totalPoints).toBe(10);
+    expect(specialsMatrix[1]!.userId).toBe('u2');
+    expect(specialsMatrix[1]!.totalPoints).toBe(0);
+  });
+
+  it('marks array-answer bet as hit when user pick is in the actual array', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice')];
+    const poolSpecialBets = [makeSpecialBet('u1', 'groupTopScoringTeam', 'A1')];
+    const actualResults: ActualResults = {
+      ...emptyActualResults,
+      answers: { groupTopScoringTeam: ['A1', 'B1'] as import('@cup/engine').TeamId[] },
+    };
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: null,
+      poolSpecialBets,
+      actualResults,
+      def: miniTournament,
+    });
+
+    const cell = specialsMatrix[0]!.cells.find((c) => c.betKey === 'groupTopScoringTeam')!;
+    expect(cell.hit).toBe('hit');
+    expect(cell.points).toBe(10);
+  });
+
+  it('marks scalar bet as hit when pick matches actual', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice')];
+    const poolSpecialBets = [makeSpecialBet('u1', 'penaltyShootoutCount', 3)];
+    const actualResults: ActualResults = {
+      ...emptyActualResults,
+      answers: { penaltyShootoutCount: 3 },
+    };
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: null,
+      poolSpecialBets,
+      actualResults,
+      def: miniTournament,
+    });
+
+    const cell = specialsMatrix[0]!.cells.find((c) => c.betKey === 'penaltyShootoutCount')!;
+    expect(cell.hit).toBe('hit');
+    expect(cell.points).toBe(10);
+  });
+
+  it('marks bet as pending when no actual result yet', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice')];
+    const poolSpecialBets = [makeSpecialBet('u1', 'penaltyShootoutCount', 3)];
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: null,
+      poolSpecialBets,
+      actualResults: emptyActualResults,
+      def: miniTournament,
+    });
+
+    const cell = specialsMatrix[0]!.cells.find((c) => c.betKey === 'penaltyShootoutCount')!;
+    expect(cell.hit).toBe('pending');
+    expect(cell.points).toBe(0);
+  });
+
+  it('marks bet as no-pick when user has no pick and bet is resolved', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice')];
+    const actualResults: ActualResults = {
+      ...emptyActualResults,
+      answers: { penaltyShootoutCount: 3 },
+    };
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: null,
+      poolSpecialBets: [],
+      actualResults,
+      def: miniTournament,
+    });
+
+    const cell = specialsMatrix[0]!.cells.find((c) => c.betKey === 'penaltyShootoutCount')!;
+    expect(cell.hit).toBe('no-pick');
+    expect(cell.pickLabel).toBeNull();
+  });
+
+  it('marks bet as missed when pick is wrong and bet is resolved', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice')];
+    const poolSpecialBets = [makeSpecialBet('u1', 'penaltyShootoutCount', 2)];
+    const actualResults: ActualResults = {
+      ...emptyActualResults,
+      answers: { penaltyShootoutCount: 3 },
+    };
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: null,
+      poolSpecialBets,
+      actualResults,
+      def: miniTournament,
+    });
+
+    const cell = specialsMatrix[0]!.cells.find((c) => c.betKey === 'penaltyShootoutCount')!;
+    expect(cell.hit).toBe('missed');
+    expect(cell.pickLabel).toBe('2');
+  });
+
+  it('computes pickLabel: team → team ID, bool → Y/N, number → string', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice')];
+    const poolSpecialBets = [
+      makeSpecialBet('u1', 'groupTopScoringTeam', 'A1'),
+      makeSpecialBet('u1', 'finalDecidedByPenalties', true),
+      makeSpecialBet('u1', 'penaltyShootoutCount', 7),
+    ];
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: null,
+      poolSpecialBets,
+      actualResults: emptyActualResults,
+      def: miniTournament,
+    });
+
+    const cells = specialsMatrix[0]!.cells;
+    const teamCell = cells.find((c) => c.betKey === 'groupTopScoringTeam')!;
+    const boolCell = cells.find((c) => c.betKey === 'finalDecidedByPenalties')!;
+    const numCell = cells.find((c) => c.betKey === 'penaltyShootoutCount')!;
+
+    expect(teamCell.pickLabel).toBe('A1');
+    expect(boolCell.pickLabel).toBe('Y');
+    expect(numCell.pickLabel).toBe('7');
+  });
+
+  it('computes pickLabel for player bet from last word of name uppercased max 6 chars', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice')];
+    // miniTournament players have IDs like "A1-P" and names like "Player A1"
+    const playerId = miniTournament.players[0]!.id;
+    const poolSpecialBets = [makeSpecialBet('u1', 'topScorerPlayer', playerId)];
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: null,
+      poolSpecialBets,
+      actualResults: emptyActualResults,
+      def: miniTournament,
+    });
+
+    const cell = specialsMatrix[0]!.cells.find((c) => c.betKey === 'topScorerPlayer')!;
+    // "Player A1" → last word "A1" uppercased = "A1"
+    expect(cell.pickLabel).toBe('A1');
+  });
+
+  it('excludes bets with points === 0 from specialsMatrixBets', () => {
+    const zeroScoring = {
+      ...miniTournament.scoring,
+      penaltyShootoutCount: 0,
+    };
+    const defWithZero = { ...miniTournament, scoring: zeroScoring };
+
+    const { specialsMatrixBets } = buildSpecialsMatrix({
+      leaderboard: [],
+      userId: null,
+      poolSpecialBets: [],
+      actualResults: emptyActualResults,
+      def: defWithZero,
+    });
+
+    expect(specialsMatrixBets.every((b) => b.betKey !== 'penaltyShootoutCount')).toBe(true);
+  });
+
+  it('sets actualPickLabel on resolved bets, null on pending', () => {
+    const actualResults: ActualResults = {
+      ...emptyActualResults,
+      answers: { groupTopScoringTeam: ['A1'] as import('@cup/engine').TeamId[] },
+    };
+
+    const { specialsMatrixBets } = buildSpecialsMatrix({
+      leaderboard: [],
+      userId: null,
+      poolSpecialBets: [],
+      actualResults,
+      def: miniTournament,
+    });
+
+    const resolved = specialsMatrixBets.find((b) => b.betKey === 'groupTopScoringTeam')!;
+    const pending = specialsMatrixBets.find((b) => b.betKey === 'penaltyShootoutCount')!;
+
+    expect(resolved.actualPickLabel).toBe('A1');
+    expect(pending.actualPickLabel).toBeNull();
   });
 });

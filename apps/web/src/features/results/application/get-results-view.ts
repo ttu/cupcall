@@ -144,6 +144,8 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     bracketRounds,
     bronzeMatch,
     poolKnockoutPicks,
+    poolSpecialBets,
+    actualResults,
   });
 
   return {

@@ -265,6 +265,31 @@ export type ProjectedEntry = {
   rankDelta: number;
 };
 
+export type SpecialsMatrixCell = {
+  betKey: string;
+  hit: 'hit' | 'missed' | 'pending' | 'no-pick';
+  points: number;
+  /** Abbreviated pick for cell display: team ID, "Y"/"N", number string, or truncated player last name. */
+  pickLabel: string | null;
+};
+
+export type SpecialsMatrixEntry = {
+  userId: string;
+  displayName: string;
+  isCurrentUser: boolean;
+  cells: SpecialsMatrixCell[];
+  totalPoints: number;
+};
+
+export type SpecialsMatrixBet = {
+  betKey: string;
+  label: string;
+  points: number;
+  kind: 'player' | 'team' | 'number' | 'bool';
+  /** Abbreviated correct answer label, null while the bet is still pending. */
+  actualPickLabel: string | null;
+};
+
 export type PointsRaceView = {
   /** X-axis labels for the race chart, e.g. ["Start","Group Stage","Now","Projected"]. */
   chartStages: string[];
@@ -288,6 +313,10 @@ export type PointsRaceView = {
   knockoutMatrix: KnockoutMatrixEntry[];
   /** All knockout matches that form the matrix columns, sorted by kickoff (nulls last). */
   knockoutMatrixMatches: KnockoutMatrixMatch[];
+  /** Rows of the per-special-bet matrix, sorted by totalPoints DESC. */
+  specialsMatrix: SpecialsMatrixEntry[];
+  /** Special bet column definitions, filtered to bets with points > 0. */
+  specialsMatrixBets: SpecialsMatrixBet[];
 };
 
 /**

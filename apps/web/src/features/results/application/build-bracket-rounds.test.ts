@@ -146,6 +146,33 @@ describe('buildBracketRounds — homeTeamUserPredictedParticipant / awayTeamUser
     expect(sf1Card.homeTeamUserPredictedParticipant).toBe(false);
   });
 
+  it('shows the confirmed winner as homeTeamId (not predictedHomeTeamId) when only one feeder QF is final', () => {
+    // qf1 done (A1 won), qf2 pending — sf1 home slot should be A1 as confirmed,
+    // not surfaced as predictedHomeTeamId.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'qf2', winner: 'C1' },
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    // Known winner must be surfaced as the actual team ID, not as a predicted fill.
+    expect(sf1Card.homeTeamId).toBe('A1');
+    expect(sf1Card.predictedHomeTeamId).toBeNull();
+    // Away slot still unknown — may be filled from user's pick.
+    expect(sf1Card.awayTeamId).toBeNull();
+    // User correctly predicted A1 to reach sf1.
+    expect(sf1Card.homeTeamUserPredictedParticipant).toBe(true);
+  });
+
   it('is false for all cards when inputs is null (viewer mode)', () => {
     const { bracketRounds } = buildBracketRounds(
       miniTournament,
