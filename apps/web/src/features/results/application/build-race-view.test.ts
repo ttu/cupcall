@@ -58,8 +58,8 @@ function makeKnockoutMatch(
     predictedAwayTeamId: null,
     predictedAwayTeamName: null,
     isEntryRound: false,
-    homeTeamR32Pct: null,
-    awayTeamR32Pct: null,
+    homeTeamPredictedPct: null,
+    awayTeamPredictedPct: null,
   };
 }
 

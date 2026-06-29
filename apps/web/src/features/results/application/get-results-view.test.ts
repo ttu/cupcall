@@ -726,11 +726,11 @@ describe('getResultsView', () => {
       // qf1 slot: home='1A' = A1 (both predict A1 as #1 in group A → 100%)
       const qf1 = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
       expect(qf1.homeTeamId).toBe('A1');
-      expect(qf1.homeTeamR32Pct).toBe(100);
+      expect(qf1.homeTeamPredictedPct).toBe(100);
       // qf3 slot: away='2A' = A2 (both predict A2 as #2 in group A → 100%)
       const qf3 = qfRound.matches.find((m) => m.bracketMatchKey === 'qf3')!;
       expect(qf3.awayTeamId).toBe('A2');
-      expect(qf3.awayTeamR32Pct).toBe(100);
+      expect(qf3.awayTeamPredictedPct).toBe(100);
     });
 
     it('returns null r32 pcts for non-entry-round matches', async () => {
@@ -738,8 +738,8 @@ describe('getResultsView', () => {
       const sfRound = view!.bracketRounds.find((r) => r.label === 'SF');
       if (sfRound) {
         for (const match of sfRound.matches) {
-          expect(match.homeTeamR32Pct).toBeNull();
-          expect(match.awayTeamR32Pct).toBeNull();
+          expect(match.homeTeamPredictedPct).toBeNull();
+          expect(match.awayTeamPredictedPct).toBeNull();
         }
       }
     });

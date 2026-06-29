@@ -144,10 +144,10 @@ export type KnockoutMatchView = {
   predictedAwayTeamName: string | null;
   /** True when this match is the first knockout round (R32/QF depending on tournament size). */
   isEntryRound: boolean;
-  /** % of pool members who predicted the home team to qualify to the entry round. Null when not an entry-round match or no predictions exist. */
-  homeTeamR32Pct: number | null;
-  /** % of pool members who predicted the away team to qualify to the entry round. */
-  awayTeamR32Pct: number | null;
+  /** % of pool members who predicted this team would be playing in this round. For the entry round: derived from group-score predictions. For later rounds: derived from knockout winner picks. Null when team slot is unknown or no predictions exist. */
+  homeTeamPredictedPct: number | null;
+  /** % of pool members who predicted the away team would be playing in this round. */
+  awayTeamPredictedPct: number | null;
 };
 
 export type BracketRoundResultView = {

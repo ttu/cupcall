@@ -125,8 +125,8 @@ export function buildBracketRounds(
       homeTeamConfirmed: confirmedHome.get(key) ?? !!actual?.homeTeamId,
       awayTeamConfirmed: confirmedAway.get(key) ?? !!actual?.awayTeamId,
       isEntryRound,
-      homeTeamR32Pct: isEntryRound && homeId ? (r32PredPcts.get(homeId) ?? null) : null,
-      awayTeamR32Pct: isEntryRound && awayId ? (r32PredPcts.get(awayId) ?? null) : null,
+      homeTeamPredictedPct: isEntryRound && homeId ? (r32PredPcts.get(homeId) ?? null) : null,
+      awayTeamPredictedPct: isEntryRound && awayId ? (r32PredPcts.get(awayId) ?? null) : null,
       ...resolvePredictedTeams(key, homeId, awayId, userPredictedParticipants, teamMap),
     };
   };

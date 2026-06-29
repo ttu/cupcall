@@ -21,7 +21,7 @@ function TeamRow({
   isPick,
   isQualifierPick,
   isActualWinner,
-  r32Pct,
+  predictedPct,
   isSoft,
   isPredictedFill,
   showProjectedBadge,
@@ -32,7 +32,7 @@ function TeamRow({
   isPick: boolean;
   isQualifierPick: boolean;
   isActualWinner: boolean;
-  r32Pct: number | null;
+  predictedPct: number | null;
   isSoft: boolean;
   isPredictedFill: boolean;
   showProjectedBadge: boolean;
@@ -72,9 +72,9 @@ function TeamRow({
       >
         {teamName ?? teamId ?? <span className="italic font-normal">missed pick</span>}
       </span>
-      {r32Pct !== null && (
+      {predictedPct !== null && (
         <span className="text-[10px] font-bold text-ink-muted tabular-nums shrink-0">
-          {r32Pct}%
+          {predictedPct}%
         </span>
       )}
       {isActualWinner && (
@@ -144,7 +144,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           }
           isQualifierPick={effectiveHomeId !== null && predictedQualifierIds.has(effectiveHomeId)}
           isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
-          r32Pct={match.homeTeamR32Pct}
+          predictedPct={match.homeTeamPredictedPct}
           isSoft={homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
           showProjectedBadge={homeIsSoft && match.homeTeamId !== null}
@@ -159,7 +159,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           }
           isQualifierPick={effectiveAwayId !== null && predictedQualifierIds.has(effectiveAwayId)}
           isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
-          r32Pct={match.awayTeamR32Pct}
+          predictedPct={match.awayTeamPredictedPct}
           isSoft={awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
           showProjectedBadge={awayIsSoft && match.awayTeamId !== null}
