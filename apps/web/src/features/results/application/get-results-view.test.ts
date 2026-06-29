@@ -697,7 +697,7 @@ describe('getResultsView', () => {
       expect(qf1.projected).toBe(true);
     });
 
-    it('computes r32 prediction percentages from pool group scores', async () => {
+    it('computes entry-round prediction percentages from pool group scores', async () => {
       // Both users predict: A1 wins all, A2 beats A3 and A4 → A1=1A (100%), A2=2A (100%)
       const aMatches = miniTournament.groupMatches.filter((m) => m.group === groupId('A'));
       // mA1=A1vsA2, mA2=A1vsA3, mA3=A1vsA4, mA4=A2vsA3, mA5=A2vsA4, mA6=A3vsA4
@@ -733,7 +733,7 @@ describe('getResultsView', () => {
       expect(qf3.awayTeamPredictedPct).toBe(100);
     });
 
-    it('returns null r32 pcts for non-entry-round matches', async () => {
+    it('returns null predicted pcts for non-entry-round matches', async () => {
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const sfRound = view!.bracketRounds.find((r) => r.label === 'SF');
       if (sfRound) {
@@ -790,6 +790,87 @@ describe('getResultsView', () => {
       expect(sf1.homeTeamId).toBe('A1');
       // 1 of 2 users picked A1 for qf1 → 50%
       expect(sf1.homeTeamPredictedPct).toBe(50);
+      // nobody picked qf2 → away team pct is null
+      expect(sf1.awayTeamPredictedPct).toBeNull();
+    });
+
+    it('returns null homeTeamPredictedPct when team slot is known but no users picked for its feeder match', async () => {
+      // Finalize both qf1 and qf2 so sf1 participants are fully derived (A1 and C1).
+      // Nobody makes any knockout picks — knockoutRoundPcts will be empty.
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 2,
+        awayGoals: 1,
+        winnerTeamId: 'A1',
+        status: 'final',
+      });
+      await upsertKnockoutMatch(db, {
+        id: 'qf2',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'C1',
+        awayTeamId: 'D2',
+        homeGoals: 1,
+        awayGoals: 0,
+        winnerTeamId: 'C1',
+        status: 'final',
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
+      const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+      // sf1 home slot is A1 (qf1 winner), but no picks for qf1 → pct is null
+      expect(sf1.homeTeamId).toBe('A1');
+      expect(sf1.homeTeamPredictedPct).toBeNull();
+    });
+
+    it('shows Final-round homeTeamPredictedPct based on picks for its feeder SF match', async () => {
+      // Finalize sf1 (A1 wins) and sf2 (B1 wins) so final participants are known.
+      await upsertKnockoutMatch(db, {
+        id: 'sf1',
+        tournamentId: miniTId,
+        stage: 'SF',
+        homeTeamId: 'A1',
+        awayTeamId: 'C1',
+        homeGoals: 2,
+        awayGoals: 1,
+        winnerTeamId: 'A1',
+        status: 'final',
+      });
+      await upsertKnockoutMatch(db, {
+        id: 'sf2',
+        tournamentId: miniTId,
+        stage: 'SF',
+        homeTeamId: 'B1',
+        awayTeamId: 'D1',
+        homeGoals: 1,
+        awayGoals: 0,
+        winnerTeamId: 'B1',
+        status: 'final',
+      });
+
+      // userId picks A1 (sf1 winner) for sf1; ownerId picks C1 (sf1 loser) for sf1.
+      const pred1 = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred1.id, bracketMatchKey('sf1'), 'A1');
+
+      const pred2 = await getOrCreatePrediction(db, {
+        poolId,
+        userId: ownerId,
+        tournamentId: miniTId,
+      });
+      await upsertKnockoutPick(db, pred2.id, bracketMatchKey('sf1'), 'C1');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const finalRound = view!.bracketRounds.find((r) => r.label === 'Final')!;
+      const finalMatch = finalRound.matches[0]!;
+      // final.homeTeamId is A1 (sf1 winner). Feeder for home slot is sf1.
+      // 1 of 2 users picked A1 for sf1 → 50%.
+      expect(finalMatch.homeTeamId).toBe('A1');
+      expect(finalMatch.homeTeamPredictedPct).toBe(50);
     });
   });
 
