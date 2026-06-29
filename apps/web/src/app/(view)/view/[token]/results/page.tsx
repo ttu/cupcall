@@ -24,6 +24,12 @@ export default async function ViewResultsPage({
   });
   if (!view) notFound();
 
+  const defaultTab = view.currentStage !== 'group' ? 'knockout' : 'group';
+  const resolvedTab =
+    tab === 'group' || tab === 'knockout' || tab === 'specials' || tab === 'race'
+      ? tab
+      : defaultTab;
+
   const leader = view.leaderboard[0] ?? null;
 
   return (
@@ -57,11 +63,7 @@ export default async function ViewResultsPage({
       <StageBar stages={view.stageProgress} />
 
       {/* Main content: tabs + panels */}
-      <ResultsPageClient
-        view={view}
-        initialTab={tab === 'race' || tab === 'knockout' ? tab : 'group'}
-        viewerMode
-      />
+      <ResultsPageClient view={view} initialTab={resolvedTab} viewerMode />
     </div>
   );
 }

@@ -27,6 +27,12 @@ export default async function ResultsPage({ params, searchParams }: Props): Prom
   });
   if (!view) notFound();
 
+  const defaultTab = view.currentStage !== 'group' ? 'knockout' : 'group';
+  const resolvedTab =
+    tab === 'group' || tab === 'knockout' || tab === 'specials' || tab === 'race'
+      ? tab
+      : defaultTab;
+
   return (
     <div className="max-w-350 mx-auto p-[28px_20px]">
       {/* Page header */}
@@ -60,10 +66,7 @@ export default async function ResultsPage({ params, searchParams }: Props): Prom
       <StageBar stages={view.stageProgress} />
 
       {/* Main content: tabs + panels */}
-      <ResultsPageClient
-        view={view}
-        initialTab={tab === 'race' || tab === 'knockout' ? tab : 'group'}
-      />
+      <ResultsPageClient view={view} initialTab={resolvedTab} />
     </div>
   );
 }
