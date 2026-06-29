@@ -150,7 +150,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           isSoft={homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
           showProjectedBadge={homeIsSoft && match.homeTeamId !== null}
-          showConfirmedBadge={!homeIsSoft && match.homeTeamId !== null}
+          showConfirmedBadge={!homeIsSoft && match.homeTeamId !== null && awayIsSoft}
         />
         <TeamRow
           teamId={effectiveAwayId}
@@ -167,7 +167,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           isSoft={awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
           showProjectedBadge={awayIsSoft && match.awayTeamId !== null}
-          showConfirmedBadge={!awayIsSoft && match.awayTeamId !== null}
+          showConfirmedBadge={!awayIsSoft && match.awayTeamId !== null && homeIsSoft}
         />
       </div>
     </div>
