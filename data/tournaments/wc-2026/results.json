@@ -458,6 +458,19 @@
       "awayConduct": -1
     }
   ],
+  "knockout": [
+    {
+      "round": "R32",
+      "matchId": "r32m73",
+      "home": "RSA",
+      "away": "CAN",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "winner": "CAN",
+      "decidedBy": "regulation",
+      "kickoff": "2026-06-28T19:00:00Z"
+    }
+  ],
   "groupOrder": {},
   "answers": {
     "firstRedCardPlayer": "rsa-sithole",

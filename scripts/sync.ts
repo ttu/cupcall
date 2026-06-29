@@ -25,6 +25,7 @@ import {
   upsertScore,
   upsertTournamentDef,
   upsertTournamentResults,
+  upsertKnockoutMatch,
   listPredictionsForTournament,
   getPredictionInputs,
 } from '@cup/db';
@@ -41,6 +42,26 @@ const rawTournamentMetaSchema = z
     firstKickoff: z.string().datetime(),
     groupMatches: z
       .array(z.object({ id: z.string(), kickoff: z.string().datetime().optional() }))
+      .optional(),
+  })
+  .passthrough();
+
+const rawKnockoutResultsSchema = z
+  .object({
+    knockout: z
+      .array(
+        z.object({
+          round: z.enum(['R32', 'R16', 'QF', 'SF', 'Final', 'bronze']),
+          matchId: z.string(),
+          home: z.string(),
+          away: z.string(),
+          homeGoals: z.number().int().nonnegative(),
+          awayGoals: z.number().int().nonnegative(),
+          winner: z.string(),
+          decidedBy: z.enum(['regulation', 'extraTime', 'penalties']).optional(),
+          kickoff: z.string().datetime().optional(),
+        }),
+      )
       .optional(),
   })
   .passthrough();
@@ -143,6 +164,27 @@ export async function syncTournament(
 
   logger.info({ tournamentId }, 'upserting tournament results');
   await upsertTournamentResults(db, asTournamentId(tournamentId), mergedActual);
+
+  // 4b. Upsert knockout match results from the `knockout` array in results.json.
+  const rawKnockout = rawKnockoutResultsSchema.parse(resultsRaw);
+  if (rawKnockout.knockout && rawKnockout.knockout.length > 0) {
+    logger.info({ tournamentId, count: rawKnockout.knockout.length }, 'upserting knockout matches');
+    for (const km of rawKnockout.knockout) {
+      await upsertKnockoutMatch(db, {
+        id: km.matchId,
+        tournamentId: asTournamentId(tournamentId),
+        stage: km.round,
+        homeTeamId: km.home,
+        awayTeamId: km.away,
+        homeGoals: km.homeGoals,
+        awayGoals: km.awayGoals,
+        winnerTeamId: km.winner,
+        ...(km.decidedBy !== undefined && { decidedBy: km.decidedBy }),
+        ...(km.kickoff !== undefined && { kickoff: new Date(km.kickoff) }),
+        status: 'final',
+      });
+    }
+  }
 
   // 5. Rescore all cards
   const predictions = await listPredictionsForTournament(db, asTournamentId(tournamentId));
