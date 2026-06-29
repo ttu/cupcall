@@ -11,15 +11,6 @@ function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement 
   const total = round.totalPicks;
   const possible = round.alivePicks + round.pendingPicks;
 
-  const ptsLabel =
-    round.maxPossiblePoints > 0
-      ? round.earnedPoints > 0 && round.earnedPoints < round.maxPossiblePoints
-        ? `${round.earnedPoints} / ${round.maxPossiblePoints} pts`
-        : round.earnedPoints > 0
-          ? `${round.earnedPoints} pts`
-          : `${round.maxPossiblePoints} pts`
-      : null;
-
   return (
     <div className="flex items-center gap-2">
       <span className="text-[11px] font-bold text-green-800 w-8 shrink-0">{round.label}</span>
@@ -43,11 +34,6 @@ function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement 
           <span className="text-green-500"> · {pendingAnnotation} pending</span>
         )}
       </span>
-      {ptsLabel !== null && (
-        <span className={cn('text-[10px] font-semibold shrink-0', COLOR_TEXT[color])}>
-          · {ptsLabel}
-        </span>
-      )}
     </div>
   );
 }
