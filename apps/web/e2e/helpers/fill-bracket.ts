@@ -20,12 +20,15 @@ export async function fillAllBracketPicks(page: Page): Promise<void> {
       // Wait for this specific button to be enabled (home team resolved from prior round)
       await expect(homeBtn).toBeEnabled({ timeout: 15_000 });
       await homeBtn.click();
-      // Wait for the pick to be confirmed before clicking the next tie, to avoid
-      // concurrent server-action races that leave later rounds with missing teams.
-      await expect(homeBtn).toHaveAttribute('aria-pressed', 'true', { timeout: 15_000 });
+      // Wait for the server action POST + RSC revalidation to settle, then confirm
+      // the pick was saved. networkidle ensures the response (including RSC payload)
+      // is fully received before we check aria-pressed.
+      await page.waitForLoadState('networkidle', { timeout: 15_000 });
+      await expect(homeBtn).toHaveAttribute('aria-pressed', 'true', { timeout: 5_000 });
     }
 
-    // Wait for RSC revalidation so the next round's teams are derived from fresh DB state
+    // Extra idle wait between rounds so the next round's teams are derived from
+    // fresh DB state before we start locating tie rows.
     await page.waitForLoadState('networkidle');
   }
 
