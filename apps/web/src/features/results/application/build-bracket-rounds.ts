@@ -48,13 +48,14 @@ export function buildBracketRounds(
   // For each stage, collect all teams the user picked to advance.
   // A card shows "correct" when the actual winner of that match appears in the user's stage picks,
   // regardless of which slot the user assigned them to.
+  // Use all user picks to build stage-pick sets, not just picks for DB-matched games.
+  // Unplayed matches have no DB row yet, so their picks would be silently dropped if
+  // we only consulted matchByKey — causing cross-slot credit to fail mid-round.
   const stagePicksMap = new Map<string, Set<string>>();
   for (const [matchKey, pickedId] of pickMap.entries()) {
-    const m = matchByKey.get(matchKey);
-    if (m?.stage) {
-      if (!stagePicksMap.has(m.stage)) stagePicksMap.set(m.stage, new Set());
-      stagePicksMap.get(m.stage)!.add(pickedId);
-    }
+    const stage = matchByKey.get(matchKey)?.stage ?? getRoundLabel(matchKey, def.bracket.rounds);
+    if (!stagePicksMap.has(stage)) stagePicksMap.set(stage, new Set());
+    stagePicksMap.get(stage)!.add(pickedId);
   }
 
   const buildMatchView = (key: BracketMatchKey, round: string): KnockoutMatchView => {

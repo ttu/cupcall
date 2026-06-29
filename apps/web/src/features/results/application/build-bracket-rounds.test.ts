@@ -75,6 +75,65 @@ const finalQf4 = makeMatch('qf4', 'QF', {
   status: 'final',
 });
 
+describe('buildBracketRounds — hit computation / cross-slot stage picks', () => {
+  // Scenario: only qf1 (A1 vs B2) is in the DB. User's direct pick for qf1 is A2
+  // (wrong — not a participant in qf1), and for qf3 they picked A1 (also wrong for qf3,
+  // but A1 IS in qf1's participants). Cross-slot adjusts both. Since qf3 has no DB row,
+  // the old stagePicksMap missed A1; qf1 should be 'outcome', not 'missed'.
+  it('credits outcome when the actual winner was picked for a different unplayed entry-round match (cross-slot)', () => {
+    const qf1 = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: 'A1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1], // qf3 is NOT in the DB yet
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A2' }, // wrong direct pick for qf1
+          { bracketMatchKey: 'qf3', winner: 'A1' }, // picks A1, which won qf1
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Card.hit).toBe('outcome');
+  });
+
+  it('returns missed when the actual winner was not picked in any entry-round match', () => {
+    const qf1 = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: 'A1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'B1' }, // B1 not in qf1, A1 not picked anywhere
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Card.hit).toBe('missed');
+  });
+});
+
 describe('buildBracketRounds — homeTeamUserPredictedParticipant / awayTeamUserPredictedParticipant', () => {
   it('is always false for entry-round (QF) cards', () => {
     const { bracketRounds } = buildBracketRounds(
