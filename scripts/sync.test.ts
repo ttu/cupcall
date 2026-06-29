@@ -41,6 +41,8 @@ const __dirname = dirname(__filename);
 
 // Path to the mini-2026 sample data
 const mini2026Dir = join(__dirname, '..', 'data', 'tournaments', 'mini-2026');
+// Path to the test-wc-2026 sample data (R32 bracket, full group results)
+const testWc2026Dir = join(__dirname, '..', 'data', 'tournaments', 'test-wc-2026');
 
 describe('syncTournament integration', () => {
   let db: Db<typeof schema>;
@@ -512,6 +514,99 @@ describe('syncTournament integration', () => {
       const answers = await db.select().from(schema.actualAnswers);
       const redCardAnswer = answers.find((a) => a.betKey === 'firstRedCardPlayer');
       expect(redCardAnswer?.value).toBe(newPlayerId);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it('derives roundOf16 from R32 winners and immediately scores predictions', async () => {
+    // Regression: adding a knockout R32 result to results.json should immediately award
+    // roundOf16 points to users who predicted that team to reach R16.
+    // Previously, sync stored the match result in the matches table (visible in the points
+    // race bracket view) but never set answers.roundOf16 in actualAnswers, so scoreRoundOf16
+    // returned 0 and the leaderboard showed no knockout points.
+
+    const scratch = mkdtempSync(join(tmpdir(), 'sync-r32-'));
+    try {
+      // test-wc-2026 has an R32 bracket and complete group results.
+      // groupOrder.A = [MEX, KOR, CZE, RSA] → 2A = KOR
+      // groupOrder.B = [SUI, CAN, QAT, BIH] → 2B = CAN
+      // r32m73 slot = '2A vs 2B' = KOR vs CAN
+      // r32m75 slot = '1F vs 2C' = NED vs MAR
+      cpSync(testWc2026Dir, scratch, { recursive: true });
+
+      // Add a single R32 knockout result: CAN beats KOR in r32m73
+      const resultsPath = join(scratch, 'results.json');
+      const results = fixtureResultsSchema.parse(JSON.parse(readFileSync(resultsPath, 'utf-8')));
+      (results as Record<string, unknown>).knockout = [
+        {
+          round: 'R32',
+          matchId: 'r32m73',
+          home: 'KOR',
+          away: 'CAN',
+          homeGoals: 0,
+          awayGoals: 1,
+          winner: 'CAN',
+          decidedBy: 'regulation',
+          kickoff: '2026-06-28T19:00:00Z',
+        },
+      ];
+      writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+
+      await syncTournament(db, 'test-wc-2026', scratch);
+
+      const owner = await createUser(db, {
+        email: `owner-${crypto.randomUUID()}@x.com`,
+        displayName: 'Owner',
+      });
+      const user = await createUser(db, {
+        email: `user-${crypto.randomUUID()}@x.com`,
+        displayName: 'Alice',
+      });
+      const pool = await createPool(db, {
+        tournamentId: asTournamentId('test-wc-2026'),
+        ownerId: owner.id,
+        name: 'R32 Pool',
+        inviteTokenHash: `h-r32-${crypto.randomUUID()}`,
+      });
+
+      const [predRow] = await db
+        .insert(schema.predictions)
+        .values({ poolId: pool.id, userId: user.id, tournamentId: 'test-wc-2026' })
+        .returning();
+      if (!predRow) throw new Error('No prediction row returned');
+
+      // CAN for r32m73 (the match with a result) + NED for r32m75 (partner in r16m90).
+      // This resolves r16m90 participants as [CAN, NED], putting CAN in derived.roundOf16.
+      // actual.answers.roundOf16 will be [CAN] (derived from the knockout result).
+      // scoreRoundOf16 should award roundOf16PerTeam (=2) for CAN.
+      await db.insert(schema.predictionKnockoutPicks).values([
+        {
+          predictionId: predRow.id,
+          bracketMatchKey: bracketMatchKey('r32m73'),
+          winnerTeamId: 'CAN',
+        },
+        {
+          predictionId: predRow.id,
+          bracketMatchKey: bracketMatchKey('r32m75'),
+          winnerTeamId: 'NED',
+        },
+      ]);
+
+      const result = await syncTournament(db, 'test-wc-2026', scratch);
+      expect(result.scored).toBe(1);
+
+      // roundOf16 answer must be stored in actualAnswers
+      const answers = await db.select().from(schema.actualAnswers);
+      const r16Answer = answers.find((a) => a.betKey === 'roundOf16');
+      expect(r16Answer).toBeDefined();
+      expect(r16Answer?.value).toEqual(['CAN']);
+
+      // The score breakdown must reflect non-zero roundOf16 points
+      const allScores = await db.select().from(schema.scores);
+      const score = allScores.find((s) => s.poolId === pool.id);
+      expect(score).toBeDefined();
+      expect(score?.breakdown?.roundOf16).toBeGreaterThan(0);
     } finally {
       rmSync(scratch, { recursive: true, force: true });
     }
