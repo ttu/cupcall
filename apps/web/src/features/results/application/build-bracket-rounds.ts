@@ -1,4 +1,4 @@
-import type { MatchRow, PoolGroupScore } from '@cup/db';
+import type { MatchRow, PoolGroupScore, PoolKnockoutPick } from '@cup/db';
 import { deriveGroupOrders, selectQualifiers, matchId, resolveSlot } from '@cup/engine';
 import type { Tournament, BracketMatchKey, GroupScore } from '@cup/engine';
 import type { KnockoutMatchView, BracketRoundResultView, MatchHit } from '../domain/types';
@@ -15,6 +15,7 @@ export function buildBracketRounds(
     };
   } | null,
   poolGroupScores: PoolGroupScore[],
+  poolKnockoutPicks: PoolKnockoutPick[],
 ): { bracketRounds: BracketRoundResultView[]; bronzeMatch: KnockoutMatchView | null } {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
@@ -32,6 +33,10 @@ export function buildBracketRounds(
     : new Map<string, [string | null, string | null]>();
   const entryRoundKeys = new Set(def.bracket.slots.map((s) => s.match as string));
   const r32PredPcts = computeEntryRoundPredictionPcts(def, poolGroupScores);
+  const knockoutRoundPcts = computeKnockoutRoundPcts(poolKnockoutPicks);
+  const progressionByMatch = new Map<string, { from: string[] }>(
+    def.bracket.progression.map((p) => [p.match as string, { from: p.from as string[] }]),
+  );
 
   const finishScores = inputs?.finishScores ?? {};
   const finalMatchKey = def.bracket.finalMatch;
@@ -125,8 +130,26 @@ export function buildBracketRounds(
       homeTeamConfirmed: confirmedHome.get(key) ?? !!actual?.homeTeamId,
       awayTeamConfirmed: confirmedAway.get(key) ?? !!actual?.awayTeamId,
       isEntryRound,
-      homeTeamPredictedPct: isEntryRound && homeId ? (r32PredPcts.get(homeId) ?? null) : null,
-      awayTeamPredictedPct: isEntryRound && awayId ? (r32PredPcts.get(awayId) ?? null) : null,
+      homeTeamPredictedPct: computeTeamRoundPct(
+        key,
+        homeId,
+        0,
+        isEntryRound,
+        r32PredPcts,
+        progressionByMatch,
+        knockoutRoundPcts,
+        bronzeMatchKey,
+      ),
+      awayTeamPredictedPct: computeTeamRoundPct(
+        key,
+        awayId,
+        1,
+        isEntryRound,
+        r32PredPcts,
+        progressionByMatch,
+        knockoutRoundPcts,
+        bronzeMatchKey,
+      ),
       ...resolvePredictedTeams(key, homeId, awayId, userPredictedParticipants, teamMap),
     };
   };
@@ -389,6 +412,67 @@ function derivePredictedOpponent(
   const loser2 = sfLoser(sf2Key);
   if (!loser1 || !loser2) return null;
   return loser1 === pickedWinner ? loser2 : loser1;
+}
+
+/**
+ * For each bracket match key, computes the % of pool members who picked each
+ * team to win that match. Used to derive "predicted to be in this round" pcts
+ * for non-entry rounds: the pct for a team in round R is the pick-pct from
+ * their feeder match in round R-1.
+ */
+function computeKnockoutRoundPcts(
+  poolKnockoutPicks: PoolKnockoutPick[],
+): Map<string, Map<string, number>> {
+  const users = new Set<string>();
+  const counts = new Map<string, Map<string, number>>();
+
+  for (const pick of poolKnockoutPicks) {
+    users.add(pick.userId as string);
+    const key = pick.bracketMatchKey as string;
+    if (!counts.has(key)) counts.set(key, new Map());
+    const teamCounts = counts.get(key)!;
+    teamCounts.set(pick.winnerTeamId, (teamCounts.get(pick.winnerTeamId) ?? 0) + 1);
+  }
+
+  const totalUsers = users.size;
+  if (totalUsers === 0) return new Map();
+
+  return new Map(
+    Array.from(counts.entries()).map(([key, teams]) => [
+      key,
+      new Map(
+        Array.from(teams.entries()).map(([tid, count]) => [
+          tid,
+          Math.round((count / totalUsers) * 100),
+        ]),
+      ),
+    ]),
+  );
+}
+
+/**
+ * Returns the "% predicted this team in this round" for one slot (home=slotIndex 0, away=1).
+ * - Entry round: derived from group-score qualification predictions.
+ * - Bronze: always null (participants are SF losers; no direct pick exists for this).
+ * - Other rounds: % of users who picked `teamId` to win their feeder match (prog.from[slotIndex]).
+ */
+function computeTeamRoundPct(
+  matchKey: string,
+  teamId: string | null,
+  slotIndex: 0 | 1,
+  isEntryRound: boolean,
+  r32PredPcts: Map<string, number>,
+  progressionByMatch: Map<string, { from: string[] }>,
+  knockoutRoundPcts: Map<string, Map<string, number>>,
+  bronzeMatchKey: string,
+): number | null {
+  if (!teamId) return null;
+  if (isEntryRound) return r32PredPcts.get(teamId) ?? null;
+  if (matchKey === bronzeMatchKey) return null;
+  const prog = progressionByMatch.get(matchKey);
+  const feederKey = prog?.from[slotIndex];
+  if (!feederKey) return null;
+  return knockoutRoundPcts.get(feederKey)?.get(teamId) ?? null;
 }
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {

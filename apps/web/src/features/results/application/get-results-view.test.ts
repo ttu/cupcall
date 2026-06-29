@@ -745,6 +745,54 @@ describe('getResultsView', () => {
     });
   });
 
+  describe('SF round predicted pct from knockout picks', () => {
+    it('shows % who picked each team to win their QF match on the SF match view', async () => {
+      // Insert finalised QF1 and QF2 matches so sf1 participants are derived:
+      // sf1.from = [qf1, qf2]; qf1 winner = A1 (home), qf2 winner = C1 (away)
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 2,
+        awayGoals: 1,
+        winnerTeamId: 'A1',
+        status: 'final',
+      });
+      await upsertKnockoutMatch(db, {
+        id: 'qf2',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'C1',
+        awayTeamId: 'D2',
+        homeGoals: 1,
+        awayGoals: 0,
+        winnerTeamId: 'C1',
+        status: 'final',
+      });
+
+      // userId picks A1 for qf1
+      const pred1 = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred1.id, bracketMatchKey('qf1'), 'A1');
+
+      // ownerId picks B2 for qf1
+      const pred2 = await getOrCreatePrediction(db, {
+        poolId,
+        userId: ownerId,
+        tournamentId: miniTId,
+      });
+      await upsertKnockoutPick(db, pred2.id, bracketMatchKey('qf1'), 'B2');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const sfRound = view!.bracketRounds.find((r) => r.label === 'SF')!;
+      const sf1 = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+      expect(sf1.homeTeamId).toBe('A1');
+      // 1 of 2 users picked A1 for qf1 → 50%
+      expect(sf1.homeTeamPredictedPct).toBe(50);
+    });
+  });
+
   it('derives user rank from leaderboard', async () => {
     await upsertScore(db, {
       poolId,

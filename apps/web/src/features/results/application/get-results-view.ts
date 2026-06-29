@@ -105,6 +105,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     allMatches,
     inputs,
     poolGroupScores,
+    poolKnockoutPicks,
   );
   const bracketHealth = computeBracketHealth(bracketRounds, bronzeMatch, def);
   if (userPredictedQualifiers) {
