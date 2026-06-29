@@ -148,6 +148,10 @@ export type KnockoutMatchView = {
   homeTeamPredictedPct: number | null;
   /** % of pool members who predicted the away team would be playing in this round. */
   awayTeamPredictedPct: number | null;
+  /** True when the confirmed home-slot team was predicted by the user to be in this slot (progression rounds only; always false for the entry round). */
+  homeTeamUserPredictedParticipant: boolean;
+  /** True when the confirmed away-slot team was predicted by the user to be in this slot (progression rounds only; always false for the entry round). */
+  awayTeamUserPredictedParticipant: boolean;
 };
 
 export type BracketRoundResultView = {

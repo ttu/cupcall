@@ -140,7 +140,9 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           teamName={effectiveHomeName}
           isPick={
             effectiveHomeId !== null &&
-            (match.pickedWinnerId === effectiveHomeId || predictedQualifierIds.has(effectiveHomeId))
+            (match.pickedWinnerId === effectiveHomeId ||
+              predictedQualifierIds.has(effectiveHomeId) ||
+              match.homeTeamUserPredictedParticipant)
           }
           isQualifierPick={effectiveHomeId !== null && predictedQualifierIds.has(effectiveHomeId)}
           isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
@@ -155,7 +157,9 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           teamName={effectiveAwayName}
           isPick={
             effectiveAwayId !== null &&
-            (match.pickedWinnerId === effectiveAwayId || predictedQualifierIds.has(effectiveAwayId))
+            (match.pickedWinnerId === effectiveAwayId ||
+              predictedQualifierIds.has(effectiveAwayId) ||
+              match.awayTeamUserPredictedParticipant)
           }
           isQualifierPick={effectiveAwayId !== null && predictedQualifierIds.has(effectiveAwayId)}
           isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}

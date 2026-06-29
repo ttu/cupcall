@@ -31,6 +31,9 @@ export function buildBracketRounds(
   const userPredictedParticipants = inputs
     ? computeUserPredictedParticipants(def, allMatches, pickMap, derivedParticipants)
     : new Map<string, [string | null, string | null]>();
+  const userPickedParticipants = inputs
+    ? computeUserPickedParticipants(def, pickMap, derivedParticipants)
+    : new Map<string, [string | null, string | null]>();
   const entryRoundKeys = new Set(def.bracket.slots.map((s) => s.match as string));
   const r32PredPcts = computeEntryRoundPredictionPcts(def, poolGroupScores);
   const knockoutRoundPcts = computeKnockoutRoundPcts(poolKnockoutPicks);
@@ -151,6 +154,10 @@ export function buildBracketRounds(
         bronzeMatchKey,
       ),
       ...resolvePredictedTeams(key, homeId, awayId, userPredictedParticipants, teamMap),
+      homeTeamUserPredictedParticipant:
+        !isEntryRound && homeId !== null && userPickedParticipants.get(key)?.[0] === homeId,
+      awayTeamUserPredictedParticipant:
+        !isEntryRound && awayId !== null && userPickedParticipants.get(key)?.[1] === awayId,
     };
   };
 
@@ -614,6 +621,82 @@ function computeUserPredictedParticipants(
     };
     const [sf1, sf2] = bronzeProg.from;
     predicted.set(bronzeKey, [sf1 ? getSfLoser(sf1) : null, sf2 ? getSfLoser(sf2) : null]);
+  }
+
+  return predicted;
+}
+
+/**
+ * Walks the bracket pick chain using ONLY the user's picks — never substituting
+ * actual match results. Returns a map of what team the user predicted for the
+ * home (index 0) and away (index 1) slot of each progression match.
+ *
+ * Entry rounds: apply the same cross-slot adjustment as computeUserPredictedParticipants
+ * but do not substitute actual.winnerTeamId.
+ * Progression rounds: use the user's pick for each feeder match (validated against
+ * the predicted participants of that feeder) but do not substitute actual.winnerTeamId.
+ */
+function computeUserPickedParticipants(
+  def: Tournament,
+  pickMap: Map<string, string>,
+  derivedParticipants: Map<BracketMatchKey, [string, string]>,
+): Map<string, [string | null, string | null]> {
+  const allEntryPickedTeams = new Set<string>();
+  for (const slot of def.bracket.slots) {
+    const pick = pickMap.get(slot.match);
+    if (pick) allEntryPickedTeams.add(pick);
+  }
+
+  // Entry rounds: resolve user's pick (with cross-slot adjustment) — no actual substitution.
+  const entryPickWinner = new Map<BracketMatchKey, string | null>();
+  for (const slot of def.bracket.slots) {
+    const derived = derivedParticipants.get(slot.match);
+    if (!derived) {
+      entryPickWinner.set(slot.match, null);
+      continue;
+    }
+    const directPick = pickMap.get(slot.match) ?? null;
+    const directValid =
+      directPick !== null && (derived[0] === directPick || derived[1] === directPick);
+    if (directValid) {
+      entryPickWinner.set(slot.match, directPick);
+    } else {
+      const crossMatch = allEntryPickedTeams.has(derived[0])
+        ? derived[0]
+        : allEntryPickedTeams.has(derived[1])
+          ? derived[1]
+          : null;
+      entryPickWinner.set(slot.match, crossMatch);
+    }
+  }
+
+  const predicted = new Map<string, [string | null, string | null]>();
+
+  const getUserPickedWinner = (fromKey: string): string | null => {
+    if (entryPickWinner.has(fromKey as BracketMatchKey)) {
+      return entryPickWinner.get(fromKey as BracketMatchKey) ?? null;
+    }
+    const pick = pickMap.get(fromKey) ?? null;
+    if (!pick) return null;
+    const parts = predicted.get(fromKey);
+    if (parts) {
+      return parts[0] === pick || parts[1] === pick ? pick : null;
+    }
+    return null;
+  };
+
+  const bronzeKey = def.bracket.bronzeMatch;
+  for (const round of def.bracket.rounds) {
+    for (const prog of def.bracket.progression) {
+      if (prog.match === bronzeKey) continue;
+      if (predicted.has(prog.match)) continue;
+      if (getRoundLabel(prog.match, def.bracket.rounds) !== round) continue;
+      const [fk0, fk1] = prog.from;
+      predicted.set(prog.match, [
+        fk0 ? getUserPickedWinner(fk0) : null,
+        fk1 ? getUserPickedWinner(fk1) : null,
+      ]);
+    }
   }
 
   return predicted;

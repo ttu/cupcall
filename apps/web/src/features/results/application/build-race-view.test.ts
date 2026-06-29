@@ -60,6 +60,8 @@ function makeKnockoutMatch(
     isEntryRound: false,
     homeTeamPredictedPct: null,
     awayTeamPredictedPct: null,
+    homeTeamUserPredictedParticipant: false,
+    awayTeamUserPredictedParticipant: false,
   };
 }
 
