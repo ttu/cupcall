@@ -13,6 +13,13 @@ function formatKickoff(isoString: string | null): string {
   });
 }
 
+function TeamLabel({ id, winnerId }: { id: string; winnerId: string | null }): ReactElement {
+  if (winnerId === id) {
+    return <span className="font-extrabold text-ink">{id}</span>;
+  }
+  return <>{id}</>;
+}
+
 export function KnockoutMatrix({
   entries,
   matches,
@@ -51,7 +58,9 @@ export function KnockoutMatrix({
                 </span>
                 {m.homeTeamId && m.awayTeamId ? (
                   <span className="text-[9.5px] font-bold text-ink-muted">
-                    {m.homeTeamId}·{m.awayTeamId}
+                    <TeamLabel id={m.homeTeamId} winnerId={m.actualWinnerId} />
+                    {'·'}
+                    <TeamLabel id={m.awayTeamId} winnerId={m.actualWinnerId} />
                   </span>
                 ) : (
                   <span className="font-bold text-ink-muted font-cup-display text-[9.5px]">
