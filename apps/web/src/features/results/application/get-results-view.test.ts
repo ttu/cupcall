@@ -515,7 +515,7 @@ describe('getResultsView', () => {
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf2'), 'C1');
     await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf3'), 'B1'); // B1 loses → busted
-    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf4'), 'A2'); // pending (no match row)
+    await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf4'), 'A2'); // no-pick: A2 not in qf4 (D1 vs C2), cross-slot gives no effective pick
 
     await upsertKnockoutMatch(db, {
       id: 'qf1',
@@ -553,10 +553,11 @@ describe('getResultsView', () => {
 
     const view = await getResultsView({ db, poolId, userId, now: NOW });
     expect(view!.bracketHealth.alivePicks).toBe(2);
-    expect(view!.bracketHealth.pendingPicks).toBe(1);
+    // qf4 pick (A2) is not a valid participant of qf4 and A2 has no other open slot → no-pick, not pending
+    expect(view!.bracketHealth.pendingPicks).toBe(0);
     expect(view!.bracketHealth.bustedPicks).toBe(1);
-    // sf1, sf2, final, bronze have no picks → counted as missed
-    expect(view!.bracketHealth.missedPicks).toBe(4);
+    // sf1, sf2, final, bronze + qf4 (no effective pick) → missed
+    expect(view!.bracketHealth.missedPicks).toBe(5);
     // all 8 bracket matches (qf×4 + sf×2 + final + bronze)
     expect(view!.bracketHealth.totalPicks).toBe(8);
   });

@@ -58,9 +58,54 @@ export function buildBracketRounds(
     stagePicksMap.get(stage)!.add(pickedId);
   }
 
+  // For entry-round slots, resolve each pick to the slot where the predicted team actually plays.
+  // A user's group-stage predictions may have been wrong, landing their team in a different bracket
+  // slot than expected. The effective pick for each slot is the cross-slot adjusted team — matching
+  // the logic in computeUserPredictedParticipants — so pickStatus and pickedWinnerId are consistent
+  // with the predicted bracket chain.
+  const allEntryPickedTeams = new Set<string>();
+  if (inputs) {
+    for (const slot of def.bracket.slots) {
+      const pick = pickMap.get(slot.match);
+      if (pick) allEntryPickedTeams.add(pick);
+    }
+  }
+
+  const effectiveEntryPickMap = new Map<BracketMatchKey, string | null>();
+  if (inputs) {
+    for (const slot of def.bracket.slots) {
+      const directPick = pickMap.get(slot.match) ?? null;
+      const derived = derivedParticipants.get(slot.match);
+      const actualRow = matchByKey.get(slot.match);
+      const home = derived?.[0] ?? actualRow?.homeTeamId ?? null;
+      const away = derived?.[1] ?? actualRow?.awayTeamId ?? null;
+
+      if (home === null && away === null) {
+        effectiveEntryPickMap.set(slot.match, directPick);
+        continue;
+      }
+
+      const directValid = directPick !== null && (home === directPick || away === directPick);
+      if (directValid) {
+        effectiveEntryPickMap.set(slot.match, directPick);
+      } else {
+        const crossMatch =
+          home !== null && allEntryPickedTeams.has(home)
+            ? home
+            : away !== null && allEntryPickedTeams.has(away)
+              ? away
+              : null;
+        effectiveEntryPickMap.set(slot.match, crossMatch);
+      }
+    }
+  }
+
   const buildMatchView = (key: BracketMatchKey, round: string): KnockoutMatchView => {
     const actual = matchByKey.get(key) ?? null;
-    const pickedId = pickMap.get(key) ?? null;
+    const isEntryRound = entryRoundKeys.has(key);
+    const pickedId = isEntryRound
+      ? (effectiveEntryPickMap.get(key) ?? null)
+      : (pickMap.get(key) ?? null);
 
     const derivedPair = derivedParticipants.get(key);
     const homeId = actual?.homeTeamId ?? derivedPair?.[0] ?? null;
@@ -99,8 +144,6 @@ export function buildBracketRounds(
       actualHome: actual?.homeGoals ?? null,
       actualAway: actual?.awayGoals ?? null,
     });
-
-    const isEntryRound = entryRoundKeys.has(key);
 
     const isFinale = key === finalMatchKey || key === bronzeMatchKey;
     const pickedOpponentId = isFinale ? derivePredictedOpponent(key, bracket, pickMap) : null;

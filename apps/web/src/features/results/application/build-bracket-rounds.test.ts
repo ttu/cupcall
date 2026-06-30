@@ -134,6 +134,92 @@ describe('buildBracketRounds — hit computation / cross-slot stage picks', () =
   });
 });
 
+describe('buildBracketRounds — entry-round pickStatus with cross-slot adjustment', () => {
+  // miniTournament entry-round layout:
+  //   qf1: 1A vs 2B  (A1 vs B2)
+  //   qf2: 1C vs 2D  (C1 vs D2)
+  //   qf3: 1B vs 2A  (B1 vs A2)
+  //   qf4: 1D vs 2C  (D1 vs C2)
+
+  it('credits alive when team was picked for a different slot and won (cross-slot pickStatus)', () => {
+    // User picks C1 for qf1 (wrong slot — C1 is actually in qf2 [C1, D2]).
+    // C1 wins qf2 → qf2 effective pick is C1 → alive.
+    // qf1 effective pick: C1 not in [A1, B2], no other participant in allEntryPickedTeams → no-pick.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [
+        makeMatch('qf1', 'QF', {
+          homeTeamId: 'A1',
+          awayTeamId: 'B2',
+          winnerTeamId: 'A1',
+          homeGoals: 1,
+          awayGoals: 0,
+          status: 'final',
+        }),
+        makeMatch('qf2', 'QF', {
+          homeTeamId: 'C1',
+          awayTeamId: 'D2',
+          winnerTeamId: 'C1',
+          homeGoals: 1,
+          awayGoals: 0,
+          status: 'final',
+        }),
+      ],
+      { knockoutPicks: [{ bracketMatchKey: 'qf1', winner: 'C1' }], finishScores: {} },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    const qf2Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf2')!;
+
+    expect(qf2Card.pickStatus).toBe('alive');
+    expect(qf2Card.pickedWinnerId).toBe('C1');
+    expect(qf1Card.pickStatus).toBe('no-pick');
+    expect(qf1Card.pickedWinnerId).toBeNull();
+  });
+
+  it('cross-slot pick for unplayed slot shows pending when match not yet played', () => {
+    // qf2 not in DB yet (unplayed). C1 was picked for qf1 (wrong slot, C1 is in qf2).
+    // qf2 effective pick = C1 → pending (no winner yet).
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [
+        makeMatch('qf1', 'QF', {
+          homeTeamId: 'A1',
+          awayTeamId: 'B2',
+          winnerTeamId: 'A1',
+          homeGoals: 1,
+          awayGoals: 0,
+          status: 'final',
+        }),
+      ],
+      { knockoutPicks: [{ bracketMatchKey: 'qf1', winner: 'C1' }], finishScores: {} },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf2Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf2')!;
+
+    expect(qf2Card.pickStatus).toBe('pending');
+  });
+
+  it('direct valid pick is used as-is without cross-slot substitution', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1],
+      { knockoutPicks: [{ bracketMatchKey: 'qf1', winner: 'A1' }], finishScores: {} },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+
+    expect(qf1Card.pickStatus).toBe('alive');
+    expect(qf1Card.pickedWinnerId).toBe('A1');
+  });
+});
+
 describe('buildBracketRounds — homeTeamUserPredictedParticipant / awayTeamUserPredictedParticipant', () => {
   it('is always false for entry-round (QF) cards', () => {
     const { bracketRounds } = buildBracketRounds(
