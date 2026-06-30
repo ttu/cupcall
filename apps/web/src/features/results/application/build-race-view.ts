@@ -114,6 +114,7 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
       def,
       anyStillLive,
       stillLiveByUser,
+      knockoutPicks: poolKnockoutPicks,
     });
     stages = result.stages;
     nowIndex = result.nowIndex;

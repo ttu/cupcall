@@ -5,6 +5,7 @@ import {
   getTournamentById,
   getMatchesForTournament,
   getGroupScoresByPool,
+  getKnockoutPicksByPool,
 } from '@cup/db';
 import type { Tournament, PoolId } from '@cup/engine';
 import type { PoolDetail } from '../domain/types';
@@ -38,18 +39,19 @@ export async function getPoolDetail(
   const tournament = await getTournamentById(db, pool.tournamentId);
   const def = tournament?.definition ?? null;
 
-  const [leaderboard, allMatches, poolGroupScores] = await Promise.all([
+  const [leaderboard, allMatches, poolGroupScores, knockoutPicks] = await Promise.all([
     getLeaderboard(db, poolId, computeTotalFields(def)),
     getMatchesForTournament(db, pool.tournamentId),
     getGroupScoresByPool(db, poolId),
+    getKnockoutPicksByPool(db, poolId),
   ]);
 
   const stageProgress = def ? buildStageProgress(def, allMatches) : [];
   const raceChart = def
-    ? buildRaceChartData(leaderboard, null, { allMatches, poolGroupScores, def })
+    ? buildRaceChartData(leaderboard, null, { allMatches, poolGroupScores, def, knockoutPicks })
     : buildRaceChartData(leaderboard, null);
   const lastDayPoints = def
-    ? buildLastDayPoints(leaderboard, allMatches, poolGroupScores, def)
+    ? buildLastDayPoints(leaderboard, allMatches, poolGroupScores, def, knockoutPicks)
     : null;
 
   return {

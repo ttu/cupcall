@@ -1,6 +1,6 @@
 import type { UserId, Tournament, GroupId, TeamId } from '@cup/engine';
 import { deriveGroupOrders, matchId as makeMatchId } from '@cup/engine';
-import type { LeaderboardEntry, MatchRow, PoolGroupScore } from '@cup/db';
+import type { LeaderboardEntry, MatchRow, PoolGroupScore, PoolKnockoutPick } from '@cup/db';
 
 export type MatchHit = 'exact' | 'outcome' | 'missed' | 'pending';
 
@@ -23,6 +23,7 @@ export type RaceChartExtras = {
   allMatches: MatchRow[];
   poolGroupScores: PoolGroupScore[];
   def: Tournament;
+  knockoutPicks: PoolKnockoutPick[];
 };
 
 export const RACE_COLORS = [
@@ -51,6 +52,7 @@ export function buildRaceChartData(
         allMatches: extras.allMatches,
         poolGroupScores: extras.poolGroupScores,
         def: extras.def,
+        knockoutPicks: extras.knockoutPicks,
         anyStillLive: false,
         stillLiveByUser: new Map(),
       });
@@ -265,6 +267,37 @@ function buildGroupOrderDeltas(
   return result;
 }
 
+function buildKnockoutSlotDeltas(
+  picks: PoolKnockoutPick[],
+  allMatches: MatchRow[],
+  def: Tournament,
+): Map<string, Map<string, number>> {
+  // Slot picks only award roundOf16 points in tournaments that have an R16 round.
+  // In entry-round-as-QF brackets (mini-tournament), slots are scored via roundOf8 milestones.
+  if (def.bracket.roundOf16Matches.length === 0) return new Map();
+
+  const result = new Map<string, Map<string, number>>();
+  const matchById = new Map(allMatches.map((m) => [m.id, m]));
+
+  for (const slot of def.bracket.slots) {
+    const match = matchById.get(slot.match);
+    if (!match || match.status !== 'final' || !match.kickoff || !match.winnerTeamId) continue;
+
+    const date = utcDateStr(match.kickoff);
+    const winner = match.winnerTeamId;
+
+    for (const pick of picks) {
+      if (pick.bracketMatchKey !== slot.match || pick.winnerTeamId !== winner) continue;
+      if (!result.has(pick.userId)) result.set(pick.userId, new Map());
+      result
+        .get(pick.userId)!
+        .set(date, (result.get(pick.userId)!.get(date) ?? 0) + def.scoring.roundOf16PerTeam);
+    }
+  }
+
+  return result;
+}
+
 function buildKnockoutMilestoneDeltas(
   leaderboard: LeaderboardEntry[],
   allMatches: MatchRow[],
@@ -272,7 +305,14 @@ function buildKnockoutMilestoneDeltas(
 ): Map<string, Map<string, number>> {
   const result = new Map<string, Map<string, number>>();
 
-  const roundOf8Date = raceMilestoneDate(def.bracket.roundOf8Matches, allMatches);
+  // For tournaments with an R16 round (WC 2026): roundOf8 points (teams in QF) are earned
+  // when R16 completes and QF participants become known — not when QF matches finish.
+  // For entry-round-as-QF brackets (mini): keep existing QF-completion attribution.
+  const hasR16 = def.bracket.roundOf16Matches.length > 0;
+  const roundOf8Date = hasR16
+    ? raceMilestoneDate(def.bracket.roundOf16Matches, allMatches)
+    : raceMilestoneDate(def.bracket.roundOf8Matches, allMatches);
+
   const bronzeDate = raceMilestoneDate([def.bracket.bronzeMatch], allMatches);
   const finalDate = raceMilestoneDate([def.bracket.finalMatch], allMatches);
   const topFourDate = maxDateStr(finalDate, bronzeDate);
@@ -287,6 +327,7 @@ function buildKnockoutMilestoneDeltas(
       result.get(entry.userId)!.set(date, (result.get(entry.userId)!.get(date) ?? 0) + pts);
     };
 
+    // roundOf16 is now attributed per-day by buildKnockoutSlotDeltas; skip here.
     add(roundOf8Date, bd.roundOf8);
     add(bronzeDate, bd.bronze);
     add(topFourDate, bd.topFour);
@@ -335,6 +376,7 @@ export function buildLastDayPoints(
   allMatches: MatchRow[],
   poolGroupScores: PoolGroupScore[],
   def: Tournament,
+  knockoutPicks: PoolKnockoutPick[],
 ): { date: string; pointsByUser: Record<string, number> } | null {
   const lastDate = findLastCompleteMatchDay(allMatches);
   if (!lastDate) return null;
@@ -345,6 +387,7 @@ export function buildLastDayPoints(
     def.scoring.groupMatch,
   );
   const groupOrderDeltas = buildGroupOrderDeltas(poolGroupScores, allMatches, def, leaderboard);
+  const slotDeltas = buildKnockoutSlotDeltas(knockoutPicks, allMatches, def);
   const knockoutDeltas = buildKnockoutMilestoneDeltas(leaderboard, allMatches, def);
 
   const pointsByUser: Record<string, number> = {};
@@ -352,6 +395,7 @@ export function buildLastDayPoints(
     const pts =
       (groupMatchDeltas.get(entry.userId)?.get(lastDate) ?? 0) +
       (groupOrderDeltas.get(entry.userId)?.get(lastDate) ?? 0) +
+      (slotDeltas.get(entry.userId)?.get(lastDate) ?? 0) +
       (knockoutDeltas.get(entry.userId)?.get(lastDate) ?? 0);
     if (pts > 0) pointsByUser[entry.userId] = pts;
   }
@@ -369,6 +413,7 @@ export type DailyChartInput = {
   def: Tournament;
   anyStillLive: boolean;
   stillLiveByUser: Map<string, number>;
+  knockoutPicks: PoolKnockoutPick[];
 };
 
 export function buildDailyChartPlayers(input: DailyChartInput): {
@@ -385,6 +430,7 @@ export function buildDailyChartPlayers(input: DailyChartInput): {
     def,
     anyStillLive,
     stillLiveByUser,
+    knockoutPicks,
   } = input;
 
   const groupMatchDeltas = buildGroupMatchDeltas(
@@ -393,6 +439,7 @@ export function buildDailyChartPlayers(input: DailyChartInput): {
     def.scoring.groupMatch,
   );
   const groupOrderDeltas = buildGroupOrderDeltas(poolGroupScores, allMatches, def, leaderboard);
+  const slotDeltas = buildKnockoutSlotDeltas(knockoutPicks, allMatches, def);
   const knockoutDeltas = buildKnockoutMilestoneDeltas(leaderboard, allMatches, def);
 
   const nowIndex = eventDates.length;
@@ -412,6 +459,7 @@ export function buildDailyChartPlayers(input: DailyChartInput): {
     for (const date of eventDates) {
       cumulative += groupMatchDeltas.get(entry.userId)?.get(date) ?? 0;
       cumulative += groupOrderDeltas.get(entry.userId)?.get(date) ?? 0;
+      cumulative += slotDeltas.get(entry.userId)?.get(date) ?? 0;
       cumulative += knockoutDeltas.get(entry.userId)?.get(date) ?? 0;
       pts.push(cumulative);
     }
@@ -440,3 +488,9 @@ export function buildDailyChartPlayers(input: DailyChartInput): {
     ),
   };
 }
+
+// Test-only exports — not part of the public API
+export {
+  buildKnockoutSlotDeltas as buildKnockoutSlotDeltasForTest,
+  buildKnockoutMilestoneDeltas as buildKnockoutMilestoneDeltasForTest,
+};
