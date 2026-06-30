@@ -117,6 +117,25 @@ describe('buildKnockoutSlotDeltasForTest', () => {
     expect(deltas.get(userId('u1'))?.get('2026-06-29')).toBeUndefined();
   });
 
+  it('credits user when they predicted the correct teams via cross-slot swap', () => {
+    // User predicted GER for r32m1 and FRA for r32m2.
+    // Actual: FRA wins r32m1, GER wins r32m2 (cross-slot swap).
+    // Engine scoreRoundOf16 is set-based — {GER, FRA} ∩ {FRA, GER} = 2 teams credited.
+    const matches = [
+      makeKnockoutMatch('r32m1', 'final', new Date('2026-06-29T15:00:00Z'), 'FRA'),
+      makeKnockoutMatch('r32m2', 'final', new Date('2026-06-29T19:00:00Z'), 'GER'),
+    ];
+    const picks: PoolKnockoutPick[] = [
+      { userId: userId('u1'), bracketMatchKey: bracketMatchKey('r32m1'), winnerTeamId: 'GER' },
+      { userId: userId('u1'), bracketMatchKey: bracketMatchKey('r32m2'), winnerTeamId: 'FRA' },
+    ];
+
+    const deltas = buildKnockoutSlotDeltasForTest(picks, matches, defWithR16);
+
+    // Both actual winners (FRA, GER) are in user's predicted set → 2 × 3 = 6
+    expect(deltas.get(userId('u1'))?.get('2026-06-29')).toBe(6);
+  });
+
   it('returns empty map for a tournament without an R16 round', () => {
     const matches = [makeKnockoutMatch('qf1', 'final', new Date('2026-06-29T18:00:00Z'), 'A1')];
     const picks: PoolKnockoutPick[] = [

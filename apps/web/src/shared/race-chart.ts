@@ -276,6 +276,17 @@ function buildKnockoutSlotDeltas(
   // In entry-round-as-QF brackets (mini-tournament), slots are scored via roundOf8 milestones.
   if (def.bracket.roundOf16Matches.length === 0) return new Map();
 
+  // Build set of predicted R16 teams per user — matches the engine's scoreRoundOf16 semantics,
+  // which is set-based (intersection of predicted vs actual R16 teams). A cross-slot swap
+  // (user correctly predicted both teams but swapped which slot each wins) earns full credit.
+  const slotMatchIds = new Set(def.bracket.slots.map((s) => s.match));
+  const userPredictedR16 = new Map<string, Set<string>>();
+  for (const pick of picks) {
+    if (!slotMatchIds.has(pick.bracketMatchKey)) continue;
+    if (!userPredictedR16.has(pick.userId)) userPredictedR16.set(pick.userId, new Set());
+    userPredictedR16.get(pick.userId)!.add(pick.winnerTeamId);
+  }
+
   const result = new Map<string, Map<string, number>>();
   const matchById = new Map(allMatches.map((m) => [m.id, m]));
 
@@ -286,12 +297,10 @@ function buildKnockoutSlotDeltas(
     const date = utcDateStr(match.kickoff);
     const winner = match.winnerTeamId;
 
-    for (const pick of picks) {
-      if (pick.bracketMatchKey !== slot.match || pick.winnerTeamId !== winner) continue;
-      if (!result.has(pick.userId)) result.set(pick.userId, new Map());
-      result
-        .get(pick.userId)!
-        .set(date, (result.get(pick.userId)!.get(date) ?? 0) + def.scoring.roundOf16PerTeam);
+    for (const [uid, predictedSet] of userPredictedR16) {
+      if (!predictedSet.has(winner)) continue;
+      if (!result.has(uid)) result.set(uid, new Map());
+      result.get(uid)!.set(date, (result.get(uid)!.get(date) ?? 0) + def.scoring.roundOf16PerTeam);
     }
   }
 
