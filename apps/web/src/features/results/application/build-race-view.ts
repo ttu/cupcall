@@ -3,6 +3,7 @@ import type {
   LeaderboardEntry,
   PoolGroupScore,
   PoolKnockoutPick,
+  PoolFinishScore,
   PoolSpecialBet,
 } from '@cup/db';
 import { computeRemainingMaxPoints, getSpecialBetDefs } from '@cup/engine';
@@ -41,6 +42,7 @@ type RaceParams = {
   bracketRounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
   poolKnockoutPicks: PoolKnockoutPick[];
+  poolFinishScores: PoolFinishScore[];
   poolSpecialBets: PoolSpecialBet[];
   actualResults: ActualResults;
 };
@@ -74,6 +76,7 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     bracketRounds,
     bronzeMatch,
     poolKnockoutPicks,
+    poolFinishScores,
     poolSpecialBets,
     actualResults,
   } = params;
@@ -159,6 +162,7 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     bracketRounds,
     bronzeMatch,
     poolKnockoutPicks,
+    poolFinishScores,
     def,
   });
 
@@ -247,9 +251,18 @@ export function buildKnockoutMatrix(params: {
   bracketRounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
   poolKnockoutPicks: PoolKnockoutPick[];
+  poolFinishScores: PoolFinishScore[];
   def: Tournament;
 }): { knockoutMatrix: KnockoutMatrixEntry[]; knockoutMatrixMatches: KnockoutMatrixMatch[] } {
-  const { leaderboard, userId, bracketRounds, bronzeMatch, poolKnockoutPicks, def } = params;
+  const {
+    leaderboard,
+    userId,
+    bracketRounds,
+    bronzeMatch,
+    poolKnockoutPicks,
+    poolFinishScores,
+    def,
+  } = params;
 
   const allKnockoutMatches: KnockoutMatchView[] = [
     ...bracketRounds.flatMap((r) => r.matches),
@@ -298,11 +311,33 @@ export function buildKnockoutMatrix(params: {
     roundMap.get(round)!.add(pick.winnerTeamId);
   }
 
+  // Per-user finish scores: userId → 'final'|'bronze' → {home, away}
+  const finishScoreMap = new Map<string, Map<'final' | 'bronze', { home: number; away: number }>>();
+  for (const fs of poolFinishScores) {
+    if (!finishScoreMap.has(fs.userId)) finishScoreMap.set(fs.userId, new Map());
+    finishScoreMap.get(fs.userId)!.set(fs.match, { home: fs.home, away: fs.away });
+  }
+
+  const finalMatchKey = def.bracket.finalMatch as string;
+  const bronzeMatchKey = def.bracket.bronzeMatch as string;
+
   const knockoutMatrix: KnockoutMatrixEntry[] = leaderboard.map((e) => {
     const userRoundPicks = userRoundPicksMap.get(e.userId) ?? new Map<string, Set<string>>();
     let totalPoints = 0;
     const cells: KnockoutMatrixCell[] = sortedMatches.map((m) => {
-      const pickedWinnerId = pickMap.get(`${e.userId}::${m.bracketMatchKey}`) ?? null;
+      const knockoutPick = pickMap.get(`${e.userId}::${m.bracketMatchKey}`) ?? null;
+
+      // For the final and bronze, derive the effective pick from the finish score so that
+      // stale auto-derived knockoutPicks from previous non-tied scores don't mislead the
+      // display or the hit check.
+      const isFinalOrBronze =
+        m.bracketMatchKey === finalMatchKey || m.bracketMatchKey === bronzeMatchKey;
+      let pickedWinnerId: string | null = knockoutPick;
+      if (isFinalOrBronze) {
+        const matchType = m.bracketMatchKey === finalMatchKey ? 'final' : 'bronze';
+        const fs = finishScoreMap.get(e.userId)?.get(matchType);
+        pickedWinnerId = deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick);
+      }
 
       if (m.status !== 'final') {
         return {
@@ -313,10 +348,12 @@ export function buildKnockoutMatrix(params: {
         };
       }
 
-      // Credit the pick if the actual winner is among the user's picks for this round,
-      // regardless of which specific slot the pick was assigned to.
-      const roundPicks = userRoundPicks.get(m.round);
-      const isHit = m.actualWinnerId !== null && (roundPicks?.has(m.actualWinnerId) ?? false);
+      // For final/bronze use the effective pick directly; for other rounds use the
+      // cross-slot round-pick set so swapped picks are still credited.
+      const isHit = isFinalOrBronze
+        ? m.actualWinnerId !== null && pickedWinnerId === m.actualWinnerId
+        : m.actualWinnerId !== null &&
+          (userRoundPicks.get(m.round)?.has(m.actualWinnerId) ?? false);
 
       if (isHit) {
         const pts = hitPoints.get(m.bracketMatchKey) ?? 0;
@@ -359,6 +396,26 @@ export function buildKnockoutMatrix(params: {
     knockoutMatrix: knockoutMatrix.toSorted((a, b) => b.totalPoints - a.totalPoints),
     knockoutMatrixMatches,
   };
+}
+
+/**
+ * Determines the effective winner pick for the final or bronze match.
+ *
+ * - Non-tied finish score → winner is the home or away team derived from the score.
+ *   Falls back to knockoutPick if the match teams are not yet known.
+ * - Tied finish score → winner is the explicit knockoutPick (penalty pick).
+ * - No finish score → falls back to knockoutPick (existing behaviour).
+ */
+function deriveEffectivePick(
+  finishScore: { home: number; away: number } | undefined,
+  homeTeamId: string | null,
+  awayTeamId: string | null,
+  knockoutPick: string | null,
+): string | null {
+  if (!finishScore) return knockoutPick;
+  if (finishScore.home > finishScore.away) return homeTeamId ?? knockoutPick;
+  if (finishScore.home < finishScore.away) return awayTeamId ?? knockoutPick;
+  return knockoutPick; // tied — use explicit penalty pick
 }
 
 function toPredictedOutcome(home: number | null, away: number | null): '1' | 'X' | '2' | null {

@@ -3,7 +3,7 @@ import { buildKnockoutMatrix, buildSpecialsMatrix } from './build-race-view';
 import { miniTournament } from '@cup/engine/testing';
 import { points } from '@cup/engine';
 import type { UserId, BracketMatchKey, ActualResults } from '@cup/engine';
-import type { LeaderboardEntry, PoolKnockoutPick, PoolSpecialBet } from '@cup/db';
+import type { LeaderboardEntry, PoolKnockoutPick, PoolSpecialBet, PoolFinishScore } from '@cup/db';
 import type { KnockoutMatchView, BracketRoundResultView } from '../domain/types';
 
 function makeLeaderboardEntry(uid: string, displayName: string, pointsTotal = 0): LeaderboardEntry {
@@ -77,6 +77,15 @@ function makeRound(label: string, matches: KnockoutMatchView[]): BracketRoundRes
   return { label, matches };
 }
 
+function makeFinishScore(
+  uid: string,
+  match: 'final' | 'bronze',
+  home: number,
+  away: number,
+): PoolFinishScore {
+  return { userId: uid as UserId, match, home, away };
+}
+
 describe('buildKnockoutMatrix', () => {
   it('returns empty arrays when there are no matches and no players', () => {
     const { knockoutMatrix, knockoutMatrixMatches } = buildKnockoutMatrix({
@@ -85,6 +94,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [],
       bronzeMatch: null,
       poolKnockoutPicks: [],
+      poolFinishScores: [],
       def: miniTournament,
     });
     expect(knockoutMatrix).toHaveLength(0);
@@ -101,6 +111,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [makeRound('SF', [sfMatch])],
       bronzeMatch: null,
       poolKnockoutPicks: [makePick('u1', 'sf1', 'A1')],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -124,6 +135,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [makeRound('SF', [sfMatch])],
       bronzeMatch: null,
       poolKnockoutPicks: [makePick('u1', 'sf1', 'A1')],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -142,6 +154,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [makeRound('QF', [qfMatch])],
       bronzeMatch: null,
       poolKnockoutPicks: [makePick('u1', 'qf1', 'B2')],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -161,6 +174,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [makeRound('QF', [qfMatch])],
       bronzeMatch: null,
       poolKnockoutPicks: [],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -180,6 +194,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [makeRound('QF', [qfMatch])],
       bronzeMatch: null,
       poolKnockoutPicks: [makePick('u1', 'qf1', 'A1')],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -199,6 +214,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [],
       bronzeMatch: bronze,
       poolKnockoutPicks: [makePick('u1', 'bronze', 'C1')],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -222,6 +238,7 @@ describe('buildKnockoutMatrix', () => {
         makePick('u1', 'sf1', 'B1'), // miss → 0 pts
         makePick('u2', 'sf1', 'A1'), // hit → 5 pts
       ],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -241,6 +258,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [makeRound('QF', [qf1, qf2, qf3])],
       bronzeMatch: null,
       poolKnockoutPicks: [],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -259,6 +277,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [],
       bronzeMatch: null,
       poolKnockoutPicks: [],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -282,6 +301,7 @@ describe('buildKnockoutMatrix', () => {
       bronzeMatch: null,
       // User picked FRA for qf1, GER for qf2 — both teams advanced, just in swapped slots
       poolKnockoutPicks: [makePick('u1', 'qf1', 'FRA'), makePick('u1', 'qf2', 'GER')],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -303,6 +323,7 @@ describe('buildKnockoutMatrix', () => {
       bracketRounds: [makeRound('QF', [qfMatch])],
       bronzeMatch: null,
       poolKnockoutPicks: [makePick('u1', 'qf1', 'A1')],
+      poolFinishScores: [],
       def: miniTournament,
     });
 
@@ -310,6 +331,227 @@ describe('buildKnockoutMatrix', () => {
     expect(cell.hit).toBe('hit');
     expect(cell.points).toBe(0);
     expect(knockoutMatrix[0]!.totalPoints).toBe(0);
+  });
+
+  describe('final/bronze: effective pick derived from finish score', () => {
+    it('derives pickedWinnerId from home win in a non-tied final score (pending match)', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        // Stale knockoutPick pointing to away team — should be overridden by finish score
+        poolKnockoutPicks: [makePick('u1', 'final', 'BRA')],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.hit).toBe('pending');
+      expect(cell.pickedWinnerId).toBe('USA');
+    });
+
+    it('derives pickedWinnerId from away win in a non-tied final score (pending match)', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'final', 0, 3)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.pickedWinnerId).toBe('BRA');
+    });
+
+    it('scores a hit when the actual winner matches the finish-score-derived pick (non-tied)', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        // Stale knockoutPick pointing to BRA — should be overridden; USA wins 2-1
+        poolKnockoutPicks: [makePick('u1', 'final', 'BRA')],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.hit).toBe('hit');
+      expect(cell.pickedWinnerId).toBe('USA');
+    });
+
+    it('scores a miss when the actual winner does not match the finish-score-derived pick', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'BRA',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.hit).toBe('miss');
+      expect(cell.pickedWinnerId).toBe('USA');
+    });
+
+    it('uses knockoutPick.winner when finish score is tied (explicit penalty pick)', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'final', 'BRA')],
+        poolFinishScores: [makeFinishScore('u1', 'final', 1, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.pickedWinnerId).toBe('BRA');
+    });
+
+    it('shows null pickedWinnerId when finish score is tied and no explicit winner pick exists', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'final', 1, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.pickedWinnerId).toBeNull();
+    });
+
+    it('falls back to knockoutPick.winner when no finish score exists', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'final', 'USA')],
+        poolFinishScores: [],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.pickedWinnerId).toBe('USA');
+    });
+
+    it('falls back to knockoutPick.winner when teams are not yet known (null slots)', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled'); // homeTeamId/awayTeamId default to null
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'final', 'USA')],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 0)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.pickedWinnerId).toBe('USA');
+    });
+
+    it('applies finish-score logic to bronze match too', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const bronze = makeKnockoutMatch('bronze', 'Bronze', 'final', {
+        homeTeamId: 'ARG',
+        awayTeamId: 'FRA',
+        actualWinnerId: 'ARG',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [],
+        bronzeMatch: bronze,
+        poolKnockoutPicks: [makePick('u1', 'bronze', 'FRA')],
+        poolFinishScores: [makeFinishScore('u1', 'bronze', 3, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.hit).toBe('hit');
+      expect(cell.pickedWinnerId).toBe('ARG');
+    });
+
+    it('does not apply finish-score logic to non-final/bronze matches', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const sfMatch = makeKnockoutMatch('sf1', 'SF', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'BRA',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('SF', [sfMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'sf1', 'USA')],
+        // A finish score for 'final' should not affect this SF match
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 0)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.hit).toBe('miss');
+      expect(cell.pickedWinnerId).toBe('USA');
+    });
   });
 });
 

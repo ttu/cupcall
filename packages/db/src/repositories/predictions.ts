@@ -274,6 +274,43 @@ export type PoolKnockoutPick = {
   winnerTeamId: string;
 };
 
+export type PoolFinishScore = {
+  userId: UserId;
+  match: 'final' | 'bronze';
+  home: number;
+  away: number;
+};
+
+/**
+ * Returns all finish-score predictions (final and bronze) for every member of
+ * a pool. Used to derive the effective pick in the knockout matrix.
+ */
+export async function getFinishScoresByPool(
+  db: Database,
+  poolId: PoolId,
+): Promise<PoolFinishScore[]> {
+  const rows = await db
+    .select({
+      userId: schema.predictions.userId,
+      match: schema.predictionFinishScores.match,
+      home: schema.predictionFinishScores.homeGoals,
+      away: schema.predictionFinishScores.awayGoals,
+    })
+    .from(schema.predictions)
+    .innerJoin(
+      schema.predictionFinishScores,
+      eq(schema.predictionFinishScores.predictionId, schema.predictions.id),
+    )
+    .where(eq(schema.predictions.poolId, poolId));
+
+  return rows.map((r) => ({
+    userId: userId(r.userId),
+    match: r.match,
+    home: r.home,
+    away: r.away,
+  }));
+}
+
 /**
  * Returns all knockout winner picks for every member of a pool in a single
  * JOIN query. Used to build the knockout matrix in the results view.

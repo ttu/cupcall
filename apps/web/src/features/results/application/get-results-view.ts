@@ -11,6 +11,7 @@ import {
   getSpecialBetsByPool,
   getActualResults,
   getKnockoutPicksByPool,
+  getFinishScoresByPool,
 } from '@cup/db';
 import type { MatchRow, LeaderboardEntry } from '@cup/db';
 import { computeRemainingMaxPoints, deriveGroupOrders, selectQualifiers } from '@cup/engine';
@@ -55,6 +56,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     actualResults,
     poolSpecialBets,
     poolKnockoutPicks,
+    poolFinishScores,
   ] = await Promise.all([
     getLeaderboard(db, poolId),
     userId !== undefined
@@ -65,6 +67,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     getActualResults(db, pool.tournamentId),
     getSpecialBetsByPool(db, poolId),
     getKnockoutPicksByPool(db, poolId),
+    getFinishScoresByPool(db, poolId),
   ]);
 
   const inputs = prediction != null ? await getPredictionInputs(db, prediction.id) : null;
@@ -144,6 +147,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     bracketRounds,
     bronzeMatch,
     poolKnockoutPicks,
+    poolFinishScores,
     poolSpecialBets,
     actualResults,
   });
