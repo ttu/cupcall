@@ -469,6 +469,39 @@
       "winner": "CAN",
       "decidedBy": "regulation",
       "kickoff": "2026-06-28T19:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m76",
+      "home": "BRA",
+      "away": "JPN",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "BRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-06-29T17:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m74",
+      "home": "GER",
+      "away": "PAR",
+      "homeGoals": 1,
+      "awayGoals": 1,
+      "winner": "PAR",
+      "decidedBy": "penalties",
+      "kickoff": "2026-06-29T20:30:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m75",
+      "home": "NED",
+      "away": "MAR",
+      "homeGoals": 1,
+      "awayGoals": 1,
+      "winner": "MAR",
+      "decidedBy": "penalties",
+      "kickoff": "2026-06-30T01:00:00Z"
     }
   ],
   "groupOrder": {},
