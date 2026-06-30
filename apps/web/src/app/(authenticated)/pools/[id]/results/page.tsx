@@ -66,7 +66,7 @@ export default async function ResultsPage({ params, searchParams }: Props): Prom
       <StageBar stages={view.stageProgress} />
 
       {/* Main content: tabs + panels */}
-      <ResultsPageClient view={view} initialTab={resolvedTab} />
+      <ResultsPageClient view={view} initialTab={resolvedTab} currentUserId={actor.userId} />
     </div>
   );
 }

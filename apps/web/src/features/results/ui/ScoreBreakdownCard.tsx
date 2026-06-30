@@ -3,9 +3,14 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import type { ScoreBreakdown, Scoring } from '../domain/types';
+import type { CategoryTopThree } from './score-breakdown-utils';
 import { cn } from '@/shared/ui';
 
-type Props = { breakdown: ScoreBreakdown; scoring: Scoring | null };
+type Props = {
+  breakdown: ScoreBreakdown;
+  scoring: Scoring | null;
+  topByCategory?: CategoryTopThree;
+};
 
 type Row = {
   label: string;
@@ -59,7 +64,7 @@ const ROWS: Row[] = [
   },
 ];
 
-export function ScoreBreakdownCard({ breakdown, scoring }: Props): ReactElement {
+export function ScoreBreakdownCard({ breakdown, scoring, topByCategory }: Props): ReactElement {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -97,6 +102,7 @@ export function ScoreBreakdownCard({ breakdown, scoring }: Props): ReactElement 
         <ul className="list-none m-0 p-0 border-t border-line" role="list">
           {ROWS.map(({ label, key, hint }) => {
             const pts = breakdown[key];
+            const leaders = topByCategory?.[key];
             return (
               <li
                 key={key}
@@ -114,6 +120,21 @@ export function ScoreBreakdownCard({ breakdown, scoring }: Props): ReactElement 
                   {scoring && (
                     <span className="text-[11px] text-ink-muted font-medium leading-tight">
                       {hint(scoring)}
+                    </span>
+                  )}
+                  {leaders && leaders.length > 0 && (
+                    <span className="flex items-center gap-2 mt-0.5">
+                      {leaders.map((l) => (
+                        <span
+                          key={l.displayName}
+                          className={cn(
+                            'text-[10.5px] leading-tight',
+                            l.isCurrentUser ? 'text-ink font-bold' : 'text-ink-muted font-medium',
+                          )}
+                        >
+                          {l.displayName} +{l.points}
+                        </span>
+                      ))}
                     </span>
                   )}
                 </span>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import type { ResultsView } from '../domain/types';
+import type { UserId } from '@cup/engine';
 import { cn } from '@/shared/ui';
 import { GroupMatchFeed } from './GroupMatchFeed';
 import { GroupTable } from './GroupTable';
@@ -76,12 +77,13 @@ function GroupJumpNav({
   );
 }
 
-type Props = { view: ResultsView; initialTab?: Tab; viewerMode?: boolean };
+type Props = { view: ResultsView; initialTab?: Tab; viewerMode?: boolean; currentUserId?: UserId };
 
 export function ResultsPageClient({
   view,
   initialTab = 'group',
   viewerMode = false,
+  currentUserId,
 }: Props): ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
@@ -173,6 +175,8 @@ export function ResultsPageClient({
           userBreakdown={view.userBreakdown}
           scoring={view.scoring}
           viewerMode={viewerMode}
+          leaderboard={view.leaderboard}
+          {...(currentUserId !== undefined && { currentUserId })}
         />
       )}
     </div>

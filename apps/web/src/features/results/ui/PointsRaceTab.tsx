@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import type { PointsRaceView, ScoreBreakdown, Scoring } from '../domain/types';
+import type { PointsRaceView, ScoreBreakdown, Scoring, LeaderboardEntry } from '../domain/types';
+import type { UserId } from '@cup/engine';
 import { cn } from '@/shared/ui';
 import { RaceView } from './RaceView';
 import { MatchMatrix } from './MatchMatrix';
@@ -23,6 +24,8 @@ type Props = {
   userBreakdown?: ScoreBreakdown | null;
   scoring?: Scoring | null;
   viewerMode?: boolean;
+  leaderboard?: LeaderboardEntry[];
+  currentUserId?: UserId;
 };
 
 export function PointsRaceTab({
@@ -30,6 +33,8 @@ export function PointsRaceTab({
   userBreakdown = null,
   scoring = null,
   viewerMode = false,
+  leaderboard,
+  currentUserId,
 }: Props): ReactElement {
   const [subTab, setSubTab] = useState<RaceSubTab>('race');
 
@@ -63,6 +68,8 @@ export function PointsRaceTab({
           viewerMode={viewerMode}
           userBreakdown={userBreakdown}
           scoring={scoring}
+          {...(leaderboard !== undefined && { leaderboard })}
+          {...(currentUserId !== undefined && { currentUserId })}
         />
       )}
       {subTab === 'by-group' && (

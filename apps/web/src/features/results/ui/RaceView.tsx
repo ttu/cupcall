@@ -2,7 +2,15 @@
 
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import type { PointsRaceView, RaceChartPlayer, ScoreBreakdown, Scoring } from '../domain/types';
+import type {
+  PointsRaceView,
+  RaceChartPlayer,
+  ScoreBreakdown,
+  Scoring,
+  LeaderboardEntry,
+} from '../domain/types';
+import type { UserId } from '@cup/engine';
+import { deriveTopByCategory } from './score-breakdown-utils';
 import { cn } from '@/shared/ui';
 import { RaceChart } from './RaceChart';
 import { StatCard } from './StatCard';
@@ -23,13 +31,19 @@ export function RaceView({
   viewerMode,
   userBreakdown,
   scoring,
+  leaderboard,
+  currentUserId,
 }: {
   race: PointsRaceView;
   viewerMode: boolean;
   userBreakdown: ScoreBreakdown | null;
   scoring: Scoring | null;
+  leaderboard?: LeaderboardEntry[];
+  currentUserId?: UserId;
 }): ReactElement {
   const [zoomDays, setZoomDays] = useState<ZoomDays>('all');
+
+  const topByCategory = leaderboard ? deriveTopByCategory(leaderboard, currentUserId) : undefined;
 
   // Strip projected stage — chartNowIndex is the last actual stage.
   const actualStages = race.chartStages.slice(0, race.chartNowIndex + 1);
@@ -102,7 +116,13 @@ export function RaceView({
                 color={race.myStillLive > 0 ? 'var(--green-600)' : 'var(--ink)'}
               />
             </div>
-            {userBreakdown && <ScoreBreakdownCard breakdown={userBreakdown} scoring={scoring} />}
+            {userBreakdown && (
+              <ScoreBreakdownCard
+                breakdown={userBreakdown}
+                scoring={scoring}
+                {...(topByCategory !== undefined && { topByCategory })}
+              />
+            )}
           </>
         )}
       </div>
