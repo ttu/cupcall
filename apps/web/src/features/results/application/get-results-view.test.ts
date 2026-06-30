@@ -2297,6 +2297,106 @@ describe('getResultsView', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // userKnockoutRoundBreakdown
+  // ---------------------------------------------------------------------------
+
+  describe('userKnockoutRoundBreakdown', () => {
+    it('is null in view mode (no userId)', async () => {
+      const view = await getResultsView({ db, poolId, now: NOW });
+      expect(view!.userKnockoutRoundBreakdown).toBeNull();
+    });
+
+    it('returns all rows with earned=0, missed=0, canStillGet>0 before any knockout resolves', async () => {
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.userKnockoutRoundBreakdown!;
+      const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+
+      expect(rows).toHaveLength(5);
+      expect(rows.map((r) => r.label)).toEqual([
+        'Round of 16',
+        'Round of 8',
+        'Top 4',
+        'Final',
+        'Bronze',
+      ]);
+      expect(rows.every((r) => r.earned === 0)).toBe(true);
+      expect(rows.every((r) => r.missed === 0)).toBe(true);
+
+      const r16 = rows.find((r) => r.label === 'Round of 16')!;
+      const r8 = rows.find((r) => r.label === 'Round of 8')!;
+      const topFour = rows.find((r) => r.label === 'Top 4')!;
+      const finalRow = rows.find((r) => r.label === 'Final')!;
+      const bronzeRow = rows.find((r) => r.label === 'Bronze')!;
+
+      expect(r16.canStillGet).toBe(totalMax.roundOf16);
+      expect(r8.canStillGet).toBe(totalMax.roundOf8);
+      expect(topFour.canStillGet).toBe(totalMax.topFour);
+      expect(finalRow.canStillGet).toBe(totalMax.final);
+      expect(bronzeRow.canStillGet).toBe(totalMax.bronze);
+    });
+
+    it('reflects earned points from score breakdown', async () => {
+      await upsertScore(db, {
+        poolId,
+        userId,
+        pointsTotal: points(25),
+        breakdown: {
+          groupMatches: points(0),
+          groupOrder: points(0),
+          roundOf16: points(0),
+          roundOf8: points(10),
+          topFour: points(8),
+          bronze: points(4),
+          final: points(3),
+          specials: points(0),
+          total: points(25),
+        },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.userKnockoutRoundBreakdown!;
+
+      expect(rows.find((r) => r.label === 'Round of 8')!.earned).toBe(10);
+      expect(rows.find((r) => r.label === 'Top 4')!.earned).toBe(8);
+      expect(rows.find((r) => r.label === 'Bronze')!.earned).toBe(4);
+      expect(rows.find((r) => r.label === 'Final')!.earned).toBe(3);
+    });
+
+    it('drops canStillGet to 0 and computes missed when actualResults resolves categories', async () => {
+      await upsertTournamentResults(db, miniTId, {
+        matchResults: [],
+        groupOrder: {},
+        answers: {
+          topFourOrder: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')],
+        },
+        bronzeMatch: { home: teamId('C1'), away: teamId('D1'), homeGoals: 1, awayGoals: 0 },
+        finalMatch: {
+          home: teamId('A1'),
+          away: teamId('B1'),
+          homeGoals: 2,
+          awayGoals: 1,
+          decidedBy: 'regulation',
+        },
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.userKnockoutRoundBreakdown!;
+      const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+
+      const topFour = rows.find((r) => r.label === 'Top 4')!;
+      const finalRow = rows.find((r) => r.label === 'Final')!;
+      const bronzeRow = rows.find((r) => r.label === 'Bronze')!;
+
+      expect(topFour.canStillGet).toBe(0);
+      expect(topFour.missed).toBe(totalMax.topFour); // earned=0, resolved → all missed
+      expect(finalRow.canStillGet).toBe(0);
+      expect(finalRow.missed).toBe(totalMax.final);
+      expect(bronzeRow.canStillGet).toBe(0);
+      expect(bronzeRow.missed).toBe(totalMax.bronze);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // userSpecialsSummary
   // ---------------------------------------------------------------------------
 

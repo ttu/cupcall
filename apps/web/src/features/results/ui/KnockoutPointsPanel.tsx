@@ -1,23 +1,13 @@
 import type { ReactElement } from 'react';
-import type { ScoreBreakdown } from '../domain/types';
+import type { KnockoutRoundRow } from '../domain/types';
 import { cn } from '@/shared/ui';
 
-type Props = { breakdown: ScoreBreakdown | null };
+type Props = { rows: KnockoutRoundRow[] | null };
 
-type Row = { label: string; points: number };
+export function KnockoutPointsPanel({ rows }: Props): ReactElement | null {
+  if (!rows) return null;
 
-export function KnockoutPointsPanel({ breakdown }: Props): ReactElement | null {
-  if (!breakdown) return null;
-
-  const rows: Row[] = [
-    { label: 'Round of 16', points: breakdown.roundOf16 },
-    { label: 'Round of 8', points: breakdown.roundOf8 },
-    { label: 'Top 4', points: breakdown.topFour },
-    { label: 'Final', points: breakdown.final },
-    { label: 'Bronze', points: breakdown.bronze },
-  ];
-
-  const total = rows.reduce((sum, r) => sum + r.points, 0);
+  const total = rows.reduce((sum, r) => sum + r.earned, 0);
 
   return (
     <div data-testid="knockout-points-panel" className="card p-[14px_16px]">
@@ -31,13 +21,22 @@ export function KnockoutPointsPanel({ breakdown }: Props): ReactElement | null {
           <li
             key={row.label}
             data-testid={`knockout-points-row-${row.label}`}
-            className={cn(
-              'flex justify-between items-center text-xs font-bold',
-              row.points > 0 ? 'text-ink' : 'text-ink-muted',
-            )}
+            className="flex justify-between items-baseline text-xs"
           >
-            <span>{row.label}</span>
-            <span className="tnum">+{row.points}</span>
+            <span className={cn('font-bold', row.earned > 0 ? 'text-ink' : 'text-ink-muted')}>
+              {row.label}
+            </span>
+            <span className="tnum text-right">
+              <span className={cn('font-bold', row.earned > 0 ? 'text-ink' : 'text-ink-muted')}>
+                +{row.earned}
+              </span>
+              {row.missed > 0 && (
+                <span className="font-semibold text-danger"> · {row.missed} missed</span>
+              )}
+              {row.canStillGet > 0 && (
+                <span className="font-semibold text-ink-muted"> · {row.canStillGet} avail</span>
+              )}
+            </span>
           </li>
         ))}
       </ul>

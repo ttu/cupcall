@@ -374,6 +374,13 @@ export type UserPointsSummary = {
   earnedBreakdown?: { matchPoints: number; orderPoints: number } | null;
 };
 
+export type KnockoutRoundRow = {
+  label: string;
+  earned: number;
+  missed: number;
+  canStillGet: number;
+};
+
 export type ResultsView = {
   poolName: string;
   tournamentName: string;
@@ -385,6 +392,8 @@ export type ResultsView = {
   userGroupSummary: UserPointsSummary | null;
   /** Bracket picks points summary (roundOf8, topFour, bronze, final) — null in viewer mode. */
   userKnockoutSummary: UserPointsSummary | null;
+  /** Per-round earned/missed/canStillGet for the knockout panel — null in viewer mode. */
+  userKnockoutRoundBreakdown: KnockoutRoundRow[] | null;
   /** Specials-only points summary — null in viewer mode. */
   userSpecialsSummary: UserPointsSummary | null;
   stageProgress: StageProgress[];

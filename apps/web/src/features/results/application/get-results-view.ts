@@ -21,6 +21,7 @@ import type {
   UserRankChip,
   SpecialBetResultRow,
   UserPointsSummary,
+  KnockoutRoundRow,
 } from '../domain/types';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
@@ -131,6 +132,13 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     userId,
     actualResults,
   );
+  const userKnockoutRoundBreakdown = buildKnockoutRoundBreakdown(
+    def,
+    allMatches,
+    userBreakdown,
+    userId,
+    actualResults,
+  );
   const userSpecialsSummary = buildSpecialsSummary(specialBets, userId);
   const myTotalCanStillGet =
     (userGroupSummary?.canStillGet ?? 0) +
@@ -160,6 +168,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     userBreakdown,
     userGroupSummary,
     userKnockoutSummary,
+    userKnockoutRoundBreakdown,
     userSpecialsSummary,
     stageProgress,
     currentStage,
@@ -263,6 +272,41 @@ function buildKnockoutSummary(
     bronzeRemaining +
     finalRemaining;
   return makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat);
+}
+
+function buildKnockoutRoundBreakdown(
+  def: Tournament,
+  allMatches: MatchRow[],
+  userBreakdown: ScoreBreakdown | null,
+  userId: string | undefined,
+  actualResults: ActualResults,
+): KnockoutRoundRow[] | null {
+  if (userId === undefined) return null;
+  const bd = userBreakdown;
+
+  const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
+  const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
+  const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
+
+  const canStillGet = {
+    roundOf16: actualResults.answers.roundOf16 !== undefined ? 0 : totalMax.roundOf16,
+    roundOf8: remainingMax.roundOf8,
+    topFour: actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour,
+    bronze: actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze,
+    final: actualResults.finalMatch !== undefined ? 0 : totalMax.final,
+  };
+
+  function row(label: string, earned: number, max: number, avail: number): KnockoutRoundRow {
+    return { label, earned, missed: Math.max(0, max - avail - earned), canStillGet: avail };
+  }
+
+  return [
+    row('Round of 16', bd?.roundOf16 ?? 0, totalMax.roundOf16, canStillGet.roundOf16),
+    row('Round of 8', bd?.roundOf8 ?? 0, totalMax.roundOf8, canStillGet.roundOf8),
+    row('Top 4', bd?.topFour ?? 0, totalMax.topFour, canStillGet.topFour),
+    row('Final', bd?.final ?? 0, totalMax.final, canStillGet.final),
+    row('Bronze', bd?.bronze ?? 0, totalMax.bronze, canStillGet.bronze),
+  ];
 }
 
 function buildSpecialsSummary(

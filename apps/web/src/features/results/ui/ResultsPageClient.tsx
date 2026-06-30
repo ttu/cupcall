@@ -141,7 +141,7 @@ export function ResultsPageClient({
             />
             <div className="flex flex-col gap-4">
               <BracketHealthPanel health={view.bracketHealth} championPick={finalMatch} />
-              <KnockoutPointsPanel breakdown={view.userBreakdown} />
+              <KnockoutPointsPanel rows={view.userKnockoutRoundBreakdown} />
             </div>
           </div>
           <div className="flex gap-4 flex-wrap text-[11px] text-ink-muted">
