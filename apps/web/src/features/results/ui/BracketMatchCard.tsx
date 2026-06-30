@@ -118,7 +118,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           <span className="tnum text-[11px] font-bold text-ink-muted">
             {match.actualHome}–{match.actualAway}
           </span>
-        ) : match.predictedHomeTeamId !== null && match.predictedAwayTeamId !== null ? (
+        ) : match.predictedHomeTeamId !== null || match.predictedAwayTeamId !== null ? (
           <span className="text-[11px] font-semibold text-ink-muted italic">Predicted</span>
         ) : match.kickoff ? (
           <span className="text-[11px] font-bold text-ink-muted">
