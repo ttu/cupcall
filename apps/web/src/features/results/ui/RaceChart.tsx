@@ -1,5 +1,8 @@
+'use client';
+
 import type { ReactElement } from 'react';
 import type { RaceChartPlayer } from '../domain/types';
+import { computeYBounds, buildGridLines } from './race-chart-utils';
 
 const PAD = { l: 44, r: 96, t: 22, b: 38 } as const;
 const VIEW_W = 780;
@@ -20,16 +23,14 @@ export function RaceChart({
   if (n === 0 || players.length === 0) return <div className="h-40" />;
 
   const allValues = players.flatMap((p) => p.points);
-  const rawMax = Math.max(...allValues, 0);
-  const bufferedMax = rawMax * 1.1;
-  const yStep = bufferedMax < 10 ? 5 : bufferedMax < 100 ? 10 : bufferedMax < 200 ? 20 : 50;
-  const yMax = Math.max(Math.ceil(bufferedMax / yStep) * yStep, yStep);
+  const { yMin, yMax } = computeYBounds(allValues);
 
   const X = (i: number) => PAD.l + (n > 0 ? (i / n) * PLOT_W : 0);
-  const Y = (v: number) => PAD.t + (1 - v / yMax) * PLOT_H;
+  const Y = (v: number) => PAD.t + (1 - (v - yMin) / (yMax - yMin)) * PLOT_H;
   const nowX = X(nowIndex);
+  const hasProjection = nowIndex < n;
 
-  const gridLines = buildGridLines(yMax);
+  const gridLines = buildGridLines(yMin, yMax);
 
   // Declutter end labels: enforce min 15px vertical gap.
   const endLabelGap = 15;
@@ -55,50 +56,54 @@ export function RaceChart({
       role="img"
     >
       {/* Projection backdrop */}
-      <rect
-        x={nowX}
-        y={PAD.t}
-        width={X(n) - nowX}
-        height={PLOT_H}
-        fill="var(--surface-2)"
-        opacity="0.7"
-      />
-      {/* NOW / PROJECTED divider */}
-      <line
-        x1={nowX}
-        y1={PAD.t - 4}
-        x2={nowX}
-        y2={PAD.t + PLOT_H}
-        stroke="var(--ink)"
-        strokeOpacity="0.2"
-        strokeWidth="1.5"
-        strokeDasharray="3 4"
-      />
-      <text
-        x={nowX - 6}
-        y={PAD.t + 4}
-        textAnchor="end"
-        fontFamily="Archivo"
-        fontSize="10"
-        fontWeight="800"
-        fill="var(--ink-muted)"
-        letterSpacing="1"
-      >
-        NOW
-      </text>
-      {nowIndex < n && (
-        <text
-          x={nowX + 8}
-          y={PAD.t + 4}
-          textAnchor="start"
-          fontFamily="Archivo"
-          fontSize="10"
-          fontWeight="800"
-          fill="var(--orange-600, oklch(0.55 0.16 50))"
-          letterSpacing="1"
-        >
-          PROJECTED
-        </text>
+      {hasProjection && (
+        <rect
+          x={nowX}
+          y={PAD.t}
+          width={X(n) - nowX}
+          height={PLOT_H}
+          fill="var(--surface-2)"
+          opacity="0.7"
+        />
+      )}
+      {/* NOW / PROJECTED divider — only shown when there is a projected segment */}
+      {hasProjection && (
+        <>
+          <line
+            x1={nowX}
+            y1={PAD.t - 4}
+            x2={nowX}
+            y2={PAD.t + PLOT_H}
+            stroke="var(--ink)"
+            strokeOpacity="0.2"
+            strokeWidth="1.5"
+            strokeDasharray="3 4"
+          />
+          <text
+            x={nowX - 6}
+            y={PAD.t + 4}
+            textAnchor="end"
+            fontFamily="Archivo"
+            fontSize="10"
+            fontWeight="800"
+            fill="var(--ink-muted)"
+            letterSpacing="1"
+          >
+            NOW
+          </text>
+          <text
+            x={nowX + 8}
+            y={PAD.t + 4}
+            textAnchor="start"
+            fontFamily="Archivo"
+            fontSize="10"
+            fontWeight="800"
+            fill="var(--orange-600, oklch(0.55 0.16 50))"
+            letterSpacing="1"
+          >
+            PROJECTED
+          </text>
+        </>
       )}
 
       {/* Grid */}
@@ -162,7 +167,7 @@ export function RaceChart({
               strokeLinejoin="round"
             />
             {/* Projected segment */}
-            {nowIndex < n && (
+            {hasProjection && (
               <polyline
                 points={polyPts(p, nowIndex, n)}
                 fill="none"
@@ -183,8 +188,8 @@ export function RaceChart({
               stroke={p.color}
               strokeWidth={p.isCurrentUser ? 3 : 2}
             />
-            {/* End dot */}
-            {n > nowIndex && (
+            {/* End dot — only when projection exists */}
+            {hasProjection && (
               <circle
                 cx={X(n)}
                 cy={Y(p.points[n] ?? 0)}
@@ -219,22 +224,10 @@ export function RaceChart({
   );
 }
 
-function buildGridLines(yMax: number): number[] {
-  const step = yMax <= 10 ? 5 : yMax <= 100 ? 10 : yMax <= 200 ? 20 : yMax <= 500 ? 50 : 100;
-  const lines: number[] = [];
-  for (let v = 0; v <= yMax; v += step) lines.push(v);
-  return lines;
-}
-
-/**
- * Decides whether to render the x-axis label at stage index i.
- * Always shows Start (0), the Now marker, and the Projected tail.
- * For dense charts (many event dates), skips intermediate labels.
- */
 function shouldShowStageLabel(i: number, stageCount: number, nowIndex: number): boolean {
   if (i === 0 || i === nowIndex) return true;
   if (i === stageCount - 1 && i > nowIndex) return true; // Projected tail
-  const dateCount = nowIndex; // number of event-date stages
+  const dateCount = nowIndex;
   const step = dateCount <= 8 ? 1 : dateCount <= 14 ? 2 : dateCount <= 21 ? 3 : 5;
   return i % step === 0;
 }

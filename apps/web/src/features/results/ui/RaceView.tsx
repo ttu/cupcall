@@ -1,10 +1,22 @@
+'use client';
+
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import type { PointsRaceView, RaceChartPlayer, ScoreBreakdown, Scoring } from '../domain/types';
+import { cn } from '@/shared/ui';
 import { RaceChart } from './RaceChart';
 import { StatCard } from './StatCard';
 import { ProjectedStandings, projectedSubLabel } from './ProjectedStandings';
 import { SwingCard } from './SwingCard';
 import { ScoreBreakdownCard } from './ScoreBreakdownCard';
+import { sliceToWindow, visibleZoomOptions, type ZoomDays } from './race-view-utils';
+
+const ZOOM_LABELS: Record<string, string> = {
+  all: 'All',
+  '14': '14d',
+  '7': '7d',
+  '5': '5d',
+};
 
 export function RaceView({
   race,
@@ -17,22 +29,55 @@ export function RaceView({
   userBreakdown: ScoreBreakdown | null;
   scoring: Scoring | null;
 }): ReactElement {
+  const [zoomDays, setZoomDays] = useState<ZoomDays>('all');
+
+  // Strip projected stage — chartNowIndex is the last actual stage.
+  const actualStages = race.chartStages.slice(0, race.chartNowIndex + 1);
+  const actualPlayers: RaceChartPlayer[] = race.chartPlayers.map((p) => ({
+    ...p,
+    points: p.points.slice(0, race.chartNowIndex + 1),
+  }));
+
+  const { stages, players, nowIndex } = sliceToWindow(
+    actualStages,
+    actualPlayers,
+    race.chartNowIndex,
+    zoomDays,
+  );
+
+  const zoomOptions = visibleZoomOptions(race.chartNowIndex);
+
   return (
     <div className="grid gap-0 md:grid-cols-[1fr_322px]">
       <div className="pb-6">
         <div className="card p-[18px_20px_8px] mb-4">
           <div className="flex items-center justify-between mb-2.5 gap-3.5 flex-wrap">
             <RaceLegend players={race.chartPlayers} />
-            <span className="flex items-center gap-3.5 shrink-0">
-              <LegendKey solid label="Actual" />
-              <LegendKey solid={false} label="Projected" />
-            </span>
+            {zoomOptions.length > 1 && (
+              <span className="flex items-center gap-1.5 shrink-0">
+                {zoomOptions.map((opt) => {
+                  const active = zoomDays === opt;
+                  return (
+                    <button
+                      key={String(opt)}
+                      type="button"
+                      onClick={() => setZoomDays(opt)}
+                      data-testid={`race-zoom-${opt}`}
+                      className={cn(
+                        'py-1 px-2.5 rounded-cup-sm border-0 cursor-pointer font-cup-ui text-[11px] font-extrabold transition-[background]',
+                        active
+                          ? 'bg-ink-900 text-white shadow-none'
+                          : 'bg-surface text-ink-muted shadow-[inset_0_0_0_1px_var(--line)]',
+                      )}
+                    >
+                      {ZOOM_LABELS[String(opt)] ?? String(opt)}
+                    </button>
+                  );
+                })}
+              </span>
+            )}
           </div>
-          <RaceChart
-            stages={race.chartStages}
-            nowIndex={race.chartNowIndex}
-            players={race.chartPlayers}
-          />
+          <RaceChart stages={stages} nowIndex={nowIndex} players={players} />
         </div>
 
         {!viewerMode && (
@@ -119,22 +164,6 @@ function RaceLegend({ players }: { players: RaceChartPlayer[] }): ReactElement {
           {p.isCurrentUser ? 'You' : p.displayName.split(' ')[0]}
         </span>
       ))}
-    </span>
-  );
-}
-
-function LegendKey({ solid, label }: { solid: boolean; label: string }): ReactElement {
-  return (
-    <span className="flex items-center gap-1.5 text-[11.5px] font-bold text-ink-muted">
-      <span
-        className="w-4 h-[3px] rounded-[2px] shrink-0"
-        style={{
-          background: solid
-            ? 'var(--ink-muted)'
-            : 'repeating-linear-gradient(90deg,var(--ink-muted) 0 2px,transparent 2px 6px)',
-        }}
-      />
-      {label}
     </span>
   );
 }
