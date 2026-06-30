@@ -58,24 +58,75 @@ export function computeBracketHealth(
 ): BracketHealth {
   const allMatches = [...rounds.flatMap((r) => r.matches), ...(bronze ? [bronze] : [])];
   const scoringMap = buildRoundScoringMap(def);
+  const finalLabel = getRoundLabel(def.bracket.finalMatch as string, def.bracket.rounds);
 
-  const perRound = rounds.map((r) => {
-    const scoring = scoringMap.get(r.label);
-    const alivePicks = r.matches.filter((m) => m.pickStatus === 'alive').length;
-    const pendingPicks = r.matches.filter((m) => m.pickStatus === 'pending').length;
-    const bustedPicks = r.matches.filter((m) => m.pickStatus === 'busted').length;
-    const totalPicks = r.matches.length;
-    const ptsPer = scoring?.ptsPerPick ?? 0;
-    return {
-      label: scoring?.targetLabel ?? r.label,
-      alivePicks,
-      pendingPicks,
-      bustedPicks,
-      totalPicks,
-      earnedPoints: alivePicks * ptsPer,
-      maxPossiblePoints: (alivePicks + pendingPicks) * ptsPer,
-    };
-  });
+  // Per-team scored rounds (R32→'R16', R16→'R8')
+  const scoredRows: BracketRoundHealth[] = rounds
+    .filter((r) => scoringMap.has(r.label))
+    .map((r) => {
+      const { targetLabel, ptsPerPick } = scoringMap.get(r.label)!;
+      const alivePicks = r.matches.filter((m) => m.pickStatus === 'alive').length;
+      const pendingPicks = r.matches.filter((m) => m.pickStatus === 'pending').length;
+      const bustedPicks = r.matches.filter((m) => m.pickStatus === 'busted').length;
+      return {
+        label: targetLabel,
+        alivePicks,
+        pendingPicks,
+        bustedPicks,
+        totalPicks: r.matches.length,
+        earnedPoints: alivePicks * ptsPerPick,
+        maxPossiblePoints: (alivePicks + pendingPicks) * ptsPerPick,
+      };
+    });
+
+  // QF + SF combined into 'Top 4' (rounds not in scoring map and not the Final)
+  const topFourMatches = rounds
+    .filter((r) => !scoringMap.has(r.label) && r.label !== finalLabel)
+    .flatMap((r) => r.matches);
+  const topFourRow: BracketRoundHealth | null =
+    topFourMatches.length > 0
+      ? {
+          label: 'Top 4',
+          alivePicks: topFourMatches.filter((m) => m.pickStatus === 'alive').length,
+          pendingPicks: topFourMatches.filter((m) => m.pickStatus === 'pending').length,
+          bustedPicks: topFourMatches.filter((m) => m.pickStatus === 'busted').length,
+          totalPicks: topFourMatches.length,
+          earnedPoints: 0,
+          maxPossiblePoints: 0,
+        }
+      : null;
+
+  // Final row
+  const finalRound = rounds.find((r) => r.label === finalLabel);
+  const finalRow: BracketRoundHealth | null =
+    finalRound && finalRound.matches.length > 0
+      ? {
+          label: 'Final',
+          alivePicks: finalRound.matches.filter((m) => m.pickStatus === 'alive').length,
+          pendingPicks: finalRound.matches.filter((m) => m.pickStatus === 'pending').length,
+          bustedPicks: finalRound.matches.filter((m) => m.pickStatus === 'busted').length,
+          totalPicks: finalRound.matches.length,
+          earnedPoints: 0,
+          maxPossiblePoints: 0,
+        }
+      : null;
+
+  // Bronze row
+  const bronzeRow: BracketRoundHealth | null = bronze
+    ? {
+        label: 'Bronze',
+        alivePicks: bronze.pickStatus === 'alive' ? 1 : 0,
+        pendingPicks: bronze.pickStatus === 'pending' ? 1 : 0,
+        bustedPicks: bronze.pickStatus === 'busted' ? 1 : 0,
+        totalPicks: 1,
+        earnedPoints: 0,
+        maxPossiblePoints: 0,
+      }
+    : null;
+
+  const perRound = (
+    [...scoredRows, topFourRow, finalRow, bronzeRow] as (BracketRoundHealth | null)[]
+  ).filter((r): r is BracketRoundHealth => r !== null);
 
   return {
     totalPicks: allMatches.length,
