@@ -80,4 +80,37 @@ describe('getRoundHealthDisplay', () => {
       expect(d.color).toBe('ok');
     });
   });
+
+  describe('missedAnnotation', () => {
+    it('is null when all picks are alive or pending', () => {
+      const d = getRoundHealthDisplay(round({ alivePicks: 2, pendingPicks: 11, totalPicks: 13 }));
+      expect(d.missedAnnotation).toBeNull();
+    });
+
+    it('counts busted picks toward missedAnnotation', () => {
+      const d = getRoundHealthDisplay(
+        round({ alivePicks: 2, pendingPicks: 11, bustedPicks: 3, totalPicks: 16 }),
+      );
+      expect(d.missedAnnotation).toBe(3);
+    });
+
+    it('counts no-pick slots toward missedAnnotation', () => {
+      // 2 alive + 11 pending + 0 busted + 3 no-pick = 16 total → missed = 3
+      const d = getRoundHealthDisplay(round({ alivePicks: 2, pendingPicks: 11, totalPicks: 16 }));
+      expect(d.missedAnnotation).toBe(3);
+    });
+
+    it('combines busted and no-pick in missedAnnotation', () => {
+      // 2 alive + 9 pending + 2 busted + 3 no-pick = 16 → missed = 5
+      const d = getRoundHealthDisplay(
+        round({ alivePicks: 2, pendingPicks: 9, bustedPicks: 2, totalPicks: 16 }),
+      );
+      expect(d.missedAnnotation).toBe(5);
+    });
+
+    it('is null when total is zero', () => {
+      const d = getRoundHealthDisplay(round({}));
+      expect(d.missedAnnotation).toBeNull();
+    });
+  });
 });

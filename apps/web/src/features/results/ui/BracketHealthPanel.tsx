@@ -7,7 +7,7 @@ const COLOR_TEXT = { danger: 'text-danger', warning: 'text-amber-600', ok: 'text
 const COLOR_BAR = { danger: 'bg-danger', warning: 'bg-amber-400', ok: 'bg-green-500' };
 
 function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement {
-  const { numerator, pendingAnnotation, color } = getRoundHealthDisplay(round);
+  const { numerator, pendingAnnotation, missedAnnotation, color } = getRoundHealthDisplay(round);
   const total = round.totalPicks;
   const possible = round.alivePicks + round.pendingPicks;
 
@@ -32,6 +32,9 @@ function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement 
         {numerator}/{total}
         {pendingAnnotation !== null && (
           <span className="text-green-500"> · {pendingAnnotation} pending</span>
+        )}
+        {missedAnnotation !== null && (
+          <span className="text-danger"> · {missedAnnotation} missed</span>
         )}
       </span>
     </div>
