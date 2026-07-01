@@ -502,6 +502,39 @@
       "winner": "MAR",
       "decidedBy": "penalties",
       "kickoff": "2026-06-30T01:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m78",
+      "home": "CIV",
+      "away": "NOR",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "winner": "NOR",
+      "decidedBy": "regulation",
+      "kickoff": "2026-06-30T17:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m77",
+      "home": "FRA",
+      "away": "SWE",
+      "homeGoals": 3,
+      "awayGoals": 0,
+      "winner": "FRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-06-30T21:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m79",
+      "home": "MEX",
+      "away": "ECU",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "winner": "MEX",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-01T01:00:00Z"
     }
   ],
   "groupOrder": {},
