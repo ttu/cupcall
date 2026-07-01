@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { miniTournament } from '@cup/engine/testing';
-import { tournamentId as asTournamentId } from '@cup/engine';
-import type { MatchRow } from '@cup/db';
+import { tournamentId as asTournamentId, bracketMatchKey as bmk, userId } from '@cup/engine';
+import type { MatchRow, PoolKnockoutPick } from '@cup/db';
 import { buildBracketRounds } from './build-bracket-rounds';
 
 const tid = asTournamentId('mini-2026');
@@ -669,5 +669,52 @@ describe('Final/Bronze: implicit pickedWinnerId from finish score when no explic
     expect(bronzeMatch).not.toBeNull();
     expect(bronzeMatch!.predictedHomeTeamId).toBe('C1');
     expect(bronzeMatch!.predictedAwayTeamId).toBe('D1');
+  });
+});
+
+describe('buildBracketRounds — poolPickHomePct / poolPickAwayPct', () => {
+  // qf1: A1 (home) vs B2 (away), not yet played
+  const scheduledQf1 = makeMatch('qf1', 'QF', {
+    homeTeamId: 'A1',
+    awayTeamId: 'B2',
+    status: 'scheduled',
+  });
+
+  it('populates poolPickHomePct and poolPickAwayPct from pool knockout picks', () => {
+    const picks: PoolKnockoutPick[] = [
+      { userId: userId('u1'), bracketMatchKey: bmk('qf1'), winnerTeamId: 'A1' },
+      { userId: userId('u2'), bracketMatchKey: bmk('qf1'), winnerTeamId: 'A1' },
+      { userId: userId('u3'), bracketMatchKey: bmk('qf1'), winnerTeamId: 'B2' },
+    ];
+    const { bracketRounds } = buildBracketRounds(miniTournament, [scheduledQf1], null, [], picks);
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const match = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    // 2 of 3 users picked A1 (home) → 67%; 1 of 3 picked B2 (away) → 33%
+    expect(match.poolPickHomePct).toBe(67);
+    expect(match.poolPickAwayPct).toBe(33);
+  });
+
+  it('returns null pcts when no pool picks exist', () => {
+    const { bracketRounds } = buildBracketRounds(miniTournament, [scheduledQf1], null, [], []);
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const match = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(match.poolPickHomePct).toBeNull();
+    expect(match.poolPickAwayPct).toBeNull();
+  });
+
+  it('returns null pcts when teams are TBD (homeTeamId or awayTeamId is null)', () => {
+    // sf1 has no DB row yet — both slots are null until QFs resolve
+    const picks: PoolKnockoutPick[] = [
+      { userId: userId('u1'), bracketMatchKey: bmk('sf1'), winnerTeamId: 'A1' },
+    ];
+    // Only pass the scheduled QF matches so group-stage data is missing → sf1 slots are null
+    const { bracketRounds } = buildBracketRounds(miniTournament, [], null, [], picks);
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Match = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    // Both team slots are null → pcts must be null
+    expect(sf1Match.homeTeamId).toBeNull();
+    expect(sf1Match.awayTeamId).toBeNull();
+    expect(sf1Match.poolPickHomePct).toBeNull();
+    expect(sf1Match.poolPickAwayPct).toBeNull();
   });
 });

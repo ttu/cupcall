@@ -36,6 +36,8 @@ function match(overrides: Partial<KnockoutMatchView>): KnockoutMatchView {
     awayTeamPredictedPct: null,
     homeTeamUserPredictedParticipant: false,
     awayTeamUserPredictedParticipant: false,
+    poolPickHomePct: null,
+    poolPickAwayPct: null,
     ...overrides,
   };
 }

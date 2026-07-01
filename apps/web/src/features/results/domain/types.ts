@@ -152,6 +152,12 @@ export type KnockoutMatchView = {
   homeTeamUserPredictedParticipant: boolean;
   /** True when the confirmed away-slot team was predicted by the user to be in this slot (progression rounds only; always false for the entry round). */
   awayTeamUserPredictedParticipant: boolean;
+  /** % of pool members who directly picked the home team to win this match.
+   *  Null when either team slot is TBD (unknown) or no picks exist. */
+  poolPickHomePct: number | null;
+  /** % of pool members who directly picked the away team to win this match.
+   *  Null when either team slot is TBD (unknown) or no picks exist. */
+  poolPickAwayPct: number | null;
 };
 
 export type BracketRoundResultView = {

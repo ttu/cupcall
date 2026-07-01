@@ -15,6 +15,7 @@ import { KnockoutPointsPanel } from './KnockoutPointsPanel';
 import { PointsRaceTab } from './PointsRaceTab';
 import { SpecialBetsPanel } from './SpecialBetsPanel';
 import { PointsSummaryPanel } from './PointsSummaryPanel';
+import { KnockoutUpcomingFeed } from './KnockoutUpcomingFeed';
 
 type Tab = 'group' | 'knockout' | 'race' | 'specials';
 
@@ -135,6 +136,7 @@ export function ResultsPageClient({
       {activeTab === 'knockout' && (
         <div className="flex flex-col gap-6">
           {view.userKnockoutSummary && <PointsSummaryPanel summary={view.userKnockoutSummary} />}
+          <KnockoutUpcomingFeed rounds={view.bracketRounds} bronzeMatch={view.bronzeMatch} />
           <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_240px]">
             <KnockoutBracket
               rounds={view.bracketRounds}

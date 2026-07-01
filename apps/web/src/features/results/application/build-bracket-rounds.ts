@@ -258,6 +258,14 @@ export function buildBracketRounds(
         !isEntryRound && homeId !== null && userPickedParticipants.get(key)?.[0] === homeId,
       awayTeamUserPredictedParticipant:
         !isEntryRound && awayId !== null && userPickedParticipants.get(key)?.[1] === awayId,
+      poolPickHomePct:
+        homeId !== null && awayId !== null
+          ? (knockoutRoundPcts.get(key)?.get(homeId) ?? null)
+          : null,
+      poolPickAwayPct:
+        homeId !== null && awayId !== null
+          ? (knockoutRoundPcts.get(key)?.get(awayId) ?? null)
+          : null,
     };
   };
 
