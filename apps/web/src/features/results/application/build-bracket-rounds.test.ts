@@ -538,4 +538,38 @@ describe('Final/Bronze: implicit pickedWinnerId from finish score when no explic
     const finalCard = finalRound.matches[0]!;
     expect(finalCard.pickedWinnerId).toBeNull();
   });
+
+  it('sets predictedHomeTeamId=sf1-winner and predictedAwayTeamId=sf2-winner for Final', () => {
+    // Contract: predictedHomeTeamId / predictedAwayTeamId must preserve home/away slot order
+    // so that predictedHome score always corresponds to the home-side team and
+    // predictedAway score always corresponds to the away-side team.
+    // FinalResultCard relies on this to show "Your pick: [home] 2–1 [away]" correctly.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      { knockoutPicks: fullBracketPicks, finishScores: { final: { home: 2, away: 1 } } },
+      [],
+      [],
+    );
+    const finalCard = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    // A1 is the sf1 winner → fills the home slot
+    expect(finalCard.predictedHomeTeamId).toBe('A1');
+    // B1 is the sf2 winner → fills the away slot
+    expect(finalCard.predictedAwayTeamId).toBe('B1');
+  });
+
+  it('sets predictedHomeTeamId=sf1-loser and predictedAwayTeamId=sf2-loser for Bronze', () => {
+    // Same slot-order contract for the Bronze match.
+    // sf1 loser = C1 (A1 beat C1 in sf1), sf2 loser = D1 (B1 beat D1 in sf2).
+    const { bronzeMatch } = buildBracketRounds(
+      miniTournament,
+      [],
+      { knockoutPicks: fullBracketPicks, finishScores: { bronze: { home: 3, away: 1 } } },
+      [],
+      [],
+    );
+    expect(bronzeMatch).not.toBeNull();
+    expect(bronzeMatch!.predictedHomeTeamId).toBe('C1');
+    expect(bronzeMatch!.predictedAwayTeamId).toBe('D1');
+  });
 });

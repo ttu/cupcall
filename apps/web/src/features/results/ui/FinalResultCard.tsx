@@ -39,8 +39,8 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
   const hasActualScore = match.actualHome !== null && match.actualAway !== null;
   const hasPredictedScore = match.predictedHome !== null && match.predictedAway !== null;
 
-  const pickLeftId = match.homeTeamId ?? match.pickedOpponentId;
-  const pickRightId = match.awayTeamId ?? match.pickedWinnerId;
+  const pickLeftId = match.homeTeamId ?? match.predictedHomeTeamId;
+  const pickRightId = match.awayTeamId ?? match.predictedAwayTeamId;
   // Explicit winner pick takes priority; fall back to whichever team has more predicted goals
   const pickWinnerId: string | null =
     match.pickedWinnerId ??
