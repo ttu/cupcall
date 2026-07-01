@@ -165,7 +165,9 @@ export function buildBracketRounds(
     let pickStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
     if (effectivePickedId) {
       if (!winnerId) {
-        pickStatus = 'pending';
+        const matchTeamsKnown = homeId !== null && awayId !== null;
+        const pickedTeamAbsent = effectivePickedId !== homeId && effectivePickedId !== awayId;
+        pickStatus = matchTeamsKnown && pickedTeamAbsent ? 'busted' : 'pending';
       } else if (winnerId === effectivePickedId) {
         pickStatus = 'alive';
       } else {

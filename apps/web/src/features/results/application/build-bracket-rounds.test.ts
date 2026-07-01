@@ -374,6 +374,41 @@ describe('buildBracketRounds — homeTeamUserPredictedParticipant / awayTeamUser
   });
 });
 
+describe('buildBracketRounds — impossible pick detection', () => {
+  // When both match participants are known and the picked team is neither of them,
+  // the pick is already lost before the match is played → busted, not pending.
+
+  it('marks pickStatus=busted when picked team cannot appear in the match (both teams known)', () => {
+    // After qf1 (A1 wins) and qf2 (C1 wins), sf1 has homeId=A1, awayId=C1.
+    // User picks B2 (qf1 loser) for sf1 → B2 can never win sf1 → busted.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1, finalQf2],
+      { knockoutPicks: [{ bracketMatchKey: 'sf1', winner: 'B2' }], finishScores: {} },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    expect(sf1Card.pickStatus).toBe('busted');
+  });
+
+  it('keeps pickStatus=pending when only one match participant is known', () => {
+    // Only qf1 done (A1 wins), so sf1 homeId=A1 but awayId still unknown.
+    // User picks B2 for sf1 → B2 might still appear as the away team → pending.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1], // qf2 not yet played
+      { knockoutPicks: [{ bracketMatchKey: 'sf1', winner: 'B2' }], finishScores: {} },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    expect(sf1Card.pickStatus).toBe('pending');
+  });
+});
+
 describe('buildBracketRounds — regulation-decided matches (winnerTeamId null)', () => {
   // In the DB, winnerTeamId is only stored for penalty-decided matches (ties after 90 min).
   // Regulation/extra-time winners must be derived from the score.
