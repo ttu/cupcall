@@ -1,6 +1,12 @@
 import type { ReactElement } from 'react';
-import type { BracketHealth, BracketRoundHealth, KnockoutMatchView } from '../domain/types';
+import type {
+  BracketHealth,
+  BracketRoundHealth,
+  KnockoutMatchView,
+  PickStatus,
+} from '../domain/types';
 import { getRoundHealthDisplay } from '../domain/bracket-health-display';
+import { deriveOpponentStatus } from '../domain/top-four-picks';
 import { cn } from '@/shared/ui';
 
 const COLOR_TEXT = { danger: 'text-danger', warning: 'text-amber-600', ok: 'text-green-700' };
@@ -44,15 +50,79 @@ function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement 
 type Props = {
   health: BracketHealth;
   championPick: KnockoutMatchView | null;
+  bronzeMatch: KnockoutMatchView | null;
 };
 
-export function BracketHealthPanel({ health, championPick }: Props): ReactElement {
+const STATUS_TEXT: Record<PickStatus, string> = {
+  alive: ' · still alive',
+  busted: ' · eliminated',
+  pending: ' · pending',
+  'no-pick': '',
+};
+
+const STATUS_CLASS: Record<PickStatus, string> = {
+  alive: 'text-green-700',
+  busted: 'text-danger',
+  pending: 'text-ink-muted',
+  'no-pick': 'text-ink-muted',
+};
+
+type TopFourRow = {
+  position: string;
+  teamId: string;
+  teamName: string;
+  status: PickStatus;
+};
+
+function buildTopFour(
+  finalMatch: KnockoutMatchView | null,
+  bronzeMatch: KnockoutMatchView | null,
+): TopFourRow[] {
+  const rows: TopFourRow[] = [];
+
+  if (finalMatch?.pickedWinnerId) {
+    rows.push({
+      position: '1st',
+      teamId: finalMatch.pickedWinnerId,
+      teamName: finalMatch.pickedWinnerName ?? finalMatch.pickedWinnerId,
+      status: finalMatch.pickStatus,
+    });
+  }
+  if (finalMatch?.pickedOpponentId) {
+    rows.push({
+      position: '2nd',
+      teamId: finalMatch.pickedOpponentId,
+      teamName: finalMatch.pickedOpponentName ?? finalMatch.pickedOpponentId,
+      status: deriveOpponentStatus(finalMatch, finalMatch.pickedOpponentId),
+    });
+  }
+  if (bronzeMatch?.pickedWinnerId) {
+    rows.push({
+      position: '3rd',
+      teamId: bronzeMatch.pickedWinnerId,
+      teamName: bronzeMatch.pickedWinnerName ?? bronzeMatch.pickedWinnerId,
+      status: bronzeMatch.pickStatus,
+    });
+  }
+  if (bronzeMatch?.pickedOpponentId) {
+    rows.push({
+      position: '4th',
+      teamId: bronzeMatch.pickedOpponentId,
+      teamName: bronzeMatch.pickedOpponentName ?? bronzeMatch.pickedOpponentId,
+      status: deriveOpponentStatus(bronzeMatch, bronzeMatch.pickedOpponentId),
+    });
+  }
+
+  return rows;
+}
+
+export function BracketHealthPanel({ health, championPick, bronzeMatch }: Props): ReactElement {
   const pct = health.totalPicks > 0 ? (health.alivePicks / health.totalPicks) * 100 : 0;
   const pendingPct =
     health.totalPicks > 0
       ? ((health.alivePicks + health.pendingPicks) / health.totalPicks) * 100
       : 0;
-  const champion = championPick?.pickedWinnerId;
+  const topFour = buildTopFour(championPick, bronzeMatch);
 
   return (
     <div className="flex flex-col gap-3">
@@ -97,29 +167,26 @@ export function BracketHealthPanel({ health, championPick }: Props): ReactElemen
         )}
       </div>
 
-      {/* Champion pick */}
-      {champion && (
+      {/* Top 4 picks */}
+      {topFour.length > 0 && (
         <div className="card py-3 px-3.5">
-          <div className="flex items-center gap-1.5 mb-1.5">
+          <div className="flex items-center gap-1.5 mb-2">
             <span>🏆</span>
-            <span className="text-[13px] font-extrabold text-ink">Your champion</span>
+            <span className="text-[13px] font-extrabold text-ink">Your top 4</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="badge sm">{champion}</span>
-            <span
-              className={cn(
-                'font-bold text-[13px]',
-                championPick.pickStatus === 'alive'
-                  ? 'text-green-700'
-                  : championPick.pickStatus === 'busted'
-                    ? 'text-danger'
-                    : 'text-ink-muted',
-              )}
-            >
-              {championPick.pickedWinnerName ?? champion}
-              {championPick.pickStatus === 'alive' && ' · still alive'}
-              {championPick.pickStatus === 'busted' && ' · eliminated'}
-            </span>
+          <div className="flex flex-col gap-1.5">
+            {topFour.map(({ position, teamId, teamName, status }) => (
+              <div key={position} className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-ink-muted w-6 shrink-0">
+                  {position}
+                </span>
+                <span className="badge sm">{teamId}</span>
+                <span className={cn('font-bold text-[13px]', STATUS_CLASS[status])}>
+                  {teamName}
+                  {STATUS_TEXT[status]}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
