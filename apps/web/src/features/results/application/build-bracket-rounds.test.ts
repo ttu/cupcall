@@ -373,3 +373,79 @@ describe('buildBracketRounds — homeTeamUserPredictedParticipant / awayTeamUser
     expect(finalCard.awayTeamUserPredictedParticipant).toBe(true);
   });
 });
+
+describe('Final/Bronze: implicit pickedWinnerId from finish score when no explicit knock pick', () => {
+  // Scenario: user saved the Final/Bronze score before filling in SF picks.
+  // The implicit winner was never stored. Later, SF (and QF) picks were added.
+  // At render time we must derive the winner from the score + SF picks so both
+  // finalists appear in the "Your pick" row of FinalResultCard.
+
+  const fullBracketPicks = [
+    { bracketMatchKey: 'qf1', winner: 'A1' },
+    { bracketMatchKey: 'qf2', winner: 'C1' },
+    { bracketMatchKey: 'qf3', winner: 'B1' },
+    { bracketMatchKey: 'qf4', winner: 'D1' },
+    { bracketMatchKey: 'sf1', winner: 'A1' },
+    { bracketMatchKey: 'sf2', winner: 'B1' },
+    // deliberately NO 'final' or 'bronze' knockout pick
+  ];
+
+  it('derives pickedWinnerId and pickedOpponentId for Final when score picks home side', () => {
+    // finishScore: A1 (sf1 winner = home side) wins 2-1
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      { knockoutPicks: fullBracketPicks, finishScores: { final: { home: 2, away: 1 } } },
+      [],
+      [],
+    );
+    const finalRound = bracketRounds.find((r) => r.label === 'Final')!;
+    const finalCard = finalRound.matches[0]!;
+    expect(finalCard.pickedWinnerId).toBe('A1');
+    expect(finalCard.pickedOpponentId).toBe('B1');
+  });
+
+  it('derives pickedWinnerId and pickedOpponentId for Final when score picks away side', () => {
+    // finishScore: B1 (sf2 winner = away side) wins 0-3
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      { knockoutPicks: fullBracketPicks, finishScores: { final: { home: 0, away: 3 } } },
+      [],
+      [],
+    );
+    const finalRound = bracketRounds.find((r) => r.label === 'Final')!;
+    const finalCard = finalRound.matches[0]!;
+    expect(finalCard.pickedWinnerId).toBe('B1');
+    expect(finalCard.pickedOpponentId).toBe('A1');
+  });
+
+  it('derives pickedWinnerId and pickedOpponentId for Bronze when score picks home side', () => {
+    // Bronze home side = sf1 loser = C1 (sf1 winner was A1, C1 was the other QF winner)
+    // Bronze away side = sf2 loser = D1 (sf2 winner was B1, D1 was the other QF winner)
+    // finishScore: C1 wins 3-1
+    const { bronzeMatch } = buildBracketRounds(
+      miniTournament,
+      [],
+      { knockoutPicks: fullBracketPicks, finishScores: { bronze: { home: 3, away: 1 } } },
+      [],
+      [],
+    );
+    expect(bronzeMatch).not.toBeNull();
+    expect(bronzeMatch!.pickedWinnerId).toBe('C1');
+    expect(bronzeMatch!.pickedOpponentId).toBe('D1');
+  });
+
+  it('leaves pickedWinnerId null for tied score (tiebreak required)', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      { knockoutPicks: fullBracketPicks, finishScores: { final: { home: 1, away: 1 } } },
+      [],
+      [],
+    );
+    const finalRound = bracketRounds.find((r) => r.label === 'Final')!;
+    const finalCard = finalRound.matches[0]!;
+    expect(finalCard.pickedWinnerId).toBeNull();
+  });
+});

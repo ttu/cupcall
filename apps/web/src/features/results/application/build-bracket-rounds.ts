@@ -112,20 +112,10 @@ export function buildBracketRounds(
     const awayId = actual?.awayTeamId ?? derivedPair?.[1] ?? null;
     const winnerId = actual?.winnerTeamId ?? null;
 
-    let pickStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
-    if (pickedId) {
-      if (!winnerId) {
-        pickStatus = 'pending';
-      } else if (winnerId === pickedId) {
-        pickStatus = 'alive';
-      } else {
-        pickStatus = 'busted';
-      }
-    }
-
     // Predicted score: only Final and Bronze have a finish score.
     let predictedHome: number | null = null;
     let predictedAway: number | null = null;
+    const isFinale = key === finalMatchKey || key === bronzeMatchKey;
     if (key === finalMatchKey && finishScores.final) {
       predictedHome = finishScores.final.home;
       predictedAway = finishScores.final.away;
@@ -134,9 +124,38 @@ export function buildBracketRounds(
       predictedAway = finishScores.bronze.away;
     }
 
+    // For Final/Bronze: if no explicit bracket pick was stored but the finish score is non-tied,
+    // derive the implied winner from the finalists/bronzePair so both teams appear in the pick row.
+    // This covers the case where the user saved the score before filling in SF picks, meaning
+    // the implicit winner was never written to the knockout_picks table at save time.
+    let effectivePickedId = pickedId;
+    if (isFinale && pickedId === null) {
+      const score = key === finalMatchKey ? finishScores.final : finishScores.bronze;
+      if (score && score.home !== score.away) {
+        effectivePickedId = deriveImplicitFinaleWinner(
+          key,
+          bracket,
+          pickMap,
+          score.home,
+          score.away,
+        );
+      }
+    }
+
+    let pickStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
+    if (effectivePickedId) {
+      if (!winnerId) {
+        pickStatus = 'pending';
+      } else if (winnerId === effectivePickedId) {
+        pickStatus = 'alive';
+      } else {
+        pickStatus = 'busted';
+      }
+    }
+
     const stagePicks = actual?.stage ? (stagePicksMap.get(actual.stage) ?? null) : null;
     const hit = computeKnockoutHit({
-      pickedWinnerId: pickedId,
+      pickedWinnerId: effectivePickedId,
       actualWinnerId: winnerId,
       stagePicks,
       predictedHome,
@@ -145,8 +164,9 @@ export function buildBracketRounds(
       actualAway: actual?.awayGoals ?? null,
     });
 
-    const isFinale = key === finalMatchKey || key === bronzeMatchKey;
-    const pickedOpponentId = isFinale ? derivePredictedOpponent(key, bracket, pickMap) : null;
+    const pickedOpponentId = isFinale
+      ? derivePredictedOpponent(key, bracket, pickMap, effectivePickedId)
+      : null;
 
     return {
       bracketMatchKey: key,
@@ -161,8 +181,10 @@ export function buildBracketRounds(
       actualWinnerName: winnerId ? (teamMap.get(winnerId) ?? winnerId) : null,
       kickoff: actual?.kickoff?.toISOString() ?? null,
       status: actual?.status === 'final' ? 'final' : 'scheduled',
-      pickedWinnerId: pickedId,
-      pickedWinnerName: pickedId ? (teamMap.get(pickedId) ?? pickedId) : null,
+      pickedWinnerId: effectivePickedId,
+      pickedWinnerName: effectivePickedId
+        ? (teamMap.get(effectivePickedId) ?? effectivePickedId)
+        : null,
       pickedOpponentId,
       pickedOpponentName: pickedOpponentId
         ? (teamMap.get(pickedOpponentId) ?? pickedOpponentId)
@@ -431,13 +453,14 @@ function derivePredictedOpponent(
   matchKey: string,
   bracket: Tournament['bracket'],
   pickMap: Map<string, string>,
+  effectivePick: string | null,
 ): string | null {
   const prog = bracket.progression.find((p) => p.match === matchKey);
   if (!prog || prog.from.length !== 2) return null;
   const sf1Key = prog.from[0];
   const sf2Key = prog.from[1];
   if (!sf1Key || !sf2Key) return null;
-  const pickedWinner = pickMap.get(matchKey) ?? null;
+  const pickedWinner = effectivePick;
 
   if (matchKey !== bracket.bronzeMatch) {
     // Final: participants are SF winners
@@ -469,6 +492,60 @@ function derivePredictedOpponent(
   const loser2 = sfLoser(sf2Key);
   if (!loser1 || !loser2) return null;
   return loser1 === pickedWinner ? loser2 : loser1;
+}
+
+/**
+ * Derives the implied winner of a Final or Bronze match from the predicted score
+ * and the bracket picks, mirroring what deriveFinishWinner does at save time.
+ *
+ * Used when no explicit knockout pick was stored for the match (typically because
+ * the score was saved before the SF/QF bracket picks were filled in), but the
+ * feeder picks are now present and allow the winner to be inferred.
+ *
+ * Returns null when: score is tied, feeder picks are missing, or the bracket
+ * progression cannot be resolved.
+ */
+function deriveImplicitFinaleWinner(
+  matchKey: string,
+  bracket: Tournament['bracket'],
+  pickMap: Map<string, string>,
+  homeGoals: number,
+  awayGoals: number,
+): string | null {
+  if (homeGoals === awayGoals) return null;
+
+  const prog = bracket.progression.find((p) => p.match === matchKey);
+  if (!prog || prog.from.length !== 2) return null;
+  const [from1, from2] = prog.from;
+  if (!from1 || !from2) return null;
+
+  if (matchKey !== bracket.bronzeMatch) {
+    // Final: home side = sf1 winner, away side = sf2 winner
+    const homeSide = pickMap.get(from1) ?? null;
+    const awaySide = pickMap.get(from2) ?? null;
+    if (!homeSide || !awaySide) return null;
+    return homeGoals > awayGoals ? homeSide : awaySide;
+  }
+
+  // Bronze: home side = sf1 loser, away side = sf2 loser
+  const getSfLoser = (sfKey: string): string | null => {
+    const sfProg = bracket.progression.find((p) => p.match === sfKey);
+    if (!sfProg || sfProg.from.length !== 2) return null;
+    const [qf1Key, qf2Key] = sfProg.from;
+    if (!qf1Key || !qf2Key) return null;
+    const sfWinner = pickMap.get(sfKey) ?? null;
+    if (!sfWinner) return null;
+    const team1 = pickMap.get(qf1Key) ?? null;
+    const team2 = pickMap.get(qf2Key) ?? null;
+    if (team1 && sfWinner !== team1) return team1;
+    if (team2 && sfWinner !== team2) return team2;
+    return null;
+  };
+
+  const homeSide = getSfLoser(from1);
+  const awaySide = getSfLoser(from2);
+  if (!homeSide || !awaySide) return null;
+  return homeGoals > awayGoals ? homeSide : awaySide;
 }
 
 /**
