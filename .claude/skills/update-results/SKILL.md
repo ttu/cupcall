@@ -1,21 +1,13 @@
 ---
 name: update-results
-description: Fetch the latest World Cup 2026 match results from openfootball and add any missing scores to results.json. Use when the user says "update results", "update today's matches", "update latest matches", or similar.
+description: Fetch the latest World Cup 2026 match results from openfootball/Wikipedia and add any missing scores to results.json (both group stage and knockout stage). Use when the user says "update results", "update today's matches", "update latest matches", "fill missing knockout results", or similar.
 ---
 
 # Update Match Results
 
-## What this does
+Covers both group stage (`matchResults[]`) and knockout stage (`knockout[]`).
 
-1. Find which group matches are missing from `data/tournaments/wc-2026/results.json`
-2. Fetch the openfootball feed for scores
-3. Fetch Wikipedia group pages for conduct (card) data
-4. Map completed matches to our match IDs
-5. Write new results into `results.json`
-
-## Step 1 — find missing matches
-
-Run this to see which matches should have been played but lack a result:
+## Step 1 — find what's missing
 
 ```bash
 python3 -c "
@@ -27,78 +19,81 @@ with open('data/tournaments/wc-2026/tournament.json') as f:
 with open('data/tournaments/wc-2026/results.json') as f:
     r = json.load(f)
 
-done = {x['matchId'] for x in r['matchResults']}
 now = datetime.now(timezone.utc).isoformat()
 
-for m in t['groupMatches']:
-    if m['kickoff'] < now and m['id'] not in done:
-        print(m['id'], m['home'], 'vs', m['away'], m['kickoff'])
+# Group stage
+done_group = {x['matchId'] for x in r['matchResults']}
+missing_group = [(m['id'], m['home'], m['away'], m['kickoff'])
+    for m in t['groupMatches'] if m['kickoff'] < now and m['id'] not in done_group]
+
+# Knockout stage
+done_ko = {x['matchId'] for x in r['knockout']}
+all_ko = {s['match'] for s in t['bracket']['slots']}  # R32 only; add r16/qf/sf/final IDs as needed
+missing_ko = sorted(all_ko - done_ko)
+
+print('Missing group:', missing_group)
+print('Missing knockout:', missing_ko)
 "
 ```
 
-## Step 2 — fetch openfootball
+## Step 2 — fetch sources
 
-Fetch: `https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json`
+- **openfootball:** `https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json`  
+  Ask: "List every match that has a completed score. For each: match number, team1, team2, score ft, score after extra time (if any), penalty shootout result (if any), date and UTC kickoff time."
+- **Wikipedia knockout page** (fallback / confirm decidedBy):  
+  `https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_knockout_stage`  
+  Ask: "List all completed matches with final score, whether decided by regulation / extra time / penalties, and the penalty shootout score."
 
-Ask: "List every match with a completed score (ft field). For each: team1, team2, score.ft[0], score.ft[1], date."
+Only add what sources confirm. If openfootball lags, try Wikipedia. Never guess.
 
-## Step 3 — map team names to IDs
+## Step 3 — group stage results
 
-Our team names (from `tournament.json` `teams[].name`) versus openfootball names differ in a few cases:
+See [GROUP.md](GROUP.md) for the full group-stage workflow (team name mapping, conduct scoring, JSON format).
 
-| Our name | Openfootball name |
+## Step 4 — knockout results
+
+### 4a — resolve home/away teams from bracket slots
+
+The slot for each matchId shows position codes (e.g. `"home": "1A", "away": "3E"`).  
+Compute group standings from `matchResults` to resolve `1A → MEX`, `3E → ECU`, etc.
+
+### 4b — map openfootball match number → matchId
+
+openfootball match numbers align directly: `#77 → r32m77`, `#78 → r32m78`, etc.
+
+### 4c — determine `decidedBy`
+
+| Situation | `decidedBy` |
 |---|---|
-| Czechia | Czech Republic |
-| Bosnia-Herzegovina | Bosnia & Herzegovina |
-| DR Congo | DR Congo |
-| Ivory Coast | Ivory Coast |
-| Türkiye | Turkey / Türkiye |
+| Score differs after 90 min | `"regulation"` |
+| Score level after 90, differs after 120 | `"extra-time"` |
+| Score level after 120 min | `"penalties"` |
 
-Build a lookup: for each of our `groupMatches`, the pair `(home team name, away team name)` → match ID. Match openfootball entries by team name pair (try both orderings in case home/away is swapped in openfootball).
+The `homeGoals`/`awayGoals` fields always reflect the score after 90 min (not penalties).
 
-## Step 4 — fetch conduct (card) data
-
-For each group with new results, fetch the corresponding Wikipedia page:
-
-```
-https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_Group_A
-https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_Group_B
-... (through Group L)
-```
-
-Ask: "List all matches played with yellow and red cards per team. For each card event show: player name, team, card type (yellow, second yellow/indirect red, straight red, yellow+straight red)."
-
-Compute a `homeConduct` and `awayConduct` integer per match using these point deductions:
-
-| Card event | Points |
-|---|---|
-| Yellow card | −1 |
-| Red card for two yellows | −3 |
-| Straight red card | −4 |
-| Yellow card + straight red card | −5 |
-
-Sum all card events per team per match. **Only include the field in the JSON when the value is non-zero** (omit the field entirely for a clean team, since the engine treats absent as 0).
-
-## Step 5 — add missing results
-
-For each openfootball match that maps to one of our missing match IDs, append to `matchResults`:
+### 4d — append to `knockout[]`
 
 ```json
-{ "matchId": "mX9", "home": 2, "away": 1, "homeConduct": -1, "awayConduct": -3 }
+{
+  "round": "R32",
+  "matchId": "r32m79",
+  "home": "MEX",
+  "away": "ECU",
+  "homeGoals": 2,
+  "awayGoals": 0,
+  "winner": "MEX",
+  "decidedBy": "regulation",
+  "kickoff": "2026-07-01T01:00:00Z"
+}
 ```
 
-`home`/`away` = goals for the team listed as `home`/`away` in our `tournament.json` (not necessarily openfootball's `team1`). Same applies to `homeConduct`/`awayConduct`.
+No conduct fields in knockout entries.
 
-## Step 6 — commit
+Round values: `"R32"`, `"R16"`, `"QF"`, `"SF"`, `"Final"`.
+
+## Step 5 — commit
 
 ```
 git add data/tournaments/wc-2026/results.json
-git commit -m "data(wc-2026): add match results for <date> (<groups>)"
+git commit -m "data(wc-2026): add results for <date> (<matches>)"
 ```
-
-## Notes
-
-- Openfootball may lag 1–12 hours behind live results. If a match is missing there, note it and move on.
-- Do not guess scores or card data. Only add what is present in the sources.
-- Wikipedia group pages may not list cards for the bench/technical staff — only player cards shown on the pitch are recorded.
-- Knockout matches use a different results structure — this skill covers group stage only.
