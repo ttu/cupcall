@@ -6,7 +6,6 @@ import type {
   PickStatus,
 } from '../domain/types';
 import { getRoundHealthDisplay } from '../domain/bracket-health-display';
-import { deriveOpponentStatus } from '../domain/top-four-picks';
 import { cn } from '@/shared/ui';
 
 const COLOR_TEXT = { danger: 'text-danger', warning: 'text-amber-600', ok: 'text-green-700' };
@@ -93,7 +92,7 @@ function buildTopFour(
       position: '2nd',
       teamId: finalMatch.pickedOpponentId,
       teamName: finalMatch.pickedOpponentName ?? finalMatch.pickedOpponentId,
-      status: deriveOpponentStatus(finalMatch, finalMatch.pickedOpponentId),
+      status: finalMatch.pickedOpponentStatus,
     });
   }
   if (bronzeMatch?.pickedWinnerId) {
@@ -109,7 +108,7 @@ function buildTopFour(
       position: '4th',
       teamId: bronzeMatch.pickedOpponentId,
       teamName: bronzeMatch.pickedOpponentName ?? bronzeMatch.pickedOpponentId,
-      status: deriveOpponentStatus(bronzeMatch, bronzeMatch.pickedOpponentId),
+      status: bronzeMatch.pickedOpponentStatus,
     });
   }
 

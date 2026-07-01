@@ -121,6 +121,8 @@ export type KnockoutMatchView = {
   pickedOpponentId: string | null;
   pickedOpponentName: string | null;
   pickStatus: PickStatus;
+  /** Pick status for the opponent (runner-up in Final, loser in Bronze). 'no-pick' for all non-finale matches or when opponent is unknown. Accounts for early elimination: 'busted' if the opponent was knocked out before reaching this match. */
+  pickedOpponentStatus: PickStatus;
   /** User's predicted score — only populated for Final and Bronze ties. */
   predictedHome: number | null;
   /** User's predicted score — only populated for Final and Bronze ties. */

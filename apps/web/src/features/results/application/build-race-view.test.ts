@@ -64,6 +64,7 @@ function makeKnockoutMatch(
     awayTeamUserPredictedParticipant: false,
     poolPickHomePct: null,
     poolPickAwayPct: null,
+    pickedOpponentStatus: 'no-pick',
   };
 }
 

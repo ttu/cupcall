@@ -86,6 +86,7 @@ function match(pickStatus: KnockoutMatchView['pickStatus'], key = 'qf1'): Knocko
     awayTeamUserPredictedParticipant: false,
     poolPickHomePct: null,
     poolPickAwayPct: null,
+    pickedOpponentStatus: 'no-pick',
   };
 }
 

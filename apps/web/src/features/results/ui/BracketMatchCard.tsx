@@ -87,11 +87,32 @@ function TeamRow({
 }
 
 export function BracketMatchCard({ match, predictedQualifierIds }: Props): ReactElement {
-  // Merge actual teams with user-predicted teams for TBD slots
-  const effectiveHomeId = match.homeTeamId ?? match.predictedHomeTeamId;
-  const effectiveHomeName = match.homeTeamName ?? match.predictedHomeTeamName;
-  const effectiveAwayId = match.awayTeamId ?? match.predictedAwayTeamId;
-  const effectiveAwayName = match.awayTeamName ?? match.predictedAwayTeamName;
+  // Merge actual teams with user-predicted teams for TBD slots.
+  // When a busted pick is not visible in any slot (e.g. team was eliminated two rounds earlier
+  // so neither the actual participants nor the predicted chain includes them), surface the pick
+  // in the first empty slot so the user can see what they missed.
+  const pickedIsVisible =
+    match.pickedWinnerId !== null &&
+    (match.pickedWinnerId === match.homeTeamId ||
+      match.pickedWinnerId === match.predictedHomeTeamId ||
+      match.pickedWinnerId === match.awayTeamId ||
+      match.pickedWinnerId === match.predictedAwayTeamId);
+  const showBustedPickAsFill =
+    match.pickedWinnerId !== null && match.pickStatus === 'busted' && !pickedIsVisible;
+
+  const homeIsEmpty = match.homeTeamId === null && match.predictedHomeTeamId === null;
+  const awayIsEmpty = match.awayTeamId === null && match.predictedAwayTeamId === null;
+  const fillHome = showBustedPickAsFill && homeIsEmpty;
+  const fillAway = showBustedPickAsFill && !fillHome && awayIsEmpty;
+
+  const effectiveHomeId =
+    match.homeTeamId ?? match.predictedHomeTeamId ?? (fillHome ? match.pickedWinnerId : null);
+  const effectiveHomeName =
+    match.homeTeamName ?? match.predictedHomeTeamName ?? (fillHome ? match.pickedWinnerName : null);
+  const effectiveAwayId =
+    match.awayTeamId ?? match.predictedAwayTeamId ?? (fillAway ? match.pickedWinnerId : null);
+  const effectiveAwayName =
+    match.awayTeamName ?? match.predictedAwayTeamName ?? (fillAway ? match.pickedWinnerName : null);
 
   // Per-team softness: a team slot is "soft" when it's projected from live group standings
   // (not yet confirmed in DB) or filled from the user's pick (TBD actual winner).

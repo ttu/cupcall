@@ -472,6 +472,112 @@ describe('buildBracketRounds — eliminated team picks', () => {
   });
 });
 
+describe('buildBracketRounds — pickedOpponentStatus', () => {
+  // The runner-up (2nd place) and bronze loser (4th place) are derived from the
+  // SF loser chain. If the opponent team was eliminated in an earlier round,
+  // pickedOpponentStatus must be 'busted', not 'pending'.
+
+  it('marks Final pickedOpponentStatus as busted when picked opponent was eliminated in entry round', () => {
+    // qf2: C1 wins → D2 eliminated.
+    // User picks sf2=C1, final=A1 → final opponent = C1 (sf1 loser from user's picks).
+    // But we need the FINAL opponent to be a team that was eliminated.
+    // Setup: qf1: A1 wins (B2 eliminated). User picks sf1=A1, final=A1.
+    // final opponent = C1 (sf2 winner that user didn't pick for Final, derived from sf2 loser of sf1).
+    // Simpler: user picks sf1 winner = A1 (from qf1/qf2), sf2 winner = B1 (from qf3/qf4).
+    // Final: A1 wins, opponent = B1 (sf2 winner). For B1 to be busted, B1 must have been eliminated.
+    // qf3: A2 wins → B1 eliminated.
+    const qf3B1Eliminated = makeMatch('qf3', 'QF', {
+      homeTeamId: 'B1',
+      awayTeamId: 'A2',
+      winnerTeamId: 'A2',
+      homeGoals: 0,
+      awayGoals: 1,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1, qf3B1Eliminated],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'qf2', winner: 'C1' },
+          { bracketMatchKey: 'qf3', winner: 'B1' }, // user predicted B1, but B1 actually lost
+          { bracketMatchKey: 'qf4', winner: 'D1' },
+          { bracketMatchKey: 'sf1', winner: 'A1' },
+          { bracketMatchKey: 'sf2', winner: 'B1' }, // user predicted B1 wins sf2
+          { bracketMatchKey: 'final', winner: 'A1' }, // A1 wins, B1 is opponent/runner-up
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const finalCard = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    expect(finalCard.pickedOpponentId).toBe('B1');
+    expect(finalCard.pickedOpponentStatus).toBe('busted');
+  });
+
+  it('marks Bronze pickedOpponentStatus as busted when picked opponent was eliminated in entry round', () => {
+    // qf4: C2 wins → D1 eliminated.
+    // User picks sf2=B1, bronze=C1 → bronze opponent = D1 (sf2 loser from user's qf4 pick).
+    // D1 was eliminated in qf4 → pickedOpponentStatus busted.
+    const qf4D1Eliminated = makeMatch('qf4', 'QF', {
+      homeTeamId: 'D1',
+      awayTeamId: 'C2',
+      winnerTeamId: 'C2',
+      homeGoals: 0,
+      awayGoals: 1,
+      status: 'final',
+    });
+    const { bronzeMatch } = buildBracketRounds(
+      miniTournament,
+      [finalQf1, qf4D1Eliminated],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'qf2', winner: 'C1' },
+          { bracketMatchKey: 'qf3', winner: 'B1' },
+          { bracketMatchKey: 'qf4', winner: 'D1' }, // user predicted D1, but D1 actually lost
+          { bracketMatchKey: 'sf1', winner: 'A1' }, // C1 is sf1 loser → bronze home
+          { bracketMatchKey: 'sf2', winner: 'B1' }, // D1 is sf2 loser → bronze away
+          { bracketMatchKey: 'bronze', winner: 'C1' }, // C1 wins bronze
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    expect(bronzeMatch!.pickedOpponentId).toBe('D1');
+    expect(bronzeMatch!.pickedOpponentStatus).toBe('busted');
+  });
+
+  it('marks pickedOpponentStatus as pending when opponent is not yet confirmed and not eliminated', () => {
+    // qf1 played (A1 wins), but qf2/qf3/qf4 not played. Final opponent = B1 (from sf2).
+    // B1 has not been eliminated (qf3 not yet played) → pending.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1], // only qf1 played
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'qf2', winner: 'C1' },
+          { bracketMatchKey: 'qf3', winner: 'B1' },
+          { bracketMatchKey: 'qf4', winner: 'D1' },
+          { bracketMatchKey: 'sf1', winner: 'A1' },
+          { bracketMatchKey: 'sf2', winner: 'B1' },
+          { bracketMatchKey: 'final', winner: 'A1' },
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const finalCard = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    expect(finalCard.pickedOpponentId).toBe('B1');
+    expect(finalCard.pickedOpponentStatus).toBe('pending');
+  });
+});
+
 describe('buildBracketRounds — regulation-decided matches (winnerTeamId null)', () => {
   // In the DB, winnerTeamId is only stored for penalty-decided matches (ties after 90 min).
   // Regulation/extra-time winners must be derived from the score.

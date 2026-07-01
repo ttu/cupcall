@@ -202,6 +202,20 @@ export function buildBracketRounds(
       ? derivePredictedOpponent(key, bracket, pickMap, effectivePickedId)
       : null;
 
+    let pickedOpponentStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
+    if (pickedOpponentId !== null) {
+      if (!winnerId) {
+        const opponentEliminated = knockoutEliminatedTeams.has(pickedOpponentId);
+        const teamsKnown = homeId !== null && awayId !== null;
+        const opponentAbsent = pickedOpponentId !== homeId && pickedOpponentId !== awayId;
+        pickedOpponentStatus =
+          opponentEliminated || (teamsKnown && opponentAbsent) ? 'busted' : 'pending';
+      } else {
+        pickedOpponentStatus =
+          pickedOpponentId === homeId || pickedOpponentId === awayId ? 'alive' : 'busted';
+      }
+    }
+
     return {
       bracketMatchKey: key,
       round,
@@ -224,6 +238,7 @@ export function buildBracketRounds(
         ? (teamMap.get(pickedOpponentId) ?? pickedOpponentId)
         : null,
       pickStatus,
+      pickedOpponentStatus,
       predictedHome,
       predictedAway,
       hit,
