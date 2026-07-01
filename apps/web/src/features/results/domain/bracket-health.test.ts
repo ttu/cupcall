@@ -84,6 +84,8 @@ function match(pickStatus: KnockoutMatchView['pickStatus'], key = 'qf1'): Knocko
     awayTeamPredictedPct: null,
     homeTeamUserPredictedParticipant: false,
     awayTeamUserPredictedParticipant: false,
+    poolPickHomePct: null,
+    poolPickAwayPct: null,
   };
 }
 
@@ -202,24 +204,27 @@ describe('computeBracketHealth', () => {
   it('includes bronze as a Bronze perRound entry', () => {
     const rounds = [round('QF', [match('alive'), match('alive')])];
     const health = computeBracketHealth(rounds, match('busted'), miniTournament);
-    // QF is non-scored non-final → 'Top 4'; bronze → 'Bronze'
+    // QF maps to 'Top 4' via scoring map (feeding SF); bronze → 'Bronze'
     expect(health.perRound).toHaveLength(2);
     expect(health.perRound[0]!.label).toBe('Top 4');
     expect(health.perRound[1]!.label).toBe('Bronze');
   });
 
-  it('combines QF and SF picks into a Top 4 row', () => {
+  it('maps QF picks to Top 4 row (4 picks) and SF picks to SF row (2 picks)', () => {
     const rounds = [
       round('QF', [match('alive'), match('alive'), match('busted'), match('pending')]),
       round('SF', [match('alive'), match('no-pick')]),
     ];
     const health = computeBracketHealth(rounds, null, miniTournament);
-    const topFour = health.perRound[0]!;
-    expect(topFour.label).toBe('Top 4');
-    expect(topFour.alivePicks).toBe(3);
+    const topFour = health.perRound.find((r) => r.label === 'Top 4')!;
+    expect(topFour.alivePicks).toBe(2);
     expect(topFour.bustedPicks).toBe(1);
     expect(topFour.pendingPicks).toBe(1);
-    expect(topFour.totalPicks).toBe(6);
+    expect(topFour.totalPicks).toBe(4);
+
+    const sf = health.perRound.find((r) => r.label === 'SF')!;
+    expect(sf.alivePicks).toBe(1);
+    expect(sf.totalPicks).toBe(2);
   });
 
   it('shows Final as its own perRound entry', () => {
@@ -231,9 +236,7 @@ describe('computeBracketHealth', () => {
     expect(finalRow!.pendingPicks).toBe(1);
   });
 
-  it('uses 0 pts per pick for Top 4 (mini-tournament QF is entry round)', () => {
-    // Mini-tournament: QF is the entry round, not a progression target →
-    // buildRoundScoringMap returns empty → QF folds into 'Top 4' with 0 pts.
+  it('uses 0 pts per pick for Top 4 (QF picks have no per-team scoring)', () => {
     const rounds = [round('QF', [match('alive'), match('alive'), match('pending')])];
     const health = computeBracketHealth(rounds, null, miniTournament);
     const topFour = health.perRound[0]!;

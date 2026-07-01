@@ -79,18 +79,18 @@ export function computeBracketHealth(
       };
     });
 
-  // QF + SF combined into 'Top 4' (rounds not in scoring map and not the Final)
-  const topFourMatches = rounds
+  // SF picks: rounds not in scoring map and not the Final (after QF is mapped to 'Top 4')
+  const sfMatches = rounds
     .filter((r) => !scoringMap.has(r.label) && r.label !== finalLabel)
     .flatMap((r) => r.matches);
-  const topFourRow: BracketRoundHealth | null =
-    topFourMatches.length > 0
+  const sfRow: BracketRoundHealth | null =
+    sfMatches.length > 0
       ? {
-          label: 'Top 4',
-          alivePicks: topFourMatches.filter((m) => m.pickStatus === 'alive').length,
-          pendingPicks: topFourMatches.filter((m) => m.pickStatus === 'pending').length,
-          bustedPicks: topFourMatches.filter((m) => m.pickStatus === 'busted').length,
-          totalPicks: topFourMatches.length,
+          label: 'SF',
+          alivePicks: sfMatches.filter((m) => m.pickStatus === 'alive').length,
+          pendingPicks: sfMatches.filter((m) => m.pickStatus === 'pending').length,
+          bustedPicks: sfMatches.filter((m) => m.pickStatus === 'busted').length,
+          totalPicks: sfMatches.length,
           earnedPoints: 0,
           maxPossiblePoints: 0,
         }
@@ -125,7 +125,7 @@ export function computeBracketHealth(
     : null;
 
   const perRound = (
-    [...scoredRows, topFourRow, finalRow, bronzeRow] as (BracketRoundHealth | null)[]
+    [...scoredRows, sfRow, finalRow, bronzeRow] as (BracketRoundHealth | null)[]
   ).filter((r): r is BracketRoundHealth => r !== null);
 
   return {
@@ -165,6 +165,7 @@ function buildRoundScoringMap(
 
   addFeedingRound(bracket.roundOf16Matches, 'R16', scoring.roundOf16PerTeam);
   addFeedingRound(bracket.roundOf8Matches, 'R8', scoring.roundOf8PerTeam);
+  addFeedingRound(bracket.semiFinals, 'Top 4', 0);
 
   return map;
 }
