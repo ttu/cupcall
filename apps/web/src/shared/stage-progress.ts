@@ -27,13 +27,23 @@ export function buildStageProgress(def: Tournament, allMatches: MatchRow[]): Sta
     return def.bracket.rounds.includes(s);
   });
 
+  // Use definition-derived counts as the true total per stage.
+  // Knockout matches are only inserted into the DB when they have results, so
+  // counting DB rows would make a partially-played round appear "completed".
+  const expectedTotal = new Map<StageKey, number>([
+    ['group', def.groupMatches.length],
+    ['R32', def.bracket.slots.length],
+    ['R16', def.bracket.roundOf16Matches.length],
+    ['QF', def.bracket.roundOf8Matches.length],
+    ['SF', def.bracket.semiFinals.length],
+    ['Final', 1],
+  ]);
+
   const finalCountByStage = new Map<string, number>();
-  const totalCountByStage = new Map<string, number>();
   const startDateByStage = new Map<string, Date>();
 
   for (const m of allMatches) {
     const key = m.stage === 'group' ? 'group' : m.stage;
-    totalCountByStage.set(key, (totalCountByStage.get(key) ?? 0) + 1);
     if (m.status === 'final') {
       finalCountByStage.set(key, (finalCountByStage.get(key) ?? 0) + 1);
     }
@@ -45,7 +55,7 @@ export function buildStageProgress(def: Tournament, allMatches: MatchRow[]): Sta
 
   let foundActive = false;
   return stages.map((key) => {
-    const total = totalCountByStage.get(key) ?? 0;
+    const total = expectedTotal.get(key) ?? 0;
     const done = finalCountByStage.get(key) ?? 0;
 
     let state: StageProgress['state'];
@@ -55,8 +65,9 @@ export function buildStageProgress(def: Tournament, allMatches: MatchRow[]): Sta
       state = 'active';
       foundActive = true;
     } else if (done === 0 && !foundActive) {
-      // No matches played yet — first stage with scheduled matches becomes active
-      if (key === stages[0] && total > 0) {
+      // First stage with expected matches becomes active — handles both the
+      // pre-tournament case and transitions between stages.
+      if (total > 0) {
         state = 'active';
         foundActive = true;
       } else {
