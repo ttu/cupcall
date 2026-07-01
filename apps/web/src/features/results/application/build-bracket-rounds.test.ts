@@ -393,19 +393,82 @@ describe('buildBracketRounds — impossible pick detection', () => {
     expect(sf1Card.pickStatus).toBe('busted');
   });
 
-  it('keeps pickStatus=pending when only one match participant is known', () => {
-    // Only qf1 done (A1 wins), so sf1 homeId=A1 but awayId still unknown.
-    // User picks B2 for sf1 → B2 might still appear as the away team → pending.
+  it('keeps pickStatus=pending when picked team has not yet played and sf1 away slot is unknown', () => {
+    // Only qf1 done (A1 wins); qf2 not played yet so sf1 awayId is unknown.
+    // User picks C1 (from qf2, not eliminated) for sf1 → C1 could win qf2 and appear → pending.
     const { bracketRounds } = buildBracketRounds(
       miniTournament,
       [finalQf1], // qf2 not yet played
-      { knockoutPicks: [{ bracketMatchKey: 'sf1', winner: 'B2' }], finishScores: {} },
+      { knockoutPicks: [{ bracketMatchKey: 'sf1', winner: 'C1' }], finishScores: {} },
       [],
       [],
     );
     const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
     const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
     expect(sf1Card.pickStatus).toBe('pending');
+  });
+});
+
+describe('buildBracketRounds — eliminated team picks', () => {
+  // A team that lost a knockout match is eliminated and cannot advance to any later round.
+  // Picks for such teams in SF/Final/Bronze must be 'busted', not 'pending',
+  // even when the later match's participants have not yet been confirmed.
+
+  it('marks SF pick as busted when picked team lost in the entry round', () => {
+    // qf1: A1 wins → B2 is eliminated. sf1 not yet played.
+    // User picks B2 for sf1 → B2 can never appear in sf1 → busted.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1],
+      { knockoutPicks: [{ bracketMatchKey: 'sf1', winner: 'B2' }], finishScores: {} },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    expect(sf1Card.pickStatus).toBe('busted');
+  });
+
+  it('marks Final pick as busted when picked team lost in the entry round', () => {
+    // qf1: A1 wins → B2 eliminated. sf1 and Final not yet played.
+    // User picks B2 for Final → busted.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'sf1', winner: 'A1' },
+          { bracketMatchKey: 'final', winner: 'B2' },
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const finalRound = bracketRounds.find((r) => r.label === 'Final')!;
+    const finalCard = finalRound.matches[0]!;
+    expect(finalCard.pickStatus).toBe('busted');
+  });
+
+  it('marks Bronze pick as busted when picked team lost in the entry round', () => {
+    // qf1: A1 wins → B2 eliminated. Neither SF played.
+    // User picks B2 for bronze → busted.
+    const { bronzeMatch } = buildBracketRounds(
+      miniTournament,
+      [finalQf1],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'sf1', winner: 'A1' },
+          { bracketMatchKey: 'bronze', winner: 'B2' },
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    expect(bronzeMatch!.pickStatus).toBe('busted');
   });
 });
 

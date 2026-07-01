@@ -39,6 +39,16 @@ export function buildBracketRounds(
 ): { bracketRounds: BracketRoundResultView[]; bronzeMatch: KnockoutMatchView | null } {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
+
+  // Teams that have already lost a knockout match and cannot advance further.
+  const knockoutEliminatedTeams = new Set<string>();
+  for (const m of allMatches) {
+    if (m.stage === 'group' || m.status !== 'final') continue;
+    const winner = getMatchWinner(m);
+    if (winner === null) continue;
+    if (m.homeTeamId && m.homeTeamId !== winner) knockoutEliminatedTeams.add(m.homeTeamId);
+    if (m.awayTeamId && m.awayTeamId !== winner) knockoutEliminatedTeams.add(m.awayTeamId);
+  }
   const pickMap = new Map<string, string>(
     (inputs?.knockoutPicks ?? []).map((kp) => [kp.bracketMatchKey, kp.winner]),
   );
@@ -167,7 +177,9 @@ export function buildBracketRounds(
       if (!winnerId) {
         const matchTeamsKnown = homeId !== null && awayId !== null;
         const pickedTeamAbsent = effectivePickedId !== homeId && effectivePickedId !== awayId;
-        pickStatus = matchTeamsKnown && pickedTeamAbsent ? 'busted' : 'pending';
+        const pickedTeamEliminated = knockoutEliminatedTeams.has(effectivePickedId);
+        pickStatus =
+          (matchTeamsKnown && pickedTeamAbsent) || pickedTeamEliminated ? 'busted' : 'pending';
       } else if (winnerId === effectivePickedId) {
         pickStatus = 'alive';
       } else {
