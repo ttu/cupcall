@@ -4,6 +4,26 @@ import type { Tournament, BracketMatchKey, GroupScore } from '@cup/engine';
 import type { KnockoutMatchView, BracketRoundResultView, MatchHit } from '../domain/types';
 export { computeBracketHealth } from '../domain/bracket-health';
 
+/**
+ * Derives the actual winner of a knockout match.
+ * `winnerTeamId` is only stored in the DB when the match was decided by
+ * penalties (a regulation-time draw). For regulation/extra-time winners the
+ * score is the authoritative source.
+ */
+function getMatchWinner(match: MatchRow | null): string | null {
+  if (!match) return null;
+  if (match.winnerTeamId) return match.winnerTeamId;
+  if (
+    match.status === 'final' &&
+    match.homeGoals !== null &&
+    match.awayGoals !== null &&
+    match.homeGoals !== match.awayGoals
+  ) {
+    return match.homeGoals > match.awayGoals ? match.homeTeamId : match.awayTeamId;
+  }
+  return null;
+}
+
 export function buildBracketRounds(
   def: Tournament,
   allMatches: MatchRow[],
@@ -110,7 +130,7 @@ export function buildBracketRounds(
     const derivedPair = derivedParticipants.get(key);
     const homeId = actual?.homeTeamId ?? derivedPair?.[0] ?? null;
     const awayId = actual?.awayTeamId ?? derivedPair?.[1] ?? null;
-    const winnerId = actual?.winnerTeamId ?? null;
+    const winnerId = getMatchWinner(actual);
 
     // Predicted score: only Final and Bronze have a finish score.
     let predictedHome: number | null = null;
@@ -379,8 +399,8 @@ function computeDerivedParticipants(
     if (prog.match === def.bracket.bronzeMatch) continue;
     if (prog.from.length !== 2) continue;
     const [fk0, fk1] = prog.from;
-    const w0 = fk0 ? (matchByKey.get(fk0)?.winnerTeamId ?? null) : null;
-    const w1 = fk1 ? (matchByKey.get(fk1)?.winnerTeamId ?? null) : null;
+    const w0 = fk0 ? getMatchWinner(matchByKey.get(fk0) ?? null) : null;
+    const w1 = fk1 ? getMatchWinner(matchByKey.get(fk1) ?? null) : null;
     // Populate even when only one feeder match is final so the known team
     // appears as confirmed in the next round instead of as a predicted fill.
     if (w0 !== null || w1 !== null) {
@@ -392,8 +412,8 @@ function computeDerivedParticipants(
   const bronzeProg = def.bracket.progression.find((p) => p.match === def.bracket.bronzeMatch);
   if (bronzeProg) {
     const losers: (string | null)[] = bronzeProg.from.map((sfKey) => {
-      const sfMatch = matchByKey.get(sfKey);
-      const sfWinner = sfMatch?.winnerTeamId ?? null;
+      const sfMatch = matchByKey.get(sfKey) ?? null;
+      const sfWinner = getMatchWinner(sfMatch);
       if (!sfWinner) return null;
       const sfParts = participantsByMatch.get(sfKey);
       const sfHome = sfMatch?.homeTeamId ?? sfParts?.[0] ?? null;
@@ -664,9 +684,10 @@ function computeUserPredictedParticipants(
   // Resolve the predicted advancing team for each entry-round slot.
   const entryWinner = new Map<BracketMatchKey, string | null>();
   for (const slot of def.bracket.slots) {
-    const actual = matchByKey.get(slot.match);
-    if (actual?.winnerTeamId) {
-      entryWinner.set(slot.match, actual.winnerTeamId);
+    const actual = matchByKey.get(slot.match) ?? null;
+    const actualWinner = getMatchWinner(actual);
+    if (actualWinner) {
+      entryWinner.set(slot.match, actualWinner);
       continue;
     }
     const derived = derivedParticipants.get(slot.match);
@@ -701,8 +722,9 @@ function computeUserPredictedParticipants(
       return entryWinner.get(fromKey as BracketMatchKey) ?? null;
     }
     // Progression match: actual winner > pick validated against predicted participants.
-    const actual = matchByKey.get(fromKey);
-    if (actual?.winnerTeamId) return actual.winnerTeamId;
+    const actual = matchByKey.get(fromKey) ?? null;
+    const actualWinner = getMatchWinner(actual);
+    if (actualWinner) return actualWinner;
     const pick = pickMap.get(fromKey) ?? null;
     if (!pick) return null;
     const parts = predicted.get(fromKey as BracketMatchKey);
@@ -732,14 +754,15 @@ function computeUserPredictedParticipants(
   const bronzeProg = def.bracket.progression.find((p) => p.match === bronzeKey);
   if (bronzeProg) {
     const getSfLoser = (sfKey: string): string | null => {
-      const actual = matchByKey.get(sfKey);
+      const actual = matchByKey.get(sfKey) ?? null;
       const sfParts = predicted.get(sfKey);
       if (!sfParts) return null;
-      if (actual?.winnerTeamId) {
-        const home = actual.homeTeamId ?? sfParts[0] ?? null;
-        const away = actual.awayTeamId ?? sfParts[1] ?? null;
+      const sfActualWinner = getMatchWinner(actual);
+      if (sfActualWinner) {
+        const home = actual?.homeTeamId ?? sfParts[0] ?? null;
+        const away = actual?.awayTeamId ?? sfParts[1] ?? null;
         if (!home || !away) return null;
-        return actual.winnerTeamId === home ? away : home;
+        return sfActualWinner === home ? away : home;
       }
       const sfPick = pickMap.get(sfKey) ?? null;
       if (!sfPick) return null;

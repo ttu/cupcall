@@ -374,6 +374,96 @@ describe('buildBracketRounds — homeTeamUserPredictedParticipant / awayTeamUser
   });
 });
 
+describe('buildBracketRounds — regulation-decided matches (winnerTeamId null)', () => {
+  // In the DB, winnerTeamId is only stored for penalty-decided matches (ties after 90 min).
+  // Regulation/extra-time winners must be derived from the score.
+  // Without this fix, all picks on regulation-decided matches appear as "pending" in bracket health.
+
+  it('sets pickStatus=alive when user picked the regulation winner (winnerTeamId null)', () => {
+    const qf1Regulation = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: null, // regulation win — DB does not store winner
+      homeGoals: 2,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1Regulation],
+      { knockoutPicks: [{ bracketMatchKey: 'qf1', winner: 'A1' }], finishScores: {} },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Card.pickStatus).toBe('alive');
+    expect(qf1Card.hit).toBe('outcome');
+    expect(qf1Card.actualWinnerId).toBe('A1');
+  });
+
+  it('sets pickStatus=busted when user picked the regulation loser (winnerTeamId null)', () => {
+    const qf1Regulation = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: null,
+      homeGoals: 2,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1Regulation],
+      { knockoutPicks: [{ bracketMatchKey: 'qf1', winner: 'B2' }], finishScores: {} },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Card.pickStatus).toBe('busted');
+    expect(qf1Card.hit).toBe('missed');
+  });
+
+  it('propagates regulation winner into SF slots (winnerTeamId null on QF matches)', () => {
+    // QF matches decided in regulation — winner must flow into SF participants.
+    const qf1Reg = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: null,
+      homeGoals: 2,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const qf2Reg = makeMatch('qf2', 'QF', {
+      homeTeamId: 'C1',
+      awayTeamId: 'D2',
+      winnerTeamId: null,
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1Reg, qf2Reg],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'qf2', winner: 'C1' },
+          { bracketMatchKey: 'sf1', winner: 'A1' },
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    // SF should know A1 and C1 are the confirmed participants
+    expect(sf1Card.homeTeamId).toBe('A1');
+    expect(sf1Card.awayTeamId).toBe('C1');
+  });
+});
+
 describe('Final/Bronze: implicit pickedWinnerId from finish score when no explicit knock pick', () => {
   // Scenario: user saved the Final/Bronze score before filling in SF picks.
   // The implicit winner was never stored. Later, SF (and QF) picks were added.
