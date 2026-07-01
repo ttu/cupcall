@@ -2294,6 +2294,21 @@ describe('getResultsView', () => {
       // earned=0, all resolved max is missed
       expect(s.missed).toBe(totalMax.topFour + totalMax.bronze + totalMax.final);
     });
+
+    it('keeps roundOf8 in canStillGet when group stage is complete but answers.roundOf8 not set', async () => {
+      // Once groups are done the engine sets remainingMax.roundOf8=0 (groupStageComplete=true),
+      // but R16 matches haven't been played — R8 points should still be attainable.
+      for (const gm of miniTournament.groupMatches) {
+        await finalizeMatch(db, miniTId, gm.id, 1, 0);
+      }
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userKnockoutSummary!;
+      const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+
+      expect(s.missed).toBe(0);
+      expect(s.canStillGet).toBeGreaterThanOrEqual(totalMax.roundOf8);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -2393,6 +2408,22 @@ describe('getResultsView', () => {
       expect(finalRow.missed).toBe(totalMax.final);
       expect(bronzeRow.canStillGet).toBe(0);
       expect(bronzeRow.missed).toBe(totalMax.bronze);
+    });
+
+    it('keeps roundOf8 canStillGet>0 when group stage is complete but R16 answers not yet set', async () => {
+      // Finalize all group matches — groupStageComplete=true in the engine, which would
+      // incorrectly zero-out remainingMax.roundOf8. The correct signal is answers.roundOf8.
+      for (const gm of miniTournament.groupMatches) {
+        await finalizeMatch(db, miniTId, gm.id, 1, 0);
+      }
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.userKnockoutRoundBreakdown!;
+      const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
+
+      const r8 = rows.find((r) => r.label === 'Round of 8')!;
+      expect(r8.canStillGet).toBe(totalMax.roundOf8);
+      expect(r8.missed).toBe(0);
     });
   });
 

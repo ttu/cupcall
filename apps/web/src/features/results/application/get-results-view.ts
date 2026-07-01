@@ -125,16 +125,9 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   );
 
   const userGroupSummary = buildGroupSummary(def, allMatches, userBreakdown, userId);
-  const userKnockoutSummary = buildKnockoutSummary(
-    def,
-    allMatches,
-    userBreakdown,
-    userId,
-    actualResults,
-  );
+  const userKnockoutSummary = buildKnockoutSummary(def, userBreakdown, userId, actualResults);
   const userKnockoutRoundBreakdown = buildKnockoutRoundBreakdown(
     def,
-    allMatches,
     userBreakdown,
     userId,
     actualResults,
@@ -241,18 +234,14 @@ function buildGroupSummary(
 
 function buildKnockoutSummary(
   def: Tournament,
-  allMatches: MatchRow[],
   userBreakdown: ScoreBreakdown | null,
   userId: string | undefined,
   actualResults: ActualResults,
 ): UserPointsSummary | null {
   if (userId === undefined) return null;
-  const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
   const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
-  // roundOf16/roundOf8 lock once all group matches are complete (engine uses groupStageComplete).
-  // topFour/bronze/final/roundOf16 resolution is also checked from actualResults since KO match
-  // IDs are never inserted into the matches table by the sync pipeline.
-  const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
+  // All KO categories use actualResults to detect resolution — KO match IDs are never
+  // inserted into the matches table by the sync pipeline, so finalMatchIds cannot signal them.
   const earned =
     (userBreakdown?.roundOf16 ?? 0) +
     (userBreakdown?.roundOf8 ?? 0) +
@@ -260,23 +249,19 @@ function buildKnockoutSummary(
     (userBreakdown?.bronze ?? 0) +
     (userBreakdown?.final ?? 0);
   const roundOf16Remaining = actualResults.answers.roundOf16 !== undefined ? 0 : totalMax.roundOf16;
+  const roundOf8Remaining = actualResults.answers.roundOf8 !== undefined ? 0 : totalMax.roundOf8;
   const topFourRemaining = actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour;
   const bronzeRemaining = actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze;
   const finalRemaining = actualResults.finalMatch !== undefined ? 0 : totalMax.final;
   const totalMaxCat =
     totalMax.roundOf16 + totalMax.roundOf8 + totalMax.topFour + totalMax.bronze + totalMax.final;
   const remainingMaxCat =
-    roundOf16Remaining +
-    remainingMax.roundOf8 +
-    topFourRemaining +
-    bronzeRemaining +
-    finalRemaining;
+    roundOf16Remaining + roundOf8Remaining + topFourRemaining + bronzeRemaining + finalRemaining;
   return makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat);
 }
 
 function buildKnockoutRoundBreakdown(
   def: Tournament,
-  allMatches: MatchRow[],
   userBreakdown: ScoreBreakdown | null,
   userId: string | undefined,
   actualResults: ActualResults,
@@ -284,13 +269,11 @@ function buildKnockoutRoundBreakdown(
   if (userId === undefined) return null;
   const bd = userBreakdown;
 
-  const finalMatchIds = new Set(allMatches.filter((m) => m.status === 'final').map((m) => m.id));
   const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
-  const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
 
   const canStillGet = {
     roundOf16: actualResults.answers.roundOf16 !== undefined ? 0 : totalMax.roundOf16,
-    roundOf8: remainingMax.roundOf8,
+    roundOf8: actualResults.answers.roundOf8 !== undefined ? 0 : totalMax.roundOf8,
     topFour: actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour,
     bronze: actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze,
     final: actualResults.finalMatch !== undefined ? 0 : totalMax.final,
