@@ -22,6 +22,7 @@ import type {
   SpecialBetResultRow,
   UserPointsSummary,
   KnockoutRoundRow,
+  BracketHealth,
 } from '../domain/types';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
@@ -131,6 +132,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     userBreakdown,
     userId,
     actualResults,
+    bracketHealth,
   );
   const userSpecialsSummary = buildSpecialsSummary(specialBets, userId);
   const myTotalCanStillGet =
@@ -265,15 +267,54 @@ function buildKnockoutRoundBreakdown(
   userBreakdown: ScoreBreakdown | null,
   userId: string | undefined,
   actualResults: ActualResults,
+  bracketHealth: BracketHealth,
 ): KnockoutRoundRow[] | null {
   if (userId === undefined) return null;
   const bd = userBreakdown;
 
   const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
 
+  // For per-team scored rounds (R16, R8), answers.* may be partially populated while
+  // the round is still in progress (sync writes winners as matches complete). When a
+  // bracket health row exists for that label, use it to compute accurate canStillGet
+  // (pending picks × ptsPerPick) and missed (busted picks × ptsPerPick). Fall back to
+  // the binary answered check only when there is no health row (entry-round tournaments
+  // where that round has no upstream feeding round).
+  const r16Health = bracketHealth.perRound.find((r) => r.label === 'R16') ?? null;
+  const r8Health = bracketHealth.perRound.find((r) => r.label === 'R8') ?? null;
+
+  function perTeamAvail(
+    health: BracketHealth['perRound'][number] | null,
+    isAnswered: boolean,
+    totalMaxPts: number,
+  ): number {
+    if (health !== null) {
+      // maxPossiblePoints = (alive + pending) × ptsPerPick; subtract earned to get pending portion.
+      return health.maxPossiblePoints - health.earnedPoints;
+    }
+    return isAnswered ? 0 : totalMaxPts;
+  }
+
+  function perTeamMissed(
+    health: BracketHealth['perRound'][number] | null,
+    isAnswered: boolean,
+    totalMaxPts: number,
+    earned: number,
+  ): number {
+    if (health !== null) {
+      return Math.max(0, totalMaxPts - health.maxPossiblePoints);
+    }
+    return isAnswered ? Math.max(0, totalMaxPts - earned) : 0;
+  }
+
+  const r16Answered = actualResults.answers.roundOf16 !== undefined;
+  const r8Answered = actualResults.answers.roundOf8 !== undefined;
+  const r16Earned = bd?.roundOf16 ?? 0;
+  const r8Earned = bd?.roundOf8 ?? 0;
+
   const canStillGet = {
-    roundOf16: actualResults.answers.roundOf16 !== undefined ? 0 : totalMax.roundOf16,
-    roundOf8: actualResults.answers.roundOf8 !== undefined ? 0 : totalMax.roundOf8,
+    roundOf16: perTeamAvail(r16Health, r16Answered, totalMax.roundOf16),
+    roundOf8: perTeamAvail(r8Health, r8Answered, totalMax.roundOf8),
     topFour: actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour,
     bronze: actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze,
     final: actualResults.finalMatch !== undefined ? 0 : totalMax.final,
@@ -284,8 +325,18 @@ function buildKnockoutRoundBreakdown(
   }
 
   return [
-    row('Round of 16', bd?.roundOf16 ?? 0, totalMax.roundOf16, canStillGet.roundOf16),
-    row('Round of 8', bd?.roundOf8 ?? 0, totalMax.roundOf8, canStillGet.roundOf8),
+    {
+      label: 'Round of 16',
+      earned: r16Earned,
+      missed: perTeamMissed(r16Health, r16Answered, totalMax.roundOf16, r16Earned),
+      canStillGet: canStillGet.roundOf16,
+    },
+    {
+      label: 'Round of 8',
+      earned: r8Earned,
+      missed: perTeamMissed(r8Health, r8Answered, totalMax.roundOf8, r8Earned),
+      canStillGet: canStillGet.roundOf8,
+    },
     row('Top 4', bd?.topFour ?? 0, totalMax.topFour, canStillGet.topFour),
     row('Final', bd?.final ?? 0, totalMax.final, canStillGet.final),
     row('Bronze', bd?.bronze ?? 0, totalMax.bronze, canStillGet.bronze),
