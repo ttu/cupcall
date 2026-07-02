@@ -535,6 +535,39 @@
       "winner": "MEX",
       "decidedBy": "regulation",
       "kickoff": "2026-07-01T01:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m80",
+      "home": "ENG",
+      "away": "COD",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "ENG",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-01T16:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m82",
+      "home": "BEL",
+      "away": "SEN",
+      "homeGoals": 2,
+      "awayGoals": 2,
+      "winner": "BEL",
+      "decidedBy": "extra-time",
+      "kickoff": "2026-07-01T20:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m81",
+      "home": "USA",
+      "away": "BIH",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "winner": "USA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-02T00:00:00Z"
     }
   ],
   "groupOrder": {
