@@ -2309,6 +2309,43 @@ describe('getResultsView', () => {
       expect(s.missed).toBe(0);
       expect(s.canStillGet).toBeGreaterThanOrEqual(totalMax.roundOf8);
     });
+
+    it('summary totals always equal the sum of per-round breakdown rows', async () => {
+      // Regression for Bug 1: the old buildKnockoutSummary computed missed independently
+      // using binary answers.* checks, which diverged from health-based per-round values.
+      // Now the summary is derived from per-round rows, so they are always consistent.
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+
+      // Finalize qf1 with B2 winning → A1 pick is busted.
+      // A1 was picked to win sf1's feeding slot — sf1 picks are now impossible.
+      // SF (topFour) missed must increase; the summary must reflect that.
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 0,
+        awayGoals: 1,
+        winnerTeamId: 'B2',
+        status: 'final',
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const s = view!.userKnockoutSummary!;
+      const rows = view!.userKnockoutRoundBreakdown!;
+
+      expect(s.earned).toBe(rows.reduce((sum, r) => sum + r.earned, 0));
+      expect(s.missed).toBe(rows.reduce((sum, r) => sum + r.missed, 0));
+      expect(s.canStillGet).toBe(rows.reduce((sum, r) => sum + r.canStillGet, 0));
+
+      // The SF row (topFour) must show missed points due to the busted QF pick.
+      const sfRow = rows.find((r) => r.label === 'SF')!;
+      const { topFourOrder } = miniTournament.scoring;
+      expect(sfRow.missed).toBe(topFourOrder.allCorrect - topFourOrder.threeCorrect);
+      expect(s.missed).toBeGreaterThan(0);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -2502,6 +2539,43 @@ describe('getResultsView', () => {
       expect(finalRow.canStillGet).toBe(finalMaxPossible);
       expect(finalRow.missed).toBe(totalMaxFinal - finalMaxPossible);
       expect(finalRow.earned).toBe(0);
+    });
+
+    it('shows Bronze missed when the picked bronze winner is eliminated from knockout before SF', async () => {
+      // Scenario: user picks A1 to win qf1 (→ sf1 participant) and C1 to win sf1.
+      // User also explicitly picks A1 to win Bronze (A1 is the predicted sf1 loser = bronze team).
+      // qf1 is finalized with B2 winning → A1 is eliminated from knockout entirely.
+      // C1 (the sf1 winner pick) is still alive/pending → bustedSfPicks = 0.
+      // But bronzeMatch.pickStatus = 'busted' (A1 is in knockoutEliminatedTeams).
+      // effectiveBronzeBusted = max(bustedSfPicks=0, bronzePicksBusted=1) = 1
+      // → maxPossible = 1 × perTeam + exactScore = 10, missed = 15 - 10 = 5.
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('sf1'), 'C1');
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('bronze'), 'A1');
+
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 0,
+        awayGoals: 1,
+        winnerTeamId: 'B2',
+        status: 'final',
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.userKnockoutRoundBreakdown!;
+      const { bronze: bronzeScoring } = miniTournament.scoring;
+      const totalBronze = 2 * bronzeScoring.perTeam + bronzeScoring.exactScore; // 15
+      const bronzeMaxPossible = 1 * bronzeScoring.perTeam + bronzeScoring.exactScore; // 10
+
+      const bronzeRow = rows.find((r) => r.label === 'Bronze')!;
+      expect(bronzeRow.canStillGet).toBe(bronzeMaxPossible);
+      expect(bronzeRow.missed).toBe(totalBronze - bronzeMaxPossible); // 5
+      expect(bronzeRow.earned).toBe(0);
     });
   });
 

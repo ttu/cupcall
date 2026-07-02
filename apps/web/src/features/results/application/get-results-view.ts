@@ -129,7 +129,6 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   );
 
   const userGroupSummary = buildGroupSummary(def, allMatches, userBreakdown, userId);
-  const userKnockoutSummary = buildKnockoutSummary(def, userBreakdown, userId, actualResults);
   const userKnockoutRoundBreakdown = buildKnockoutRoundBreakdown(
     def,
     userBreakdown,
@@ -139,6 +138,18 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     bracketRounds,
     bronzeMatch,
   );
+  // Derive the summary by summing per-round rows so earned/missed/canStillGet are always
+  // consistent with what the per-round breakdown displays. The old approach computed missed
+  // independently using binary "is round answered?" checks, which diverged from the health-based
+  // per-round computation (e.g. when answers.roundOf16 was a partial list).
+  const userKnockoutSummary: UserPointsSummary | null =
+    userKnockoutRoundBreakdown !== null
+      ? {
+          earned: userKnockoutRoundBreakdown.reduce((sum, r) => sum + r.earned, 0),
+          missed: userKnockoutRoundBreakdown.reduce((sum, r) => sum + r.missed, 0),
+          canStillGet: userKnockoutRoundBreakdown.reduce((sum, r) => sum + r.canStillGet, 0),
+        }
+      : null;
   const userSpecialsSummary = buildSpecialsSummary(specialBets, userId);
   const myTotalCanStillGet =
     userId !== undefined ? computeCanStillGet(def, allMatches, actualResults) : 0;
@@ -237,34 +248,6 @@ function buildGroupSummary(
   };
 }
 
-function buildKnockoutSummary(
-  def: Tournament,
-  userBreakdown: ScoreBreakdown | null,
-  userId: string | undefined,
-  actualResults: ActualResults,
-): UserPointsSummary | null {
-  if (userId === undefined) return null;
-  const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
-  // All KO categories use actualResults to detect resolution — KO match IDs are never
-  // inserted into the matches table by the sync pipeline, so finalMatchIds cannot signal them.
-  const earned =
-    (userBreakdown?.roundOf16 ?? 0) +
-    (userBreakdown?.roundOf8 ?? 0) +
-    (userBreakdown?.topFour ?? 0) +
-    (userBreakdown?.bronze ?? 0) +
-    (userBreakdown?.final ?? 0);
-  const roundOf16Remaining = actualResults.answers.roundOf16 !== undefined ? 0 : totalMax.roundOf16;
-  const roundOf8Remaining = actualResults.answers.roundOf8 !== undefined ? 0 : totalMax.roundOf8;
-  const topFourRemaining = actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour;
-  const bronzeRemaining = actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze;
-  const finalRemaining = actualResults.finalMatch !== undefined ? 0 : totalMax.final;
-  const totalMaxCat =
-    totalMax.roundOf16 + totalMax.roundOf8 + totalMax.topFour + totalMax.bronze + totalMax.final;
-  const remainingMaxCat =
-    roundOf16Remaining + roundOf8Remaining + topFourRemaining + bronzeRemaining + finalRemaining;
-  return makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat);
-}
-
 /** Returns the highest tier of topFour points achievable when `remaining` picks are still possible. */
 function topFourTierMax(remaining: number, order: Tournament['scoring']['topFourOrder']): number {
   if (remaining >= 4) return order.allCorrect;
@@ -339,14 +322,27 @@ function buildKnockoutRoundBreakdown(
   // independent of team correctness and is always preserved until the match is played.
   const bustedSfPicks = finalistHealth?.bustedPicks ?? 0;
 
+  // For Bronze: also check if the user's picked bronze teams are themselves already eliminated.
+  // bustedSfPicks only captures when the SF *winner* pick is wrong (making the SF loser/bronze
+  // participant unknown). But if the SF *loser* (bronze team) is eliminated before reaching the
+  // SF, the SF winner pick may still be alive, so bustedSfPicks stays 0 even though that bronze
+  // slot is definitely lost. Take the max of both perspectives.
+  const bronzePicksBusted =
+    bronzeMatch !== null
+      ? (bronzeMatch.pickStatus === 'busted' ? 1 : 0) +
+        (bronzeMatch.pickedOpponentStatus === 'busted' ? 1 : 0)
+      : 0;
+  const effectiveBronzeBusted = Math.max(bustedSfPicks, bronzePicksBusted);
+
   function finaleAvail(
     matchScoring: { perTeam: number; exactScore: number },
     earned: number,
     isAnswered: boolean,
+    bustedPickCount: number,
   ): number {
     if (isAnswered) return 0;
     const maxPossible =
-      Math.max(0, 2 - bustedSfPicks) * matchScoring.perTeam + matchScoring.exactScore;
+      Math.max(0, 2 - bustedPickCount) * matchScoring.perTeam + matchScoring.exactScore;
     return Math.max(0, maxPossible - earned);
   }
 
@@ -364,8 +360,14 @@ function buildKnockoutRoundBreakdown(
       def.scoring.bronze,
       bd?.bronze ?? 0,
       actualResults.bronzeMatch !== undefined,
+      effectiveBronzeBusted,
     ),
-    final: finaleAvail(def.scoring.final, bd?.final ?? 0, actualResults.finalMatch !== undefined),
+    final: finaleAvail(
+      def.scoring.final,
+      bd?.final ?? 0,
+      actualResults.finalMatch !== undefined,
+      bustedSfPicks,
+    ),
   };
 
   function row(label: string, earned: number, max: number, avail: number): KnockoutRoundRow {
