@@ -2419,6 +2419,90 @@ describe('getResultsView', () => {
       expect(r8.canStillGet).toBe(totalMax.roundOf8);
       expect(r8.missed).toBe(0);
     });
+
+    it('reduces SF canStillGet and shows missed when a QF pick is busted', async () => {
+      // miniTournament: QF is the entry round (qf1..qf4), feeding SF (topFour) scoring.
+      // User picks A1 for qf1. qf1 is then finalized with B2 winning → A1 pick busted.
+      // With 1 of 4 QF picks busted, the best topFour tier drops from allCorrect to threeCorrect.
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
+
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 0,
+        awayGoals: 1,
+        winnerTeamId: 'B2',
+        status: 'final',
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.userKnockoutRoundBreakdown!;
+      const { topFourOrder } = miniTournament.scoring;
+
+      const sfRow = rows.find((r) => r.label === 'SF')!;
+      expect(sfRow.canStillGet).toBe(topFourOrder.threeCorrect);
+      expect(sfRow.missed).toBe(topFourOrder.allCorrect - topFourOrder.threeCorrect);
+      expect(sfRow.earned).toBe(0);
+    });
+
+    it('reduces Final canStillGet and shows missed when an SF pick is busted', async () => {
+      // Play qf1 (A1 wins) and qf2 (C1 wins) so sf1 has known participants.
+      // User picks A1 for sf1. sf1 is finalized with C1 winning → A1 pick busted.
+      // One of the two finalists is now definitively wrong → 1 × final.perTeam is missed.
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertKnockoutPick(db, pred.id, bracketMatchKey('sf1'), 'A1');
+
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 1,
+        awayGoals: 0,
+        winnerTeamId: 'A1',
+        status: 'final',
+      });
+      await upsertKnockoutMatch(db, {
+        id: 'qf2',
+        tournamentId: miniTId,
+        stage: 'QF',
+        homeTeamId: 'C1',
+        awayTeamId: 'D2',
+        homeGoals: 1,
+        awayGoals: 0,
+        winnerTeamId: 'C1',
+        status: 'final',
+      });
+      // sf1 participants are now A1 vs C1. User picked A1, but C1 wins → A1 busted.
+      await upsertKnockoutMatch(db, {
+        id: 'sf1',
+        tournamentId: miniTId,
+        stage: 'SF',
+        homeTeamId: 'A1',
+        awayTeamId: 'C1',
+        homeGoals: 0,
+        awayGoals: 1,
+        winnerTeamId: 'C1',
+        status: 'final',
+      });
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const rows = view!.userKnockoutRoundBreakdown!;
+      const { final: finalScoring } = miniTournament.scoring;
+      const totalMaxFinal = 2 * finalScoring.perTeam + finalScoring.exactScore;
+
+      const finalRow = rows.find((r) => r.label === 'Final')!;
+      // 1 finalist busted → max possible = 1 × perTeam + exactScore
+      const finalMaxPossible = 1 * finalScoring.perTeam + finalScoring.exactScore;
+      expect(finalRow.canStillGet).toBe(finalMaxPossible);
+      expect(finalRow.missed).toBe(totalMaxFinal - finalMaxPossible);
+      expect(finalRow.earned).toBe(0);
+    });
   });
 
   // ---------------------------------------------------------------------------

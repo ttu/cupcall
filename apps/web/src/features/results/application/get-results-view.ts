@@ -23,6 +23,8 @@ import type {
   UserPointsSummary,
   KnockoutRoundRow,
   BracketHealth,
+  BracketRoundResultView,
+  KnockoutMatchView,
 } from '../domain/types';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
@@ -133,6 +135,8 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
     userId,
     actualResults,
     bracketHealth,
+    bracketRounds,
+    bronzeMatch,
   );
   const userSpecialsSummary = buildSpecialsSummary(specialBets, userId);
   const myTotalCanStillGet =
@@ -262,12 +266,23 @@ function buildKnockoutSummary(
   return makeSummaryFromCategories(earned, totalMaxCat, remainingMaxCat);
 }
 
+/** Returns the highest tier of topFour points achievable when `remaining` picks are still possible. */
+function topFourTierMax(remaining: number, order: Tournament['scoring']['topFourOrder']): number {
+  if (remaining >= 4) return order.allCorrect;
+  if (remaining === 3) return order.threeCorrect;
+  if (remaining === 2) return order.twoCorrect;
+  if (remaining === 1) return order.oneCorrect;
+  return 0;
+}
+
 function buildKnockoutRoundBreakdown(
   def: Tournament,
   userBreakdown: ScoreBreakdown | null,
   userId: string | undefined,
   actualResults: ActualResults,
   bracketHealth: BracketHealth,
+  bracketRounds: BracketRoundResultView[],
+  bronzeMatch: KnockoutMatchView | null,
 ): KnockoutRoundRow[] | null {
   if (userId === undefined) return null;
   const bd = userBreakdown;
@@ -282,6 +297,9 @@ function buildKnockoutRoundBreakdown(
   // where that round has no upstream feeding round).
   const r16Health = bracketHealth.perRound.find((r) => r.label === 'R16') ?? null;
   const r8Health = bracketHealth.perRound.find((r) => r.label === 'QF') ?? null;
+  const sfHealth = bracketHealth.perRound.find((r) => r.label === 'SF') ?? null;
+  // 'Finalist' tracks the two SF bracket picks — same picks that determine finalists and bronze pair.
+  const finalistHealth = bracketHealth.perRound.find((r) => r.label === 'Finalist') ?? null;
 
   function perTeamAvail(
     health: BracketHealth['perRound'][number] | null,
@@ -307,6 +325,32 @@ function buildKnockoutRoundBreakdown(
     return isAnswered ? Math.max(0, totalMaxPts - earned) : 0;
   }
 
+  // For topFour: if some QF picks are busted, the highest achievable tier decreases.
+  // Use the 'SF' health row (populated from QF picks) to count still-possible picks.
+  // Use totalPicks - bustedPicks (not alivePicks + pendingPicks) so that 'no-pick' slots
+  // don't incorrectly reduce the achievable tier.
+  const sfRemaining = sfHealth !== null ? sfHealth.totalPicks - sfHealth.bustedPicks : null;
+  const sfMaxPossible =
+    sfRemaining !== null ? topFourTierMax(sfRemaining, def.scoring.topFourOrder) : totalMax.topFour;
+
+  // For Final/Bronze: each has two derived participants (finalists / bronze pair), both
+  // derived from the SF bracket picks. The 'Finalist' health row tracks those two SF picks —
+  // its bustedPicks count equals the number of wrong derived participants for both Final and
+  // Bronze. Each wrong participant forfeits one perTeam bonus; the exact-score bonus is
+  // independent of team correctness and is always preserved until the match is played.
+  const bustedSfPicks = finalistHealth?.bustedPicks ?? 0;
+
+  function finaleAvail(
+    matchScoring: { perTeam: number; exactScore: number },
+    earned: number,
+    isAnswered: boolean,
+  ): number {
+    if (isAnswered) return 0;
+    const maxPossible =
+      Math.max(0, 2 - bustedSfPicks) * matchScoring.perTeam + matchScoring.exactScore;
+    return Math.max(0, maxPossible - earned);
+  }
+
   const r16Answered = actualResults.answers.roundOf16 !== undefined;
   const r8Answered = actualResults.answers.roundOf8 !== undefined;
   const r16Earned = bd?.roundOf16 ?? 0;
@@ -315,9 +359,14 @@ function buildKnockoutRoundBreakdown(
   const canStillGet = {
     roundOf16: perTeamAvail(r16Health, r16Answered, totalMax.roundOf16),
     roundOf8: perTeamAvail(r8Health, r8Answered, totalMax.roundOf8),
-    topFour: actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour,
-    bronze: actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze,
-    final: actualResults.finalMatch !== undefined ? 0 : totalMax.final,
+    topFour:
+      actualResults.answers.topFourOrder !== undefined ? 0 : sfMaxPossible - (bd?.topFour ?? 0),
+    bronze: finaleAvail(
+      def.scoring.bronze,
+      bd?.bronze ?? 0,
+      actualResults.bronzeMatch !== undefined,
+    ),
+    final: finaleAvail(def.scoring.final, bd?.final ?? 0, actualResults.finalMatch !== undefined),
   };
 
   function row(label: string, earned: number, max: number, avail: number): KnockoutRoundRow {
