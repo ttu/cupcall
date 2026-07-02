@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildKnockoutMatrix, buildSpecialsMatrix } from './build-race-view';
+import { buildKnockoutMatrix, buildSpecialsMatrix, buildProjectedEntries } from './build-race-view';
 import { miniTournament } from '@cup/engine/testing';
 import { points } from '@cup/engine';
 import type { UserId, BracketMatchKey, ActualResults } from '@cup/engine';
@@ -783,5 +783,63 @@ describe('buildSpecialsMatrix', () => {
 
     expect(resolved.actualPickLabel).toBe('A1');
     expect(pending.actualPickLabel).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildProjectedEntries
+// ---------------------------------------------------------------------------
+
+describe('buildProjectedEntries', () => {
+  it('sets canStillGet for all entries from canStillGetByUser map', () => {
+    const alice = makeLeaderboardEntry('u1', 'Alice', 100);
+    const bob = makeLeaderboardEntry('u2', 'Bob', 80);
+    const stillLive = new Map([
+      ['u1', 20],
+      ['u2', 15],
+    ]);
+    const canStillGet = new Map([
+      ['u1', 60],
+      ['u2', 40],
+    ]);
+
+    const entries = buildProjectedEntries([alice, bob], 'u1', stillLive, canStillGet);
+
+    const aliceEntry = entries.find((e) => e.userId === 'u1')!;
+    const bobEntry = entries.find((e) => e.userId === 'u2')!;
+    expect(aliceEntry.canStillGet).toBe(60);
+    expect(bobEntry.canStillGet).toBe(40);
+  });
+
+  it('defaults canStillGet to 0 for users absent from canStillGetByUser map', () => {
+    const alice = makeLeaderboardEntry('u1', 'Alice', 100);
+    const stillLive = new Map<string, number>();
+    const canStillGet = new Map<string, number>(); // u1 absent
+
+    const entries = buildProjectedEntries([alice], 'u1', stillLive, canStillGet);
+
+    expect(entries[0]!.canStillGet).toBe(0);
+  });
+
+  it('canStillGet is non-negative for all entries', () => {
+    const leaderboard = [
+      makeLeaderboardEntry('u1', 'Alice', 150),
+      makeLeaderboardEntry('u2', 'Bob', 100),
+      makeLeaderboardEntry('u3', 'Carol', 50),
+    ];
+    const stillLive = new Map([
+      ['u1', 0],
+      ['u2', 30],
+      ['u3', 50],
+    ]);
+    const canStillGet = new Map([
+      ['u1', 0],
+      ['u2', 80],
+      ['u3', 120],
+    ]);
+
+    const entries = buildProjectedEntries(leaderboard, null, stillLive, canStillGet);
+
+    expect(entries.every((e) => e.canStillGet >= 0)).toBe(true);
   });
 });

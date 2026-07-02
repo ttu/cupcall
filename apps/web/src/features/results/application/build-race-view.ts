@@ -296,7 +296,7 @@ export function buildPerUserSpecialsRemaining(
   return result;
 }
 
-function buildProjectedEntries(
+export function buildProjectedEntries(
   leaderboard: LeaderboardEntry[],
   userId: string | null,
   stillLiveByUser: Map<string, number>,
