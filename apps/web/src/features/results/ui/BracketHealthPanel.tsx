@@ -130,7 +130,7 @@ export function BracketHealthPanel({ health, championPick, bronzeMatch }: Props)
         <div className="eyebrow text-green-700 mb-2.5">Bracket health</div>
         <div className="flex items-baseline gap-2 mb-2.5">
           <span className="display text-green-700 text-[44px] leading-none">
-            {health.alivePicks}
+            {health.alivePicks + health.pendingPicks}
             <span className="text-[24px] text-green-600">/{health.totalPicks}</span>
           </span>
           <span className="text-[13px] font-bold text-green-700">picks alive</span>
@@ -148,7 +148,7 @@ export function BracketHealthPanel({ health, championPick, bronzeMatch }: Props)
         {(health.pendingPicks > 0 || health.bustedPicks > 0 || health.missedPicks > 0) && (
           <p className="text-[11px] font-semibold mt-2 text-ink-muted">
             {[
-              health.pendingPicks > 0 && `${health.pendingPicks} pending`,
+              health.pendingPicks > 0 && `${health.alivePicks} confirmed`,
               health.bustedPicks > 0 &&
                 `${health.bustedPicks} pick${health.bustedPicks !== 1 ? 's' : ''} busted`,
               health.missedPicks > 0 && `${health.missedPicks} missed`,
