@@ -31,6 +31,7 @@ import {
   buildDailyChartPlayers,
   RACE_COLORS,
 } from '../domain/race-chart';
+import { computeCanStillGet } from './compute-can-still-get';
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
@@ -149,30 +150,8 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     );
   }
 
-  // --- per-player canStillGet ---
-  const specialDefs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
-  const groupRemaining = remainingMax.groupMatches + remainingMax.groupOrder;
-  // Use category-level binary check (same logic as buildKnockoutSummary) so that topFour
-  // holistic scoring, exactScore bonuses, and bronze SF-pair bonuses are all captured.
-  // Per-match pick viability via hitPoints only covers direct winner bonuses and diverges.
-  const knockoutCategoryRemaining =
-    (actualResults.answers.roundOf16 !== undefined ? 0 : totalMax.roundOf16) +
-    (actualResults.answers.roundOf8 !== undefined ? 0 : totalMax.roundOf8) +
-    (actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour) +
-    (actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze) +
-    (actualResults.finalMatch !== undefined ? 0 : totalMax.final);
-  const specialsRemaining = buildPerUserSpecialsRemaining(
-    poolSpecialBets,
-    specialDefs,
-    actualResults,
-  );
-  const canStillGetByUser = new Map(
-    leaderboard.map((e) => [
-      e.userId,
-      groupRemaining + knockoutCategoryRemaining + (specialsRemaining.get(e.userId) ?? 0),
-    ]),
-  );
-  // --- end per-player canStillGet ---
+  const poolCanStillGet = computeCanStillGet(def, allMatches, actualResults);
+  const canStillGetByUser = new Map(leaderboard.map((e) => [e.userId, poolCanStillGet]));
 
   const projectedEntries = buildProjectedEntries(
     leaderboard,

@@ -33,6 +33,7 @@ import { buildBracketRounds, computeBracketHealth } from './build-bracket-rounds
 import { computeR32QualHealth } from '../domain/bracket-health';
 import { buildPointsRaceView } from './build-race-view';
 import { buildSpecialBetResults } from './build-special-bet-results';
+import { computeCanStillGet } from './compute-can-still-get';
 
 type Params = {
   db: Db<AppSchema>;
@@ -140,9 +141,7 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   );
   const userSpecialsSummary = buildSpecialsSummary(specialBets, userId);
   const myTotalCanStillGet =
-    (userGroupSummary?.canStillGet ?? 0) +
-    (userKnockoutSummary?.canStillGet ?? 0) +
-    (userSpecialsSummary?.canStillGet ?? 0);
+    userId !== undefined ? computeCanStillGet(def, allMatches, actualResults) : 0;
 
   const pointsRaceView = buildPointsRaceView({
     leaderboard,
