@@ -47,8 +47,8 @@ function makeKnockoutMatch(
     poolPickHomePct: null,
     poolPickAwayPct: null,
     pickedOpponentStatus: 'no-pick',
-    homeSlotFeederPickBusted: false,
-    awaySlotFeederPickBusted: false,
+    homeSlotFeederPickedId: null,
+    awaySlotFeederPickedId: null,
   };
 }
 

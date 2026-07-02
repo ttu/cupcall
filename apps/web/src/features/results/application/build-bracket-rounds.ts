@@ -224,11 +224,11 @@ export function buildBracketRounds(
       teamMap,
     );
 
-    // For progression matches: flag when a feeder entry-round pick is already definitively wrong
-    // (the picked team is not a participant in the upcoming match) and the slot is empty.
-    // This lets the UI render "missed pick" instead of TBD.
-    let homeSlotFeederPickBusted = false;
-    let awaySlotFeederPickBusted = false;
+    // For progression matches: when a feeder entry-round pick is already definitively wrong
+    // (the picked team is not a participant in the upcoming match) and the slot is empty,
+    // capture the picked teamId. This lets the UI render the country badge instead of ?.
+    let homeSlotFeederPickedId: string | null = null;
+    let awaySlotFeederPickedId: string | null = null;
     if (!isEntryRound && inputs) {
       const prog = progressionByMatch.get(key);
       if (prog) {
@@ -236,7 +236,7 @@ export function buildBracketRounds(
         const homeSlotEmpty = homeId === null && predictedTeams.predictedHomeTeamId === null;
         const awaySlotEmpty = awayId === null && predictedTeams.predictedAwayTeamId === null;
         if (fk0 && homeSlotEmpty) {
-          homeSlotFeederPickBusted = isEntryPickBusted(
+          homeSlotFeederPickedId = entryPickIfBusted(
             fk0,
             pickMap,
             derivedParticipants,
@@ -245,7 +245,7 @@ export function buildBracketRounds(
           );
         }
         if (fk1 && awaySlotEmpty) {
-          awaySlotFeederPickBusted = isEntryPickBusted(
+          awaySlotFeederPickedId = entryPickIfBusted(
             fk1,
             pickMap,
             derivedParticipants,
@@ -321,8 +321,8 @@ export function buildBracketRounds(
         homeId !== null && awayId !== null
           ? (knockoutRoundPcts.get(key)?.get(awayId) ?? null)
           : null,
-      homeSlotFeederPickBusted,
-      awaySlotFeederPickBusted,
+      homeSlotFeederPickedId,
+      awaySlotFeederPickedId,
     };
   };
 
@@ -362,27 +362,26 @@ export function buildBracketRounds(
 }
 
 /**
- * Returns true when the user's pick for an entry-round match is already definitively wrong:
- * the picked team is not a participant in the match (teams are known from group standings)
- * or has already been eliminated from knockout play.
+ * Returns the user's pick teamId for the entry-round feeder match when that pick is
+ * already definitively wrong; returns null when the pick is absent or still valid.
  */
-function isEntryPickBusted(
+function entryPickIfBusted(
   matchKey: string,
   pickMap: Map<string, string>,
   derivedParticipants: Map<string, [string | null, string | null]>,
   matchByKey: Map<string, MatchRow>,
   knockoutEliminatedTeams: Set<string>,
-): boolean {
+): string | null {
   const pick = pickMap.get(matchKey) ?? null;
-  if (!pick) return false;
+  if (!pick) return null;
   const actual = matchByKey.get(matchKey) ?? null;
   const winner = getMatchWinner(actual);
-  if (winner !== null) return winner !== pick;
-  if (knockoutEliminatedTeams.has(pick)) return true;
+  if (winner !== null) return winner !== pick ? pick : null;
+  if (knockoutEliminatedTeams.has(pick)) return pick;
   const derived = derivedParticipants.get(matchKey);
-  if (!derived) return false;
+  if (!derived) return null;
   const [home, away] = derived;
-  return home !== null && away !== null && pick !== home && pick !== away;
+  return home !== null && away !== null && pick !== home && pick !== away ? pick : null;
 }
 
 function computeKnockoutHit(args: {

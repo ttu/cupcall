@@ -113,17 +113,23 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
   const fillHome = showBustedPickAsFill && homeIsEmpty;
   const fillAway = showBustedPickAsFill && !fillHome && awayIsEmpty;
   // An empty slot whose feeder entry-round pick is already definitively wrong also shows "missed pick".
-  const homeFeederMissed = homeIsEmpty && match.homeSlotFeederPickBusted;
-  const awayFeederMissed = awayIsEmpty && match.awaySlotFeederPickBusted;
+  const homeFeederMissed = homeIsEmpty && match.homeSlotFeederPickedId !== null;
+  const awayFeederMissed = awayIsEmpty && match.awaySlotFeederPickedId !== null;
 
   // For missed fill slots: provide the teamId so the badge (flag) shows, but no name —
   // TeamRow renders "missed pick" label via isMissedFill instead of the team name.
   // Any slot that is genuinely empty while the pick is busted also shows "missed pick" (not TBD).
   const effectiveHomeId =
-    match.homeTeamId ?? match.predictedHomeTeamId ?? (fillHome ? match.pickedWinnerId : null);
+    match.homeTeamId ??
+    match.predictedHomeTeamId ??
+    (fillHome ? match.pickedWinnerId : null) ??
+    match.homeSlotFeederPickedId;
   const effectiveHomeName = match.homeTeamName ?? match.predictedHomeTeamName ?? null;
   const effectiveAwayId =
-    match.awayTeamId ?? match.predictedAwayTeamId ?? (fillAway ? match.pickedWinnerId : null);
+    match.awayTeamId ??
+    match.predictedAwayTeamId ??
+    (fillAway ? match.pickedWinnerId : null) ??
+    match.awaySlotFeederPickedId;
   const effectiveAwayName = match.awayTeamName ?? match.predictedAwayTeamName ?? null;
   const isBustedPick = showBustedPickAsFill;
 

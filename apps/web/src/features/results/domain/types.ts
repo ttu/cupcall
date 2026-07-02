@@ -161,17 +161,18 @@ export type KnockoutMatchView = {
    *  Null when either team slot is TBD (unknown) or no picks exist. */
   poolPickAwayPct: number | null;
   /**
-   * True when the home slot is empty AND the feeder match's entry-round pick is already
+   * The teamId the user picked for the home slot's feeder match, when that pick is already
    * definitively wrong (the picked team is not a participant in the upcoming feeder match).
-   * Allows the UI to show "missed pick" instead of TBD. Always false for entry-round cards.
+   * Null when not applicable (entry round, slot not empty, no pick made, or pick still alive).
+   * Allows the UI to render the country badge instead of ? for the missed slot.
    */
-  homeSlotFeederPickBusted: boolean;
+  homeSlotFeederPickedId: string | null;
   /**
-   * True when the away slot is empty AND the feeder match's entry-round pick is already
+   * The teamId the user picked for the away slot's feeder match, when that pick is already
    * definitively wrong (the picked team is not a participant in the upcoming feeder match).
-   * Allows the UI to show "missed pick" instead of TBD. Always false for entry-round cards.
+   * Null when not applicable (entry round, slot not empty, no pick made, or pick still alive).
    */
-  awaySlotFeederPickBusted: boolean;
+  awaySlotFeederPickedId: string | null;
 };
 
 export type BracketRoundResultView = {

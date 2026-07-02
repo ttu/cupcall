@@ -883,8 +883,8 @@ describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-
   // Scenario maps to the production bug:
   //   r32m86 (ARG vs CPV) → qf1 (A1 vs B2): user picks A1 — valid ✓
   //   r32m88 (AUS vs EGY) → qf2 (C1 vs D2): user picks X3 — NOT a participant ✗
-  //   r16m95 → sf1: home predicted A1, away TBD — should flag awaySlotFeederPickBusted
-  it('flags awaySlotFeederPickBusted on sf1 when qf2 pick is not a match participant', () => {
+  //   r16m95 → sf1: home predicted A1, away TBD — should expose the busted feeder pick teamId on awaySlotFeederPickedId
+  it('sets awaySlotFeederPickedId to the busted pick teamId on sf1 when qf2 pick is not a match participant', () => {
     // No QF matches played yet; group stage settled so qf1=A1/B2, qf2=C1/D2 are derived.
     const { bracketRounds } = buildBracketRounds(
       miniTournament,
@@ -909,9 +909,9 @@ describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-
     expect(sf1Card.predictedAwayTeamId).toBeNull();
     expect(sf1Card.awayTeamId).toBeNull();
     // The away feeder pick is already definitively wrong → flag it
-    expect(sf1Card.awaySlotFeederPickBusted).toBe(true);
+    expect(sf1Card.awaySlotFeederPickedId).toBe('X3');
     // The home feeder pick is valid → not flagged
-    expect(sf1Card.homeSlotFeederPickBusted).toBe(false);
+    expect(sf1Card.homeSlotFeederPickedId).toBeNull();
   });
 
   it('does not flag feederPickBusted when qf2 pick is absent (no pick made)', () => {
@@ -931,7 +931,7 @@ describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-
     const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
     const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
     // No pick → TBD, not missed pick
-    expect(sf1Card.awaySlotFeederPickBusted).toBe(false);
+    expect(sf1Card.awaySlotFeederPickedId).toBeNull();
   });
 
   it('does not flag feederPickBusted when the feeder pick is valid but match unplayed', () => {
@@ -950,8 +950,8 @@ describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-
     );
     const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
     const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
-    expect(sf1Card.awaySlotFeederPickBusted).toBe(false);
-    expect(sf1Card.homeSlotFeederPickBusted).toBe(false);
+    expect(sf1Card.awaySlotFeederPickedId).toBeNull();
+    expect(sf1Card.homeSlotFeederPickedId).toBeNull();
   });
 
   it('does not flag feederPickBusted for entry-round cards', () => {
@@ -967,7 +967,7 @@ describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-
     );
     const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
     const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
-    expect(qf1Card.homeSlotFeederPickBusted).toBe(false);
-    expect(qf1Card.awaySlotFeederPickBusted).toBe(false);
+    expect(qf1Card.homeSlotFeederPickedId).toBeNull();
+    expect(qf1Card.awaySlotFeederPickedId).toBeNull();
   });
 });
