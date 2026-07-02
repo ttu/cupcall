@@ -283,6 +283,8 @@ export type ProjectedEntry = {
   projectedRank: number;
   /** Positive = moved up in projected standings vs current. */
   rankDelta: number;
+  /** Maximum additional points this player can still earn from alive picks + pending bets + unresolved group matches. */
+  canStillGet: number;
 };
 
 export type SpecialsMatrixCell = {

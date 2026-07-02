@@ -15,11 +15,15 @@ export function projectedSubLabel(entries: ProjectedEntry[]): string {
   return `enough for ${ordinal(me.projectedRank)} place`;
 }
 
+const GRID = 'grid-cols-[44px_1fr_52px_52px_64px]';
+
 export function ProjectedStandings({ entries }: { entries: ProjectedEntry[] }): ReactElement {
   return (
     <div className="overflow-hidden">
-      <div className="grid grid-cols-[44px_1fr_52px_64px] gap-1.5 p-[8px_16px] bg-surface-2 border-t border-b border-line">
-        {(['Now → Fin', 'Player', 'Now', 'Proj.'] as const).map((hd, i) => (
+      <div
+        className={cn('grid gap-1.5 p-[8px_16px] bg-surface-2 border-t border-b border-line', GRID)}
+      >
+        {(['Now → Fin', 'Player', 'Now', '+Avail', 'Proj.'] as const).map((hd, i) => (
           <span
             key={hd}
             className={cn(
@@ -41,14 +45,22 @@ export function ProjectedStandings({ entries }: { entries: ProjectedEntry[] }): 
 }
 
 function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
-  const { rankDelta, projectedRank, currentPoints, projectedPoints, displayName, isCurrentUser } =
-    entry;
+  const {
+    rankDelta,
+    projectedRank,
+    currentPoints,
+    projectedPoints,
+    canStillGet,
+    displayName,
+    isCurrentUser,
+  } = entry;
   const isTop3 = projectedRank <= 3;
 
   return (
     <div
       className={cn(
-        'grid grid-cols-[44px_1fr_52px_64px] gap-1.5 p-[10px_16px] items-center',
+        'grid gap-1.5 p-[10px_16px] items-center',
+        GRID,
         isCurrentUser ? 'bg-green-050' : 'bg-transparent',
       )}
     >
@@ -89,6 +101,15 @@ function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
 
       <span className="tnum text-right font-semibold text-[13px] text-ink-muted">
         {currentPoints}
+      </span>
+
+      <span
+        className={cn(
+          'tnum text-right font-semibold text-[13px]',
+          canStillGet > 0 ? 'text-green-600' : 'text-ink-muted',
+        )}
+      >
+        {canStillGet > 0 ? `+${canStillGet}` : '–'}
       </span>
 
       <span

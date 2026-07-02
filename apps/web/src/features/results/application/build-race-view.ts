@@ -149,7 +149,40 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     );
   }
 
-  const projectedEntries = buildProjectedEntries(leaderboard, userId, stillLiveByUser);
+  // --- per-player canStillGet ---
+  const specialDefs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
+  const groupRemaining = remainingMax.groupMatches + remainingMax.groupOrder;
+  const allKnockoutMatchesForAvail: KnockoutMatchView[] = [
+    ...bracketRounds.flatMap((r) => r.matches),
+    ...(bronzeMatch ? [bronzeMatch] : []),
+  ];
+  const hitPoints = buildHitPointsMap(def);
+  const knockoutRemaining = buildPerUserKnockoutRemaining(
+    poolKnockoutPicks,
+    allKnockoutMatchesForAvail,
+    hitPoints,
+  );
+  const specialsRemaining = buildPerUserSpecialsRemaining(
+    poolSpecialBets,
+    specialDefs,
+    actualResults,
+  );
+  const canStillGetByUser = new Map(
+    leaderboard.map((e) => [
+      e.userId,
+      groupRemaining +
+        (knockoutRemaining.get(e.userId) ?? 0) +
+        (specialsRemaining.get(e.userId) ?? 0),
+    ]),
+  );
+  // --- end per-player canStillGet ---
+
+  const projectedEntries = buildProjectedEntries(
+    leaderboard,
+    userId,
+    stillLiveByUser,
+    canStillGetByUser,
+  );
   const { matchMatrix, matrixMatches } = buildMatchMatrix(
     leaderboard,
     userId,
@@ -193,10 +226,81 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
   };
 }
 
+/**
+ * Computes the maximum additional knockout points each user can still earn.
+ * A pick is viable when:
+ *  - the match is still pending (status !== 'final'), AND
+ *  - if both participant slots are confirmed, the picked team is one of them;
+ *    if either slot is TBD, the pick is conservatively treated as viable.
+ * Returns a Map<userId, points>. Users with no picks are absent from the map.
+ */
+export function buildPerUserKnockoutRemaining(
+  poolKnockoutPicks: PoolKnockoutPick[],
+  allKnockoutMatches: KnockoutMatchView[],
+  hitPoints: Map<string, number>,
+): Map<string, number> {
+  const pickMap = new Map<string, string>();
+  for (const pick of poolKnockoutPicks) {
+    pickMap.set(`${pick.userId}::${pick.bracketMatchKey}`, pick.winnerTeamId);
+  }
+
+  const userIds = new Set(poolKnockoutPicks.map((p) => p.userId));
+  const result = new Map<string, number>();
+
+  for (const userId of userIds) {
+    let canStillGet = 0;
+    for (const match of allKnockoutMatches) {
+      if (match.status === 'final') continue;
+      const pickedWinnerId = pickMap.get(`${userId}::${match.bracketMatchKey}`) ?? null;
+      if (pickedWinnerId === null) continue;
+      const bothKnown = match.homeTeamId !== null && match.awayTeamId !== null;
+      if (bothKnown && pickedWinnerId !== match.homeTeamId && pickedWinnerId !== match.awayTeamId) {
+        continue; // busted — picked team is not a confirmed participant
+      }
+      canStillGet += hitPoints.get(match.bracketMatchKey) ?? 0;
+    }
+    result.set(userId, canStillGet);
+  }
+
+  return result;
+}
+
+/**
+ * Computes the maximum additional special-bet points each user can still earn.
+ * A bet contributes iff it is unresolved (no actual answer yet) AND the user has a pick.
+ * Returns a Map<userId, points>. Users with no picks on pending bets are absent.
+ */
+export function buildPerUserSpecialsRemaining(
+  poolSpecialBets: PoolSpecialBet[],
+  defs: Array<{ key: string; points: number }>,
+  actualResults: ActualResults,
+): Map<string, number> {
+  const unresolvedKeys = new Set(
+    defs
+      .filter((d) => {
+        const { isArray, scalar, array } = resolveActualForBet(d.key, actualResults);
+        return isArray ? array.length === 0 : scalar === undefined || scalar === null;
+      })
+      .map((d) => d.key),
+  );
+
+  const betPoints = new Map(defs.map((d) => [d.key, d.points]));
+  const result = new Map<string, number>();
+
+  for (const sb of poolSpecialBets) {
+    if (!unresolvedKeys.has(sb.betKey)) continue;
+    const pts = betPoints.get(sb.betKey) ?? 0;
+    result.set(sb.userId, (result.get(sb.userId) ?? 0) + pts);
+  }
+
+  return result;
+}
+
 function buildProjectedEntries(
   leaderboard: LeaderboardEntry[],
   userId: string | null,
   stillLiveByUser: Map<string, number>,
+  canStillGetByUser: Map<string, number>,
 ): ProjectedEntry[] {
   const currentRankMap = new Map<string, number>(leaderboard.map((e, i) => [e.userId, i + 1]));
 
@@ -206,6 +310,7 @@ function buildProjectedEntries(
     isCurrentUser: userId !== null && e.userId === userId,
     currentPoints: e.pointsTotal,
     projectedPoints: e.pointsTotal + (stillLiveByUser.get(e.userId) ?? 0),
+    canStillGet: canStillGetByUser.get(e.userId) ?? 0,
   }));
 
   const sorted = withProjected.toSorted((a, b) => b.projectedPoints - a.projectedPoints);
@@ -222,6 +327,7 @@ function buildProjectedEntries(
       projectedPoints: e.projectedPoints,
       projectedRank,
       rankDelta: currentRank - projectedRank,
+      canStillGet: e.canStillGet,
     };
   });
 }
