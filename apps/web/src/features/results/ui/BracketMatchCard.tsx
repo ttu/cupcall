@@ -109,17 +109,20 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
 
   const homeIsEmpty = match.homeTeamId === null && match.predictedHomeTeamId === null;
   const awayIsEmpty = match.awayTeamId === null && match.predictedAwayTeamId === null;
+  // Fill only the first empty slot with the busted pick badge so the flag is visible once.
   const fillHome = showBustedPickAsFill && homeIsEmpty;
   const fillAway = showBustedPickAsFill && !fillHome && awayIsEmpty;
 
   // For missed fill slots: provide the teamId so the badge (flag) shows, but no name —
   // TeamRow renders "missed pick" label via isMissedFill instead of the team name.
+  // Any slot that is genuinely empty while the pick is busted also shows "missed pick" (not TBD).
   const effectiveHomeId =
     match.homeTeamId ?? match.predictedHomeTeamId ?? (fillHome ? match.pickedWinnerId : null);
   const effectiveHomeName = match.homeTeamName ?? match.predictedHomeTeamName ?? null;
   const effectiveAwayId =
     match.awayTeamId ?? match.predictedAwayTeamId ?? (fillAway ? match.pickedWinnerId : null);
   const effectiveAwayName = match.awayTeamName ?? match.predictedAwayTeamName ?? null;
+  const isBustedPick = showBustedPickAsFill;
 
   // Per-team softness: a team slot is "soft" when it's projected from live group standings
   // (not yet confirmed in DB) or filled from the user's pick (TBD actual winner).
@@ -177,7 +180,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           predictedPct={match.homeTeamPredictedPct}
           isSoft={homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
-          isMissedFill={fillHome}
+          isMissedFill={isBustedPick && homeIsEmpty}
           showProjectedBadge={homeIsSoft && match.homeTeamId !== null}
           showConfirmedBadge={
             match.isEntryRound && !homeIsSoft && match.homeTeamId !== null && awayIsSoft
@@ -197,7 +200,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           predictedPct={match.awayTeamPredictedPct}
           isSoft={awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
-          isMissedFill={fillAway}
+          isMissedFill={isBustedPick && awayIsEmpty}
           showProjectedBadge={awayIsSoft && match.awayTeamId !== null}
           showConfirmedBadge={
             match.isEntryRound && !awayIsSoft && match.awayTeamId !== null && homeIsSoft
