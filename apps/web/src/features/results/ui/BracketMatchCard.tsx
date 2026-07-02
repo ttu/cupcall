@@ -24,6 +24,7 @@ function TeamRow({
   predictedPct,
   isSoft,
   isPredictedFill,
+  isMissedFill,
   showProjectedBadge,
   showConfirmedBadge,
 }: {
@@ -35,6 +36,8 @@ function TeamRow({
   predictedPct: number | null;
   isSoft: boolean;
   isPredictedFill: boolean;
+  /** True when this slot is showing a busted pick that is not visible in the actual/predicted chain. */
+  isMissedFill: boolean;
   showProjectedBadge: boolean;
   showConfirmedBadge: boolean;
 }): ReactElement {
@@ -70,7 +73,11 @@ function TeamRow({
                 : 'text-ink-muted',
         )}
       >
-        {teamName ?? teamId ?? <span className="italic font-normal">TBD</span>}
+        {isMissedFill ? (
+          <span className="italic font-normal">missed pick</span>
+        ) : (
+          (teamName ?? teamId ?? <span className="italic font-normal">TBD</span>)
+        )}
       </span>
       {predictedPct !== null && (
         <span className="text-[10px] font-bold text-ink-muted tabular-nums shrink-0">
@@ -105,14 +112,14 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
   const fillHome = showBustedPickAsFill && homeIsEmpty;
   const fillAway = showBustedPickAsFill && !fillHome && awayIsEmpty;
 
+  // For missed fill slots: provide the teamId so the badge (flag) shows, but no name —
+  // TeamRow renders "missed pick" label via isMissedFill instead of the team name.
   const effectiveHomeId =
     match.homeTeamId ?? match.predictedHomeTeamId ?? (fillHome ? match.pickedWinnerId : null);
-  const effectiveHomeName =
-    match.homeTeamName ?? match.predictedHomeTeamName ?? (fillHome ? match.pickedWinnerName : null);
+  const effectiveHomeName = match.homeTeamName ?? match.predictedHomeTeamName ?? null;
   const effectiveAwayId =
     match.awayTeamId ?? match.predictedAwayTeamId ?? (fillAway ? match.pickedWinnerId : null);
-  const effectiveAwayName =
-    match.awayTeamName ?? match.predictedAwayTeamName ?? (fillAway ? match.pickedWinnerName : null);
+  const effectiveAwayName = match.awayTeamName ?? match.predictedAwayTeamName ?? null;
 
   // Per-team softness: a team slot is "soft" when it's projected from live group standings
   // (not yet confirmed in DB) or filled from the user's pick (TBD actual winner).
@@ -170,6 +177,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           predictedPct={match.homeTeamPredictedPct}
           isSoft={homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
+          isMissedFill={fillHome}
           showProjectedBadge={homeIsSoft && match.homeTeamId !== null}
           showConfirmedBadge={
             match.isEntryRound && !homeIsSoft && match.homeTeamId !== null && awayIsSoft
@@ -189,6 +197,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           predictedPct={match.awayTeamPredictedPct}
           isSoft={awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
+          isMissedFill={fillAway}
           showProjectedBadge={awayIsSoft && match.awayTeamId !== null}
           showConfirmedBadge={
             match.isEntryRound && !awayIsSoft && match.awayTeamId !== null && homeIsSoft
