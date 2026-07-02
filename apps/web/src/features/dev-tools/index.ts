@@ -6,5 +6,6 @@ export {
   applyCheckpointAction,
   applyGroupStageDayAction,
   resetToFreshAction,
+  applyCurrentStateAction,
 } from './api/dev-actions';
 export { DevPage } from './ui/DevPage';

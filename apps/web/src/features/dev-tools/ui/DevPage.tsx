@@ -9,6 +9,7 @@ import {
   applyCheckpointAction,
   applyGroupStageDayAction,
   resetToFreshAction,
+  applyCurrentStateAction,
 } from '../api/dev-actions';
 
 const GROUP_STAGE_MONTH_NAMES = [
@@ -87,6 +88,12 @@ export function DevPage({ initialState }: Props): ReactElement {
     });
   }
 
+  function handleCurrentState() {
+    startTransition(async () => {
+      await applyCurrentStateAction();
+    });
+  }
+
   const { users, checkpoint: current, groupStageDay, stats } = initialState;
 
   return (
@@ -97,6 +104,32 @@ export function DevPage({ initialState }: Props): ReactElement {
           Development utilities — not available in production.
         </p>
       </div>
+
+      {/* ── Current State ─────────────────────────────────────────────────── */}
+      <section aria-labelledby="current-state-heading">
+        <h2
+          id="current-state-heading"
+          className="text-xs font-bold tracking-widest uppercase text-ink-muted mb-3 font-cup-display"
+        >
+          Current State
+        </h2>
+        <div className="rounded-cup border border-line bg-surface-2 p-4 space-y-3">
+          <p className="text-xs text-ink-soft">
+            Apply the actual current state of the real WC‑2026 tournament (from{' '}
+            <code className="text-xs bg-surface px-1 rounded">wc‑2026/results.json</code>) to the
+            test tournament. Uses fictional group scores but real knockout results.
+          </p>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={handleCurrentState}
+            className="w-full text-left px-4 py-2 rounded-cup text-sm font-medium bg-surface border border-line text-ink hover:bg-surface-2 disabled:opacity-50 transition-colors"
+          >
+            Install current state (wc‑2026)
+          </button>
+          {isPending && <p className="text-xs text-ink-soft animate-pulse">Applying changes...</p>}
+        </div>
+      </section>
 
       {/* ── Simulation Checkpoints ─────────────────────────────────────────── */}
       <section aria-labelledby="simulator-heading">

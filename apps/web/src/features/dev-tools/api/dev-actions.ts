@@ -1,5 +1,7 @@
 'use server';
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/shared/db';
@@ -564,6 +566,93 @@ export async function applyCheckpointAction(formData: FormData): Promise<void> {
   await upsertKnockoutMatchesUpTo(checkpoint);
   await rescoreAll(actual);
 
+  revalidatePath('/');
+  redirect('/dev');
+}
+
+/**
+ * Applies the actual current state of wc-2026 to the test-wc-2026 tournament.
+ * Reads wc-2026/results.json to determine which matches have results and what the
+ * knockout bracket looks like, then applies fictional test-wc-2026 scores for group
+ * matches (so user picks are scored against known data) and real team IDs for knockout.
+ */
+export async function applyCurrentStateAction(): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Dev action not available in production');
+  }
+
+  // Resolve data directory from repo root (Next.js runs from apps/web/)
+  const tournamentsDir = join(process.cwd(), '../../data/tournaments');
+
+  type RawMatch = { matchId: string; home: number; away: number };
+  type RawKnockout = {
+    round: 'R32' | 'R16' | 'QF' | 'SF' | 'Final' | 'bronze';
+    matchId: string;
+    home: string;
+    away: string;
+    homeGoals: number;
+    awayGoals: number;
+    winner: string;
+    decidedBy?: 'regulation' | 'extraTime' | 'penalties';
+    kickoff?: string;
+  };
+
+  const realRaw = JSON.parse(
+    readFileSync(join(tournamentsDir, 'wc-2026', 'results.json'), 'utf-8'),
+  ) as {
+    matchResults: RawMatch[];
+    knockout?: RawKnockout[];
+    groupOrder?: Record<string, string[]>;
+  };
+
+  const testRaw = JSON.parse(
+    readFileSync(join(tournamentsDir, 'test-wc-2026', 'results.json'), 'utf-8'),
+  ) as { matchResults: RawMatch[]; groupOrder?: Record<string, string[]> };
+
+  const realMatchIds = new Set(realRaw.matchResults.map((r) => r.matchId));
+  const testGroupOrder = testRaw.groupOrder ?? {};
+
+  const completeGroups = 'ABCDEFGHIJKL'
+    .split('')
+    .filter((g) => [1, 2, 3, 4, 5, 6].every((n) => realMatchIds.has(`m${g}${n}`)));
+
+  const knockoutMatches = realRaw.knockout ?? [];
+  const r32Winners = knockoutMatches.filter((m) => m.round === 'R32').map((m) => teamId(m.winner));
+  const r16Winners = knockoutMatches.filter((m) => m.round === 'R16').map((m) => teamId(m.winner));
+
+  const actual: ActualResults = {
+    matchResults: testRaw.matchResults
+      .filter((r) => realMatchIds.has(r.matchId))
+      .map((r) => ({ matchId: matchId(r.matchId), home: r.home, away: r.away })),
+    groupOrder: Object.fromEntries(
+      completeGroups.map((g) => [groupId(g), (testGroupOrder[g] ?? []).map(teamId)]),
+    ) as Record<GroupId, TeamId[]>,
+    answers: {
+      ...(r32Winners.length > 0 ? { roundOf16: r32Winners } : {}),
+      ...(r16Winners.length > 0 ? { roundOf8: r16Winners } : {}),
+    },
+  };
+
+  await resetTournamentResults(db, TOURNAMENT_ID);
+  await upsertTournamentResults(db, TOURNAMENT_ID, actual);
+
+  for (const km of knockoutMatches) {
+    await upsertKnockoutMatch(db, {
+      id: km.matchId,
+      tournamentId: TOURNAMENT_ID,
+      stage: km.round,
+      homeTeamId: km.home,
+      awayTeamId: km.away,
+      homeGoals: km.homeGoals,
+      awayGoals: km.awayGoals,
+      winnerTeamId: km.winner,
+      ...(km.decidedBy !== undefined && { decidedBy: km.decidedBy }),
+      ...(km.kickoff !== undefined && { kickoff: new Date(km.kickoff) }),
+      status: 'final',
+    });
+  }
+
+  await rescoreAll(actual);
   revalidatePath('/');
   redirect('/dev');
 }

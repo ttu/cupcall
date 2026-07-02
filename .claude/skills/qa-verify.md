@@ -9,7 +9,7 @@ committing/creating a PR.
 ## Prerequisites
 
 - Dev server running at `http://localhost:3000` (run `pnpm dev` from the repo root if not running)
-- DB seeded with ongoing tournament data (`pnpm seed:ongoing`)
+- DB seeded with current tournament data (`pnpm seed:fresh:current` to mirror production state, or `pnpm seed:ongoing` for the fixed groups-A-to-F scenario)
 - Playwright MCP available
 
 ## Setup
@@ -31,7 +31,7 @@ Maximum 2 retries per phase before escalating to the user.
 ## Phase 1 — Server & seed check
 
 1. Navigate to `http://localhost:3000/dev`.
-2. If the page shows "No users found": stop, tell the user to run `pnpm seed:ongoing`, then retry.
+2. If the page shows "No users found": stop, tell the user to run `pnpm seed:fresh:current` (or `pnpm seed:ongoing`), then retry.
 3. Confirm the users list shows at least Alice, Bob, and other seeded users.
 4. Note the current simulation checkpoint shown in the Cup Simulator.
 5. Screenshot → `phase-1-dev-page.png`.
