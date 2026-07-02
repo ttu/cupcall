@@ -776,6 +776,60 @@ describe('Final/Bronze: implicit pickedWinnerId from finish score when no explic
     expect(bronzeMatch!.predictedHomeTeamId).toBe('C1');
     expect(bronzeMatch!.predictedAwayTeamId).toBe('D1');
   });
+
+  it('sets predictedHomeTeamId=null and pickedWinnerId=implicit-winner when home-side chain is broken by early elimination', () => {
+    // qf1 played: A1 (user's pick) loses to B2 → A1 eliminated.
+    // User still has sf1=A1 (stale/inconsistent pick). sf1 predicted participants are [B2, C1]
+    // (actual qf1 winner B2 + user's qf2 pick C1). A1 ∉ [B2, C1] → getSfLoser(sf1) returns null
+    // → predictedHomeTeamId = null.
+    //
+    // No explicit bronze pick; score 3-1 (home wins). deriveImplicitFinaleWinner finds
+    // sfLoser(sf1) = C1 (from raw qf1/qf2 picks: A1 === sf1Winner → skip → return C1).
+    // So effectivePick = C1 (implicit winner) and pickedOpponentId = D1.
+    //
+    // This is the "Germany 3rd place" bug scenario:
+    //   predictedAwayTeamId = D1 = pickedOpponentId
+    //   → the old FinalResultCard fallback (pickedOpponent !== pickRight) returns null for the left slot.
+    //   Fix: FinalResultCard now tries pickedWinnerId (C1) first when predictedHomeTeamId is null.
+    const qf1Played = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: 'B2',
+      homeGoals: 0,
+      awayGoals: 1,
+      status: 'final',
+    });
+    const { bronzeMatch } = buildBracketRounds(
+      miniTournament,
+      [qf1Played],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' }, // user predicted A1, but A1 actually lost
+          { bracketMatchKey: 'qf2', winner: 'C1' },
+          { bracketMatchKey: 'qf3', winner: 'B1' },
+          { bracketMatchKey: 'qf4', winner: 'D1' },
+          { bracketMatchKey: 'sf1', winner: 'A1' }, // stale pick — A1 was eliminated in qf1
+          { bracketMatchKey: 'sf2', winner: 'B1' }, // D1 is sf2 loser → bronze away side
+          // deliberately no explicit 'bronze' pick
+        ],
+        finishScores: { bronze: { home: 3, away: 1 } }, // home side (C1) wins
+      },
+      [],
+      [],
+    );
+    expect(bronzeMatch).not.toBeNull();
+    // sf1 chain broken: predicted sf1 participants are [B2, C1] (B2 = actual qf1 winner),
+    // but sf1 pick = A1 ∉ [B2, C1] → loser derivation returns null → home slot unknown.
+    expect(bronzeMatch!.predictedHomeTeamId).toBeNull();
+    // sf2 chain intact: D1 is sf2 loser → bronze away slot is known.
+    expect(bronzeMatch!.predictedAwayTeamId).toBe('D1');
+    // Implicit winner: sfLoser(sf1) via raw picks = C1 (team2=C1 ≠ sfWinner=A1); score home>away → C1 wins.
+    expect(bronzeMatch!.pickedWinnerId).toBe('C1');
+    // Opponent: sfLoser(sf2) = D1; pickedWinner C1 = loser1 → opponent = loser2 = D1.
+    // Note: pickedOpponentId === predictedAwayTeamId here — the exact condition that hid the
+    // home-side team in FinalResultCard before the fix.
+    expect(bronzeMatch!.pickedOpponentId).toBe('D1');
+  });
 });
 
 describe('buildBracketRounds — poolPickHomePct / poolPickAwayPct', () => {

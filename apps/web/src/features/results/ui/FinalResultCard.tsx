@@ -42,9 +42,18 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
   const pickLeftId = match.homeTeamId ?? match.predictedHomeTeamId;
   const pickRightId = match.awayTeamId ?? match.predictedAwayTeamId;
   // When the predicted participant chain is broken (e.g. the team was eliminated before
-  // reaching this match), pickedOpponentId still carries the user's original opponent pick.
+  // reaching this match), pickedWinnerId or pickedOpponentId carry the user's original picks.
+  // Try pickedWinnerId first: when the implicit winner (derived from the finish score) is the
+  // home-side SF loser, pickedOpponentId equals predictedAwayTeamId, so the standard
+  // pickedOpponentId fallback silently drops the left-side team. Prefer pickedWinnerId here.
   const pickRowLeftId =
-    pickLeftId ?? (match.pickedOpponentId !== pickRightId ? match.pickedOpponentId : null);
+    pickLeftId ??
+    (match.pickedWinnerId !== null && match.pickedWinnerId !== pickRightId
+      ? match.pickedWinnerId
+      : null) ??
+    (match.pickedOpponentId !== null && match.pickedOpponentId !== pickRightId
+      ? match.pickedOpponentId
+      : null);
   const pickRowRightId =
     pickRightId ?? (match.pickedOpponentId !== pickRowLeftId ? match.pickedOpponentId : null);
   // Explicit winner pick takes priority; fall back to whichever team has more predicted goals
