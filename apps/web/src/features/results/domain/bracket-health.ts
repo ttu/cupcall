@@ -60,7 +60,7 @@ export function computeBracketHealth(
   const scoringMap = buildRoundScoringMap(def);
   const finalLabel = getRoundLabel(def.bracket.finalMatch as string, def.bracket.rounds);
 
-  // Per-team scored rounds (R32→'R16', R16→'R8')
+  // Per-team scored rounds (R32→'R16', R16→'QF')
   const scoredRows: BracketRoundHealth[] = rounds
     .filter((r) => scoringMap.has(r.label))
     .map((r) => {
@@ -79,14 +79,14 @@ export function computeBracketHealth(
       };
     });
 
-  // SF picks: rounds not in scoring map and not the Final (after QF is mapped to 'Top 4')
+  // Finalist picks: rounds not in scoring map and not the Final (after QF is mapped to 'SF')
   const sfMatches = rounds
     .filter((r) => !scoringMap.has(r.label) && r.label !== finalLabel)
     .flatMap((r) => r.matches);
   const sfRow: BracketRoundHealth | null =
     sfMatches.length > 0
       ? {
-          label: 'SF',
+          label: 'Finalist',
           alivePicks: sfMatches.filter((m) => m.pickStatus === 'alive').length,
           pendingPicks: sfMatches.filter((m) => m.pickStatus === 'pending').length,
           bustedPicks: sfMatches.filter((m) => m.pickStatus === 'busted').length,
@@ -142,7 +142,7 @@ export function computeBracketHealth(
  * Maps each bracket round label to the scoring category it feeds into.
  *
  * R32 picks determine the R16 team set (roundOf16PerTeam each).
- * R16 picks determine the R8/QF team set (roundOf8PerTeam each).
+ * R16 picks determine the QF team set (roundOf8PerTeam each).
  * Uses bracket.progression to find the feeding round without hardcoding round names.
  */
 function buildRoundScoringMap(
@@ -164,8 +164,8 @@ function buildRoundScoringMap(
   }
 
   addFeedingRound(bracket.roundOf16Matches, 'R16', scoring.roundOf16PerTeam);
-  addFeedingRound(bracket.roundOf8Matches, 'R8', scoring.roundOf8PerTeam);
-  addFeedingRound(bracket.semiFinals, 'Top 4', 0);
+  addFeedingRound(bracket.roundOf8Matches, 'QF', scoring.roundOf8PerTeam);
+  addFeedingRound(bracket.semiFinals, 'SF', 0);
 
   return map;
 }

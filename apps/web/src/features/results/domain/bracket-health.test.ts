@@ -205,27 +205,27 @@ describe('computeBracketHealth', () => {
   it('includes bronze as a Bronze perRound entry', () => {
     const rounds = [round('QF', [match('alive'), match('alive')])];
     const health = computeBracketHealth(rounds, match('busted'), miniTournament);
-    // QF maps to 'Top 4' via scoring map (feeding SF); bronze → 'Bronze'
+    // QF maps to 'SF' via scoring map (feeding SF); bronze → 'Bronze'
     expect(health.perRound).toHaveLength(2);
-    expect(health.perRound[0]!.label).toBe('Top 4');
+    expect(health.perRound[0]!.label).toBe('SF');
     expect(health.perRound[1]!.label).toBe('Bronze');
   });
 
-  it('maps QF picks to Top 4 row (4 picks) and SF picks to SF row (2 picks)', () => {
+  it('maps QF picks to SF row (4 picks) and SF picks to Finalist row (2 picks)', () => {
     const rounds = [
       round('QF', [match('alive'), match('alive'), match('busted'), match('pending')]),
       round('SF', [match('alive'), match('no-pick')]),
     ];
     const health = computeBracketHealth(rounds, null, miniTournament);
-    const topFour = health.perRound.find((r) => r.label === 'Top 4')!;
-    expect(topFour.alivePicks).toBe(2);
-    expect(topFour.bustedPicks).toBe(1);
-    expect(topFour.pendingPicks).toBe(1);
-    expect(topFour.totalPicks).toBe(4);
+    const sfRow = health.perRound.find((r) => r.label === 'SF')!;
+    expect(sfRow.alivePicks).toBe(2);
+    expect(sfRow.bustedPicks).toBe(1);
+    expect(sfRow.pendingPicks).toBe(1);
+    expect(sfRow.totalPicks).toBe(4);
 
-    const sf = health.perRound.find((r) => r.label === 'SF')!;
-    expect(sf.alivePicks).toBe(1);
-    expect(sf.totalPicks).toBe(2);
+    const finalist = health.perRound.find((r) => r.label === 'Finalist')!;
+    expect(finalist.alivePicks).toBe(1);
+    expect(finalist.totalPicks).toBe(2);
   });
 
   it('shows Final as its own perRound entry', () => {
@@ -237,12 +237,12 @@ describe('computeBracketHealth', () => {
     expect(finalRow!.pendingPicks).toBe(1);
   });
 
-  it('uses 0 pts per pick for Top 4 (QF picks have no per-team scoring)', () => {
+  it('uses 0 pts per pick for SF row (QF picks have no per-team scoring)', () => {
     const rounds = [round('QF', [match('alive'), match('alive'), match('pending')])];
     const health = computeBracketHealth(rounds, null, miniTournament);
-    const topFour = health.perRound[0]!;
-    expect(topFour.label).toBe('Top 4');
-    expect(topFour.earnedPoints).toBe(0);
-    expect(topFour.maxPossiblePoints).toBe(0);
+    const sfRow = health.perRound[0]!;
+    expect(sfRow.label).toBe('SF');
+    expect(sfRow.earnedPoints).toBe(0);
+    expect(sfRow.maxPossiblePoints).toBe(0);
   });
 });

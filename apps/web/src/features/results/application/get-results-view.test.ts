@@ -2327,19 +2327,13 @@ describe('getResultsView', () => {
       const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
 
       expect(rows).toHaveLength(5);
-      expect(rows.map((r) => r.label)).toEqual([
-        'Round of 16',
-        'Round of 8',
-        'Top 4',
-        'Final',
-        'Bronze',
-      ]);
+      expect(rows.map((r) => r.label)).toEqual(['Round of 16', 'QF', 'SF', 'Final', 'Bronze']);
       expect(rows.every((r) => r.earned === 0)).toBe(true);
       expect(rows.every((r) => r.missed === 0)).toBe(true);
 
       const r16 = rows.find((r) => r.label === 'Round of 16')!;
-      const r8 = rows.find((r) => r.label === 'Round of 8')!;
-      const topFour = rows.find((r) => r.label === 'Top 4')!;
+      const r8 = rows.find((r) => r.label === 'QF')!;
+      const topFour = rows.find((r) => r.label === 'SF')!;
       const finalRow = rows.find((r) => r.label === 'Final')!;
       const bronzeRow = rows.find((r) => r.label === 'Bronze')!;
 
@@ -2371,8 +2365,8 @@ describe('getResultsView', () => {
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const rows = view!.userKnockoutRoundBreakdown!;
 
-      expect(rows.find((r) => r.label === 'Round of 8')!.earned).toBe(10);
-      expect(rows.find((r) => r.label === 'Top 4')!.earned).toBe(8);
+      expect(rows.find((r) => r.label === 'QF')!.earned).toBe(10);
+      expect(rows.find((r) => r.label === 'SF')!.earned).toBe(8);
       expect(rows.find((r) => r.label === 'Bronze')!.earned).toBe(4);
       expect(rows.find((r) => r.label === 'Final')!.earned).toBe(3);
     });
@@ -2398,7 +2392,7 @@ describe('getResultsView', () => {
       const rows = view!.userKnockoutRoundBreakdown!;
       const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
 
-      const topFour = rows.find((r) => r.label === 'Top 4')!;
+      const topFour = rows.find((r) => r.label === 'SF')!;
       const finalRow = rows.find((r) => r.label === 'Final')!;
       const bronzeRow = rows.find((r) => r.label === 'Bronze')!;
 
@@ -2421,7 +2415,7 @@ describe('getResultsView', () => {
       const rows = view!.userKnockoutRoundBreakdown!;
       const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
 
-      const r8 = rows.find((r) => r.label === 'Round of 8')!;
+      const r8 = rows.find((r) => r.label === 'QF')!;
       expect(r8.canStillGet).toBe(totalMax.roundOf8);
       expect(r8.missed).toBe(0);
     });

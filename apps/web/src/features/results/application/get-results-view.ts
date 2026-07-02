@@ -274,14 +274,14 @@ function buildKnockoutRoundBreakdown(
 
   const totalMax = computeRemainingMaxPoints(def, { finalMatchIds: new Set() });
 
-  // For per-team scored rounds (R16, R8), answers.* may be partially populated while
+  // For per-team scored rounds (R16, QF), answers.* may be partially populated while
   // the round is still in progress (sync writes winners as matches complete). When a
   // bracket health row exists for that label, use it to compute accurate canStillGet
   // (pending picks × ptsPerPick) and missed (busted picks × ptsPerPick). Fall back to
   // the binary answered check only when there is no health row (entry-round tournaments
   // where that round has no upstream feeding round).
   const r16Health = bracketHealth.perRound.find((r) => r.label === 'R16') ?? null;
-  const r8Health = bracketHealth.perRound.find((r) => r.label === 'R8') ?? null;
+  const r8Health = bracketHealth.perRound.find((r) => r.label === 'QF') ?? null;
 
   function perTeamAvail(
     health: BracketHealth['perRound'][number] | null,
@@ -332,12 +332,12 @@ function buildKnockoutRoundBreakdown(
       canStillGet: canStillGet.roundOf16,
     },
     {
-      label: 'Round of 8',
+      label: 'QF',
       earned: r8Earned,
       missed: perTeamMissed(r8Health, r8Answered, totalMax.roundOf8, r8Earned),
       canStillGet: canStillGet.roundOf8,
     },
-    row('Top 4', bd?.topFour ?? 0, totalMax.topFour, canStillGet.topFour),
+    row('SF', bd?.topFour ?? 0, totalMax.topFour, canStillGet.topFour),
     row('Final', bd?.final ?? 0, totalMax.final, canStillGet.final),
     row('Bronze', bd?.bronze ?? 0, totalMax.bronze, canStillGet.bronze),
   ];

@@ -37,12 +37,12 @@ const ROWS: Row[] = [
     hint: (s) => `per correct team +${s.roundOf16PerTeam} (max +${s.roundOf16PerTeam * 16})`,
   },
   {
-    label: 'Round of 8',
+    label: 'QF',
     key: 'roundOf8',
     hint: (s) => `per correct team +${s.roundOf8PerTeam} (max +${s.roundOf8PerTeam * 8})`,
   },
   {
-    label: 'Top 4',
+    label: 'SF',
     key: 'topFour',
     hint: (s) =>
       `all 4 correct +${s.topFourOrder.allCorrect} · 3 correct +${s.topFourOrder.threeCorrect} · 2 correct +${s.topFourOrder.twoCorrect} · 1 correct +${s.topFourOrder.oneCorrect}`,
