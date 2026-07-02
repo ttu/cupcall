@@ -824,3 +824,96 @@ describe('buildBracketRounds — poolPickHomePct / poolPickAwayPct', () => {
     expect(sf1Match.poolPickAwayPct).toBeNull();
   });
 });
+
+describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-round match)', () => {
+  // Scenario maps to the production bug:
+  //   r32m86 (ARG vs CPV) → qf1 (A1 vs B2): user picks A1 — valid ✓
+  //   r32m88 (AUS vs EGY) → qf2 (C1 vs D2): user picks X3 — NOT a participant ✗
+  //   r16m95 → sf1: home predicted A1, away TBD — should flag awaySlotFeederPickBusted
+  it('flags awaySlotFeederPickBusted on sf1 when qf2 pick is not a match participant', () => {
+    // No QF matches played yet; group stage settled so qf1=A1/B2, qf2=C1/D2 are derived.
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' }, // valid: A1 is in qf1 (1A vs 2B)
+          { bracketMatchKey: 'qf2', winner: 'X3' }, // invalid: X3 is not in qf2 (C1 vs D2)
+          { bracketMatchKey: 'sf1', winner: 'A1' }, // user's SF pick
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+
+    // Home predicted team is A1 (user's qf1 pick propagated through)
+    expect(sf1Card.predictedHomeTeamId).toBe('A1');
+    // Away slot is empty — X3 is not a qf2 participant so no chain is possible
+    expect(sf1Card.predictedAwayTeamId).toBeNull();
+    expect(sf1Card.awayTeamId).toBeNull();
+    // The away feeder pick is already definitively wrong → flag it
+    expect(sf1Card.awaySlotFeederPickBusted).toBe(true);
+    // The home feeder pick is valid → not flagged
+    expect(sf1Card.homeSlotFeederPickBusted).toBe(false);
+  });
+
+  it('does not flag feederPickBusted when qf2 pick is absent (no pick made)', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          // no qf2 pick
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    // No pick → TBD, not missed pick
+    expect(sf1Card.awaySlotFeederPickBusted).toBe(false);
+  });
+
+  it('does not flag feederPickBusted when the feeder pick is valid but match unplayed', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'qf2', winner: 'C1' }, // valid: C1 is in qf2
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    expect(sf1Card.awaySlotFeederPickBusted).toBe(false);
+    expect(sf1Card.homeSlotFeederPickBusted).toBe(false);
+  });
+
+  it('does not flag feederPickBusted for entry-round cards', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      {
+        knockoutPicks: [{ bracketMatchKey: 'qf1', winner: 'X3' }],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Card.homeSlotFeederPickBusted).toBe(false);
+    expect(qf1Card.awaySlotFeederPickBusted).toBe(false);
+  });
+});

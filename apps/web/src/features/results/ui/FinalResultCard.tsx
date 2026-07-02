@@ -41,6 +41,12 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
 
   const pickLeftId = match.homeTeamId ?? match.predictedHomeTeamId;
   const pickRightId = match.awayTeamId ?? match.predictedAwayTeamId;
+  // When the predicted participant chain is broken (e.g. the team was eliminated before
+  // reaching this match), pickedOpponentId still carries the user's original opponent pick.
+  const pickRowLeftId =
+    pickLeftId ?? (match.pickedOpponentId !== pickRightId ? match.pickedOpponentId : null);
+  const pickRowRightId =
+    pickRightId ?? (match.pickedOpponentId !== pickRowLeftId ? match.pickedOpponentId : null);
   // Explicit winner pick takes priority; fall back to whichever team has more predicted goals
   const pickWinnerId: string | null =
     match.pickedWinnerId ??
@@ -54,8 +60,8 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
           ? match.awayTeamId
           : null
       : null);
-  const leftIsWinner = pickLeftId !== null && pickLeftId === pickWinnerId;
-  const rightIsWinner = pickRightId !== null && pickRightId === pickWinnerId;
+  const leftIsWinner = pickRowLeftId !== null && pickRowLeftId === pickWinnerId;
+  const rightIsWinner = pickRowRightId !== null && pickRowRightId === pickWinnerId;
 
   const championId = match.actualWinnerId ?? match.pickedWinnerId;
   const championName =
@@ -113,18 +119,18 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
           )}
         >
           <span>Your pick:</span>
-          {pickLeftId && (
+          {pickRowLeftId && (
             <>
-              <TeamBadge teamId={pickLeftId} size="sm" />
+              <TeamBadge teamId={pickRowLeftId} size="sm" />
               {leftIsWinner && <Icon name="check" size={11} color="var(--green-600)" />}
             </>
           )}
           <span>
             {match.predictedHome}–{match.predictedAway}
           </span>
-          {pickRightId && (
+          {pickRowRightId && (
             <>
-              <TeamBadge teamId={pickRightId} size="sm" />
+              <TeamBadge teamId={pickRowRightId} size="sm" />
               {rightIsWinner && <Icon name="check" size={11} color="var(--green-600)" />}
             </>
           )}

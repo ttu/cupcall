@@ -160,6 +160,18 @@ export type KnockoutMatchView = {
   /** % of pool members who directly picked the away team to win this match.
    *  Null when either team slot is TBD (unknown) or no picks exist. */
   poolPickAwayPct: number | null;
+  /**
+   * True when the home slot is empty AND the feeder match's entry-round pick is already
+   * definitively wrong (the picked team is not a participant in the upcoming feeder match).
+   * Allows the UI to show "missed pick" instead of TBD. Always false for entry-round cards.
+   */
+  homeSlotFeederPickBusted: boolean;
+  /**
+   * True when the away slot is empty AND the feeder match's entry-round pick is already
+   * definitively wrong (the picked team is not a participant in the upcoming feeder match).
+   * Allows the UI to show "missed pick" instead of TBD. Always false for entry-round cards.
+   */
+  awaySlotFeederPickBusted: boolean;
 };
 
 export type BracketRoundResultView = {

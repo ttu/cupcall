@@ -216,6 +216,46 @@ export function buildBracketRounds(
       }
     }
 
+    const predictedTeams = resolvePredictedTeams(
+      key,
+      homeId,
+      awayId,
+      userPredictedParticipants,
+      teamMap,
+    );
+
+    // For progression matches: flag when a feeder entry-round pick is already definitively wrong
+    // (the picked team is not a participant in the upcoming match) and the slot is empty.
+    // This lets the UI render "missed pick" instead of TBD.
+    let homeSlotFeederPickBusted = false;
+    let awaySlotFeederPickBusted = false;
+    if (!isEntryRound && inputs) {
+      const prog = progressionByMatch.get(key);
+      if (prog) {
+        const [fk0, fk1] = prog.from;
+        const homeSlotEmpty = homeId === null && predictedTeams.predictedHomeTeamId === null;
+        const awaySlotEmpty = awayId === null && predictedTeams.predictedAwayTeamId === null;
+        if (fk0 && homeSlotEmpty) {
+          homeSlotFeederPickBusted = isEntryPickBusted(
+            fk0,
+            pickMap,
+            derivedParticipants,
+            matchByKey,
+            knockoutEliminatedTeams,
+          );
+        }
+        if (fk1 && awaySlotEmpty) {
+          awaySlotFeederPickBusted = isEntryPickBusted(
+            fk1,
+            pickMap,
+            derivedParticipants,
+            matchByKey,
+            knockoutEliminatedTeams,
+          );
+        }
+      }
+    }
+
     return {
       bracketMatchKey: key,
       round,
@@ -268,7 +308,7 @@ export function buildBracketRounds(
         knockoutRoundPcts,
         bronzeMatchKey,
       ),
-      ...resolvePredictedTeams(key, homeId, awayId, userPredictedParticipants, teamMap),
+      ...predictedTeams,
       homeTeamUserPredictedParticipant:
         !isEntryRound && homeId !== null && userPickedParticipants.get(key)?.[0] === homeId,
       awayTeamUserPredictedParticipant:
@@ -281,6 +321,8 @@ export function buildBracketRounds(
         homeId !== null && awayId !== null
           ? (knockoutRoundPcts.get(key)?.get(awayId) ?? null)
           : null,
+      homeSlotFeederPickBusted,
+      awaySlotFeederPickBusted,
     };
   };
 
@@ -317,6 +359,30 @@ export function buildBracketRounds(
   const bronzeMatch = buildMatchView(bronzeMatchKey, 'Bronze');
 
   return { bracketRounds, bronzeMatch };
+}
+
+/**
+ * Returns true when the user's pick for an entry-round match is already definitively wrong:
+ * the picked team is not a participant in the match (teams are known from group standings)
+ * or has already been eliminated from knockout play.
+ */
+function isEntryPickBusted(
+  matchKey: string,
+  pickMap: Map<string, string>,
+  derivedParticipants: Map<string, [string | null, string | null]>,
+  matchByKey: Map<string, MatchRow>,
+  knockoutEliminatedTeams: Set<string>,
+): boolean {
+  const pick = pickMap.get(matchKey) ?? null;
+  if (!pick) return false;
+  const actual = matchByKey.get(matchKey) ?? null;
+  const winner = getMatchWinner(actual);
+  if (winner !== null) return winner !== pick;
+  if (knockoutEliminatedTeams.has(pick)) return true;
+  const derived = derivedParticipants.get(matchKey);
+  if (!derived) return false;
+  const [home, away] = derived;
+  return home !== null && away !== null && pick !== home && pick !== away;
 }
 
 function computeKnockoutHit(args: {
