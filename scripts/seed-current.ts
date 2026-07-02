@@ -35,6 +35,7 @@ import {
   upsertSpecialBet,
   upsertTournamentDef,
   upsertTournamentResults,
+  upsertKnockoutMatch,
   getTournamentById,
   listPredictionsForTournament,
   getPredictionInputs,
@@ -74,6 +75,26 @@ const rawResultsSchema = z.object({
   ),
   groupOrder: z.record(z.array(z.string())).optional(),
 });
+
+const rawKnockoutResultsSchema = z
+  .object({
+    knockout: z
+      .array(
+        z.object({
+          round: z.enum(['R32', 'R16', 'QF', 'SF', 'Final', 'bronze']),
+          matchId: z.string(),
+          home: z.string(),
+          away: z.string(),
+          homeGoals: z.number().int().nonnegative(),
+          awayGoals: z.number().int().nonnegative(),
+          winner: z.string(),
+          decidedBy: z.enum(['regulation', 'extraTime', 'penalties']).optional(),
+          kickoff: z.string().datetime().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .passthrough();
 
 // ── Per-user group score predictions (all 12 groups, 72 matches) ──────────────
 //
@@ -537,9 +558,8 @@ const GROUP_SCORES_FRANK = [
 
 // ── Knockout bracket picks ────────────────────────────────────────────────────
 //
-// Predictions are the same as seed.ts. The knockout stage hasn't started yet in
-// the current state, so none of these are scored yet — they just appear as pending
-// picks in the UI, mirroring production.
+// Predictions are the same as seed.ts. Picks for rounds that already have results
+// in wc-2026/results.json will be scored; later rounds remain pending.
 
 const R32_ALL_CORRECT = [
   { bracketMatchKey: 'r32m73', winner: 'KOR' },
@@ -894,13 +914,21 @@ const PROFILES: Record<
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-/** Returns the set of match IDs that currently have results in the real wc-2026 tournament. */
+/** Returns the set of group match IDs that currently have results in the real wc-2026 tournament. */
 function loadRealMatchIds(dataDir: string): Set<string> {
   const raw: unknown = JSON.parse(
     readFileSync(join(dataDir, REAL_TOURNAMENT_ID, 'results.json'), 'utf-8'),
   );
   const parsed = rawResultsSchema.parse(raw);
   return new Set(parsed.matchResults.map((r) => r.matchId));
+}
+
+/** Returns knockout match results from the real wc-2026 tournament. */
+function loadRealKnockoutMatches(dataDir: string) {
+  const raw: unknown = JSON.parse(
+    readFileSync(join(dataDir, REAL_TOURNAMENT_ID, 'results.json'), 'utf-8'),
+  );
+  return rawKnockoutResultsSchema.parse(raw).knockout ?? [];
 }
 
 /**
@@ -922,9 +950,14 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
   // 1. Determine which matches have results in the current production state
   logger.info({ source: `${REAL_TOURNAMENT_ID}/results.json` }, 'reading real match IDs');
   const realMatchIds = loadRealMatchIds(tournamentsDir);
+  const realKnockoutMatches = loadRealKnockoutMatches(tournamentsDir);
   const done = completeGroups(realMatchIds);
   logger.info(
-    { matchCount: realMatchIds.size, completeGroups: [...done].sort().join('') },
+    {
+      matchCount: realMatchIds.size,
+      knockoutCount: realKnockoutMatches.length,
+      completeGroups: [...done].sort().join(''),
+    },
     'current state loaded',
   );
 
@@ -951,6 +984,14 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
   const testGroupOrder: Record<string, string[]> = testResultsParsed.groupOrder ?? {};
 
   // 4. Build partialActual: filtered results + group orders for complete groups only
+  //    Derive roundOf16/roundOf8 answers from R32/R16 winners in the real knockout results.
+  const r32Winners = realKnockoutMatches
+    .filter((m) => m.round === 'R32')
+    .map((m) => teamId(m.winner));
+  const r16Winners = realKnockoutMatches
+    .filter((m) => m.round === 'R16')
+    .map((m) => teamId(m.winner));
+
   const partialActual: ActualResults = {
     matchResults: testResultsParsed.matchResults
       .filter((r) => realMatchIds.has(r.matchId))
@@ -964,7 +1005,10 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
         .filter(([g]) => done.has(g))
         .map(([g, teams]) => [groupId(g), teams.map(teamId)]),
     ) as Record<GroupId, TeamId[]>,
-    answers: {},
+    answers: {
+      ...(r32Winners.length > 0 ? { roundOf16: r32Winners } : {}),
+      ...(r16Winners.length > 0 ? { roundOf8: r16Winners } : {}),
+    },
   };
 
   logger.info(
@@ -978,6 +1022,28 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
 
   logger.info({ tournamentId: TOURNAMENT_ID }, 'upserting partial results');
   await upsertTournamentResults(db, TOURNAMENT_ID, partialActual);
+
+  if (realKnockoutMatches.length > 0) {
+    logger.info(
+      { tournamentId: TOURNAMENT_ID, count: realKnockoutMatches.length },
+      'upserting knockout matches',
+    );
+    for (const km of realKnockoutMatches) {
+      await upsertKnockoutMatch(db, {
+        id: km.matchId,
+        tournamentId: TOURNAMENT_ID,
+        stage: km.round,
+        homeTeamId: km.home,
+        awayTeamId: km.away,
+        homeGoals: km.homeGoals,
+        awayGoals: km.awayGoals,
+        winnerTeamId: km.winner,
+        ...(km.decidedBy !== undefined && { decidedBy: km.decidedBy }),
+        ...(km.kickoff !== undefined && { kickoff: new Date(km.kickoff) }),
+        status: 'final',
+      });
+    }
+  }
 
   // 6. Create all users
   const userIds: Record<string, UserId> = {};
@@ -1111,8 +1177,9 @@ async function seed(db: ReturnType<typeof createDb<typeof schema>>): Promise<voi
   console.log(`Creator login:  http://localhost:3010/login/${DEV_CURRENT_TOKEN}`);
   console.log(`Pool ID:        ${pool.id}`);
   console.log(
-    `Match results:  ${partialActual.matchResults.length} matches (from wc-2026/results.json)`,
+    `Match results:  ${partialActual.matchResults.length} group matches (from wc-2026/results.json)`,
   );
+  console.log(`Knockout:       ${realKnockoutMatches.length} matches applied`);
   console.log(`Complete groups: ${[...done].sort().join(', ') || 'none'}`);
   console.log('Users:');
   for (const [key, uid] of Object.entries(userIds)) {

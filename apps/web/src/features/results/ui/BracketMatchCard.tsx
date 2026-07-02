@@ -112,6 +112,9 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
   // Fill only the first empty slot with the busted pick badge so the flag is visible once.
   const fillHome = showBustedPickAsFill && homeIsEmpty;
   const fillAway = showBustedPickAsFill && !fillHome && awayIsEmpty;
+  // An empty slot whose feeder entry-round pick is already definitively wrong also shows "missed pick".
+  const homeFeederMissed = homeIsEmpty && match.homeSlotFeederPickBusted;
+  const awayFeederMissed = awayIsEmpty && match.awaySlotFeederPickBusted;
 
   // For missed fill slots: provide the teamId so the badge (flag) shows, but no name —
   // TeamRow renders "missed pick" label via isMissedFill instead of the team name.
@@ -180,7 +183,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           predictedPct={match.homeTeamPredictedPct}
           isSoft={homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
-          isMissedFill={isBustedPick && homeIsEmpty}
+          isMissedFill={(isBustedPick && homeIsEmpty) || homeFeederMissed}
           showProjectedBadge={homeIsSoft && match.homeTeamId !== null}
           showConfirmedBadge={
             match.isEntryRound && !homeIsSoft && match.homeTeamId !== null && awayIsSoft
@@ -200,7 +203,7 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           predictedPct={match.awayTeamPredictedPct}
           isSoft={awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
-          isMissedFill={isBustedPick && awayIsEmpty}
+          isMissedFill={(isBustedPick && awayIsEmpty) || awayFeederMissed}
           showProjectedBadge={awayIsSoft && match.awayTeamId !== null}
           showConfirmedBadge={
             match.isEntryRound && !awayIsSoft && match.awayTeamId !== null && homeIsSoft
