@@ -152,16 +152,15 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
   // --- per-player canStillGet ---
   const specialDefs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
   const groupRemaining = remainingMax.groupMatches + remainingMax.groupOrder;
-  const allKnockoutMatchesForAvail: KnockoutMatchView[] = [
-    ...bracketRounds.flatMap((r) => r.matches),
-    ...(bronzeMatch ? [bronzeMatch] : []),
-  ];
-  const hitPoints = buildHitPointsMap(def);
-  const knockoutRemaining = buildPerUserKnockoutRemaining(
-    poolKnockoutPicks,
-    allKnockoutMatchesForAvail,
-    hitPoints,
-  );
+  // Use category-level binary check (same logic as buildKnockoutSummary) so that topFour
+  // holistic scoring, exactScore bonuses, and bronze SF-pair bonuses are all captured.
+  // Per-match pick viability via hitPoints only covers direct winner bonuses and diverges.
+  const knockoutCategoryRemaining =
+    (actualResults.answers.roundOf16 !== undefined ? 0 : totalMax.roundOf16) +
+    (actualResults.answers.roundOf8 !== undefined ? 0 : totalMax.roundOf8) +
+    (actualResults.answers.topFourOrder !== undefined ? 0 : totalMax.topFour) +
+    (actualResults.bronzeMatch !== undefined ? 0 : totalMax.bronze) +
+    (actualResults.finalMatch !== undefined ? 0 : totalMax.final);
   const specialsRemaining = buildPerUserSpecialsRemaining(
     poolSpecialBets,
     specialDefs,
@@ -170,9 +169,7 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
   const canStillGetByUser = new Map(
     leaderboard.map((e) => [
       e.userId,
-      groupRemaining +
-        (knockoutRemaining.get(e.userId) ?? 0) +
-        (specialsRemaining.get(e.userId) ?? 0),
+      groupRemaining + knockoutCategoryRemaining + (specialsRemaining.get(e.userId) ?? 0),
     ]),
   );
   // --- end per-player canStillGet ---
