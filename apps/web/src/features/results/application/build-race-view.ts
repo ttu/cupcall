@@ -463,9 +463,15 @@ export function buildKnockoutMatrix(params: {
       }
 
       if (m.status !== 'final') {
+        const bothKnown = m.homeTeamId !== null && m.awayTeamId !== null;
+        const isImpossible =
+          bothKnown &&
+          pickedWinnerId !== null &&
+          pickedWinnerId !== m.homeTeamId &&
+          pickedWinnerId !== m.awayTeamId;
         return {
           bracketMatchKey: m.bracketMatchKey,
-          hit: 'pending' as KnockoutMatchHit,
+          hit: isImpossible ? 'impossible' : ('pending' as KnockoutMatchHit),
           points: 0,
           pickedWinnerId,
         };

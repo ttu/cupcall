@@ -209,6 +209,30 @@ describe('buildKnockoutMatrix', () => {
     expect(cell.pickedWinnerId).toBe('A1');
   });
 
+  it('produces an impossible cell when the match is pending, both teams are known, and the pick is neither', () => {
+    const alice = makeLeaderboardEntry('u1', 'Alice');
+    // Both teams are already confirmed for this QF match
+    const qfMatch = makeKnockoutMatch('qf1', 'QF', 'scheduled', {
+      homeTeamId: 'BRA',
+      awayTeamId: 'ARG',
+    });
+
+    const { knockoutMatrix } = buildKnockoutMatrix({
+      leaderboard: [alice],
+      userId: null,
+      bracketRounds: [makeRound('QF', [qfMatch])],
+      bronzeMatch: null,
+      poolKnockoutPicks: [makePick('u1', 'qf1', 'ESP')], // ESP is not a participant
+      poolFinishScores: [],
+      def: miniTournament,
+    });
+
+    const cell = knockoutMatrix[0]!.cells[0]!;
+    expect(cell.hit).toBe('impossible');
+    expect(cell.points).toBe(0);
+    expect(cell.pickedWinnerId).toBe('ESP');
+  });
+
   it('includes bronze match and gives bronze.perTeam points for a hit', () => {
     const alice = makeLeaderboardEntry('u1', 'Alice');
     const bronze = makeKnockoutMatch('bronze', 'Bronze', 'final', { actualWinnerId: 'C1' });

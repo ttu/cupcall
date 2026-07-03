@@ -245,7 +245,7 @@ export type MatrixMatch = {
   actualAway: number | null;
 };
 
-export type KnockoutMatchHit = 'hit' | 'miss' | 'no-pick' | 'pending';
+export type KnockoutMatchHit = 'hit' | 'miss' | 'no-pick' | 'pending' | 'impossible';
 
 export type KnockoutMatrixCell = {
   bracketMatchKey: string;
