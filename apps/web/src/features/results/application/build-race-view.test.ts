@@ -557,6 +557,101 @@ describe('buildKnockoutMatrix', () => {
       expect(cell.hit).toBe('miss');
       expect(cell.pickedWinnerId).toBe('USA');
     });
+
+    it('derives pickedWinnerId from bracket chain when Final teams unknown and SF picks present (home wins)', () => {
+      // miniTournament bracket: Final home = SF1 winner, away = SF2 winner
+      // SF1 fed by qf1 + qf2; SF2 fed by qf3 + qf4
+      // User picks A1 for SF1 → A1 is the projected home side of the Final
+      // Score 2-1 → home wins → derived winner = A1
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled');
+      // homeTeamId/awayTeamId default to null — Final participants unknown
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [
+          makePick('u1', 'sf1', 'A1'), // user picks A1 to win SF1 → home side of Final
+          makePick('u1', 'sf2', 'C1'), // user picks C1 to win SF2 → away side of Final
+        ],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.hit).toBe('pending');
+      expect(cell.pickedWinnerId).toBe('A1');
+    });
+
+    it('derives pickedWinnerId from bracket chain when Final teams unknown (away wins)', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled');
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'sf1', 'A1'), makePick('u1', 'sf2', 'C1')],
+        poolFinishScores: [makeFinishScore('u1', 'final', 0, 3)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.pickedWinnerId).toBe('C1'); // SF2 winner = away side
+    });
+
+    it('shows null pickedWinnerId when Final teams unknown, score is non-tied, but SF picks are missing', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled');
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [], // no SF picks → chain incomplete
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 0)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.pickedWinnerId).toBeNull();
+    });
+
+    it('derives Bronze winner from bracket chain when Bronze teams unknown (SF loser path)', () => {
+      // miniTournament Bronze: home = SF1 loser, away = SF2 loser
+      // SF1 (from qf1, qf2): user picks A1 for sf1, A1 for qf1, B1 for qf2
+      //   → SF1 loser = B1 (A1 won SF1, B1 was the other QF winner)
+      // SF2 (from qf3, qf4): user picks C1 for sf2, C1 for qf3, D1 for qf4
+      //   → SF2 loser = D1
+      // Bronze: home = B1, away = D1; score 3-1 → home wins → winner = B1
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const bronzeMatch = makeKnockoutMatch('bronze', 'Bronze', 'scheduled');
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [],
+        bronzeMatch: bronzeMatch,
+        poolKnockoutPicks: [
+          makePick('u1', 'qf1', 'A1'),
+          makePick('u1', 'qf2', 'B1'),
+          makePick('u1', 'sf1', 'A1'), // A1 wins SF1 → B1 is SF1 loser
+          makePick('u1', 'qf3', 'C1'),
+          makePick('u1', 'qf4', 'D1'),
+          makePick('u1', 'sf2', 'C1'), // C1 wins SF2 → D1 is SF2 loser
+        ],
+        poolFinishScores: [makeFinishScore('u1', 'bronze', 3, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.hit).toBe('pending');
+      expect(cell.pickedWinnerId).toBe('B1'); // home side (SF1 loser) wins 3-1
+    });
   });
 });
 

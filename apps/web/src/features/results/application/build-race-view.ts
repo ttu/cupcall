@@ -31,6 +31,7 @@ import {
   buildDailyChartPlayers,
   RACE_COLORS,
 } from '../domain/race-chart';
+import { deriveImplicitFinaleWinner } from './build-bracket-rounds';
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
@@ -431,6 +432,11 @@ export function buildKnockoutMatrix(params: {
 
   const knockoutMatrix: KnockoutMatrixEntry[] = leaderboard.map((e) => {
     const userRoundPicks = userRoundPicksMap.get(e.userId) ?? new Map<string, Set<string>>();
+    const userPickMap = new Map<string, string>(
+      poolKnockoutPicks
+        .filter((p) => p.userId === e.userId)
+        .map((p) => [p.bracketMatchKey as string, p.winnerTeamId]),
+    );
     let totalPoints = 0;
     const cells: KnockoutMatrixCell[] = sortedMatches.map((m) => {
       const knockoutPick = pickMap.get(`${e.userId}::${m.bracketMatchKey}`) ?? null;
@@ -445,6 +451,15 @@ export function buildKnockoutMatrix(params: {
         const matchType = m.bracketMatchKey === finalMatchKey ? 'final' : 'bronze';
         const fs = finishScoreMap.get(e.userId)?.get(matchType);
         pickedWinnerId = deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick);
+        if (pickedWinnerId === null && fs !== undefined && fs.home !== fs.away) {
+          pickedWinnerId = deriveImplicitFinaleWinner(
+            m.bracketMatchKey,
+            def.bracket,
+            userPickMap,
+            fs.home,
+            fs.away,
+          );
+        }
       }
 
       if (m.status !== 'final') {

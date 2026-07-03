@@ -627,7 +627,7 @@ function derivePredictedOpponent(
  * Returns null when: score is tied, feeder picks are missing, or the bracket
  * progression cannot be resolved.
  */
-function deriveImplicitFinaleWinner(
+export function deriveImplicitFinaleWinner(
   matchKey: string,
   bracket: Tournament['bracket'],
   pickMap: Map<string, string>,
