@@ -152,14 +152,11 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
 
   // Per-user accurate canStillGet: group remaining is pool-wide; knockout and specials are per-user.
   const groupRemaining = remainingMax.groupMatches + remainingMax.groupOrder;
-  const allKnockoutMatchViewsForAvail: KnockoutMatchView[] = [
-    ...bracketRounds.flatMap((r) => r.matches),
-    ...(bronzeMatch ? [bronzeMatch] : []),
-  ];
-  const perUserKnockoutRemaining = buildPerUserKnockoutRemaining(
+  const perUserKnockoutRemaining = buildPerUserKnockoutCanStillGet(
     poolKnockoutPicks,
-    allKnockoutMatchViewsForAvail,
-    buildHitPointsMap(def),
+    allMatches,
+    def,
+    actualResults,
   );
   const specialDefs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
   const perUserSpecialsRemaining = buildPerUserSpecialsRemaining(
@@ -228,39 +225,221 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
   };
 }
 
+/** Derives the winner of a knockout match from the DB row. */
+function resolveKnockoutWinner(m: MatchRow | null): string | null {
+  if (!m) return null;
+  if (m.winnerTeamId) return m.winnerTeamId;
+  if (
+    m.status === 'final' &&
+    m.homeGoals !== null &&
+    m.awayGoals !== null &&
+    m.homeGoals !== m.awayGoals
+  ) {
+    return m.homeGoals > m.awayGoals ? (m.homeTeamId ?? null) : (m.awayTeamId ?? null);
+  }
+  return null;
+}
+
+/** Returns the maximum topFour tier points achievable when `remaining` QF picks are non-busted. */
+function topFourTierMax(remaining: number, order: Tournament['scoring']['topFourOrder']): number {
+  if (remaining >= 4) return order.allCorrect;
+  if (remaining === 3) return order.threeCorrect;
+  if (remaining === 2) return order.twoCorrect;
+  if (remaining === 1) return order.oneCorrect;
+  return 0;
+}
+
 /**
  * Computes the maximum additional knockout points each user can still earn.
- * A pick is viable when:
- *  - the match is still pending (status !== 'final'), AND
- *  - if both participant slots are confirmed, the picked team is one of them;
- *    if either slot is TBD, the pick is conservatively treated as viable.
+ *
+ * Uses actual match data (not the current-user-projected bracketRounds) to evaluate
+ * pick viability, so results are accurate for every pool member regardless of who
+ * is viewing the page. Covers:
+ *   - Per-match scored rounds (R32 → roundOf16PerTeam, R16 → roundOf8PerTeam)
+ *   - TopFour tier based on non-busted QF picks
+ *   - Final: max(0, 2 − bustedSfPicks) × perTeam + exactScore
+ *   - Bronze: max(0, 2 − bustedBronzePairs) × perTeam + exactScore
+ *
  * Returns a Map<userId, points>. Users with no picks are absent from the map.
  */
-export function buildPerUserKnockoutRemaining(
+export function buildPerUserKnockoutCanStillGet(
   poolKnockoutPicks: PoolKnockoutPick[],
-  allKnockoutMatches: KnockoutMatchView[],
-  hitPoints: Map<string, number>,
+  allMatches: MatchRow[],
+  def: Tournament,
+  actualResults: ActualResults,
 ): Map<string, number> {
-  const pickMap = new Map<string, string>();
-  for (const pick of poolKnockoutPicks) {
-    pickMap.set(`${pick.userId}::${pick.bracketMatchKey}`, pick.winnerTeamId);
+  const { bracket, scoring } = def;
+
+  // Actual knockout match data keyed by bracketMatchKey (== m.id for non-group matches).
+  const matchByKey = new Map<string, MatchRow>();
+  for (const m of allMatches) {
+    if (m.stage !== 'group') matchByKey.set(m.id, m);
   }
 
-  const userIds = new Set(poolKnockoutPicks.map((p) => p.userId));
+  // Teams eliminated from any played knockout match.
+  const knockoutEliminatedTeams = new Set<string>();
+  for (const m of allMatches) {
+    if (m.stage === 'group' || m.status !== 'final') continue;
+    const winner = resolveKnockoutWinner(m);
+    if (!winner) continue;
+    if (m.homeTeamId && m.homeTeamId !== winner) knockoutEliminatedTeams.add(m.homeTeamId);
+    if (m.awayTeamId && m.awayTeamId !== winner) knockoutEliminatedTeams.add(m.awayTeamId);
+  }
+
+  // Confirmed participants for progression matches (R16, QF, SF, Final),
+  // derived from actual feeder match winners.
+  const progressionParticipants = new Map<string, [string | null, string | null]>();
+  for (const prog of bracket.progression) {
+    const key = prog.match as string;
+    if (key === (bracket.bronzeMatch as string)) continue;
+    const fk0 = prog.from[0] as string | undefined;
+    const fk1 = prog.from[1] as string | undefined;
+    const w0 = fk0 ? resolveKnockoutWinner(matchByKey.get(fk0) ?? null) : null;
+    const w1 = fk1 ? resolveKnockoutWinner(matchByKey.get(fk1) ?? null) : null;
+    if (w0 !== null || w1 !== null) {
+      progressionParticipants.set(key, [w0, w1]);
+    }
+  }
+
+  // Per-round scored hit points (R32 → roundOf16PerTeam, R16 → roundOf8PerTeam).
+  // Mirrors buildHitPointsMap but restricted to the two per-match scored categories.
+  const hitPoints = new Map<string, number>();
+  for (const prog of bracket.progression) {
+    if ((bracket.roundOf16Matches as string[]).includes(prog.match as string)) {
+      for (const fromKey of prog.from) hitPoints.set(fromKey as string, scoring.roundOf16PerTeam);
+    }
+    if ((bracket.roundOf8Matches as string[]).includes(prog.match as string)) {
+      for (const fromKey of prog.from) hitPoints.set(fromKey as string, scoring.roundOf8PerTeam);
+    }
+  }
+
+  const entryKeys = new Set<string>(bracket.slots.map((s) => s.match as string));
+  const r16Keys = new Set<string>(bracket.roundOf16Matches as string[]);
+  const qfKeys = new Set<string>(bracket.roundOf8Matches as string[]);
+  const sfKeys = bracket.semiFinals as string[];
+  const bronzeKey = bracket.bronzeMatch as string;
+
+  // Pre-build the QF feeder map for each SF: sfKey → [qfKey1, qfKey2].
+  const sfQfFeeders = new Map<string, [string | null, string | null]>();
+  for (const sfKey of sfKeys) {
+    const sfProg = bracket.progression.find((p) => (p.match as string) === sfKey);
+    sfQfFeeders.set(sfKey, [
+      (sfProg?.from[0] as string | undefined) ?? null,
+      (sfProg?.from[1] as string | undefined) ?? null,
+    ]);
+  }
+
+  const finalPlayed = actualResults.finalMatch !== undefined;
+  const bronzePlayed = actualResults.bronzeMatch !== undefined;
+  const topFourResolved = actualResults.answers.topFourOrder !== undefined;
+
+  // Build per-user pick maps once.
+  const userPickMaps = new Map<string, Map<string, string>>();
+  for (const pick of poolKnockoutPicks) {
+    const uid = pick.userId as string;
+    if (!userPickMaps.has(uid)) userPickMaps.set(uid, new Map());
+    userPickMaps.get(uid)!.set(pick.bracketMatchKey as string, pick.winnerTeamId);
+  }
+
   const result = new Map<string, number>();
 
-  for (const userId of userIds) {
+  for (const userId of new Set(poolKnockoutPicks.map((p) => p.userId as string))) {
+    const picks = userPickMaps.get(userId) ?? new Map<string, string>();
     let canStillGet = 0;
-    for (const match of allKnockoutMatches) {
-      if (match.status === 'final') continue;
-      const pickedWinnerId = pickMap.get(`${userId}::${match.bracketMatchKey}`) ?? null;
-      if (pickedWinnerId === null) continue;
-      const bothKnown = match.homeTeamId !== null && match.awayTeamId !== null;
-      if (bothKnown && pickedWinnerId !== match.homeTeamId && pickedWinnerId !== match.awayTeamId) {
-        continue; // busted — picked team is not a confirmed participant
-      }
-      canStillGet += hitPoints.get(match.bracketMatchKey) ?? 0;
+
+    // Returns true when the user's pick for `matchKey` is still viable:
+    // the match is unresolved, the picked team is not eliminated, and (if both
+    // participants are confirmed) the pick is one of them.
+    function isViable(matchKey: string): boolean {
+      const pickedId = picks.get(matchKey) ?? null;
+      if (!pickedId) return false;
+      const m = matchByKey.get(matchKey) ?? null;
+      if (m?.status === 'final') return false;
+      if (knockoutEliminatedTeams.has(pickedId)) return false;
+      const pp = progressionParticipants.get(matchKey);
+      const home = pp?.[0] ?? m?.homeTeamId ?? null;
+      const away = pp?.[1] ?? m?.awayTeamId ?? null;
+      if (home !== null && away !== null) return pickedId === home || pickedId === away;
+      return true;
     }
+
+    // Returns true when the user's pick for `matchKey` is not busted.
+    // For resolved matches: only the actual winner is not busted.
+    // For unresolved matches: same check as isViable.
+    function isNotBusted(matchKey: string): boolean {
+      const pickedId = picks.get(matchKey) ?? null;
+      if (!pickedId) return false;
+      const m = matchByKey.get(matchKey) ?? null;
+      if (m?.status === 'final') return resolveKnockoutWinner(m) === pickedId;
+      if (knockoutEliminatedTeams.has(pickedId)) return false;
+      const pp = progressionParticipants.get(matchKey);
+      const home = pp?.[0] ?? m?.homeTeamId ?? null;
+      const away = pp?.[1] ?? m?.awayTeamId ?? null;
+      if (home !== null && away !== null) return pickedId === home || pickedId === away;
+      return true;
+    }
+
+    // Per-match scored rounds: entry round (R32 in WC) and R16.
+    for (const key of entryKeys) {
+      const pts = hitPoints.get(key);
+      if (pts !== undefined && isViable(key)) canStillGet += pts;
+    }
+    for (const key of r16Keys) {
+      const pts = hitPoints.get(key);
+      if (pts !== undefined && isViable(key)) canStillGet += pts;
+    }
+
+    // TopFour: count non-busted QF picks (no-pick = not busted, consistent with
+    // buildKnockoutRoundBreakdown which uses totalPicks − bustedPicks).
+    if (!topFourResolved) {
+      let nonBustedQf = qfKeys.size;
+      for (const key of qfKeys) {
+        const pickedId = picks.get(key) ?? null;
+        if (!pickedId) continue;
+        if (!isNotBusted(key)) nonBustedQf--;
+      }
+      canStillGet += topFourTierMax(nonBustedQf, scoring.topFourOrder);
+    }
+
+    // Final: finalist perTeam × non-busted SF picks + exactScore.
+    if (!finalPlayed) {
+      let bustedSfPicks = 0;
+      for (const sfKey of sfKeys) {
+        if (picks.has(sfKey) && !isNotBusted(sfKey)) bustedSfPicks++;
+      }
+      canStillGet +=
+        Math.max(0, 2 - bustedSfPicks) * scoring.final.perTeam + scoring.final.exactScore;
+    }
+
+    // Bronze: bronzePair perTeam × non-busted implied SF-loser picks + exactScore.
+    // The bronze pair is derived from each SF's loser (the QF winner pick that the
+    // user did NOT pick to win the SF).
+    if (!bronzePlayed) {
+      let bustedBronzePairs = 0;
+      const bronzeMatchRow = matchByKey.get(bronzeKey) ?? null;
+      for (const sfKey of sfKeys) {
+        const sfWinner = picks.get(sfKey) ?? null;
+        if (!sfWinner) continue;
+        const [qfKey1, qfKey2] = sfQfFeeders.get(sfKey) ?? [null, null];
+        const qfW1 = qfKey1 ? (picks.get(qfKey1) ?? null) : null;
+        const qfW2 = qfKey2 ? (picks.get(qfKey2) ?? null) : null;
+        const bronzeTeam =
+          qfW1 && qfW1 !== sfWinner ? qfW1 : qfW2 && qfW2 !== sfWinner ? qfW2 : null;
+        if (!bronzeTeam) continue;
+        if (knockoutEliminatedTeams.has(bronzeTeam)) {
+          bustedBronzePairs++;
+        } else {
+          const bHome = bronzeMatchRow?.homeTeamId ?? null;
+          const bAway = bronzeMatchRow?.awayTeamId ?? null;
+          if (bHome !== null && bAway !== null && bronzeTeam !== bHome && bronzeTeam !== bAway) {
+            bustedBronzePairs++;
+          }
+        }
+      }
+      canStillGet +=
+        Math.max(0, 2 - bustedBronzePairs) * scoring.bronze.perTeam + scoring.bronze.exactScore;
+    }
+
     result.set(userId, canStillGet);
   }
 
