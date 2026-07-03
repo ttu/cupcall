@@ -200,7 +200,7 @@ function KnockoutCell({
   if (hit === 'impossible') {
     return (
       <span className="w-10 h-8 rounded-lg grid place-items-center text-[11px] font-bold font-cup-display bg-red-100 text-red-400 line-through">
-        {pickedWinnerId}
+        {pickedWinnerId ?? '?'}
       </span>
     );
   }
