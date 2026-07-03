@@ -151,7 +151,14 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
   }
 
   const poolCanStillGet = computeCanStillGet(def, allMatches, actualResults);
-  const canStillGetByUser = new Map(leaderboard.map((e) => [e.userId, poolCanStillGet]));
+  // Current user gets the accurate per-section sum (myTotalCanStillGet) so their +Avail column
+  // matches the stat card and per-section breakdown panels. Other users get the pool-wide ceiling.
+  const canStillGetByUser = new Map(
+    leaderboard.map((e) => [
+      e.userId,
+      userId !== null && e.userId === userId ? myTotalCanStillGet : poolCanStillGet,
+    ]),
+  );
 
   const projectedEntries = buildProjectedEntries(
     leaderboard,

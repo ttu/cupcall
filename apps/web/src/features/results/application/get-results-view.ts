@@ -33,7 +33,6 @@ import { buildBracketRounds, computeBracketHealth } from './build-bracket-rounds
 import { computeR32QualHealth } from '../domain/bracket-health';
 import { buildPointsRaceView } from './build-race-view';
 import { buildSpecialBetResults } from './build-special-bet-results';
-import { computeCanStillGet } from './compute-can-still-get';
 
 type Params = {
   db: Db<AppSchema>;
@@ -151,8 +150,16 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
         }
       : null;
   const userSpecialsSummary = buildSpecialsSummary(specialBets, userId);
+  // Sum per-section canStillGet values so the Points Race stat card is always consistent
+  // with the per-section breakdown panels (group + knockout + specials). Using the binary
+  // computeCanStillGet() overestimates when some bracket picks are already busted but the
+  // round answer hasn't been written yet (e.g. R16 in progress).
   const myTotalCanStillGet =
-    userId !== undefined ? computeCanStillGet(def, allMatches, actualResults) : 0;
+    userId !== undefined
+      ? (userGroupSummary?.canStillGet ?? 0) +
+        (userKnockoutSummary?.canStillGet ?? 0) +
+        (userSpecialsSummary?.canStillGet ?? 0)
+      : 0;
 
   const pointsRaceView = buildPointsRaceView({
     leaderboard,
