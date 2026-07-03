@@ -568,6 +568,39 @@
       "winner": "USA",
       "decidedBy": "regulation",
       "kickoff": "2026-07-02T00:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m84",
+      "home": "ESP",
+      "away": "AUT",
+      "homeGoals": 3,
+      "awayGoals": 0,
+      "winner": "ESP",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-02T19:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m83",
+      "home": "POR",
+      "away": "CRO",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "POR",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-02T23:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m85",
+      "home": "SUI",
+      "away": "ALG",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "winner": "SUI",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-03T03:00:00Z"
     }
   ],
   "groupOrder": {
