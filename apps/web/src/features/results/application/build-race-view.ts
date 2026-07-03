@@ -31,7 +31,6 @@ import {
   buildDailyChartPlayers,
   RACE_COLORS,
 } from '../domain/race-chart';
-import { computeCanStillGet } from './compute-can-still-get';
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
@@ -150,13 +149,32 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     );
   }
 
-  const poolCanStillGet = computeCanStillGet(def, allMatches, actualResults);
-  // Current user gets the accurate per-section sum (myTotalCanStillGet) so their +Avail column
-  // matches the stat card and per-section breakdown panels. Other users get the pool-wide ceiling.
+  // Per-user accurate canStillGet: group remaining is pool-wide; knockout and specials are per-user.
+  const groupRemaining = remainingMax.groupMatches + remainingMax.groupOrder;
+  const allKnockoutMatchViewsForAvail: KnockoutMatchView[] = [
+    ...bracketRounds.flatMap((r) => r.matches),
+    ...(bronzeMatch ? [bronzeMatch] : []),
+  ];
+  const perUserKnockoutRemaining = buildPerUserKnockoutRemaining(
+    poolKnockoutPicks,
+    allKnockoutMatchViewsForAvail,
+    buildHitPointsMap(def),
+  );
+  const specialDefs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
+  const perUserSpecialsRemaining = buildPerUserSpecialsRemaining(
+    poolSpecialBets,
+    specialDefs,
+    actualResults,
+  );
+  // Current user keeps myTotalCanStillGet (matches the stat card). Others get per-user accurate values.
   const canStillGetByUser = new Map(
     leaderboard.map((e) => [
       e.userId,
-      userId !== null && e.userId === userId ? myTotalCanStillGet : poolCanStillGet,
+      userId !== null && e.userId === userId
+        ? myTotalCanStillGet
+        : groupRemaining +
+          (perUserKnockoutRemaining.get(e.userId) ?? 0) +
+          (perUserSpecialsRemaining.get(e.userId) ?? 0),
     ]),
   );
 
