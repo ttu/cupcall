@@ -51,19 +51,23 @@ type RaceParams = {
 /**
  * Per-user still-live projection.
  *
- * Formula: `stillLive = hitRate × remainingMax`, where
+ * Formula: `stillLive = hitRate × canStillGet`, where
  *   hitRate    = banked / maxFromResolved
- *   resolvedMax = tournament-wide max ceiling − tournament-wide remaining max
+ *   maxFromResolved = tournament-wide max ceiling − tournament-wide remaining max
+ *   canStillGet = per-user remaining max (respects busted picks)
+ *
+ * Using per-user canStillGet means a player with more viable picks projects
+ * higher than one with the same current points but fewer live picks.
  *
  * Edge cases:
  *  - `maxFromResolved <= 0` (nothing has resolved yet) → no signal to project
  *    from, so stillLive = 0.
- *  - `remainingMax <= 0` (tournament complete) → stillLive = 0 by construction.
+ *  - `canStillGet <= 0` (all picks busted or tournament complete) → stillLive = 0.
  */
-function projectStillLive(banked: number, maxFromResolved: number, remainingMax: number): number {
-  if (maxFromResolved <= 0 || remainingMax <= 0) return 0;
+function projectStillLive(banked: number, maxFromResolved: number, canStillGet: number): number {
+  if (maxFromResolved <= 0 || canStillGet <= 0) return 0;
   const hitRate = banked / maxFromResolved;
-  return Math.round(hitRate * remainingMax);
+  return Math.round(hitRate * canStillGet);
 }
 
 export function buildPointsRaceView(params: RaceParams): PointsRaceView {
@@ -87,10 +91,36 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
   const remainingMax = computeRemainingMaxPoints(def, { finalMatchIds });
   const maxFromResolved = totalMax.total - remainingMax.total;
 
+  // Compute per-user remaining ceilings before the projection so each user's
+  // still-live estimate uses their own viable picks, not the tournament-wide max.
+  const groupRemaining = remainingMax.groupMatches + remainingMax.groupOrder;
+  const perUserKnockoutRemaining = buildPerUserKnockoutCanStillGet(
+    poolKnockoutPicks,
+    allMatches,
+    def,
+    actualResults,
+  );
+  const specialDefs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
+  const perUserSpecialsRemaining = buildPerUserSpecialsRemaining(
+    poolSpecialBets,
+    specialDefs,
+    actualResults,
+  );
+  const canStillGetByUser = new Map(
+    leaderboard.map((e) => [
+      e.userId,
+      userId !== null && e.userId === userId
+        ? myTotalCanStillGet
+        : groupRemaining +
+          (perUserKnockoutRemaining.get(e.userId) ?? 0) +
+          (perUserSpecialsRemaining.get(e.userId) ?? 0),
+    ]),
+  );
+
   const stillLiveByUser = new Map<string, number>(
     leaderboard.map((e) => [
       e.userId,
-      projectStillLive(e.pointsTotal, maxFromResolved, remainingMax.total),
+      projectStillLive(e.pointsTotal, maxFromResolved, canStillGetByUser.get(e.userId) ?? 0),
     ]),
   );
 
@@ -149,32 +179,6 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
       (a, b) => (a.isCurrentUser ? 1 : 0) - (b.isCurrentUser ? 1 : 0),
     );
   }
-
-  // Per-user accurate canStillGet: group remaining is pool-wide; knockout and specials are per-user.
-  const groupRemaining = remainingMax.groupMatches + remainingMax.groupOrder;
-  const perUserKnockoutRemaining = buildPerUserKnockoutCanStillGet(
-    poolKnockoutPicks,
-    allMatches,
-    def,
-    actualResults,
-  );
-  const specialDefs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
-  const perUserSpecialsRemaining = buildPerUserSpecialsRemaining(
-    poolSpecialBets,
-    specialDefs,
-    actualResults,
-  );
-  // Current user keeps myTotalCanStillGet (matches the stat card). Others get per-user accurate values.
-  const canStillGetByUser = new Map(
-    leaderboard.map((e) => [
-      e.userId,
-      userId !== null && e.userId === userId
-        ? myTotalCanStillGet
-        : groupRemaining +
-          (perUserKnockoutRemaining.get(e.userId) ?? 0) +
-          (perUserSpecialsRemaining.get(e.userId) ?? 0),
-    ]),
-  );
 
   const projectedEntries = buildProjectedEntries(
     leaderboard,

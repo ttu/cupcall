@@ -1053,4 +1053,27 @@ describe('buildProjectedEntries', () => {
 
     expect(entries.every((e) => e.canStillGet >= 0)).toBe(true);
   });
+
+  it('ranks user with more available points higher when current points are nearly equal', () => {
+    // Regression: projection must use per-user canStillGet, not a global remaining max.
+    // User 2 has 1 fewer current point but 13 more available — should project higher.
+    const u1 = makeLeaderboardEntry('u1', 'Niksmann', 229);
+    const u2 = makeLeaderboardEntry('u2', 'TNH81', 228);
+    const stillLive = new Map([
+      ['u1', 78], // hitRate × 155
+      ['u2', 85], // same hitRate × 168 (more available → higher)
+    ]);
+    const canStillGet = new Map([
+      ['u1', 155],
+      ['u2', 168],
+    ]);
+
+    const entries = buildProjectedEntries([u1, u2], null, stillLive, canStillGet);
+
+    const e1 = entries.find((e) => e.userId === 'u1')!;
+    const e2 = entries.find((e) => e.userId === 'u2')!;
+    expect(e2.projectedPoints).toBeGreaterThan(e1.projectedPoints);
+    expect(e2.projectedRank).toBe(1);
+    expect(e1.projectedRank).toBe(2);
+  });
 });
