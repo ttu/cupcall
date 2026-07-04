@@ -30,14 +30,13 @@ export function createSendVerificationRequest(opts: CreateSendVerificationReques
     params: EmailProviderSendVerificationRequestParams,
   ): Promise<void> {
     const { identifier: to, url } = params;
-    const { host } = new URL(url);
 
     await opts.sender.send({
       to,
       from: opts.from,
-      subject: `Sign in to ${host}`,
-      html: buildHtml(url, host),
-      text: buildText(url, host),
+      subject: `Sign in to CupCall`,
+      html: buildHtml(url),
+      text: buildText(url),
       url,
     });
   };
@@ -85,14 +84,13 @@ function escapeHtml(raw: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function buildHtml(url: string, host: string): string {
+function buildHtml(url: string): string {
   const safeUrl = escapeHtml(url);
-  const safeHost = escapeHtml(host);
   return `
 <!DOCTYPE html>
 <html>
   <body>
-    <p>Sign in to <strong>${safeHost}</strong></p>
+    <p>Sign in to <strong>CupCall</strong></p>
     <p><a href="${safeUrl}">Click here to sign in</a></p>
     <p>This link expires in 24 hours.</p>
     <p><strong>Did not request this?</strong> Do not click the link above — you can safely ignore this email.</p>
@@ -100,6 +98,6 @@ function buildHtml(url: string, host: string): string {
 </html>`.trim();
 }
 
-function buildText(url: string, host: string): string {
-  return `Sign in to ${host}\n\n${url}\n\nThis link expires in 24 hours.\n\nDid not request this? Do not click the link above — you can safely ignore this email.`;
+function buildText(url: string): string {
+  return `Sign in to CupCall\n\n${url}\n\nThis link expires in 24 hours.\n\nDid not request this? Do not click the link above — you can safely ignore this email.`;
 }
