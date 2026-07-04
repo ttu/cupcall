@@ -14,7 +14,7 @@ export function ConnectEmailForm(): ReactElement {
   return (
     <div className="card p-4.5 mb-6">
       <SectionLabel icon={<Icon name="mail" size={13} color="var(--ink-muted)" />}>
-        Connect your email
+        Connect your email to CupCall
       </SectionLabel>
       <p className="text-xs text-ink-soft mt-2.5 mb-3 leading-[1.5]">
         Add an email address so you can sign in without needing your login link.
