@@ -35,7 +35,8 @@ export async function requestEmailLinkAction(
   }
 
   const existing = await getUserByEmail(db, email);
-  if (existing) return { ok: false, error: 'That email is already in use by another account.' };
+  // Return ok silently — don't reveal whether an email is already registered (enumeration risk).
+  if (existing) return { ok: true };
 
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + LINK_TTL_MS);

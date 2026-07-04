@@ -87,7 +87,7 @@ describe('requestEmailLinkAction', () => {
     expect(result).toEqual({ ok: false, error: 'Invalid email address.' });
   });
 
-  it('returns error when email is already in use', async () => {
+  it('returns ok silently when email is already in use (no enumeration)', async () => {
     mockedGetActor.mockResolvedValue({ userId: uid });
     mockedGetUserById.mockResolvedValue(guestUser);
     mockedGetUserByEmail.mockResolvedValue({
@@ -95,11 +95,11 @@ describe('requestEmailLinkAction', () => {
       id: userId('other'),
       email: 'taken@example.com',
     });
-    const result = await requestEmailLinkAction(form('taken@example.com'), fakeSender());
-    expect(result).toEqual({
-      ok: false,
-      error: 'That email is already in use by another account.',
-    });
+    const sender = fakeSender();
+    const result = await requestEmailLinkAction(form('taken@example.com'), sender);
+    expect(result).toEqual({ ok: true });
+    expect(mockedUpsert).not.toHaveBeenCalled();
+    expect(sender.send).not.toHaveBeenCalled();
   });
 
   it('sends email and returns ok for a valid request', async () => {
