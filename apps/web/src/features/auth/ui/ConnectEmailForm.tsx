@@ -20,9 +20,14 @@ export function ConnectEmailForm(): ReactElement {
         Add an email address so you can sign in without needing your login link.
       </p>
       {state?.ok ? (
-        <p className="text-sm text-green-700 font-medium">
-          Check your inbox — we&apos;ve sent you a sign-in link.
-        </p>
+        <div className="space-y-1">
+          <p className="text-sm text-green-700 font-medium">
+            Check your inbox — we&apos;ve sent you a confirmation link.
+          </p>
+          <p className="text-xs text-ink-muted leading-[1.5]">
+            Open the link in this browser to connect your email to this account.
+          </p>
+        </div>
       ) : (
         <form action={action} className="space-y-2.5">
           <div>

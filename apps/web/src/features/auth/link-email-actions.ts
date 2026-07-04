@@ -72,6 +72,7 @@ function buildHtml(url: string): string {
   <body>
     <p>Connect your email to <strong>Cup Prediction</strong></p>
     <p><a href="${safeUrl}">Click here to connect your email</a></p>
+    <p>Open this link in the same browser where you are already signed in.</p>
     <p>This link expires in 24 hours.</p>
     <p><strong>Did not request this?</strong> Do not click the link above — you can safely ignore this email.</p>
   </body>
@@ -79,7 +80,7 @@ function buildHtml(url: string): string {
 }
 
 function buildText(url: string): string {
-  return `Connect your email to Cup Prediction\n\n${url}\n\nThis link expires in 24 hours.\n\nDid not request this? Do not click the link above — you can safely ignore this email.`;
+  return `Connect your email to Cup Prediction\n\n${url}\n\nOpen this link in the same browser where you are already signed in.\n\nThis link expires in 24 hours.\n\nDid not request this? Do not click the link above — you can safely ignore this email.`;
 }
 
 /**
