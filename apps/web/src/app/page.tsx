@@ -59,7 +59,7 @@ export default async function HomePage(): Promise<ReactElement> {
           <h1 className="display mb-5" style={{ fontSize: 'clamp(42px, 7vw, 72px)' }}>
             Call every match.
             <br />
-            Then defend it.
+            Top the table.
           </h1>
 
           <p className="text-on-dark-soft mb-9 max-w-110" style={{ fontSize: 17, lineHeight: 1.6 }}>
