@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import pino from 'pino';
-import { tournamentSchema, resultsSchema } from '@cup/schemas';
+import { tournamentSchema, resultsSchema, knockoutResultsSchema } from '@cup/schemas';
 import {
   deriveCard,
   scoreCard,
@@ -43,26 +43,6 @@ const rawTournamentMetaSchema = z
     firstKickoff: z.string().datetime(),
     groupMatches: z
       .array(z.object({ id: z.string(), kickoff: z.string().datetime().optional() }))
-      .optional(),
-  })
-  .passthrough();
-
-const rawKnockoutResultsSchema = z
-  .object({
-    knockout: z
-      .array(
-        z.object({
-          round: z.enum(['R32', 'R16', 'QF', 'SF', 'Final', 'bronze']),
-          matchId: z.string(),
-          home: z.string(),
-          away: z.string(),
-          homeGoals: z.number().int().nonnegative(),
-          awayGoals: z.number().int().nonnegative(),
-          winner: z.string(),
-          decidedBy: z.enum(['regulation', 'extraTime', 'penalties']).optional(),
-          kickoff: z.string().datetime().optional(),
-        }),
-      )
       .optional(),
   })
   .passthrough();
@@ -163,7 +143,7 @@ export async function syncTournament(
   // R32 winners qualify for R16 → they are the actual roundOf16 participants.
   // R16 winners qualify for QF  → they are the actual roundOf8  participants.
   // Explicit answers in results.json take precedence over derived values.
-  const rawKnockout = rawKnockoutResultsSchema.parse(resultsRaw);
+  const rawKnockout = knockoutResultsSchema.parse(resultsRaw);
   const knockoutMatches = rawKnockout.knockout ?? [];
   const r32Winners = knockoutMatches.filter((m) => m.round === 'R32').map((m) => teamId(m.winner));
   const r16Winners = knockoutMatches.filter((m) => m.round === 'R16').map((m) => teamId(m.winner));

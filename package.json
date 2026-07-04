@@ -57,6 +57,9 @@
     ],
     "*.{json,md,yaml,yml}": [
       "prettier --write"
+    ],
+    "data/**/{results,tournament}.json": [
+      "env TSX_TSCONFIG_PATH=scripts/tsconfig.json pnpm exec tsx scripts/validate-data.ts"
     ]
   }
 }

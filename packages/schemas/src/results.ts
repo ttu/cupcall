@@ -24,6 +24,22 @@ const actualFinishMatchSchema = z.object({
 
 const decidedBySchema = z.enum(['regulation', 'extraTime', 'penalties']);
 
+export const knockoutEntrySchema = z.object({
+  round: z.enum(['R32', 'R16', 'QF', 'SF', 'Final', 'bronze']),
+  matchId: z.string(),
+  home: z.string(),
+  away: z.string(),
+  homeGoals: z.number().int().nonnegative(),
+  awayGoals: z.number().int().nonnegative(),
+  winner: z.string(),
+  decidedBy: decidedBySchema.optional(),
+  kickoff: z.string().datetime().optional(),
+});
+
+export const knockoutResultsSchema = z
+  .object({ knockout: z.array(knockoutEntrySchema).optional() })
+  .passthrough();
+
 const finalMatchSchema = actualFinishMatchSchema.extend({
   decidedBy: decidedBySchema.optional(),
   decisiveGoalPlayer: playerIdSchema.optional(),

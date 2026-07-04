@@ -1,7 +1,7 @@
 export { tournamentSchema } from './tournament.js';
 export type { TournamentInput } from './tournament.js';
 
-export { resultsSchema } from './results.js';
+export { resultsSchema, knockoutResultsSchema } from './results.js';
 export type { ResultsInput } from './results.js';
 
 export { cardIoSchema, parseCardImport } from './card-io.js';

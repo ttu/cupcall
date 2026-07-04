@@ -654,5 +654,6 @@
     "firstRedCardPlayer": "rsa-sithole",
     "groupTopScoringTeam": ["GER", "NED", "FRA"],
     "groupTopConcedingTeam": ["TUN", "IRQ"]
-  }
+  },
+  "_test": true
 }
