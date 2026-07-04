@@ -22,5 +22,5 @@ export async function GET(
   await linkEmailToUser(db, record.userId, record.email);
   await deletePendingEmailLink(db, token);
 
-  return NextResponse.redirect(new URL('/pools', request.url));
+  return NextResponse.redirect(new URL('/link-email/success', request.url));
 }
