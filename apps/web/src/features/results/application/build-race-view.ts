@@ -110,7 +110,7 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     leaderboard.map((e) => [
       e.userId,
       userId !== null && e.userId === userId
-        ? myTotalCanStillGet
+        ? Math.min(myTotalCanStillGet, remainingMax.total)
         : groupRemaining +
           (perUserKnockoutRemaining.get(e.userId) ?? 0) +
           (perUserSpecialsRemaining.get(e.userId) ?? 0),
