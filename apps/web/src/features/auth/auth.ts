@@ -21,7 +21,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
   const env = getEnv();
   const resendSender = createResendSender(env.RESEND_API_KEY);
   const sendVerificationRequest = createSendVerificationRequest({
-    from: 'Cup Prediction <noreply@cupp.app>',
+    from: 'Cup Prediction <noreply@cupcall.app>',
     sender: resendSender,
   });
 
@@ -35,7 +35,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
     }),
     providers: [
       Resend({
-        from: 'Cup Prediction <noreply@cupp.app>',
+        from: 'Cup Prediction <noreply@cupcall.app>',
         apiKey: env.RESEND_API_KEY,
         sendVerificationRequest,
       }),

@@ -91,14 +91,7 @@ Copy the key — it starts with `re_`. You won't see it again.
 
 ### 2c. Update the `from` address
 
-The app currently sends from `noreply@cupp.app` (hardcoded in `apps/web/src/features/auth/auth.ts:26`).
-
-If you're using a different domain, update both occurrences:
-
-```ts
-// apps/web/src/features/auth/auth.ts
-from: 'Cup Prediction <noreply@YOUR-DOMAIN.com>',
-```
+The app sends from `noreply@cupcall.app` (hardcoded in `apps/web/src/features/auth/auth.ts:24,38`).
 
 ---
 
