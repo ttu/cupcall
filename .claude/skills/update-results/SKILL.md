@@ -69,7 +69,10 @@ openfootball match numbers align directly: `#77 → r32m77`, `#78 → r32m78`, e
 | Score level after 90, differs after 120 | `"extra-time"` |
 | Score level after 120 min | `"penalties"` |
 
-The `homeGoals`/`awayGoals` fields always reflect the score after 90 min (not penalties).
+`homeGoals`/`awayGoals` always reflect the **final score**:
+- `regulation`: 90-min score
+- `extra-time`: score after 120 min (includes ET goals)
+- `penalties`: score after ET (still tied; winner determined by `winner` field)
 
 ### 4d — append to `knockout[]`
 
