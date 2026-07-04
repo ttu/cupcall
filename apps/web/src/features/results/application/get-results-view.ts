@@ -334,9 +334,19 @@ function buildKnockoutRoundBreakdown(
   // participant unknown). But if the SF *loser* (bronze team) is eliminated before reaching the
   // SF, the SF winner pick may still be alive, so bustedSfPicks stays 0 even though that bronze
   // slot is definitely lost. Take the max of both perspectives.
+  //
+  // Two distinct scenarios for bronzeMatch.pickStatus === 'busted':
+  //   (A) Participants known (homeTeamId + awayTeamId set): explicit bronze winner pick is for a
+  //       team absent from the confirmed match. The *derived* bronzePair (SF losers) is intact —
+  //       this does NOT represent a lost scoring slot. Do NOT count.
+  //   (B) Participants unknown (null, null): the explicit bronze pick is for a team that was
+  //       eliminated from the tournament entirely. This implies a SF-loser slot is truly lost.
+  //       Count it.
+  const bronzeParticipantsKnown =
+    bronzeMatch !== null && bronzeMatch.homeTeamId !== null && bronzeMatch.awayTeamId !== null;
   const bronzePicksBusted =
     bronzeMatch !== null
-      ? (bronzeMatch.pickStatus === 'busted' ? 1 : 0) +
+      ? (!bronzeParticipantsKnown && bronzeMatch.pickStatus === 'busted' ? 1 : 0) +
         (bronzeMatch.pickedOpponentStatus === 'busted' ? 1 : 0)
       : 0;
   const effectiveBronzeBusted = Math.max(bustedSfPicks, bronzePicksBusted);
