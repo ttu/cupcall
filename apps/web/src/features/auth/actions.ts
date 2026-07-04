@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { updateDisplayName, deleteUser } from '@cup/db';
+import { updateDisplayName, deleteUser, getUserById, clearUserEmail } from '@cup/db';
 import { ForbiddenError } from '../../shared/authz';
 import { db } from '../../shared/db';
 import { logger } from '../../shared/observability/logger';
@@ -65,4 +65,27 @@ export async function deleteAccountAction(): Promise<{ ok: false; error: string 
 
   await signOut({ redirectTo: '/' });
   return { ok: false, error: 'Unexpected error.' };
+}
+
+export async function unlinkEmailAction(): Promise<{ ok: boolean; error?: string }> {
+  const actor = await getCurrentActor();
+  if (!actor) {
+    throw new ForbiddenError('Must be signed in to remove email');
+  }
+
+  const user = await getUserById(db, actor.userId);
+  if (!user?.email) {
+    return { ok: false, error: 'No email linked.' };
+  }
+
+  try {
+    await clearUserEmail(db, actor.userId);
+  } catch (e) {
+    logger.error({ userId: actor.userId, err: e }, 'auth:unlinkEmail — failed');
+    return { ok: false, error: 'Could not remove email. Please try again.' };
+  }
+
+  logger.info({ userId: actor.userId }, 'auth:unlinkEmail — removed');
+  revalidatePath('/settings');
+  return { ok: true };
 }

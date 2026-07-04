@@ -11,18 +11,25 @@ vi.mock('../../shared/db', () => ({ db: {} }));
 vi.mock('../../shared/observability/logger', () => ({
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
-vi.mock('@cup/db', () => ({ updateDisplayName: vi.fn(), deleteUser: vi.fn() }));
+vi.mock('@cup/db', () => ({
+  updateDisplayName: vi.fn(),
+  deleteUser: vi.fn(),
+  getUserById: vi.fn(),
+  clearUserEmail: vi.fn(),
+}));
 vi.mock('./auth', () => ({ signOut: vi.fn() }));
 
-import { updateDisplayNameAction, deleteAccountAction } from './actions';
+import { updateDisplayNameAction, deleteAccountAction, unlinkEmailAction } from './actions';
 import { getCurrentActor } from './session';
-import { updateDisplayName, deleteUser } from '@cup/db';
+import { updateDisplayName, deleteUser, getUserById, clearUserEmail } from '@cup/db';
 import { signOut } from './auth';
 
 const mockedGetActor = vi.mocked(getCurrentActor);
 const mockedUpdate = vi.mocked(updateDisplayName);
 const mockedDelete = vi.mocked(deleteUser);
 const mockedSignOut = vi.mocked(signOut);
+const mockedGetUserById = vi.mocked(getUserById);
+const mockedClearUserEmail = vi.mocked(clearUserEmail);
 
 const prev = { error: null, saved: false };
 
@@ -111,5 +118,62 @@ describe('updateDisplayNameAction', () => {
     await updateDisplayNameAction(prev, form('x'.repeat(65)));
 
     expect(mockedUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('unlinkEmailAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('throws ForbiddenError when not signed in', async () => {
+    mockedGetActor.mockResolvedValue(null);
+
+    await expect(unlinkEmailAction()).rejects.toThrowError(ForbiddenError);
+    expect(mockedClearUserEmail).not.toHaveBeenCalled();
+  });
+
+  it('returns ok:false when the user has no email', async () => {
+    const uid = userId('user-no-email');
+    mockedGetActor.mockResolvedValue({ userId: uid });
+    mockedGetUserById.mockResolvedValue({
+      id: uid,
+      email: null,
+      emailVerified: null,
+      name: null,
+      image: null,
+      displayName: 'Guest',
+    });
+
+    const result = await unlinkEmailAction();
+
+    expect(result).toEqual({ ok: false, error: 'No email linked.' });
+    expect(mockedClearUserEmail).not.toHaveBeenCalled();
+  });
+
+  it('clears email and returns ok:true for a signed-in user with email', async () => {
+    const uid = userId('user-with-email');
+    mockedGetActor.mockResolvedValue({ userId: uid });
+    mockedGetUserById.mockResolvedValue({
+      id: uid,
+      email: 'user@example.com',
+      emailVerified: new Date(),
+      name: null,
+      image: null,
+      displayName: 'User',
+    });
+    mockedClearUserEmail.mockResolvedValue({
+      id: uid,
+      email: null,
+      emailVerified: null,
+      name: null,
+      image: null,
+      displayName: 'User',
+    });
+
+    const result = await unlinkEmailAction();
+
+    expect(mockedClearUserEmail).toHaveBeenCalledWith(expect.anything(), uid);
+    expect(result).toEqual({ ok: true });
   });
 });

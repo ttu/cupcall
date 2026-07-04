@@ -1,8 +1,12 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useTransition, useState } from 'react';
 import type { ReactElement } from 'react';
-import { updateDisplayNameAction, type DisplayNameState } from '@/features/auth/actions';
+import {
+  updateDisplayNameAction,
+  unlinkEmailAction,
+  type DisplayNameState,
+} from '@/features/auth/actions';
 import { signOutAction } from '../nav-actions';
 import { Avatar, Button, Chip, Icon, SectionLabel } from '@/shared/ui';
 
@@ -15,6 +19,9 @@ type Props = {
 
 export function SettingsForm({ displayName, email }: Props): ReactElement {
   const [state, action, pending] = useActionState(updateDisplayNameAction, initial);
+  const [confirmRemoveEmail, setConfirmRemoveEmail] = useState(false);
+  const [isRemovingEmail, startRemoveEmailTransition] = useTransition();
+  const [removeEmailError, setRemoveEmailError] = useState<string | null>(null);
 
   return (
     <div className="card p-6">
@@ -77,10 +84,60 @@ export function SettingsForm({ displayName, email }: Props): ReactElement {
           <div className="h-12 rounded-cup-btn bg-surface-2 border border-line px-[15px] flex items-center gap-2.5">
             <Icon name="mail" size={15} color="var(--ink-muted)" />
             <span className="flex-1 text-[14px] text-ink-soft truncate">{email}</span>
-            <Chip variant="green" dot>
-              Verified
-            </Chip>
+            {!confirmRemoveEmail && (
+              <Chip variant="green" dot>
+                Verified
+              </Chip>
+            )}
+            {!confirmRemoveEmail && (
+              <Button
+                type="button"
+                variant="ghost-danger"
+                size="sm"
+                disabled={isRemovingEmail}
+                onClick={() => setConfirmRemoveEmail(true)}
+              >
+                Remove
+              </Button>
+            )}
           </div>
+          {confirmRemoveEmail && (
+            <div className="mt-2 flex items-center gap-2.5 flex-wrap">
+              <span className="text-xs text-ink-soft">Remove email?</span>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                disabled={isRemovingEmail}
+                onClick={() => {
+                  setRemoveEmailError(null);
+                  startRemoveEmailTransition(async () => {
+                    const result = await unlinkEmailAction();
+                    if (!result.ok) {
+                      setRemoveEmailError(result.error ?? 'Could not remove email.');
+                      setConfirmRemoveEmail(false);
+                    }
+                  });
+                }}
+              >
+                {isRemovingEmail ? 'Removing…' : 'Confirm'}
+              </Button>
+              {!isRemovingEmail && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmRemoveEmail(false)}
+                  className="text-xs bg-transparent border-0 text-ink-muted cursor-pointer"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          )}
+          {removeEmailError && (
+            <p role="alert" className="mt-2 text-xs text-danger">
+              {removeEmailError}
+            </p>
+          )}
         </>
       )}
 

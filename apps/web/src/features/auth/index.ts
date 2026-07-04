@@ -1,5 +1,5 @@
 export { getCurrentActor, getActorOrThrow } from './session';
-export { updateDisplayNameAction, deleteAccountAction } from './actions';
+export { updateDisplayNameAction, deleteAccountAction, unlinkEmailAction } from './actions';
 export { deriveDisplayName } from './display-name';
 export { applyDerivedDisplayName } from './create-user';
 export { signInAsGuest, signInAsExistingGuest } from './guest';

@@ -203,3 +203,12 @@ export async function linkEmailToUser(
     .returning();
   return row ? toUserRow(row) : undefined;
 }
+
+export async function clearUserEmail(db: Database, id: UserId): Promise<UserRow | undefined> {
+  const [row] = await db
+    .update(schema.users)
+    .set({ email: null, emailVerified: null })
+    .where(eq(schema.users.id, id))
+    .returning();
+  return row ? toUserRow(row) : undefined;
+}

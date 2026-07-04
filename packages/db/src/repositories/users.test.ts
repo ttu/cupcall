@@ -13,6 +13,7 @@ import {
   getPendingEmailLinkByToken,
   deletePendingEmailLink,
   linkEmailToUser,
+  clearUserEmail,
 } from './users';
 
 describe('users repository', () => {
@@ -158,6 +159,26 @@ describe('users repository', () => {
       expect(result).toBeUndefined();
       const refetched = await getUserById(db, user.id);
       expect(refetched?.email).toBe('already@example.com');
+    });
+  });
+
+  describe('clearUserEmail', () => {
+    it('clears email and emailVerified, returns the updated row', async () => {
+      const user = await createUser(db, { email: 'linked@example.com', displayName: 'Linked' });
+      const result = await clearUserEmail(db, user.id);
+
+      expect(result?.email).toBeNull();
+      expect(result?.emailVerified).toBeNull();
+
+      const refetched = await getUserById(db, user.id);
+      expect(refetched?.email).toBeNull();
+      expect(refetched?.emailVerified).toBeNull();
+    });
+
+    it('returns undefined when the user does not exist', async () => {
+      const { userId } = await import('@cup/engine');
+      const result = await clearUserEmail(db, userId('no-such-id'));
+      expect(result).toBeUndefined();
     });
   });
 });
