@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '../features/auth/auth';
-import { GuestLoginForm } from '@/features/auth';
+import { GuestLoginForm, EmailLoginForm } from '@/features/auth';
 import { Button, Logo, Chip, Avatar } from '@/shared/ui';
 
 export default async function HomePage(): Promise<ReactElement> {
@@ -88,18 +88,14 @@ export default async function HomePage(): Promise<ReactElement> {
             <div className="flex-1 h-px bg-[rgba(255,255,255,0.1)]" />
           </div>
 
-          {/* Email sign-in — coming soon */}
           <div
-            className="rounded-cup p-4.5 flex items-center justify-center gap-2 text-on-dark-muted text-sm"
+            className="rounded-cup p-4.5"
             style={{
               background: 'rgba(255,255,255,0.04)',
               boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
             }}
           >
-            <span>Email sign-in</span>
-            <span className="rounded-full px-2 py-0.5 text-xs font-semibold bg-[rgba(255,255,255,0.08)] text-on-dark-muted">
-              Coming soon
-            </span>
+            <EmailLoginForm />
           </div>
         </div>
 
