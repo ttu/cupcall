@@ -11,6 +11,9 @@ const LINK_TTL_MS = 24 * 60 * 60 * 1000;
 
 export type LinkEmailResult = { ok: true } | { ok: false; error: string };
 
+export const SEND_FAILURE_ERROR =
+  'Sending failed — try again later or use your personal login link to sign in.';
+
 // Exported for testing only; production path uses the default.
 export async function requestEmailLinkAction(
   formData: FormData,
@@ -77,4 +80,23 @@ function buildHtml(url: string): string {
 
 function buildText(url: string): string {
   return `Connect your email to Cup Prediction\n\n${url}\n\nIf you did not request this, you can safely ignore this email.\nThis link expires in 24 hours.`;
+}
+
+/**
+ * useActionState-compatible wrapper around requestEmailLinkAction.
+ * Catches unexpected sender errors (e.g. Resend API failure) and converts
+ * them to a user-facing error result rather than letting the form crash.
+ *
+ * The third `sender` parameter is only for testing; production uses the default.
+ */
+export async function connectEmailFormAction(
+  _prev: LinkEmailResult | null,
+  formData: FormData,
+  sender?: EmailSender,
+): Promise<LinkEmailResult> {
+  try {
+    return await requestEmailLinkAction(formData, sender);
+  } catch {
+    return { ok: false, error: SEND_FAILURE_ERROR };
+  }
 }
