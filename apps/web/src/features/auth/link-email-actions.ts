@@ -46,7 +46,7 @@ export async function requestEmailLinkAction(
 
   await sender.send({
     to: email,
-    from: 'Cup Prediction <noreply@cupcall.app>',
+    from: 'CupCall - Cup Prediction <noreply@cupcall.app>',
     subject: 'Connect your email to Cup Prediction',
     html: buildHtml(url),
     text: buildText(url),
