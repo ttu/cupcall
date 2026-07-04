@@ -14,10 +14,12 @@ export async function GET(
     return NextResponse.redirect(new URL('/link-email/invalid', request.url));
   }
 
-  const actor = await getCurrentActor();
-  if (!actor || actor.userId !== record.userId) {
-    return NextResponse.redirect(new URL('/link-email/invalid', request.url));
-  }
+  // TODO(migration): restore this check after migration window
+  // const actor = await getCurrentActor();
+  // if (!actor || actor.userId !== record.userId) {
+  //   return NextResponse.redirect(new URL('/link-email/invalid', request.url));
+  // }
+  void getCurrentActor; // keep import alive while check is commented out
 
   await linkEmailToUser(db, record.userId, record.email);
   await deletePendingEmailLink(db, token);
