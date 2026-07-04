@@ -11,7 +11,7 @@ const LINK_TTL_MS = 24 * 60 * 60 * 1000;
 
 export type LinkEmailResult = { ok: true } | { ok: false; error: string };
 
-export const SEND_FAILURE_ERROR =
+const SEND_FAILURE_ERROR =
   'Sending failed — try again later or use your personal login link to sign in.';
 
 // Exported for testing only; production path uses the default.
