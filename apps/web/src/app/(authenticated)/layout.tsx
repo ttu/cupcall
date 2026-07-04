@@ -15,12 +15,12 @@ export default async function AuthenticatedLayout({
   const pools = actor ? await getUserPools(db, actor.userId) : [];
 
   return (
-    <div className="min-h-screen">
+    <div className="flex flex-col min-h-screen">
       {/* Desktop sidebar */}
       <Sidebar pools={pools} />
 
       {/* Main content — offset by sidebar width on desktop */}
-      <main className="md:pl-55">{children}</main>
+      <main className="md:pl-55 flex-1">{children}</main>
 
       {/* Beta footer — offset by sidebar on desktop, clears mobile nav with pb-16 */}
       <div className="md:pl-55 pb-16 md:pb-0">
