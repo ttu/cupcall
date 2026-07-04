@@ -7,6 +7,7 @@ import { getUserById, countPoolsOwnedBy, getLoginTokenByUserId, upsertLoginToken
 import { userId } from '@cup/engine';
 import { MyLoginLink, generateLoginToken } from '@/features/pools';
 import { SettingsForm } from './SettingsForm';
+import { AccountDangerZone } from './AccountDangerZone';
 
 export default async function SettingsPage(): Promise<ReactElement> {
   const session = await auth();
@@ -31,9 +32,12 @@ export default async function SettingsPage(): Promise<ReactElement> {
     <div className="max-w-140 mx-auto mt-8 px-6">
       <h1 className="display text-[36px] mb-7">Settings</h1>
       <div className="eyebrow text-ink-muted mb-2.5">Your account</div>
-      <SettingsForm displayName={displayName} email={email} ownedPoolCount={ownedPoolCount} />
+      <SettingsForm displayName={displayName} email={email} />
       {!email && <ConnectEmailForm />}
-      <MyLoginLink token={loginToken} baseUrl={baseUrl} />
+      <div className="mt-6">
+        <MyLoginLink token={loginToken} baseUrl={baseUrl} />
+      </div>
+      <AccountDangerZone ownedPoolCount={ownedPoolCount} />
     </div>
   );
 }
