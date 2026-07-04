@@ -557,6 +557,14 @@ export function buildKnockoutMatrix(params: {
     ...(bronzeMatch ? [bronzeMatch] : []),
   ];
 
+  const eliminatedTeams = new Set<string>();
+  for (const m of allKnockoutMatches) {
+    if (m.status === 'final' && m.actualWinnerId) {
+      if (m.homeTeamId && m.homeTeamId !== m.actualWinnerId) eliminatedTeams.add(m.homeTeamId);
+      if (m.awayTeamId && m.awayTeamId !== m.actualWinnerId) eliminatedTeams.add(m.awayTeamId);
+    }
+  }
+
   const sortedMatches = allKnockoutMatches.toSorted((a, b) => {
     if (a.kickoff === null && b.kickoff === null) return 0;
     if (a.kickoff === null) return 1;
@@ -644,10 +652,9 @@ export function buildKnockoutMatrix(params: {
       if (m.status !== 'final') {
         const bothKnown = m.homeTeamId !== null && m.awayTeamId !== null;
         const isImpossible =
-          bothKnown &&
           pickedWinnerId !== null &&
-          pickedWinnerId !== m.homeTeamId &&
-          pickedWinnerId !== m.awayTeamId;
+          (eliminatedTeams.has(pickedWinnerId) ||
+            (bothKnown && pickedWinnerId !== m.homeTeamId && pickedWinnerId !== m.awayTeamId));
         return {
           bracketMatchKey: m.bracketMatchKey,
           hit: isImpossible ? 'impossible' : ('pending' as KnockoutMatchHit),

@@ -677,6 +677,98 @@ describe('buildKnockoutMatrix', () => {
       expect(cell.pickedWinnerId).toBe('B1'); // home side (SF1 loser) wins 3-1
     });
   });
+
+  describe('eliminated team picks', () => {
+    it('marks SF pick as impossible when picked team was eliminated in a prior QF', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const qf1 = makeKnockoutMatch('qf1', 'QF', 'final', {
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        actualWinnerId: 'A1',
+      });
+      const sf1 = makeKnockoutMatch('sf1', 'SF', 'scheduled');
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('QF', [qf1]), makeRound('SF', [sf1])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'sf1', 'B2')],
+        poolFinishScores: [],
+        def: miniTournament,
+      });
+
+      const sfCell = knockoutMatrix[0]!.cells.find((c) => c.bracketMatchKey === 'sf1')!;
+      expect(sfCell.hit).toBe('impossible');
+      expect(sfCell.pickedWinnerId).toBe('B2');
+    });
+
+    it('marks Bronze pick as impossible when picked team was eliminated in a prior QF', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const qf1 = makeKnockoutMatch('qf1', 'QF', 'final', {
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        actualWinnerId: 'A1',
+      });
+      const bronze = makeKnockoutMatch('bronze', 'Bronze', 'scheduled');
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('QF', [qf1])],
+        bronzeMatch: bronze,
+        poolKnockoutPicks: [makePick('u1', 'bronze', 'B2')],
+        poolFinishScores: [],
+        def: miniTournament,
+      });
+
+      const bronzeCell = knockoutMatrix[0]!.cells.find((c) => c.bracketMatchKey === 'bronze')!;
+      expect(bronzeCell.hit).toBe('impossible');
+      expect(bronzeCell.pickedWinnerId).toBe('B2');
+    });
+
+    it('marks Final pick as impossible when picked team was eliminated in a prior SF', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const sf1 = makeKnockoutMatch('sf1', 'SF', 'final', {
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+        actualWinnerId: 'A1',
+      });
+      const final = makeKnockoutMatch('final', 'Final', 'scheduled');
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('SF', [sf1]), makeRound('Final', [final])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'final', 'B1')],
+        poolFinishScores: [],
+        def: miniTournament,
+      });
+
+      const finalCell = knockoutMatrix[0]!.cells.find((c) => c.bracketMatchKey === 'final')!;
+      expect(finalCell.hit).toBe('impossible');
+      expect(finalCell.pickedWinnerId).toBe('B1');
+    });
+
+    it('keeps pending for a still-alive team in an unresolved match (no regression)', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const sf1 = makeKnockoutMatch('sf1', 'SF', 'scheduled');
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('SF', [sf1])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'sf1', 'A1')],
+        poolFinishScores: [],
+        def: miniTournament,
+      });
+
+      const sfCell = knockoutMatrix[0]!.cells.find((c) => c.bracketMatchKey === 'sf1')!;
+      expect(sfCell.hit).toBe('pending');
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
