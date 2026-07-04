@@ -94,12 +94,12 @@ function buildHtml(url: string, host: string): string {
   <body>
     <p>Sign in to <strong>${safeHost}</strong></p>
     <p><a href="${safeUrl}">Click here to sign in</a></p>
-    <p>If you did not request this, you can safely ignore this email.</p>
     <p>This link expires in 24 hours.</p>
+    <p><strong>Did not request this?</strong> Do not click the link above — you can safely ignore this email.</p>
   </body>
 </html>`.trim();
 }
 
 function buildText(url: string, host: string): string {
-  return `Sign in to ${host}\n\n${url}\n\nIf you did not request this, you can safely ignore this email.\nThis link expires in 24 hours.`;
+  return `Sign in to ${host}\n\n${url}\n\nThis link expires in 24 hours.\n\nDid not request this? Do not click the link above — you can safely ignore this email.`;
 }
