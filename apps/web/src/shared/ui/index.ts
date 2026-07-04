@@ -11,3 +11,4 @@ export { BackLink } from './BackLink';
 export { PageSpinner } from './PageSpinner';
 export { TeamBadge } from './TeamBadge';
 export { teamFlag } from './teamFlag';
+export { AppFooter } from './AppFooter';

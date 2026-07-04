@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { getCurrentActor } from '@/features/auth';
 import { getUserPools } from '@/features/pools';
 import { db } from '@/shared/db';
+import { AppFooter } from '@/shared/ui';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 
@@ -19,7 +20,12 @@ export default async function AuthenticatedLayout({
       <Sidebar pools={pools} />
 
       {/* Main content — offset by sidebar width on desktop */}
-      <main className="pb-16 md:pl-55 md:pb-0">{children}</main>
+      <main className="md:pl-55">{children}</main>
+
+      {/* Beta footer — offset by sidebar on desktop, clears mobile nav with pb-16 */}
+      <div className="md:pl-55 pb-16 md:pb-0">
+        <AppFooter />
+      </div>
 
       {/* Mobile bottom nav */}
       <MobileNav />
