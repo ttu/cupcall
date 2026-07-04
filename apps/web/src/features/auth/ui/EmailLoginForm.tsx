@@ -1,8 +1,11 @@
 'use client';
 
+import { useActionState } from 'react';
 import type { ReactElement } from 'react';
 import { useFormStatus } from 'react-dom';
-import { emailSignInAction } from '../login-actions';
+import { emailSignInAction, type EmailSignInState } from '../login-actions';
+
+const initial: EmailSignInState = { error: null };
 
 function SubmitButton(): ReactElement {
   const { pending } = useFormStatus();
@@ -18,8 +21,10 @@ function SubmitButton(): ReactElement {
 }
 
 export function EmailLoginForm(): ReactElement {
+  const [state, action] = useActionState(emailSignInAction, initial);
+
   return (
-    <form action={emailSignInAction} aria-labelledby="signin-heading" className="space-y-3">
+    <form action={action} aria-labelledby="signin-heading" className="space-y-3">
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-ink mb-1">
           Email address
@@ -34,6 +39,11 @@ export function EmailLoginForm(): ReactElement {
           className="w-full rounded-lg border border-line px-3 py-2 text-sm bg-white text-ink placeholder:text-ink-muted focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
         />
       </div>
+      {state.error && (
+        <p role="alert" className="text-sm text-danger font-semibold">
+          {state.error}
+        </p>
+      )}
       <SubmitButton />
     </form>
   );
