@@ -21,7 +21,14 @@ function validateDir(dataDir: string): void {
 
   const knownTeamIds = new Set<string>(tournament.teams.map((t) => t.id));
   const knownPlayerIds = new Set<string>(tournament.players.map((p) => p.id));
-  const knownSlotMatchIds = new Set<string>(tournament.bracket.slots.map((s) => s.match));
+  const knownSlotMatchIds = new Set<string>([
+    ...tournament.bracket.slots.map((s) => s.match),
+    ...tournament.bracket.roundOf16Matches,
+    ...tournament.bracket.roundOf8Matches,
+    ...tournament.bracket.semiFinals,
+    ...(tournament.bracket.finalMatch ? [tournament.bracket.finalMatch] : []),
+    ...(tournament.bracket.bronzeMatch ? [tournament.bracket.bronzeMatch] : []),
+  ]);
 
   for (const km of knockoutMatches) {
     if (!knownSlotMatchIds.has(km.matchId)) {

@@ -634,6 +634,28 @@
       "winner": "COL",
       "decidedBy": "regulation",
       "kickoff": "2026-07-04T01:30:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m89",
+      "home": "PAR",
+      "away": "FRA",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "winner": "FRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-04T16:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m90",
+      "home": "CAN",
+      "away": "MAR",
+      "homeGoals": 0,
+      "awayGoals": 3,
+      "winner": "MAR",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-04T17:00:00Z"
     }
   ],
   "groupOrder": {
