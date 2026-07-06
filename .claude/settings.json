@@ -1,5 +1,5 @@
 {
-  "enabledMcpjsonServers": ["playwright", "postgres"],
+  "enabledMcpjsonServers": ["claude-design", "playwright", "postgres"],
   "permissions": {
     "allow": [
       "mcp__playwright__browser_navigate",
