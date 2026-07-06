@@ -141,14 +141,16 @@ export function ResultsPageClient({
               bronzeMatch={view.bronzeMatch}
               userPredictedKnockoutTeamIds={view.userPredictedKnockoutTeamIds}
             />
-            <div className="flex flex-col gap-4">
-              <BracketHealthPanel
-                health={view.bracketHealth}
-                championPick={finalMatch}
-                bronzeMatch={view.bronzeMatch}
-              />
-              <KnockoutPointsPanel rows={view.userKnockoutRoundBreakdown} />
-            </div>
+            {!viewerMode && (
+              <div className="flex flex-col gap-4">
+                <BracketHealthPanel
+                  health={view.bracketHealth}
+                  championPick={finalMatch}
+                  bronzeMatch={view.bronzeMatch}
+                />
+                <KnockoutPointsPanel rows={view.userKnockoutRoundBreakdown} />
+              </div>
+            )}
           </div>
           <div className="flex gap-4 flex-wrap text-[11px] text-ink-muted">
             <span>
