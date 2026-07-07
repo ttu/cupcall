@@ -678,6 +678,28 @@
       "winner": "ENG",
       "decidedBy": "regulation",
       "kickoff": "2026-07-06T00:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m93",
+      "home": "POR",
+      "away": "ESP",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "winner": "ESP",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-06T19:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m94",
+      "home": "USA",
+      "away": "BEL",
+      "homeGoals": 1,
+      "awayGoals": 4,
+      "winner": "BEL",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-07T00:00:00Z"
     }
   ],
   "groupOrder": {
