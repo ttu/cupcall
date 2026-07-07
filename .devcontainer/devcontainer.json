@@ -20,6 +20,9 @@
   },
   "postCreateCommand": "sudo chown -R node:node /home/node/.claude && ([ -f /home/node/.claude.json ] || echo '{\"hasCompletedOnboarding\":true,\"theme\":\"dark\"}' > /home/node/.claude.json) && sudo corepack enable && sudo corepack prepare pnpm@10.30.3 --activate && pnpm install && npx playwright install --with-deps chromium && npx --yes --package @playwright/mcp@latest -- playwright install chromium",
   "updateContentCommand": "sudo chown node:node /workspaces/football-cup-prediction/node_modules && pnpm install",
+  // Always pull the newest Claude Code CLI on every container start (best-effort;
+  // skipped gracefully if the npm registry is unreachable).
+  "postStartCommand": "sudo npm install -g @anthropic-ai/claude-code@latest || true",
   "customizations": {
     "vscode": {
       "extensions": [
