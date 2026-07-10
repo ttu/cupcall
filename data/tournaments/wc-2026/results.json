@@ -722,6 +722,17 @@
       "winner": "SUI",
       "decidedBy": "penalties",
       "kickoff": "2026-07-07T20:00:00Z"
+    },
+    {
+      "round": "QF",
+      "matchId": "qf97",
+      "home": "FRA",
+      "away": "MAR",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "winner": "FRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-09T20:00:00Z"
     }
   ],
   "groupOrder": {
