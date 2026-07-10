@@ -700,6 +700,28 @@
       "winner": "BEL",
       "decidedBy": "regulation",
       "kickoff": "2026-07-07T00:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m95",
+      "home": "ARG",
+      "away": "EGY",
+      "homeGoals": 3,
+      "awayGoals": 2,
+      "winner": "ARG",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-07T16:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m96",
+      "home": "SUI",
+      "away": "COL",
+      "homeGoals": 0,
+      "awayGoals": 0,
+      "winner": "SUI",
+      "decidedBy": "penalties",
+      "kickoff": "2026-07-07T20:00:00Z"
     }
   ],
   "groupOrder": {
