@@ -232,6 +232,33 @@ describe('tournament repository', () => {
       expect(orderRows).toHaveLength(4);
     });
 
+    it('updates an existing answer value on re-run with different data', async () => {
+      // Regression: the upsert's onConflictDoUpdate set clause must reference the incoming
+      // row (`sql`excluded.value``), not the existing column (`schema.actualAnswers.value`) —
+      // the latter resolves to "set value = value", a no-op that silently freezes any bet key
+      // at whatever it was first written as, even as later syncs derive a larger/different set.
+      const actual1: ActualResults = {
+        matchResults: [],
+        groupOrder: {},
+        answers: { roundOf8: [teamId('A1')] },
+      };
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual1);
+
+      const actual2: ActualResults = {
+        matchResults: [],
+        groupOrder: {},
+        answers: { roundOf8: [teamId('A1'), teamId('B1'), teamId('C1')] },
+      };
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual2);
+
+      const rows = await db
+        .select()
+        .from(schema.actualAnswers)
+        .where(eq(schema.actualAnswers.tournamentId, 'mini-2026'));
+      const roundOf8Row = rows.find((r) => r.betKey === 'roundOf8');
+      expect(roundOf8Row?.value).toEqual(['A1', 'B1', 'C1']);
+    });
+
     it('replaces group order entries on re-run (idempotency with updated data)', async () => {
       const actual1: ActualResults = {
         matchResults: [],

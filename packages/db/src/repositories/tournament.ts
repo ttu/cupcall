@@ -1,4 +1,4 @@
-import { eq, and, ne } from 'drizzle-orm';
+import { eq, and, ne, sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import {
@@ -379,7 +379,9 @@ export async function upsertTournamentResults(
       .values(answerEntries)
       .onConflictDoUpdate({
         target: [schema.actualAnswers.tournamentId, schema.actualAnswers.betKey],
-        set: { value: schema.actualAnswers.value },
+        // `schema.actualAnswers.value` here would reference the existing row (a no-op:
+        // "set value = value"). `excluded.value` is the incoming row being inserted.
+        set: { value: sql`excluded.value` },
       });
   }
 }
