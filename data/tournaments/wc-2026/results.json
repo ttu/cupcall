@@ -733,6 +733,17 @@
       "winner": "FRA",
       "decidedBy": "regulation",
       "kickoff": "2026-07-09T20:00:00Z"
+    },
+    {
+      "round": "QF",
+      "matchId": "qf98",
+      "home": "ESP",
+      "away": "BEL",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "ESP",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-10T19:00:00Z"
     }
   ],
   "groupOrder": {
