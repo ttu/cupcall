@@ -255,15 +255,6 @@ function buildGroupSummary(
   };
 }
 
-/** Returns the highest tier of topFour points achievable when `remaining` picks are still possible. */
-function topFourTierMax(remaining: number, order: Tournament['scoring']['topFourOrder']): number {
-  if (remaining >= 4) return order.allCorrect;
-  if (remaining === 3) return order.threeCorrect;
-  if (remaining === 2) return order.twoCorrect;
-  if (remaining === 1) return order.oneCorrect;
-  return 0;
-}
-
 function buildKnockoutRoundBreakdown(
   def: Tournament,
   userBreakdown: ScoreBreakdown | null,
@@ -314,13 +305,13 @@ function buildKnockoutRoundBreakdown(
     return isAnswered ? Math.max(0, totalMaxPts - earned) : 0;
   }
 
-  // For topFour: if some QF picks are busted, the highest achievable tier decreases.
+  // For topFour: if some QF picks are busted, the achievable ceiling decreases.
   // Use the 'SF' health row (populated from QF picks) to count still-possible picks.
   // Use totalPicks - bustedPicks (not alivePicks + pendingPicks) so that 'no-pick' slots
-  // don't incorrectly reduce the achievable tier.
+  // don't incorrectly reduce the achievable ceiling.
   const sfRemaining = sfHealth !== null ? sfHealth.totalPicks - sfHealth.bustedPicks : null;
   const sfMaxPossible =
-    sfRemaining !== null ? topFourTierMax(sfRemaining, def.scoring.topFourOrder) : totalMax.topFour;
+    sfRemaining !== null ? sfRemaining * def.scoring.roundOf4PerTeam : totalMax.topFour;
 
   // Once every QF match's winner is known, roundOf4 has as many entries as there are QF
   // matches — at that point topFour is fully resolved and no further upside remains, even in

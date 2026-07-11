@@ -25,7 +25,7 @@ const MAX_GROUP_ORDER = NUM_GROUPS * miniScoring.groupOrder.allCorrect;
 const MAX_ROUND_OF_16 =
   miniTournament.bracket.roundOf16Matches.length * 2 * miniScoring.roundOf16PerTeam; // 0 for mini-tournament
 const MAX_ROUND_OF_8 = NUM_QF_MATCHES * 2 * miniScoring.roundOf8PerTeam;
-const MAX_TOP_FOUR = miniScoring.topFourOrder.allCorrect;
+const MAX_TOP_FOUR = 4 * miniScoring.roundOf4PerTeam;
 const MAX_BRONZE = 2 * miniScoring.bronze.perTeam + miniScoring.bronze.exactScore;
 const MAX_FINAL = 2 * miniScoring.final.perTeam + miniScoring.final.exactScore;
 const MAX_SPECIALS =
@@ -408,12 +408,7 @@ describe('computeRemainingMaxPoints — scoring config sensitivity', () => {
         roundOf8PerTeam: 0,
         bronze: { exactScore: 0, perTeam: 0 },
         final: { exactScore: 0, perTeam: 0 },
-        topFourOrder: {
-          allCorrect: 0,
-          threeCorrect: 0,
-          twoCorrect: 0,
-          oneCorrect: 0,
-        },
+        roundOf4PerTeam: 0,
         tournamentTopScoringTeam: 0,
         tournamentTopConcedingTeam: 0,
         highestMatchGoals: 0,

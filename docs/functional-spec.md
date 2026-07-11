@@ -110,12 +110,7 @@ tournaments or enter results.
     "roundOf8PerTeam": 3, // max 24 (8 teams)
     "bronze": { "exactScore": 5, "perTeam": 5 }, // max 15
     "final": { "exactScore": 5, "perTeam": 5 }, // max 15
-    "topFourOrder": {
-      "allCorrect": 20,
-      "threeCorrect": 15,
-      "twoCorrect": 10,
-      "oneCorrect": 5,
-    }, // max 20
+    "roundOf4PerTeam": 5, // max 20 (4 teams)
     "tournamentTopScoringTeam": 10,
     "tournamentTopConcedingTeam": 10,
     "highestMatchGoals": 10, // most goals in any single match, regulation time
@@ -415,19 +410,9 @@ So a perfect bronze or final prediction = 10 (teams) + 5 (score) = **15**.
 - **Semifinalists ("SF")** — for each team in the player's **derived** predicted semifinalists (§6.3 —
   the player's four QF-winner picks; needs only those picks, independent of Final/Bronze) that has
   actually reached the semifinal (`results.answers.roundOf4`, auto-derived from QF winners as QF
-  matches complete) → scored by
-  **count of correct teams**, using the tier below. Order and eventual Final/Bronze outcome are
-  irrelevant — once a team reaches the SF it counts, permanently:
-
-  | Correct semifinalists | Points |
-  | --------------------- | ------ |
-  | 4 (all)               | **20** |
-  | 3                     | **15** |
-  | 2                     | **10** |
-  | 1                     | **5**  |
-  | 0                     | **0**  |
-
-  Resolves incrementally as each QF match completes — no need to wait for the Final or Bronze match.
+  matches complete) → **5** (`roundOf4PerTeam`). Order and eventual Final/Bronze outcome are
+  irrelevant — once a team reaches the SF it counts, permanently. _(max 20, 4 teams.)_ Resolves
+  incrementally as each QF match completes — no need to wait for the Final or Bronze match.
 
 ### 7.5 Special bets
 

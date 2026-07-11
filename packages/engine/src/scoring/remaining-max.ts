@@ -70,7 +70,7 @@ export function computeRemainingMaxPoints(
   // Top four (semifinalists): resolves once every QF match is played — at that point the
   // four actual semifinalists are fully known, independent of Final/Bronze results.
   const qfComplete = bracket.roundOf8Matches.every(isFinal);
-  const topFourMax = qfComplete ? 0 : scoring.topFourOrder.allCorrect;
+  const topFourMax = qfComplete ? 0 : 4 * scoring.roundOf4PerTeam;
 
   // Specials: conservatively treat as fully open until the tournament is
   // entirely complete.

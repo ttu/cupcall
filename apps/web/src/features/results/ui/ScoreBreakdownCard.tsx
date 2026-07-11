@@ -44,8 +44,7 @@ const ROWS: Row[] = [
   {
     label: 'SF',
     key: 'topFour',
-    hint: (s) =>
-      `4 correct semifinalists +${s.topFourOrder.allCorrect} · 3 +${s.topFourOrder.threeCorrect} · 2 +${s.topFourOrder.twoCorrect} · 1 +${s.topFourOrder.oneCorrect}`,
+    hint: (s) => `per correct semifinalist +${s.roundOf4PerTeam} (max +${s.roundOf4PerTeam * 4})`,
   },
   {
     label: 'Final',

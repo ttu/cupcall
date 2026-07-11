@@ -2342,8 +2342,7 @@ describe('getResultsView', () => {
 
       // The SF row (topFour) must show missed points due to the busted QF pick.
       const sfRow = rows.find((r) => r.label === 'SF')!;
-      const { topFourOrder } = miniTournament.scoring;
-      expect(sfRow.missed).toBe(topFourOrder.allCorrect - topFourOrder.threeCorrect);
+      expect(sfRow.missed).toBe(1 * miniTournament.scoring.roundOf4PerTeam); // 1 of 4 QF picks busted
       expect(s.missed).toBeGreaterThan(0);
     });
   });
@@ -2460,7 +2459,7 @@ describe('getResultsView', () => {
     it('reduces SF canStillGet and shows missed when a QF pick is busted', async () => {
       // miniTournament: QF is the entry round (qf1..qf4), feeding SF (topFour) scoring.
       // User picks A1 for qf1. qf1 is then finalized with B2 winning → A1 pick busted.
-      // With 1 of 4 QF picks busted, the best topFour tier drops from allCorrect to threeCorrect.
+      // With 1 of 4 QF picks busted, the best achievable ceiling drops by 1 × roundOf4PerTeam.
       const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
       await upsertKnockoutPick(db, pred.id, bracketMatchKey('qf1'), 'A1');
 
@@ -2478,11 +2477,11 @@ describe('getResultsView', () => {
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const rows = view!.userKnockoutRoundBreakdown!;
-      const { topFourOrder } = miniTournament.scoring;
+      const { roundOf4PerTeam } = miniTournament.scoring;
 
       const sfRow = rows.find((r) => r.label === 'SF')!;
-      expect(sfRow.canStillGet).toBe(topFourOrder.threeCorrect);
-      expect(sfRow.missed).toBe(topFourOrder.allCorrect - topFourOrder.threeCorrect);
+      expect(sfRow.canStillGet).toBe(3 * roundOf4PerTeam); // 3 of 4 QF picks still viable
+      expect(sfRow.missed).toBe(1 * roundOf4PerTeam); // 1 of 4 QF picks busted
       expect(sfRow.earned).toBe(0);
     });
 

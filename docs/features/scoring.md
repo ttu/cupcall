@@ -208,12 +208,12 @@ canStillGet = health.maxPossiblePoints - health.earnedPoints
 
 ```
 sfRemaining  = sfHealth.totalPicks - sfHealth.bustedPicks
-sfMaxPossible = topFourTierMax(sfRemaining)
+sfMaxPossible = sfRemaining × scoring.roundOf4PerTeam
 canStillGet   = sfMaxPossible - (alreadyEarned)
 ```
 
 `sfHealth.totalPicks` equals the number of QF matches (4 for WC2026), not the number of picks
-made. Busted QF picks reduce the achievable tier; unpicked slots do not.
+made. Busted QF picks reduce the achievable ceiling; unpicked slots do not.
 
 **Final / Bronze:**
 Both finals slots (home/away) are occupied by _derived_ participants from the two SF picks.
@@ -241,7 +241,9 @@ Computed in `buildPerUserKnockoutCanStillGet()` — `apps/web/src/features/resul
 
 Uses `MatchRow[]` directly to detect eliminated teams. Applies the same logic:
 
-- **Top-four:** count non-busted QF picks → `topFourTierMax(n)`
+- **Top-four:** (non-busted QF picks − already-confirmed-correct picks) × `roundOf4PerTeam`,
+  clamped to 0 — the confirmed portion is subtracted so it isn't double-counted against points
+  already banked via `scoreTopFour`.
 - **Final/Bronze:** count busted SF-slot pairs → `max(0, 2 - busted) × perTeam + exactScore`
 
 ---

@@ -231,25 +231,33 @@ before calling `assertCanEditOwnCard`. Bulk ops (`clearAllPredictions`, `importC
 
 Fixed: the "SF" scoring row always showed `+0` until the entire tournament finished (it required
 `answers.topFourOrder`, the full 1st–4th final placement, which also had to be entered manually).
+Two follow-up fixes landed the same day after prod verification surfaced further issues.
 
-- **Rule change:** "SF" now scores the count of the player's 4 derived teams (`derived.topFour`,
-  from their Final/Bronze picks) confirmed to have reached the semifinal — order-agnostic, same tier
-  table (5/10/15/20). Resolves incrementally as each QF match completes, not at tournament end.
-- **`packages/engine`** — `scoreTopFour()` (`scoring/sets-rankings.ts`) rewritten around a new
-  `ActualResults.answers.roundOf4` field; `computeRemainingMaxPoints` gates `topFourMax` on "all QF
-  matches played" instead of "Final + Bronze played". Dropped `teamRightWrongPlace` (dead consolation
-  field) from `Scoring['topFourOrder']` and `topFourOrder` from `answers`.
-- **`scripts/sync.ts`** — `roundOf4` is now auto-derived from QF match winners, same pattern as
+- **Rule change:** "SF" scores the count of the player's predicted semifinalists confirmed correct
+  — order-agnostic, flat rate (`roundOf4PerTeam`, currently 5/team, max 20). Resolves incrementally
+  as each QF match completes, not at tournament end.
+- **`derived.roundOf4`** (`packages/engine/src/bracket.ts`) — the player's 4 QF-winner picks,
+  computed directly from those picks alone. This is what `scoreTopFour` reads. It is a **separate
+  field** from `derived.topFour` (`[finalWinner, finalLoser, bronzeWinner, bronzeLoser]`), which is
+  order-dependent and kept only for the Predict page's "predicted final standings" display — not
+  used for scoring. (Originally `scoreTopFour` read `derived.topFour`, which needed an explicit
+  Final/Bronze _winner_ pick before populating at all; most players only enter a _score_ prediction
+  there, so SF silently stayed at 0 for most of the pool even after this fix's first version shipped.)
+- **`Scoring.roundOf4PerTeam: number`** replaces the old `topFourOrder` tier-table config
+  (`{ allCorrect, threeCorrect, twoCorrect, oneCorrect }` + dead `teamRightWrongPlace` consolation
+  field) — collapsed to a flat rate since every live tournament config was already exactly linear
+  (5/team) and order never mattered once the scoring rule changed.
+- **`scripts/sync.ts`** — `answers.roundOf4` is auto-derived from QF match winners, same pattern as
   `roundOf16`/`roundOf8` — no manual `results.json` entry needed for this bet, ever.
-- **`apps/web`** — `get-results-view.ts`'s per-round breakdown and `build-race-view.ts`'s
-  `buildPerUserKnockoutCanStillGet` (Points Race projection) updated so the live `topFour` points
-  now banked in `pointsTotal` aren't double-counted as "still to gain". Deleted dead
-  `compute-can-still-get.ts` (unused, still referenced the old field).
+- **DB fix:** `upsertTournamentResults`'s `actual_answers` upsert had a no-op `onConflictDoUpdate`
+  (`set: { value: schema.actualAnswers.value }` — sets a column to itself). Any bet key written once
+  (e.g. `roundOf16`/`roundOf8`) was silently frozen at its first-ever value forever. Fixed with
+  `sql`excluded.value`` and a regression test (`packages/db/src/repositories/tournament.test.ts`).
 - **Design/plan:** `docs/superpowers/specs/2026-07-11-sf-live-scoring-design.md` /
   `docs/superpowers/plans/2026-07-11-sf-live-scoring.md`.
 - **Post-deploy manual step:** the sync GitHub Action only auto-triggers on `data/tournaments/**`
   pushes, not code changes — run `pnpm sync -- wc-2026` once (locally or via `workflow_dispatch`) to
-  rescore existing pool predictions under the new rule.
+  rescore existing pool predictions under the corrected logic.
 
 ## What's next (the remaining-plan sequence)
 

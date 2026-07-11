@@ -44,21 +44,6 @@ export function scoreRoundOf8(
   return points(total);
 }
 
-function topFourTierPoints(positionsCorrect: number, scoring: Scoring): number {
-  switch (positionsCorrect) {
-    case 4:
-      return scoring.topFourOrder.allCorrect;
-    case 3:
-      return scoring.topFourOrder.threeCorrect;
-    case 2:
-      return scoring.topFourOrder.twoCorrect;
-    case 1:
-      return scoring.topFourOrder.oneCorrect;
-    default:
-      return 0;
-  }
-}
-
 export function scoreTopFour(
   derived: DerivedCard,
   actual: ActualResults,
@@ -71,5 +56,5 @@ export function scoreTopFour(
   const actualSet = new Set(actual.answers.roundOf4);
   const correctCount = derived.roundOf4.filter((team) => actualSet.has(team)).length;
 
-  return points(topFourTierPoints(correctCount, scoring));
+  return points(correctCount * scoring.roundOf4PerTeam);
 }

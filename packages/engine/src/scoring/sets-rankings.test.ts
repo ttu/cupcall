@@ -205,25 +205,25 @@ describe('scoreTopFour', () => {
     expect(scoreTopFour(derived, actual, miniScoring)).toBe(0);
   });
 
-  it('1 of 4 predicted teams confirmed in roundOf4 → tier 5', () => {
+  it('1 of 4 predicted teams confirmed in roundOf4 → 1 × roundOf4PerTeam = 5', () => {
     const derived = makeDerived([], [ARG, FRA, NED, POR]);
     const actual = makeActual({ roundOf4: [ARG, BRA, teamId('X1'), teamId('X2')] });
     expect(scoreTopFour(derived, actual, miniScoring)).toBe(5);
   });
 
-  it('2 of 4 predicted teams confirmed → tier 10', () => {
+  it('2 of 4 predicted teams confirmed → 2 × roundOf4PerTeam = 10', () => {
     const derived = makeDerived([], [ARG, FRA, NED, POR]);
     const actual = makeActual({ roundOf4: [ARG, FRA, teamId('X1'), teamId('X2')] });
     expect(scoreTopFour(derived, actual, miniScoring)).toBe(10);
   });
 
-  it('3 of 4 predicted teams confirmed → tier 15', () => {
+  it('3 of 4 predicted teams confirmed → 3 × roundOf4PerTeam = 15', () => {
     const derived = makeDerived([], [ARG, FRA, NED, POR]);
     const actual = makeActual({ roundOf4: [ARG, FRA, NED, teamId('X1')] });
     expect(scoreTopFour(derived, actual, miniScoring)).toBe(15);
   });
 
-  it('all 4 predicted teams confirmed → tier 20', () => {
+  it('all 4 predicted teams confirmed → 4 × roundOf4PerTeam = 20', () => {
     const derived = makeDerived([], [ARG, FRA, NED, POR]);
     const actual = makeActual({ roundOf4: [ARG, FRA, NED, POR] });
     expect(scoreTopFour(derived, actual, miniScoring)).toBe(20);

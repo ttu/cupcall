@@ -77,12 +77,7 @@ const scoringSchema = z.object({
     exactScore: z.number(),
     perTeam: z.number(),
   }),
-  topFourOrder: z.object({
-    allCorrect: z.number(),
-    threeCorrect: z.number(),
-    twoCorrect: z.number(),
-    oneCorrect: z.number(),
-  }),
+  roundOf4PerTeam: z.number(),
   tournamentTopScoringTeam: z.number(),
   tournamentTopConcedingTeam: z.number(),
   highestMatchGoals: z.number(),

@@ -50,6 +50,7 @@ export function ScoringGuide({ scoring }: Props): ReactElement {
   const finishMatchMax = scoring.final.perTeam * 2 + scoring.final.exactScore;
   const roundOf16Max = scoring.roundOf16PerTeam * 16;
   const roundOf8Max = scoring.roundOf8PerTeam * 8;
+  const roundOf4Max = scoring.roundOf4PerTeam * 4;
 
   return (
     <div className="space-y-4">
@@ -92,11 +93,12 @@ export function ScoringGuide({ scoring }: Props): ReactElement {
 
       {/* Semifinalists */}
       <SectionCard title="Semifinalists">
-        <Row label="Predict the 4 teams that reach the semifinal — resolves as each QF match completes." />
-        <Row label="All 4 correct" pts={scoring.topFourOrder.allCorrect} indent />
-        <Row label="3 correct" pts={scoring.topFourOrder.threeCorrect} indent />
-        <Row label="2 correct" pts={scoring.topFourOrder.twoCorrect} indent />
-        <Row label="1 correct" pts={scoring.topFourOrder.oneCorrect} indent />
+        <Row
+          label="Per correct team predicted to reach the semifinal"
+          pts={scoring.roundOf4PerTeam}
+          note="resolves as each QF match completes"
+        />
+        <Row label="Maximum (all 4 correct)" pts={roundOf4Max} />
       </SectionCard>
 
       {/* Special Bets */}

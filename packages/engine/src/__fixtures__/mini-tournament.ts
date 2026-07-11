@@ -11,12 +11,7 @@ export const miniScoring: Scoring = {
   roundOf8PerTeam: 3,
   bronze: { exactScore: 5, perTeam: 5 },
   final: { exactScore: 5, perTeam: 5 },
-  topFourOrder: {
-    allCorrect: 20,
-    threeCorrect: 15,
-    twoCorrect: 10,
-    oneCorrect: 5,
-  },
+  roundOf4PerTeam: 5,
   tournamentTopScoringTeam: 10,
   tournamentTopConcedingTeam: 10,
   highestMatchGoals: 10,

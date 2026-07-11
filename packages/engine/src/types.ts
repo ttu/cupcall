@@ -62,12 +62,8 @@ export interface Scoring {
   roundOf8PerTeam: number;
   bronze: { exactScore: number; perTeam: number };
   final: { exactScore: number; perTeam: number };
-  topFourOrder: {
-    allCorrect: number;
-    threeCorrect: number;
-    twoCorrect: number;
-    oneCorrect: number;
-  };
+  /** Per confirmed semifinalist (see scoreTopFour). Order never matters. */
+  roundOf4PerTeam: number;
   tournamentTopScoringTeam: number;
   tournamentTopConcedingTeam: number;
   highestMatchGoals: number;

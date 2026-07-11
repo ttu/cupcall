@@ -51,7 +51,7 @@ const emptyActualResults: ActualResults = { matchResults: [], groupOrder: {}, an
 
 // miniTournament bracket: QF entry round (qf1-qf4) → sf1, sf2 → final + bronze
 // No R16 round (roundOf16Matches=[]), roundOf8Matches=[qf1,qf2,qf3,qf4]
-// Scoring: roundOf16PerTeam=2, roundOf8PerTeam=3, topFourOrder.allCorrect=20, final/bronze={perTeam:5, exactScore:5}
+// Scoring: roundOf16PerTeam=2, roundOf8PerTeam=3, roundOf4PerTeam=5, final/bronze={perTeam:5, exactScore:5}
 
 // Build a minimal set of knockout MatchRows for miniTournament (no group matches)
 function makeQfMatchRows(

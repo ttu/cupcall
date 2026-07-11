@@ -244,15 +244,6 @@ function resolveKnockoutWinner(m: MatchRow | null): string | null {
   return null;
 }
 
-/** Returns the maximum topFour tier points achievable when `remaining` QF picks are non-busted. */
-function topFourTierMax(remaining: number, order: Tournament['scoring']['topFourOrder']): number {
-  if (remaining >= 4) return order.allCorrect;
-  if (remaining === 3) return order.threeCorrect;
-  if (remaining === 2) return order.twoCorrect;
-  if (remaining === 1) return order.oneCorrect;
-  return 0;
-}
-
 /**
  * Computes the maximum additional knockout points each user can still earn.
  *
@@ -402,10 +393,10 @@ export function buildPerUserKnockoutCanStillGet(
       if (pts !== undefined && isViable(key)) canStillGet += pts;
     }
 
-    // TopFour: ceiling = tier for non-busted QF picks (no-pick = not busted, consistent with
-    // buildKnockoutRoundBreakdown which uses totalPicks − bustedPicks). Subtract the tier for
-    // already-confirmed-correct picks so this doesn't double-count points already banked in
-    // the user's leaderboard total via scoreTopFour.
+    // TopFour: non-busted QF picks × roundOf4PerTeam is the ceiling (no-pick = not busted,
+    // consistent with buildKnockoutRoundBreakdown which uses totalPicks − bustedPicks). Subtract
+    // already-confirmed-correct picks so this doesn't double-count points already banked in the
+    // user's leaderboard total via scoreTopFour.
     if (!topFourResolved) {
       let nonBustedQf = qfKeys.size;
       let confirmedQf = 0;
@@ -418,9 +409,7 @@ export function buildPerUserKnockoutCanStillGet(
           confirmedQf++;
         }
       }
-      const ceiling = topFourTierMax(nonBustedQf, scoring.topFourOrder);
-      const banked = topFourTierMax(confirmedQf, scoring.topFourOrder);
-      canStillGet += Math.max(0, ceiling - banked);
+      canStillGet += Math.max(0, (nonBustedQf - confirmedQf) * scoring.roundOf4PerTeam);
     }
 
     // Final: finalist perTeam × non-busted SF picks + exactScore.
