@@ -72,9 +72,12 @@ Resolved when `actualResults.answers.roundOf16` / `.roundOf8` are populated.
 
 ### 2.4 Semifinalists
 
-`DerivedCard.topFour` = `[finalWinner, finalLoser, bronzeWinner, bronzeLoser]`, derived from the
-player's final and bronze bracket picks plus the SF pairs they depend on — i.e. the four teams the
-player predicts will reach the semifinal.
+`DerivedCard.roundOf4` = the player's 4 QF-winner picks (unordered) — i.e. the four teams the player
+predicts will reach the semifinal. Each SF match's two participants are always exactly the winner
+picks of its two feeding QF matches, so this is derivable from QF picks alone — present as soon as
+the player has made their QF picks, independent of whether they've made SF, Final, or Bronze picks
+yet. (This is a **separate field** from `DerivedCard.topFour` — see §3 — which is order-dependent
+and used only for the Predict page's "predicted final standings" display, not for scoring.)
 
 Scoring counts how many of those four teams are in `actualResults.answers.roundOf4` (teams
 confirmed to have won their QF match), **order-agnostic**. `answers.roundOf4` is auto-derived from
@@ -162,13 +165,16 @@ CardInputs (raw picks)
        ├─ roundOf8   — teams in QF entry slots (implicit QF participants)
        ├─ finalists  — SF winner picks (→ Final participants)
        ├─ bronzePair — SF losers derived from SF winner pick + SF participants
-       └─ topFour    — [finalWinner, finalLoser, bronzeWinner, bronzeLoser]
+       ├─ roundOf4   — the 4 QF-winner picks (predicted semifinalists) — used for SF scoring
+       └─ topFour    — [finalWinner, finalLoser, bronzeWinner, bronzeLoser] — Predict page display only
 ```
 
 Key invariants:
 
 - `bronzePair` is _never_ the explicit bronze bracket pick; it is always the two SF losers.
+- `roundOf4` needs only the 4 QF-winner picks; it does not depend on SF, Final, or Bronze picks.
 - `topFour` requires all four of final+bronze to be resolved; it may be shorter for partial cards.
+  It is **not** used for scoring (see §2.4) — only for the Predict page's ordered standings display.
 - Stale picks (team not a match participant) are silently dropped; partial cards score 0 for
   unresolvable rounds.
 

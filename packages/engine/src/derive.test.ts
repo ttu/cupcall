@@ -93,4 +93,20 @@ describe('deriveCard', () => {
     expect(derived.topFour[2]).toBe(teamId('C1')); // bronzeWinner
     expect(derived.topFour[3]).toBe(teamId('D1')); // bronzeLoser
   });
+
+  it('produces correct roundOf4 (the 4 QF-winner picks) even without SF/Final/Bronze picks', () => {
+    const partialInput: CardInputs = {
+      groupScores: allDrawScores,
+      knockoutPicks: knockoutPicks.filter((p) => p.bracketMatchKey.startsWith('qf')),
+      finishScores: {},
+      specials: {},
+    };
+    const derived = deriveCard(partialInput, miniTournament);
+    expect(derived.topFour).toHaveLength(0); // no Final/Bronze pick → topFour stays empty
+    expect(derived.roundOf4).toHaveLength(4);
+    expect(derived.roundOf4).toContain(teamId('A1')); // qf1 pick
+    expect(derived.roundOf4).toContain(teamId('C1')); // qf2 pick
+    expect(derived.roundOf4).toContain(teamId('B1')); // qf3 pick
+    expect(derived.roundOf4).toContain(teamId('D1')); // qf4 pick
+  });
 });

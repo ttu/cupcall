@@ -69,7 +69,7 @@ export function scoreTopFour(
   }
 
   const actualSet = new Set(actual.answers.roundOf4);
-  const correctCount = derived.topFour.filter((team) => actualSet.has(team)).length;
+  const correctCount = derived.roundOf4.filter((team) => actualSet.has(team)).length;
 
   return points(topFourTierPoints(correctCount, scoring));
 }

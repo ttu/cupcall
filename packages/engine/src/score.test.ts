@@ -156,6 +156,7 @@ const derived77: DerivedCard = {
   finalists: [ARG, FRA],
   bronzePair: [NED, POR],
   topFour: [ARG, FRA, NED, POR],
+  roundOf4: [ARG, FRA, NED, POR],
 };
 
 // CardInputs for §7.7

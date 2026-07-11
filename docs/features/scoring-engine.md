@@ -29,9 +29,11 @@ Plus the domain types (`Tournament`, `CardInputs`, `DerivedCard`, `ActualResults
 2. **Qualifiers** — `selectQualifiers`: top-N per group + best-M third-placed ranked across groups by the
    same metrics (deterministic tie-break by group index then seed).
 3. **Bracket** — `buildBracket`: resolves entry-round slot refs (`1A`, `2B`, `3rd[i]`), propagates the
-   player's per-tie winner picks, and derives `roundOf8`, `finalists`, `bronzePair`, and `topFour`
-   (`[finalWinner, finalLoser, bronzeWinner, bronzeLoser]`). **Bronze is contested by the two SF losers**
-   (fixed cup convention). Throws on a pick naming a non-participant.
+   player's per-tie winner picks, and derives `roundOf8`, `finalists`, `bronzePair`, `roundOf4` (the 4
+   QF-winner picks — used for SF scoring, needs only QF picks), and `topFour`
+   (`[finalWinner, finalLoser, bronzeWinner, bronzeLoser]` — Predict page display only, needs explicit
+   Final/Bronze picks). **Bronze is contested by the two SF losers** (fixed cup convention). Throws on
+   a pick naming a non-participant.
 
 ## Scoring (`scoreCard`, functional-spec §7)
 

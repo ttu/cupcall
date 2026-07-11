@@ -135,6 +135,19 @@ export interface DerivedCard {
   roundOf8: TeamId[];
   finalists: TeamId[];
   bronzePair: TeamId[];
+  /**
+   * The player's 4 QF-winner picks — the teams they predict will reach the semifinal.
+   * Unordered; present as soon as QF picks are made, independent of Final/Bronze picks.
+   * This is what the "SF" scoring category (scoreTopFour) compares against
+   * `actual.answers.roundOf4`.
+   */
+  roundOf4: TeamId[];
+  /**
+   * The final top-four ranking: [finalWinner, finalLoser, bronzeWinner, bronzeLoser].
+   * Only populated once the player has explicit Final and Bronze winner picks. Used for the
+   * Predict page's "predicted final standings" (1st/2nd/3rd/4th) display — not for scoring
+   * (see `roundOf4` for that).
+   */
   topFour: TeamId[];
 }
 

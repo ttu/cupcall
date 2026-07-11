@@ -21,7 +21,11 @@ const NED = teamId('NED');
 const POR = teamId('POR');
 const BRA = teamId('BRA');
 
-function makeDerived(roundOf8: TeamId[], topFour: TeamId[], roundOf16: TeamId[] = []): DerivedCard {
+function makeDerived(
+  roundOf8: TeamId[],
+  roundOf4: TeamId[],
+  roundOf16: TeamId[] = [],
+): DerivedCard {
   return {
     groupOrders: {},
     qualifiers: [],
@@ -29,7 +33,8 @@ function makeDerived(roundOf8: TeamId[], topFour: TeamId[], roundOf16: TeamId[] 
     roundOf8,
     finalists: [],
     bronzePair: [],
-    topFour,
+    topFour: [],
+    roundOf4,
   };
 }
 

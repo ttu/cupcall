@@ -16,6 +16,8 @@ export interface BracketResult {
    * [finalWinner, finalLoser, bronzeWinner, bronzeLoser]
    */
   topFour: TeamId[];
+  /** The player's 4 QF-winner picks (predicted semifinalists), unordered. */
+  roundOf4: TeamId[];
 }
 
 /**
@@ -193,6 +195,7 @@ export function buildBracket(
 
   // ── topFour = [finalWinner, finalLoser, bronzeWinner, bronzeLoser] ───────────
   // Only includes positions that are fully resolved; may be shorter than 4 for partial cards.
+  // Used for the Predict page's ordered "predicted final standings" display — not scoring.
   const topFour: TeamId[] = [];
   const finalWinner = pickByKey.get(bracket.finalMatch);
   if (finalWinner) {
@@ -207,7 +210,16 @@ export function buildBracket(
     if (bronzeLoser) topFour.push(bronzeLoser);
   }
 
-  return { roundOf16, roundOf8, finalists, bronzePair, topFour };
+  // ── roundOf4 = the player's 4 QF-winner picks (predicted semifinalists) ──────
+  // Unordered set, used for SF scoring. Each SF match's two participants are always exactly
+  // the winner picks of its two feeding QF matches, so this is derivable from QF picks alone —
+  // independent of whether the player has made SF, Final, or Bronze picks yet.
+  const roundOf4: TeamId[] = bracket.roundOf8Matches.flatMap((key) => {
+    const winner = pickByKey.get(key);
+    return winner ? [winner] : [];
+  });
+
+  return { roundOf16, roundOf8, finalists, bronzePair, topFour, roundOf4 };
 }
 
 /** Helper exported for tests: resolve a slot reference (exposed for bracket.test.ts). */

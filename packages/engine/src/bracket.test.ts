@@ -144,6 +144,64 @@ describe('buildBracket', () => {
     expect(result.topFour[3]).toBe(teamId('D1')); // bronzeLoser (the other of bronzePair)
   });
 
+  it('derives roundOf4 from QF-winner picks alone, with no SF/Final/Bronze picks at all', () => {
+    const groupOrders = deriveGroupOrders(miniTournament, allDrawScores);
+    const qualifiers = selectQualifiers(miniTournament, allDrawScores, groupOrders);
+
+    // Only the 4 QF picks are made — no sf1/sf2/final/bronze picks.
+    const picks: KnockoutPick[] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+      { bracketMatchKey: bracketMatchKey('qf3'), winner: teamId('B1') },
+      { bracketMatchKey: bracketMatchKey('qf4'), winner: teamId('D1') },
+    ];
+
+    const result = buildBracket(miniTournament, groupOrders, qualifiers, picks);
+
+    // topFour requires an explicit Final/Bronze pick, so it stays empty for this partial card.
+    expect(result.topFour).toHaveLength(0);
+    // roundOf4 needs only the QF picks — the predicted semifinalists are already fully known.
+    expect(result.roundOf4).toHaveLength(4);
+    expect(result.roundOf4).toContain(teamId('A1'));
+    expect(result.roundOf4).toContain(teamId('C1'));
+    expect(result.roundOf4).toContain(teamId('B1'));
+    expect(result.roundOf4).toContain(teamId('D1'));
+  });
+
+  it('roundOf4 is the same team set regardless of which team is picked to win each SF/Final/Bronze match', () => {
+    const groupOrders = deriveGroupOrders(miniTournament, allDrawScores);
+    const qualifiers = selectQualifiers(miniTournament, allDrawScores, groupOrders);
+
+    const qfPicks: KnockoutPick[] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+      { bracketMatchKey: bracketMatchKey('qf3'), winner: teamId('B1') },
+      { bracketMatchKey: bracketMatchKey('qf4'), winner: teamId('D1') },
+    ];
+
+    // Same QF picks, but pick the OTHER team to win each SF/Final/Bronze match this time.
+    const picksWithOtherSfWinners: KnockoutPick[] = [
+      ...qfPicks,
+      { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('C1') }, // was A1
+      { bracketMatchKey: bracketMatchKey('sf2'), winner: teamId('D1') }, // was B1
+      { bracketMatchKey: bracketMatchKey('final'), winner: teamId('D1') },
+      { bracketMatchKey: bracketMatchKey('bronze'), winner: teamId('A1') },
+    ];
+
+    const withOnlyQf = buildBracket(miniTournament, groupOrders, qualifiers, qfPicks);
+    const withOtherSfWinners = buildBracket(
+      miniTournament,
+      groupOrders,
+      qualifiers,
+      picksWithOtherSfWinners,
+    );
+
+    expect(new Set(withOtherSfWinners.roundOf4)).toEqual(new Set(withOnlyQf.roundOf4));
+    expect(new Set(withOnlyQf.roundOf4)).toEqual(
+      new Set([teamId('A1'), teamId('C1'), teamId('B1'), teamId('D1')]),
+    );
+  });
+
   it('silently drops a knockout pick that names a team not in that match', () => {
     const groupOrders = deriveGroupOrders(miniTournament, allDrawScores);
     const qualifiers = selectQualifiers(miniTournament, allDrawScores, groupOrders);

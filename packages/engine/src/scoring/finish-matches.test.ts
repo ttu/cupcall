@@ -19,6 +19,7 @@ function makeDerived(finalists: TeamId[], bronzePair: TeamId[]): DerivedCard {
     finalists,
     bronzePair,
     topFour: [],
+    roundOf4: [],
   };
 }
 
