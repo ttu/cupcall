@@ -126,11 +126,11 @@ describe('buildPerUserKnockoutCanStillGet', () => {
     expect(result.get('u1')).toBe(15 + 15 + 15); // 45
   });
 
-  it('gives 0 topFour when topFourOrder is already resolved', () => {
+  it('gives 0 topFour when roundOf4 is already fully known', () => {
     const picks = [makePick('u1', 'qf1', 'A1'), makePick('u1', 'qf2', 'C1')];
     const resolvedActual: ActualResults = {
       ...emptyActualResults,
-      answers: { topFourOrder: ['A1', 'C1', 'B1', 'D1'] as TeamId[] },
+      answers: { roundOf4: ['A1', 'C1', 'B1', 'D1'] as TeamId[] },
     };
     const result = buildPerUserKnockoutCanStillGet(
       picks,
@@ -249,7 +249,7 @@ describe('buildPerUserKnockoutCanStillGet', () => {
   it('differentiates two players: one with a viable pick, one with a busted pick', () => {
     const matches = makeQfMatchRows({ qf1Status: 'final', qf1Home: 2, qf1Away: 0 });
     const picks = [
-      makePick('u1', 'qf1', 'A1'), // A1 won → u1 has alive pick
+      makePick('u1', 'qf1', 'A1'), // A1 won → u1 has a CONFIRMED-correct pick, already banked
       makePick('u2', 'qf1', 'B2'), // B2 lost → u2 is busted
     ];
     const result = buildPerUserKnockoutCanStillGet(
@@ -258,9 +258,12 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       miniTournament,
       emptyActualResults,
     );
-    // u1: qf1 is final and pick=A1 won → isNotBusted=true → nonBustedQf=4 → topFour=20
-    // u2: qf1 is final and pick=B2 lost → busted → nonBustedQf=3 → topFour=15
-    expect(result.get('u1')).toBe(20 + 15 + 15); // 50
+    // u1: qf1 final, pick=A1 won → nonBustedQf=4, confirmedQf=1 (already banked via scoreTopFour)
+    //   → ceiling=topFour(4)=20, banked=topFour(1)=5 → remaining upside=20-5=15
+    // u2: qf1 final, pick=B2 lost → nonBustedQf=3, confirmedQf=0 → ceiling=15, banked=0 → 15
+    // Both surface the same *remaining* upside — u1's already-confirmed 5 points show up in
+    // their banked pointsTotal instead, not here (avoids double-counting).
+    expect(result.get('u1')).toBe(15 + 15 + 15); // 45
     expect(result.get('u2')).toBe(15 + 15 + 15); // 45
   });
 });

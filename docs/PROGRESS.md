@@ -227,6 +227,30 @@ before calling `assertCanEditOwnCard`. Bulk ops (`clearAllPredictions`, `importC
 - **`apps/web/src/features/results/ui/PointsRaceTab.tsx`** — `RaceSubTab` type is now `'race' | 'by-group' | 'by-knockout'`;
   "By match" renamed to "By group stage"; new "By knockout" tab renders `KnockoutMatrix`.
 
+## Live SF (semifinalist) scoring (2026-07-11)
+
+Fixed: the "SF" scoring row always showed `+0` until the entire tournament finished (it required
+`answers.topFourOrder`, the full 1st–4th final placement, which also had to be entered manually).
+
+- **Rule change:** "SF" now scores the count of the player's 4 derived teams (`derived.topFour`,
+  from their Final/Bronze picks) confirmed to have reached the semifinal — order-agnostic, same tier
+  table (5/10/15/20). Resolves incrementally as each QF match completes, not at tournament end.
+- **`packages/engine`** — `scoreTopFour()` (`scoring/sets-rankings.ts`) rewritten around a new
+  `ActualResults.answers.roundOf4` field; `computeRemainingMaxPoints` gates `topFourMax` on "all QF
+  matches played" instead of "Final + Bronze played". Dropped `teamRightWrongPlace` (dead consolation
+  field) from `Scoring['topFourOrder']` and `topFourOrder` from `answers`.
+- **`scripts/sync.ts`** — `roundOf4` is now auto-derived from QF match winners, same pattern as
+  `roundOf16`/`roundOf8` — no manual `results.json` entry needed for this bet, ever.
+- **`apps/web`** — `get-results-view.ts`'s per-round breakdown and `build-race-view.ts`'s
+  `buildPerUserKnockoutCanStillGet` (Points Race projection) updated so the live `topFour` points
+  now banked in `pointsTotal` aren't double-counted as "still to gain". Deleted dead
+  `compute-can-still-get.ts` (unused, still referenced the old field).
+- **Design/plan:** `docs/superpowers/specs/2026-07-11-sf-live-scoring-design.md` /
+  `docs/superpowers/plans/2026-07-11-sf-live-scoring.md`.
+- **Post-deploy manual step:** the sync GitHub Action only auto-triggers on `data/tournaments/**`
+  pushes, not code changes — run `pnpm sync -- wc-2026` once (locally or via `workflow_dispatch`) to
+  rescore existing pool predictions under the new rule.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

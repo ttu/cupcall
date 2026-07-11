@@ -2273,7 +2273,7 @@ describe('getResultsView', () => {
         matchResults: [],
         groupOrder: {},
         answers: {
-          topFourOrder: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')],
+          roundOf4: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')],
         },
         bronzeMatch: { home: teamId('C1'), away: teamId('D1'), homeGoals: 1, awayGoals: 0 },
         finalMatch: {
@@ -2413,7 +2413,7 @@ describe('getResultsView', () => {
         matchResults: [],
         groupOrder: {},
         answers: {
-          topFourOrder: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')],
+          roundOf4: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')],
         },
         bronzeMatch: { home: teamId('C1'), away: teamId('D1'), homeGoals: 1, awayGoals: 0 },
         finalMatch: {

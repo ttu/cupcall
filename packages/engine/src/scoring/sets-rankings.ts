@@ -64,25 +64,12 @@ export function scoreTopFour(
   actual: ActualResults,
   scoring: Scoring,
 ): Points {
-  if (actual.answers.topFourOrder === undefined) {
+  if (actual.answers.roundOf4 === undefined) {
     return points(0);
   }
 
-  const actualOrder = actual.answers.topFourOrder;
+  const actualSet = new Set(actual.answers.roundOf4);
+  const correctCount = derived.topFour.filter((team) => actualSet.has(team)).length;
 
-  // (a) Position tier: count index-aligned matches
-  let positionsCorrect = 0;
-  for (let i = 0; i < derived.topFour.length; i++) {
-    if (derived.topFour[i] === actualOrder[i]) {
-      positionsCorrect++;
-    }
-  }
-  const tier = topFourTierPoints(positionsCorrect, scoring);
-
-  // (b) Team consolation: count derived teams that appear anywhere in actual top-4
-  const actualSet = new Set(actualOrder);
-  const teamsInActual = derived.topFour.filter((team) => actualSet.has(team)).length;
-  const consolation = teamsInActual * scoring.topFourOrder.teamRightWrongPlace;
-
-  return points(Math.max(tier, consolation));
+  return points(topFourTierPoints(correctCount, scoring));
 }

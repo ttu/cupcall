@@ -82,7 +82,6 @@ const scoringSchema = z.object({
     threeCorrect: z.number(),
     twoCorrect: z.number(),
     oneCorrect: z.number(),
-    teamRightWrongPlace: z.number(),
   }),
   tournamentTopScoringTeam: z.number(),
   tournamentTopConcedingTeam: z.number(),

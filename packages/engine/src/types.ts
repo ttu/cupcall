@@ -67,7 +67,6 @@ export interface Scoring {
     threeCorrect: number;
     twoCorrect: number;
     oneCorrect: number;
-    teamRightWrongPlace: number;
   };
   tournamentTopScoringTeam: number;
   tournamentTopConcedingTeam: number;
@@ -163,7 +162,9 @@ export interface ActualResults {
   answers: {
     roundOf16?: TeamId[];
     roundOf8?: TeamId[];
-    topFourOrder?: TeamId[];
+    /** Teams confirmed to have won their QF match (i.e. reached the SF). Grows incrementally as
+     * QF matches complete — auto-derived in scripts/sync.ts, never manually entered. */
+    roundOf4?: TeamId[];
     /** One or more teams when there is a tie for the top spot. */
     groupTopScoringTeam?: TeamId[];
     groupTopConcedingTeam?: TeamId[];

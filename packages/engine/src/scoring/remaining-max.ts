@@ -20,8 +20,8 @@ export interface TournamentProgress {
  *  - roundOf8:     once the group stage is complete the QF participants are
  *                  fixed, so the category is locked; before then the full
  *                  2 × |QF matches| × roundOf8PerTeam upside remains.
- *  - topFour:      resolves only once both final and bronze have been played
- *                  (the four top-4 slots come from those matches).
+ *  - topFour:      resolves once every QF match has been played (the four
+ *                  semifinalists are then fully known).
  *  - bronze/final: each yields 2 × perTeam + exactScore until played.
  *  - specials:     resolved only once the tournament is fully complete
  *                  (every group match and every bracket match final). Until
@@ -67,9 +67,10 @@ export function computeRemainingMaxPoints(
   const bronzeMax = bronzePlayed ? 0 : 2 * scoring.bronze.perTeam + scoring.bronze.exactScore;
   const finalMax = finalPlayed ? 0 : 2 * scoring.final.perTeam + scoring.final.exactScore;
 
-  // Top four: resolves once final + bronze are both played (positions 1-4 are
-  // determined by those results).
-  const topFourMax = bronzePlayed && finalPlayed ? 0 : scoring.topFourOrder.allCorrect;
+  // Top four (semifinalists): resolves once every QF match is played — at that point the
+  // four actual semifinalists are fully known, independent of Final/Bronze results.
+  const qfComplete = bracket.roundOf8Matches.every(isFinal);
+  const topFourMax = qfComplete ? 0 : scoring.topFourOrder.allCorrect;
 
   // Specials: conservatively treat as fully open until the tournament is
   // entirely complete.

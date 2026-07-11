@@ -208,17 +208,20 @@ describe('computeRemainingMaxPoints — finish matches', () => {
     expect(result.bronze).toBe(MAX_BRONZE);
   });
 
-  it('top-four upside stays open while either finish match is pending', () => {
+  it('top-four upside is unaffected by bronze/final alone (needs QF, not finish matches)', () => {
     expect(computeRemainingMaxPoints(miniTournament, progress([BRONZE_KEY])).topFour).toBe(
       MAX_TOP_FOUR,
     );
     expect(computeRemainingMaxPoints(miniTournament, progress([FINAL_KEY])).topFour).toBe(
       MAX_TOP_FOUR,
     );
+    expect(
+      computeRemainingMaxPoints(miniTournament, progress([BRONZE_KEY, FINAL_KEY])).topFour,
+    ).toBe(MAX_TOP_FOUR);
   });
 
-  it('top-four upside zeroes only when both finish matches are played', () => {
-    const result = computeRemainingMaxPoints(miniTournament, progress([BRONZE_KEY, FINAL_KEY]));
+  it('top-four upside zeroes once every QF match is played', () => {
+    const result = computeRemainingMaxPoints(miniTournament, progress(QF_KEYS));
     expect(result.topFour).toBe(0);
   });
 
@@ -303,41 +306,43 @@ describe('computeRemainingMaxPoints — stage transitions', () => {
     expect(result.total).toBe(MAX_TOP_FOUR + MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
   });
 
-  it('after QF: only top-four, finishing matches, and specials remain', () => {
+  it('after QF: top-four resolves; bronze, final, and specials remain', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS]),
     );
-    expect(result.total).toBe(MAX_TOP_FOUR + MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
+    expect(result.topFour).toBe(0);
+    expect(result.total).toBe(MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
   });
 
-  it('after SF: top-four still open (finals not played), bronze + final + specials open', () => {
+  it('after SF: top-four already resolved (QF complete), bronze + final + specials open', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS, ...SF_KEYS]),
     );
-    expect(result.total).toBe(MAX_TOP_FOUR + MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
+    expect(result.topFour).toBe(0);
+    expect(result.total).toBe(MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
   });
 
-  it('after bronze only: bronze locked, top-four + final + specials open', () => {
+  it('after bronze only: bronze locked, top-four already resolved, final + specials open', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS, ...SF_KEYS, BRONZE_KEY]),
     );
     expect(result.bronze).toBe(0);
     expect(result.final).toBe(MAX_FINAL);
-    expect(result.topFour).toBe(MAX_TOP_FOUR);
+    expect(result.topFour).toBe(0);
     expect(result.specials).toBe(MAX_SPECIALS);
   });
 
-  it('after final only (bronze still pending): final locked, top-four + bronze + specials open', () => {
+  it('after final only (bronze still pending): final locked, top-four already resolved, bronze + specials open', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS, ...SF_KEYS, FINAL_KEY]),
     );
     expect(result.final).toBe(0);
     expect(result.bronze).toBe(MAX_BRONZE);
-    expect(result.topFour).toBe(MAX_TOP_FOUR);
+    expect(result.topFour).toBe(0);
     expect(result.specials).toBe(MAX_SPECIALS);
   });
 
@@ -408,7 +413,6 @@ describe('computeRemainingMaxPoints — scoring config sensitivity', () => {
           threeCorrect: 0,
           twoCorrect: 0,
           oneCorrect: 0,
-          teamRightWrongPlace: 0,
         },
         tournamentTopScoringTeam: 0,
         tournamentTopConcedingTeam: 0,

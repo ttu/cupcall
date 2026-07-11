@@ -36,7 +36,7 @@ function makeDerived(roundOf8: TeamId[], topFour: TeamId[], roundOf16: TeamId[] 
 function makeActual(opts: {
   roundOf16?: TeamId[];
   roundOf8?: TeamId[];
-  topFourOrder?: TeamId[];
+  roundOf4?: TeamId[];
 }): ActualResults {
   return {
     matchResults: [],
@@ -44,7 +44,7 @@ function makeActual(opts: {
     answers: {
       ...(opts.roundOf16 !== undefined ? { roundOf16: opts.roundOf16 } : {}),
       ...(opts.roundOf8 !== undefined ? { roundOf8: opts.roundOf8 } : {}),
-      ...(opts.topFourOrder !== undefined ? { topFourOrder: opts.topFourOrder } : {}),
+      ...(opts.roundOf4 !== undefined ? { roundOf4: opts.roundOf4 } : {}),
     },
   };
 }
@@ -194,56 +194,52 @@ describe('scoreRoundOf8', () => {
 });
 
 describe('scoreTopFour', () => {
-  it('all 4 correct positions → tier 20 (beats consolation 4×2=8)', () => {
-    const derived = makeDerived([], [ARG, FRA, NED, POR]);
-    const actual = makeActual({ topFourOrder: [ARG, FRA, NED, POR] });
-    expect(scoreTopFour(derived, actual, miniScoring)).toBe(20);
-  });
-
-  it('§7.7 case: derived [ARG,FRA,NED,POR] vs actual [ARG,NED,FRA,BRA] → tier 1=5, consolation 3×2=6, max=6', () => {
-    // ARG at index 0 matches → 1 position correct → tier = 5
-    // ARG, FRA, NED are in actual set (BRA replaces POR) → 3 teams × 2 = 6
-    // max(5, 6) = 6
-    const derived = makeDerived([], [ARG, FRA, NED, POR]);
-    const actual = makeActual({ topFourOrder: [ARG, NED, FRA, BRA] });
-    expect(scoreTopFour(derived, actual, miniScoring)).toBe(6);
-  });
-
-  it('tier wins: 3 correct positions → tier 15 > consolation 3×2=6', () => {
-    // ARG, FRA, NED correct at positions 0,1,2; POR vs BRA at position 3 → 3 correct
-    // tier = 15; consolation: ARG,FRA,NED in actual set (3 teams) = 6
-    const derived = makeDerived([], [ARG, FRA, NED, POR]);
-    const actual = makeActual({ topFourOrder: [ARG, FRA, NED, BRA] });
-    expect(scoreTopFour(derived, actual, miniScoring)).toBe(15);
-  });
-
-  it('consolation wins: 0 correct positions but 4 teams present → 0 vs 4×2=8', () => {
-    // derived [ARG,FRA,NED,POR] vs actual [POR,NED,FRA,ARG] → 0 index-aligned
-    // all 4 derived teams appear in actual → consolation = 8
-    const derived = makeDerived([], [ARG, FRA, NED, POR]);
-    const actual = makeActual({ topFourOrder: [POR, NED, FRA, ARG] });
-    expect(scoreTopFour(derived, actual, miniScoring)).toBe(8);
-  });
-
-  it('absent actual topFourOrder → 0', () => {
+  it('absent actual roundOf4 → 0', () => {
     const derived = makeDerived([], [ARG, FRA, NED, POR]);
     const actual = makeActual({});
     expect(scoreTopFour(derived, actual, miniScoring)).toBe(0);
   });
 
+  it('1 of 4 predicted teams confirmed in roundOf4 → tier 5', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR]);
+    const actual = makeActual({ roundOf4: [ARG, BRA, teamId('X1'), teamId('X2')] });
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(5);
+  });
+
+  it('2 of 4 predicted teams confirmed → tier 10', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR]);
+    const actual = makeActual({ roundOf4: [ARG, FRA, teamId('X1'), teamId('X2')] });
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(10);
+  });
+
+  it('3 of 4 predicted teams confirmed → tier 15', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR]);
+    const actual = makeActual({ roundOf4: [ARG, FRA, NED, teamId('X1')] });
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(15);
+  });
+
+  it('all 4 predicted teams confirmed → tier 20', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR]);
+    const actual = makeActual({ roundOf4: [ARG, FRA, NED, POR] });
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(20);
+  });
+
+  it('order is irrelevant — set membership only', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR]);
+    const actual = makeActual({ roundOf4: [POR, NED, FRA, ARG] });
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(20);
+  });
+
   it('completely wrong prediction → 0', () => {
     const derived = makeDerived([], [A1, A2, A3, A4]);
-    const actual = makeActual({ topFourOrder: [B1, B2, B3, B4] });
+    const actual = makeActual({ roundOf4: [B1, B2, B3, B4] });
     expect(scoreTopFour(derived, actual, miniScoring)).toBe(0);
   });
 
-  it('two positions correct → tier 10, consolation 3×2=6, max=10', () => {
-    // ARG correct at 0, FRA correct at 1, NED vs BRA at 2, POR vs NED at 3 → 2 correct
-    // teams in actual: ARG, FRA (NED is at position 3 in actual, POR not in actual)
-    // actual [ARG,FRA,BRA,NED]: ARG at 0, FRA at 1 = 2 correct; ARG,FRA,NED in actual set = 3 teams
-    // consolation = 3×2=6, tier = 10, max = 10
+  it('score never decreases as roundOf4 grows incrementally', () => {
     const derived = makeDerived([], [ARG, FRA, NED, POR]);
-    const actual = makeActual({ topFourOrder: [ARG, FRA, BRA, NED] });
-    expect(scoreTopFour(derived, actual, miniScoring)).toBe(10);
+    const afterOneQf = scoreTopFour(derived, makeActual({ roundOf4: [ARG] }), miniScoring);
+    const afterTwoQf = scoreTopFour(derived, makeActual({ roundOf4: [ARG, FRA] }), miniScoring);
+    expect(afterTwoQf).toBeGreaterThanOrEqual(afterOneQf);
   });
 });

@@ -109,11 +109,11 @@ describe('scoreCard — partial prediction', () => {
 // groupMatches:   correct-outcome-only(3) + exact(6)       = 9
 // groupOrder:     2 positions correct                       = 3
 // roundOf8:       6-of-8 correct × 3                       = 18
-// topFour:        max(tier=5, consolation=3×2=6)            = 6
+// topFour:        all 4 predicted semifinalists confirmed (tier 20) = 20
 // final:          both teams + exact 3–2                    = 15
 // bronze:         none                                      = 0
 // specials:       topScorerPlayer(15) + penalties(10)       = 25
-// total:                                                    = 76
+// total:                                                    = 90
 
 const ARG = teamId('ARG');
 const FRA = teamId('FRA');
@@ -195,23 +195,23 @@ const actual77: ActualResults = {
   },
   answers: {
     roundOf8: ACTUAL_R8,
-    topFourOrder: [ARG, NED, FRA, BRA], // tier: ARG@0=1 correct=5; consolation: ARG,FRA,NED=3×2=6 → max=6
+    roundOf4: [ARG, FRA, NED, POR], // all 4 of the player's predicted semifinalists confirmed → tier 20
     topScorerPlayer: [FRA9],
   },
 };
 
 describe('scoreCard — §7.7 worked example', () => {
-  it('produces the correct ScoreBreakdown with total 76', () => {
+  it('produces the correct ScoreBreakdown with total 90', () => {
     const breakdown = scoreCard(derived77, inputs77, actual77, miniScoring);
 
     expect(breakdown.groupMatches).toBe(9); // 3 + 6
     expect(breakdown.groupOrder).toBe(3); // 2 correct (twoCorrect)
     expect(breakdown.roundOf8).toBe(18); // 6 × 3
-    expect(breakdown.topFour).toBe(6); // max(5, 6)
+    expect(breakdown.topFour).toBe(20); // all 4 predicted semifinalists confirmed
     expect(breakdown.final).toBe(15); // 10 teams + 5 exact
     expect(breakdown.bronze).toBe(0); // no bronzeMatch in actual
     expect(breakdown.specials).toBe(25); // 15 + 10
-    expect(breakdown.total).toBe(76);
+    expect(breakdown.total).toBe(90);
   });
 });
 

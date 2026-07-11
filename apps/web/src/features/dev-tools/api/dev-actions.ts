@@ -360,6 +360,7 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
         ...baseGroupsDone.answers,
         roundOf16: r16Teams,
         roundOf8: ['GER', 'NED', 'ESP', 'BEL', 'BRA', 'ENG', 'ARG', 'POR'].map(teamId),
+        roundOf4: ['ARG', 'ESP', 'GER', 'BRA'].map(teamId),
       },
     };
   }
@@ -387,7 +388,7 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
       topScorerPlayer: [playerId('arg-messi')],
       roundOf16: r16Teams,
       roundOf8: ['GER', 'NED', 'ESP', 'BEL', 'BRA', 'ENG', 'ARG', 'POR'].map(teamId),
-      topFourOrder: ['ARG', 'ESP', 'GER', 'BRA'].map(teamId),
+      roundOf4: ['ARG', 'ESP', 'GER', 'BRA'].map(teamId),
     },
   };
 }

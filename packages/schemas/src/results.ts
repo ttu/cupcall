@@ -58,7 +58,7 @@ const singleOrArrayPlayer = z
 const answersSchema = z.object({
   roundOf16: z.array(teamIdSchema).optional(),
   roundOf8: z.array(teamIdSchema).optional(),
-  topFourOrder: z.array(teamIdSchema).optional(),
+  roundOf4: z.array(teamIdSchema).optional(),
   groupTopScoringTeam: singleOrArrayTeam.optional(),
   groupTopConcedingTeam: singleOrArrayTeam.optional(),
   tournamentTopScoringTeam: singleOrArrayTeam.optional(),
@@ -107,7 +107,7 @@ export const resultsSchema: z.ZodType<ActualResults, z.ZodTypeDef, unknown> =
       answers: {
         ...(v.answers.roundOf16 !== undefined && { roundOf16: v.answers.roundOf16 }),
         ...(v.answers.roundOf8 !== undefined && { roundOf8: v.answers.roundOf8 }),
-        ...(v.answers.topFourOrder !== undefined && { topFourOrder: v.answers.topFourOrder }),
+        ...(v.answers.roundOf4 !== undefined && { roundOf4: v.answers.roundOf4 }),
         ...(v.answers.groupTopScoringTeam !== undefined && {
           groupTopScoringTeam: v.answers.groupTopScoringTeam,
         }),
@@ -175,7 +175,7 @@ export type ResultsInput = {
   answers: {
     roundOf16?: string[];
     roundOf8?: string[];
-    topFourOrder?: string[];
+    roundOf4?: string[];
     /** Single string or array — ties are represented as an array. */
     groupTopScoringTeam?: string | string[];
     groupTopConcedingTeam?: string | string[];

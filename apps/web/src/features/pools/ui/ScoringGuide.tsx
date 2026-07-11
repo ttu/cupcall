@@ -46,14 +46,6 @@ function Row({
   );
 }
 
-function Divider({ label }: { label: string }): ReactElement {
-  return (
-    <div className="px-4 py-1.5 bg-surface-2">
-      <span className="text-xs font-medium text-ink-muted uppercase tracking-wide">{label}</span>
-    </div>
-  );
-}
-
 export function ScoringGuide({ scoring }: Props): ReactElement {
   const finishMatchMax = scoring.final.perTeam * 2 + scoring.final.exactScore;
   const roundOf16Max = scoring.roundOf16PerTeam * 16;
@@ -98,20 +90,13 @@ export function ScoringGuide({ scoring }: Props): ReactElement {
         <Row label="Maximum (all 8 correct)" pts={roundOf8Max} />
       </SectionCard>
 
-      {/* Top Four Ranking */}
-      <SectionCard title="Final Four Ranking">
-        <Row label="Score is the higher of position tier or team consolation." />
-        <Divider label="Position tier" />
-        <Row label="All 4 positions correct" pts={scoring.topFourOrder.allCorrect} indent />
-        <Row label="3 positions correct" pts={scoring.topFourOrder.threeCorrect} indent />
-        <Row label="2 positions correct" pts={scoring.topFourOrder.twoCorrect} indent />
-        <Row label="1 position correct" pts={scoring.topFourOrder.oneCorrect} indent />
-        <Divider label="Team consolation (if tier is lower)" />
-        <Row
-          label="Per predicted team anywhere in the actual top 4"
-          pts={scoring.topFourOrder.teamRightWrongPlace}
-          indent
-        />
+      {/* Semifinalists */}
+      <SectionCard title="Semifinalists">
+        <Row label="Predict the 4 teams that reach the semifinal — resolves as each QF match completes." />
+        <Row label="All 4 correct" pts={scoring.topFourOrder.allCorrect} indent />
+        <Row label="3 correct" pts={scoring.topFourOrder.threeCorrect} indent />
+        <Row label="2 correct" pts={scoring.topFourOrder.twoCorrect} indent />
+        <Row label="1 correct" pts={scoring.topFourOrder.oneCorrect} indent />
       </SectionCard>
 
       {/* Special Bets */}

@@ -335,7 +335,7 @@ export function buildPerUserKnockoutCanStillGet(
 
   const finalPlayed = actualResults.finalMatch !== undefined;
   const bronzePlayed = actualResults.bronzeMatch !== undefined;
-  const topFourResolved = actualResults.answers.topFourOrder !== undefined;
+  const topFourResolved = (actualResults.answers.roundOf4?.length ?? 0) >= qfKeys.size;
 
   // Build per-user pick maps once.
   const userPickMaps = new Map<string, Map<string, string>>();
@@ -383,6 +383,15 @@ export function buildPerUserKnockoutCanStillGet(
       return true;
     }
 
+    // Returns true only when `matchKey`'s match is final AND the user's pick was the winner —
+    // i.e. this pick's points are already banked in the user's leaderboard total.
+    function isConfirmedCorrect(matchKey: string): boolean {
+      const pickedId = picks.get(matchKey) ?? null;
+      if (!pickedId) return false;
+      const m = matchByKey.get(matchKey) ?? null;
+      return m?.status === 'final' && resolveKnockoutWinner(m) === pickedId;
+    }
+
     // Per-match scored rounds: entry round (R32 in WC) and R16.
     for (const key of entryKeys) {
       const pts = hitPoints.get(key);
@@ -393,16 +402,25 @@ export function buildPerUserKnockoutCanStillGet(
       if (pts !== undefined && isViable(key)) canStillGet += pts;
     }
 
-    // TopFour: count non-busted QF picks (no-pick = not busted, consistent with
-    // buildKnockoutRoundBreakdown which uses totalPicks − bustedPicks).
+    // TopFour: ceiling = tier for non-busted QF picks (no-pick = not busted, consistent with
+    // buildKnockoutRoundBreakdown which uses totalPicks − bustedPicks). Subtract the tier for
+    // already-confirmed-correct picks so this doesn't double-count points already banked in
+    // the user's leaderboard total via scoreTopFour.
     if (!topFourResolved) {
       let nonBustedQf = qfKeys.size;
+      let confirmedQf = 0;
       for (const key of qfKeys) {
         const pickedId = picks.get(key) ?? null;
         if (!pickedId) continue;
-        if (!isNotBusted(key)) nonBustedQf--;
+        if (!isNotBusted(key)) {
+          nonBustedQf--;
+        } else if (isConfirmedCorrect(key)) {
+          confirmedQf++;
+        }
       }
-      canStillGet += topFourTierMax(nonBustedQf, scoring.topFourOrder);
+      const ceiling = topFourTierMax(nonBustedQf, scoring.topFourOrder);
+      const banked = topFourTierMax(confirmedQf, scoring.topFourOrder);
+      canStillGet += Math.max(0, ceiling - banked);
     }
 
     // Final: finalist perTeam × non-busted SF picks + exactScore.

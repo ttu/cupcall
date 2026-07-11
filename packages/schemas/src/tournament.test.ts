@@ -19,7 +19,6 @@ const validTournamentJson = {
       threeCorrect: 15,
       twoCorrect: 10,
       oneCorrect: 5,
-      teamRightWrongPlace: 2,
     },
     tournamentTopScoringTeam: 10,
     tournamentTopConcedingTeam: 10,

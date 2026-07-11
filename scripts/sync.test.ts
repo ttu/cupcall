@@ -611,4 +611,47 @@ describe('syncTournament integration', () => {
       rmSync(scratch, { recursive: true, force: true });
     }
   });
+
+  it('derives roundOf4 from QF winners', async () => {
+    // Regression: adding a QF result to results.json should immediately populate
+    // answers.roundOf4 (the confirmed semifinalists), mirroring how roundOf16/roundOf8
+    // are already derived from R32/R16 winners. Without this, the SF scoring category
+    // never gets a live signal and stays at 0 until the entire tournament finishes.
+
+    const scratch = mkdtempSync(join(tmpdir(), 'sync-qf-'));
+    try {
+      cpSync(testWc2026Dir, scratch, { recursive: true });
+
+      const resultsPath = join(scratch, 'results.json');
+      const results = fixtureResultsSchema.parse(JSON.parse(readFileSync(resultsPath, 'utf-8')));
+      // test-wc-2026's fixture ships a static answers.roundOf4 (a "finals resolved" snapshot
+      // used elsewhere, e.g. dev-tools checkpoints). Explicit results.json answers take
+      // precedence over derived ones (by design — see sync.ts), so this test must clear it to
+      // isolate what it's actually verifying: that a single QF result alone drives derivation.
+      delete (results.answers as Record<string, unknown>)['roundOf4'];
+      (results as Record<string, unknown>).knockout = [
+        {
+          round: 'QF',
+          matchId: 'qf97',
+          home: 'FRA',
+          away: 'MAR',
+          homeGoals: 2,
+          awayGoals: 0,
+          winner: 'FRA',
+          decidedBy: 'regulation',
+          kickoff: '2026-07-09T20:00:00Z',
+        },
+      ];
+      writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+
+      await syncTournament(db, 'test-wc-2026', scratch);
+
+      const answers = await db.select().from(schema.actualAnswers);
+      const roundOf4Answer = answers.find((a) => a.betKey === 'roundOf4');
+      expect(roundOf4Answer).toBeDefined();
+      expect(roundOf4Answer?.value).toEqual(['FRA']);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
 });

@@ -122,7 +122,7 @@ export async function getActualResults(
 
   const roundOf16 = getTeamIds('roundOf16');
   const roundOf8 = getTeamIds('roundOf8');
-  const topFourOrder = getTeamIds('topFourOrder');
+  const roundOf4 = getTeamIds('roundOf4');
   const groupTopScoringTeam = getTeamIds('groupTopScoringTeam');
   const groupTopConcedingTeam = getTeamIds('groupTopConcedingTeam');
   const tournamentTopScoringTeam = getTeamIds('tournamentTopScoringTeam');
@@ -141,7 +141,7 @@ export async function getActualResults(
     answers: {
       ...(roundOf16 !== undefined ? { roundOf16 } : {}),
       ...(roundOf8 !== undefined ? { roundOf8 } : {}),
-      ...(topFourOrder !== undefined ? { topFourOrder } : {}),
+      ...(roundOf4 !== undefined ? { roundOf4 } : {}),
       ...(groupTopScoringTeam !== undefined ? { groupTopScoringTeam } : {}),
       ...(groupTopConcedingTeam !== undefined ? { groupTopConcedingTeam } : {}),
       ...(tournamentTopScoringTeam !== undefined ? { tournamentTopScoringTeam } : {}),

@@ -298,8 +298,8 @@ export async function upsertTournamentResults(
   if (answers.roundOf8 !== undefined) {
     answerEntries.push({ tournamentId, betKey: 'roundOf8', value: answers.roundOf8 });
   }
-  if (answers.topFourOrder !== undefined) {
-    answerEntries.push({ tournamentId, betKey: 'topFourOrder', value: answers.topFourOrder });
+  if (answers.roundOf4 !== undefined) {
+    answerEntries.push({ tournamentId, betKey: 'roundOf4', value: answers.roundOf4 });
   }
   if (answers.groupTopScoringTeam !== undefined) {
     answerEntries.push({

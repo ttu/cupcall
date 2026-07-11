@@ -114,7 +114,7 @@
   },
   "answers": {
     "roundOf8": ["GER", "NED", "ESP", "BEL", "BRA", "ENG", "ARG", "POR"],
-    "topFourOrder": ["ARG", "ESP", "GER", "BRA"],
+    "roundOf4": ["ARG", "ESP", "GER", "BRA"],
     "groupTopScoringTeam": "BRA",
     "groupTopConcedingTeam": "CUW",
     "tournamentTopScoringTeam": "ARG",

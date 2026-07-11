@@ -20,7 +20,7 @@ const validResultsJson = {
   },
   answers: {
     roundOf8: ['ARG', 'BRA', 'FRA', 'ESP', 'ENG', 'NED', 'POR', 'CRO'],
-    topFourOrder: ['ARG', 'FRA', 'NED', 'POR'],
+    roundOf4: ['ARG', 'FRA', 'NED', 'POR'],
     groupTopScoringTeam: 'ESP',
     groupTopConcedingTeam: 'RSA',
     tournamentTopScoringTeam: 'ARG',

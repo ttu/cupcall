@@ -322,6 +322,13 @@ function buildKnockoutRoundBreakdown(
   const sfMaxPossible =
     sfRemaining !== null ? topFourTierMax(sfRemaining, def.scoring.topFourOrder) : totalMax.topFour;
 
+  // Once every QF match's winner is known, roundOf4 has as many entries as there are QF
+  // matches — at that point topFour is fully resolved and no further upside remains, even in
+  // contexts (e.g. tests, or a sync run that never wrote individual match rows) where the
+  // bracket-health `sfHealth` ceiling wouldn't otherwise reflect that.
+  const roundOf4FullyKnown =
+    (actualResults.answers.roundOf4?.length ?? 0) >= def.bracket.roundOf8Matches.length;
+
   // For Final/Bronze: each has two derived participants (finalists / bronze pair), both
   // derived from the SF bracket picks. The 'Finalist' health row tracks those two SF picks —
   // its bustedPicks count equals the number of wrong derived participants for both Final and
@@ -371,8 +378,7 @@ function buildKnockoutRoundBreakdown(
   const canStillGet = {
     roundOf16: perTeamAvail(r16Health, r16Answered, totalMax.roundOf16),
     roundOf8: perTeamAvail(r8Health, r8Answered, totalMax.roundOf8),
-    topFour:
-      actualResults.answers.topFourOrder !== undefined ? 0 : sfMaxPossible - (bd?.topFour ?? 0),
+    topFour: roundOf4FullyKnown ? 0 : sfMaxPossible - (bd?.topFour ?? 0),
     bronze: finaleAvail(
       def.scoring.bronze,
       bd?.bronze ?? 0,

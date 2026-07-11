@@ -70,25 +70,24 @@ Resolved when `actualResults.answers.roundOf16` / `.roundOf8` are populated.
 
 ---
 
-### 2.4 Top-Four Order
+### 2.4 Semifinalists
 
 `DerivedCard.topFour` = `[finalWinner, finalLoser, bronzeWinner, bronzeLoser]`, derived from the
-player's final and bronze bracket picks plus the SF pairs they depend on.
+player's final and bronze bracket picks plus the SF pairs they depend on — i.e. the four teams the
+player predicts will reach the semifinal.
 
-Scoring once `actualResults.answers.topFourOrder` is populated:
+Scoring counts how many of those four teams are in `actualResults.answers.roundOf4` (teams
+confirmed to have won their QF match), **order-agnostic**. `answers.roundOf4` is auto-derived from
+QF match winners in `scripts/sync.ts` — same pattern as `roundOf16`/`roundOf8` — so this resolves
+incrementally as QF matches complete, not at the end of the tournament.
 
-| Positions correct | Points (WC2026) |
-| ----------------- | --------------- |
-| 4                 | 20              |
-| 3                 | 15              |
-| 2                 | 10              |
-| 1                 | 5               |
-| 0                 | 0               |
-
-**Consolation:** `teamRightWrongPlace` (2 pts) × count of derived teams that appear anywhere in the
-actual top-4 but in the wrong position.
-
-**Final score:** `max(tier_points, consolation_points)`
+| Correct semifinalists | Points (WC2026) |
+| --------------------- | --------------- |
+| 4                     | 20              |
+| 3                     | 15              |
+| 2                     | 10              |
+| 1                     | 5               |
+| 0                     | 0               |
 
 **Implementation:** `scoreTopFour()` — `packages/engine/src/scoring/sets-rankings.ts`
 
