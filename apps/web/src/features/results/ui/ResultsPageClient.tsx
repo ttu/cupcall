@@ -10,6 +10,9 @@ import { GroupTable } from './GroupTable';
 import { Best3rdTable } from './Best3rdTable';
 import { TodayMatchesFeed } from './TodayMatchesFeed';
 import { KnockoutBracket } from './KnockoutBracket';
+import { KnockoutMobileSummary } from './KnockoutMobileSummary';
+import { KnockoutRoundAccordion } from './KnockoutRoundAccordion';
+import { getTiesCalledRatio } from '../domain/knockout-mobile-view';
 import { BracketHealthPanel } from './BracketHealthPanel';
 import { KnockoutPointsPanel } from './KnockoutPointsPanel';
 import { PointsRaceTab } from './PointsRaceTab';
@@ -134,8 +137,37 @@ export function ResultsPageClient({
 
       {activeTab === 'knockout' && (
         <div className="flex flex-col gap-6">
-          {view.userKnockoutSummary && <PointsSummaryPanel summary={view.userKnockoutSummary} />}
-          <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_240px]">
+          {view.userKnockoutSummary && (
+            <div className="hidden md:block">
+              <PointsSummaryPanel summary={view.userKnockoutSummary} />
+            </div>
+          )}
+
+          <div className="md:hidden flex flex-col gap-4">
+            {view.userKnockoutSummary && (
+              <KnockoutMobileSummary
+                summary={view.userKnockoutSummary}
+                tiesCalled={getTiesCalledRatio(view.bracketRounds, view.bronzeMatch)}
+              />
+            )}
+            <KnockoutRoundAccordion
+              rounds={view.bracketRounds}
+              bronzeMatch={view.bronzeMatch}
+              userPredictedKnockoutTeamIds={view.userPredictedKnockoutTeamIds}
+            />
+            {!viewerMode && (
+              <>
+                <BracketHealthPanel
+                  health={view.bracketHealth}
+                  championPick={finalMatch}
+                  bronzeMatch={view.bronzeMatch}
+                />
+                <KnockoutPointsPanel rows={view.userKnockoutRoundBreakdown} variant="mobile" />
+              </>
+            )}
+          </div>
+
+          <div className="hidden md:grid gap-6 md:grid-cols-[minmax(0,1fr)_240px]">
             <KnockoutBracket
               rounds={view.bracketRounds}
               bronzeMatch={view.bronzeMatch}
@@ -152,6 +184,7 @@ export function ResultsPageClient({
               </div>
             )}
           </div>
+
           <div className="flex gap-4 flex-wrap text-[11px] text-ink-muted">
             <span>
               <span className="font-bold text-green-600">✓</span> Confirmed qualifier
