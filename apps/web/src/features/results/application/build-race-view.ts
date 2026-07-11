@@ -534,6 +534,9 @@ function buildHitPointsMap(def: Tournament): Map<string, number> {
     if ((bracket.roundOf8Matches as string[]).includes(prog.match as string)) {
       for (const fromKey of prog.from) map.set(fromKey as string, scoring.roundOf8PerTeam);
     }
+    if ((bracket.semiFinals as string[]).includes(prog.match as string)) {
+      for (const fromKey of prog.from) map.set(fromKey as string, scoring.roundOf4PerTeam);
+    }
   }
   const finalProg = bracket.progression.find((p) => p.match === bracket.finalMatch);
   if (finalProg) {

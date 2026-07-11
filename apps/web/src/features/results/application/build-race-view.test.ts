@@ -342,7 +342,7 @@ describe('buildKnockoutMatrix', () => {
     expect(qf2Cell.hit).toBe('hit');
   });
 
-  it('QF picks give 0 points (topFour is holistic scoring in mini-tournament)', () => {
+  it('credits roundOf4PerTeam for a correct QF pick (topFour reward, since QF winners become semifinalists)', () => {
     const alice = makeLeaderboardEntry('u1', 'Alice');
     const qfMatch = makeKnockoutMatch('qf1', 'QF', 'final', { actualWinnerId: 'A1' });
 
@@ -358,8 +358,8 @@ describe('buildKnockoutMatrix', () => {
 
     const cell = knockoutMatrix[0]!.cells[0]!;
     expect(cell.hit).toBe('hit');
-    expect(cell.points).toBe(0);
-    expect(knockoutMatrix[0]!.totalPoints).toBe(0);
+    expect(cell.points).toBe(miniTournament.scoring.roundOf4PerTeam);
+    expect(knockoutMatrix[0]!.totalPoints).toBe(miniTournament.scoring.roundOf4PerTeam);
   });
 
   describe('final/bronze: effective pick derived from finish score', () => {
