@@ -139,16 +139,21 @@ export async function syncTournament(
     ...actual.groupOrder,
   };
 
-  // 4b. Parse knockout match results and derive roundOf16/roundOf8/roundOf4 answers.
+  // 4b. Parse knockout match results and derive roundOf16/roundOf8/roundOf4 answers, plus the
+  // finalMatch/bronzeMatch scoring objects.
   // R32 winners qualify for R16 → they are the actual roundOf16 participants.
   // R16 winners qualify for QF  → they are the actual roundOf8  participants.
   // QF winners qualify for SF   → they are the actual roundOf4  participants (semifinalists).
-  // Explicit answers in results.json take precedence over derived values.
+  // The Final/bronze entries themselves are the finalMatch/bronzeMatch scoring objects — no
+  // need to wait for a winner to "qualify" anywhere, they're the terminal matches.
+  // Explicit answers/finalMatch/bronzeMatch in results.json take precedence over derived values.
   const rawKnockout = knockoutResultsSchema.parse(resultsRaw);
   const knockoutMatches = rawKnockout.knockout ?? [];
   const r32Winners = knockoutMatches.filter((m) => m.round === 'R32').map((m) => teamId(m.winner));
   const r16Winners = knockoutMatches.filter((m) => m.round === 'R16').map((m) => teamId(m.winner));
   const qfWinners = knockoutMatches.filter((m) => m.round === 'QF').map((m) => teamId(m.winner));
+  const derivedFinalMatch = knockoutMatches.find((m) => m.round === 'Final');
+  const derivedBronzeMatch = knockoutMatches.find((m) => m.round === 'bronze');
 
   const mergedActual: ActualResults = {
     ...actual,
@@ -159,6 +164,27 @@ export async function syncTournament(
       ...(qfWinners.length > 0 ? { roundOf4: qfWinners } : {}),
       ...actual.answers, // explicit answers in results.json override derived values
     },
+    ...(derivedBronzeMatch !== undefined && {
+      bronzeMatch: {
+        home: teamId(derivedBronzeMatch.home),
+        away: teamId(derivedBronzeMatch.away),
+        homeGoals: derivedBronzeMatch.homeGoals,
+        awayGoals: derivedBronzeMatch.awayGoals,
+      },
+    }),
+    ...(derivedFinalMatch !== undefined && {
+      finalMatch: {
+        home: teamId(derivedFinalMatch.home),
+        away: teamId(derivedFinalMatch.away),
+        homeGoals: derivedFinalMatch.homeGoals,
+        awayGoals: derivedFinalMatch.awayGoals,
+        ...(derivedFinalMatch.decidedBy !== undefined && {
+          decidedBy: derivedFinalMatch.decidedBy,
+        }),
+      },
+    }),
+    ...(actual.bronzeMatch !== undefined && { bronzeMatch: actual.bronzeMatch }), // explicit override
+    ...(actual.finalMatch !== undefined && { finalMatch: actual.finalMatch }), // explicit override
   };
 
   logger.info({ tournamentId }, 'upserting tournament definition');

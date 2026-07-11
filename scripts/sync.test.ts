@@ -654,4 +654,95 @@ describe('syncTournament integration', () => {
       rmSync(scratch, { recursive: true, force: true });
     }
   });
+
+  it('derives finalMatch from a knockout Final entry', async () => {
+    // Regression: the `knockout` array already carries Final/bronze results (used to
+    // populate the matches table for the bracket UI), but sync never turned those into
+    // `answers.finalMatch` — the scoring-relevant field scoreFinal reads. Without this,
+    // recording the Final only via the knockout array left the Final bet unscored unless
+    // someone also hand-wrote a duplicate top-level finalMatch object in results.json.
+
+    const scratch = mkdtempSync(join(tmpdir(), 'sync-final-'));
+    try {
+      cpSync(testWc2026Dir, scratch, { recursive: true });
+
+      const resultsPath = join(scratch, 'results.json');
+      const results = fixtureResultsSchema.parse(JSON.parse(readFileSync(resultsPath, 'utf-8')));
+      // The fixture ships an explicit top-level finalMatch — delete it so this test isolates
+      // derivation-from-knockout-array behaviour.
+      delete (results as Record<string, unknown>)['finalMatch'];
+      (results as Record<string, unknown>).knockout = [
+        {
+          round: 'Final',
+          matchId: 'final1',
+          home: 'ESP',
+          away: 'ARG',
+          homeGoals: 1,
+          awayGoals: 1,
+          winner: 'ESP',
+          decidedBy: 'penalties',
+          kickoff: '2026-07-19T16:00:00Z',
+        },
+      ];
+      writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+
+      await syncTournament(db, 'test-wc-2026', scratch);
+
+      const answers = await db.select().from(schema.actualAnswers);
+      const finalAnswer = answers.find((a) => a.betKey === 'finalMatch');
+      expect(finalAnswer).toBeDefined();
+      expect(finalAnswer?.value).toMatchObject({
+        home: 'ESP',
+        away: 'ARG',
+        homeGoals: 1,
+        awayGoals: 1,
+        decidedBy: 'penalties',
+      });
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it('derives bronzeMatch from a knockout bronze entry', async () => {
+    // Same regression as finalMatch above, for the bronze (3rd-place) match.
+
+    const scratch = mkdtempSync(join(tmpdir(), 'sync-bronze-'));
+    try {
+      cpSync(testWc2026Dir, scratch, { recursive: true });
+
+      const resultsPath = join(scratch, 'results.json');
+      const results = fixtureResultsSchema.parse(JSON.parse(readFileSync(resultsPath, 'utf-8')));
+      // The fixture ships an explicit top-level bronzeMatch — delete it so this test isolates
+      // derivation-from-knockout-array behaviour.
+      delete (results as Record<string, unknown>)['bronzeMatch'];
+      (results as Record<string, unknown>).knockout = [
+        {
+          round: 'bronze',
+          matchId: 'bronze1',
+          home: 'GER',
+          away: 'BRA',
+          homeGoals: 2,
+          awayGoals: 1,
+          winner: 'GER',
+          decidedBy: 'regulation',
+          kickoff: '2026-07-18T16:00:00Z',
+        },
+      ];
+      writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+
+      await syncTournament(db, 'test-wc-2026', scratch);
+
+      const answers = await db.select().from(schema.actualAnswers);
+      const bronzeAnswer = answers.find((a) => a.betKey === 'bronzeMatch');
+      expect(bronzeAnswer).toBeDefined();
+      expect(bronzeAnswer?.value).toMatchObject({
+        home: 'GER',
+        away: 'BRA',
+        homeGoals: 2,
+        awayGoals: 1,
+      });
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
 });
