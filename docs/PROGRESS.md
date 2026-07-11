@@ -5,7 +5,8 @@ and _what's next_. Keep it updated as plans complete.
 
 Companion docs: [`functional-spec.md`](./functional-spec.md) (what), [`technical-spec.md`](./technical-spec.md)
 (how), [`/CLAUDE.md`](../CLAUDE.md) (engineering practices), `docs/features/*.md` (per-feature design),
-`docs/superpowers/plans/*.md` (the implementation plans).
+`docs/superpowers/plans/*.md` (the implementation plans), [`sql-queries.md`](./sql-queries.md) (common
+support/debugging SQL against the real DB).
 
 ## Status
 
