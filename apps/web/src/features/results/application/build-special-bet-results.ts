@@ -10,6 +10,7 @@ import {
   computeHighestMatchGoalsLeader,
   computePenaltyShootoutCountLeader,
 } from '../domain/special-bet-current';
+import { computeSpecialBetImpossibility } from '../domain/special-bet-impossibility';
 
 export function buildSpecialBetResults(
   def: Tournament,
@@ -23,6 +24,7 @@ export function buildSpecialBetResults(
   const playerTeamMap = new Map<string, string>(def.players.map((p) => [p.id, p.team]));
   const defs = getSpecialBetDefs(def.scoring);
   const specials = (inputs?.specials ?? {}) as Record<string, unknown>;
+  const impossibility = computeSpecialBetImpossibility(def, matches);
 
   return defs.map((d) => {
     const userRaw = specials[d.key];
@@ -88,6 +90,19 @@ export function buildSpecialBetResults(
         hit = 'missed';
         pointsAwarded = 0;
       }
+    }
+
+    // A pending pick that's already mathematically guaranteed to lose (the picked team is
+    // done playing, or a monotonic counter already passed the guess) shows as missed without
+    // waiting for the official results.json answer — see special-bet-impossibility.ts.
+    if (
+      hit === 'pending' &&
+      userRaw !== undefined &&
+      userRaw !== null &&
+      impossibility.isImpossible(d.key, userRaw)
+    ) {
+      hit = 'missed';
+      pointsAwarded = 0;
     }
 
     const currentLeader: CurrentLeader | null =

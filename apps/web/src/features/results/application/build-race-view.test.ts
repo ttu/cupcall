@@ -1,9 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { buildKnockoutMatrix, buildSpecialsMatrix, buildProjectedEntries } from './build-race-view';
+import {
+  buildKnockoutMatrix,
+  buildSpecialsMatrix,
+  buildProjectedEntries,
+  buildPerUserSpecialsRemaining,
+} from './build-race-view';
+import { computeSpecialBetImpossibility } from '../domain/special-bet-impossibility';
 import { miniTournament } from '@cup/engine/testing';
 import { points } from '@cup/engine';
 import type { UserId, BracketMatchKey, ActualResults } from '@cup/engine';
-import type { LeaderboardEntry, PoolKnockoutPick, PoolSpecialBet, PoolFinishScore } from '@cup/db';
+import type {
+  LeaderboardEntry,
+  PoolKnockoutPick,
+  PoolSpecialBet,
+  PoolFinishScore,
+  MatchRow,
+} from '@cup/db';
 import type { KnockoutMatchView, BracketRoundResultView } from '../domain/types';
 
 function makeLeaderboardEntry(uid: string, displayName: string, pointsTotal = 0): LeaderboardEntry {
@@ -785,6 +797,31 @@ const emptyActualResults: ActualResults = {
   answers: {},
 };
 
+function makeGroupMatchRow(
+  id: string,
+  home: string,
+  away: string,
+  homeGoals: number,
+  awayGoals: number,
+): MatchRow {
+  return {
+    id,
+    tournamentId: miniTournament.id as import('@cup/engine').TournamentId,
+    stage: 'group',
+    groupId: 'A',
+    homeTeamId: home,
+    awayTeamId: away,
+    kickoff: null,
+    homeGoals,
+    awayGoals,
+    homeConduct: null,
+    awayConduct: null,
+    winnerTeamId: homeGoals === awayGoals ? null : homeGoals > awayGoals ? home : away,
+    decidedBy: null,
+    status: 'final',
+  };
+}
+
 describe('buildSpecialsMatrix', () => {
   it('returns rows for all leaderboard members sorted by totalPoints DESC', () => {
     const leaderboard = [makeLeaderboardEntry('u1', 'Alice'), makeLeaderboardEntry('u2', 'Bob')];
@@ -994,6 +1031,71 @@ describe('buildSpecialsMatrix', () => {
 
     expect(resolved.actualPickLabel).toBe('A1');
     expect(pending.actualPickLabel).toBeNull();
+  });
+
+  it('marks a cell as missed early when the pick is mathematically impossible, without an actual answer', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice')];
+    const poolSpecialBets = [makeSpecialBet('u1', 'highestMatchGoals', 5)];
+    const matches = [makeGroupMatchRow('mA1', 'A1', 'A2', 4, 2)]; // 6 goals already, exceeds the pick of 5
+
+    const { specialsMatrix } = buildSpecialsMatrix({
+      leaderboard,
+      userId: null,
+      poolSpecialBets,
+      actualResults: emptyActualResults,
+      def: miniTournament,
+      matches,
+    });
+
+    const cell = specialsMatrix[0]!.cells.find((c) => c.betKey === 'highestMatchGoals')!;
+    expect(cell.hit).toBe('missed');
+    expect(cell.points).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildPerUserSpecialsRemaining
+// ---------------------------------------------------------------------------
+
+describe('buildPerUserSpecialsRemaining', () => {
+  const specialDefs = [
+    { key: 'highestMatchGoals', points: 10 },
+    { key: 'penaltyShootoutCount', points: 10 },
+  ];
+
+  it('counts every pending pick when nothing is impossible yet', () => {
+    const poolSpecialBets = [
+      makeSpecialBet('u1', 'highestMatchGoals', 5),
+      makeSpecialBet('u1', 'penaltyShootoutCount', 2),
+    ];
+    const impossibility = computeSpecialBetImpossibility(miniTournament, []);
+
+    const result = buildPerUserSpecialsRemaining(
+      poolSpecialBets,
+      specialDefs,
+      emptyActualResults,
+      impossibility,
+    );
+
+    expect(result.get('u1')).toBe(20);
+  });
+
+  it('excludes points for a pick that is already mathematically impossible', () => {
+    const poolSpecialBets = [
+      makeSpecialBet('u1', 'highestMatchGoals', 5), // impossible: 6 goals already scored
+      makeSpecialBet('u1', 'penaltyShootoutCount', 2), // still open
+    ];
+    const matches = [makeGroupMatchRow('mA1', 'A1', 'A2', 4, 2)]; // 6 goals
+    const impossibility = computeSpecialBetImpossibility(miniTournament, matches);
+
+    const result = buildPerUserSpecialsRemaining(
+      poolSpecialBets,
+      specialDefs,
+      emptyActualResults,
+      impossibility,
+    );
+
+    expect(result.get('u1')).toBe(10);
   });
 });
 

@@ -2025,6 +2025,36 @@ describe('getResultsView', () => {
       expect(groupScoring.currentLeader!.detail).toBe('3 goals');
     });
 
+    it('marks a group-stage team pick as missed once the group ends and it never led', async () => {
+      // Finalize every Group A match: A1 dominates (9 pts), A2 second (6 pts) — A2 never leads scoring.
+      await finalizeMatch(db, miniTId, 'mA1', 3, 0); // A1 beats A2
+      await finalizeMatch(db, miniTId, 'mA2', 3, 0); // A1 beats A3
+      await finalizeMatch(db, miniTId, 'mA3', 3, 0); // A1 beats A4
+      await finalizeMatch(db, miniTId, 'mA4', 3, 0); // A2 beats A3
+      await finalizeMatch(db, miniTId, 'mA5', 3, 0); // A2 beats A4
+      await finalizeMatch(db, miniTId, 'mA6', 1, 1); // A3 draws A4
+
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'A2');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.hit).toBe('missed');
+      expect(bet.pointsAwarded).toBe(0);
+    });
+
+    it('marks a number-bet pick as missed once the running max already exceeds it', async () => {
+      await finalizeMatch(db, miniTId, 'mA1', 4, 2); // 6 goals in this match
+
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertSpecialBet(db, pred.id, 'highestMatchGoals', 5);
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'highestMatchGoals')!;
+      expect(bet.hit).toBe('missed');
+      expect(bet.pointsAwarded).toBe(0);
+    });
+
     it('leaves currentLeader null for non-derivable pending bets', async () => {
       await finalizeMatch(db, miniTId, 'mA1', 3, 0);
 

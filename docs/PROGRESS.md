@@ -259,6 +259,34 @@ Two follow-up fixes landed the same day after prod verification surfaced further
   pushes, not code changes — run `pnpm sync -- wc-2026` once (locally or via `workflow_dispatch`) to
   rescore existing pool predictions under the corrected logic.
 
+## Early impossibility detection for special bets (2026-07-12)
+
+Special bets used to only ever show `pending`, `hit`, or `missed` — `hit`/`missed` gated strictly on
+`results.json::answers` (deliberately, per the 2026-06-13 current-leader design, which removed an
+earlier bug that inferred `hit` from _who's currently ahead_, a value that can flip). This adds a
+second, narrower trigger: a pending pick now shows `missed` as soon as it's **mathematically
+guaranteed** to lose — irreversible facts only (a team will never play again; a monotonic counter
+already exceeded the guess), never "currently trailing." Mirrors the knockout bracket's existing
+`busted`/`impossible` pick detection.
+
+- **New:** `apps/web/src/features/results/domain/special-bet-impossibility.ts` —
+  `computeSpecialBetImpossibility(def, matches)` → `{ isImpossible(betKey, value) }`. Covers the 7
+  bets with a live data source: `groupTopScoringTeam`/`groupTopConcedingTeam` (team's group fully
+  played, not among current leaders), `tournamentTopScoringTeam`/`tournamentTopConcedingTeam` (team
+  will never play again, not among current leaders), `highestMatchGoals`/`penaltyShootoutCount`
+  (running counter already exceeds the guess), `finalDecisiveGoalPlayer` (player's team will never
+  play again). The other 4 bets (`topScorerPlayer`, `firstRedCardPlayer`, `mostYellowCardsTeam`,
+  `finalDecidedByPenalties`) have no live per-player/card data and are untouched.
+- "Team will never play again" = lost a completed knockout match, or the whole group stage is over
+  and the team never appears in a knockout-stage match row — no group-standings elimination
+  simulation, sidesteps the qualifies-vs-eliminated ordering gotcha documented in `bracket-health.ts`.
+- **Wired into 3 call sites**, all reusing the same oracle instance: `build-special-bet-results.ts`
+  (results panel `hit`), `build-race-view.ts` → `buildSpecialsMatrix` (pool-wide grid cells), and
+  `buildPerUserSpecialsRemaining` (per-member `canStillGet` in the points-race projection — the
+  current viewer's own number already improved for free via the first call site).
+- No new `hit` enum value — an impossible pick renders exactly like an officially-resolved miss.
+- **Design:** `docs/superpowers/specs/2026-07-12-special-bet-impossibility-design.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

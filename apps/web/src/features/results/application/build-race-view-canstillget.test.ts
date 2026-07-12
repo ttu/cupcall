@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildPerUserKnockoutCanStillGet, buildPerUserSpecialsRemaining } from './build-race-view';
+import { computeSpecialBetImpossibility } from '../domain/special-bet-impossibility';
 import { miniTournament } from '@cup/engine/testing';
 import { getSpecialBetDefs } from '@cup/engine';
 import type { UserId, BracketMatchKey, ActualResults, TournamentId, TeamId } from '@cup/engine';
@@ -298,10 +299,16 @@ describe('buildPerUserKnockoutCanStillGet', () => {
 
 describe('buildPerUserSpecialsRemaining', () => {
   const defs = getSpecialBetDefs(miniTournament.scoring).filter((d) => d.points > 0);
+  const noImpossibility = computeSpecialBetImpossibility(miniTournament, []);
 
   it('includes points for a pending bet where the user has a pick', () => {
     const poolSpecialBets = [makeSpecialBet('u1', 'penaltyShootoutCount', 3)];
-    const result = buildPerUserSpecialsRemaining(poolSpecialBets, defs, emptyActualResults);
+    const result = buildPerUserSpecialsRemaining(
+      poolSpecialBets,
+      defs,
+      emptyActualResults,
+      noImpossibility,
+    );
     const penaltyDef = defs.find((d) => d.key === 'penaltyShootoutCount')!;
     expect(result.get('u1')).toBe(penaltyDef.points); // 10
   });
@@ -312,18 +319,28 @@ describe('buildPerUserSpecialsRemaining', () => {
       ...emptyActualResults,
       answers: { penaltyShootoutCount: 3 },
     };
-    const result = buildPerUserSpecialsRemaining(poolSpecialBets, defs, actualResults);
+    const result = buildPerUserSpecialsRemaining(
+      poolSpecialBets,
+      defs,
+      actualResults,
+      noImpossibility,
+    );
     expect(result.get('u1') ?? 0).toBe(0);
   });
 
   it('returns nothing for a user with no picks on any pending bet', () => {
-    const result = buildPerUserSpecialsRemaining([], defs, emptyActualResults);
+    const result = buildPerUserSpecialsRemaining([], defs, emptyActualResults, noImpossibility);
     expect(result.get('u1')).toBeUndefined();
   });
 
   it('differentiates players: one with pick, one without', () => {
     const poolSpecialBets = [makeSpecialBet('u1', 'penaltyShootoutCount', 3)];
-    const result = buildPerUserSpecialsRemaining(poolSpecialBets, defs, emptyActualResults);
+    const result = buildPerUserSpecialsRemaining(
+      poolSpecialBets,
+      defs,
+      emptyActualResults,
+      noImpossibility,
+    );
     const penaltyDef = defs.find((d) => d.key === 'penaltyShootoutCount')!;
     expect(result.get('u1')).toBe(penaltyDef.points); // has a pick
     expect(result.get('u2')).toBeUndefined(); // no pick → absent from map
@@ -334,7 +351,12 @@ describe('buildPerUserSpecialsRemaining', () => {
       makeSpecialBet('u1', 'penaltyShootoutCount', 3),
       makeSpecialBet('u1', 'groupTopScoringTeam', 'A1'),
     ];
-    const result = buildPerUserSpecialsRemaining(poolSpecialBets, defs, emptyActualResults);
+    const result = buildPerUserSpecialsRemaining(
+      poolSpecialBets,
+      defs,
+      emptyActualResults,
+      noImpossibility,
+    );
     const penaltyPts = defs.find((d) => d.key === 'penaltyShootoutCount')!.points;
     const groupTopPts = defs.find((d) => d.key === 'groupTopScoringTeam')!.points;
     expect(result.get('u1')).toBe(penaltyPts + groupTopPts);

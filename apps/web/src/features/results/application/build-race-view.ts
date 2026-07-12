@@ -32,6 +32,10 @@ import {
   RACE_COLORS,
 } from '../domain/race-chart';
 import { deriveImplicitFinaleWinner } from './build-bracket-rounds';
+import {
+  computeSpecialBetImpossibility,
+  type SpecialBetImpossibility,
+} from '../domain/special-bet-impossibility';
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
@@ -101,10 +105,12 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     actualResults,
   );
   const specialDefs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
+  const specialBetImpossibility = computeSpecialBetImpossibility(def, allMatches);
   const perUserSpecialsRemaining = buildPerUserSpecialsRemaining(
     poolSpecialBets,
     specialDefs,
     actualResults,
+    specialBetImpossibility,
   );
   const canStillGetByUser = new Map(
     leaderboard.map((e) => [
@@ -209,6 +215,7 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     poolSpecialBets,
     actualResults,
     def,
+    matches: allMatches,
   });
 
   return {
@@ -468,13 +475,15 @@ export function buildPerUserKnockoutCanStillGet(
 
 /**
  * Computes the maximum additional special-bet points each user can still earn.
- * A bet contributes iff it is unresolved (no actual answer yet) AND the user has a pick.
- * Returns a Map<userId, points>. Users with no picks on pending bets are absent.
+ * A bet contributes iff it is unresolved (no actual answer yet), the user has a pick, and
+ * that pick isn't already mathematically impossible (see special-bet-impossibility.ts).
+ * Returns a Map<userId, points>. Users with no viable picks on pending bets are absent.
  */
 export function buildPerUserSpecialsRemaining(
   poolSpecialBets: PoolSpecialBet[],
   defs: Array<{ key: string; points: number }>,
   actualResults: ActualResults,
+  impossibility: SpecialBetImpossibility,
 ): Map<string, number> {
   const unresolvedKeys = new Set(
     defs
@@ -490,6 +499,7 @@ export function buildPerUserSpecialsRemaining(
 
   for (const sb of poolSpecialBets) {
     if (!unresolvedKeys.has(sb.betKey)) continue;
+    if (impossibility.isImpossible(sb.betKey, sb.value)) continue;
     const pts = betPoints.get(sb.betKey) ?? 0;
     result.set(sb.userId, (result.get(sb.userId) ?? 0) + pts);
   }
@@ -889,10 +899,12 @@ export function buildSpecialsMatrix(params: {
   poolSpecialBets: PoolSpecialBet[];
   actualResults: ActualResults;
   def: Tournament;
+  matches?: MatchRow[];
 }): { specialsMatrix: SpecialsMatrixEntry[]; specialsMatrixBets: SpecialsMatrixBet[] } {
-  const { leaderboard, userId, poolSpecialBets, actualResults, def } = params;
+  const { leaderboard, userId, poolSpecialBets, actualResults, def, matches = [] } = params;
 
   const playerMap = new Map<string, string>(def.players.map((p) => [p.id, p.name]));
+  const impossibility = computeSpecialBetImpossibility(def, matches);
 
   const defs = getSpecialBetDefs(def.scoring).filter((d) => d.points > 0);
 
@@ -930,7 +942,7 @@ export function buildSpecialsMatrix(params: {
 
       let hit: SpecialsMatrixCell['hit'];
       if (!isResolved) {
-        hit = 'pending';
+        hit = hasPick && impossibility.isImpossible(d.key, raw) ? 'missed' : 'pending';
       } else if (!hasPick) {
         hit = 'no-pick';
       } else if (isArray) {
