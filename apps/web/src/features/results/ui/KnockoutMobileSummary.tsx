@@ -4,7 +4,6 @@ import { cn } from '@/shared/ui';
 
 type Props = {
   summary: UserPointsSummary;
-  tiesCalled: { correct: number; decided: number };
 };
 
 function Stat({
@@ -24,15 +23,10 @@ function Stat({
   );
 }
 
-export function KnockoutMobileSummary({ summary, tiesCalled }: Props): ReactElement {
+export function KnockoutMobileSummary({ summary }: Props): ReactElement {
   return (
     <div className="card flex flex-col gap-2.5 p-[12px_14px]" data-testid="knockout-mobile-summary">
-      <div className="flex items-center justify-between gap-3">
-        <div className="eyebrow text-ink-muted">Knockout points</div>
-        <div className="text-[12px] font-semibold text-ink-muted tnum">
-          {tiesCalled.correct}/{tiesCalled.decided} ties called
-        </div>
-      </div>
+      <div className="eyebrow text-ink-muted">Knockout points</div>
       <div className="grid grid-cols-3 gap-2">
         <Stat label="Earned" value={summary.earned} colorClassName="text-green-600" />
         <Stat label="Missed" value={summary.missed} colorClassName="text-danger" />

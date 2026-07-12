@@ -37,13 +37,3 @@ export function pickDefaultExpandedRound(rounds: BracketRoundResultView[]): stri
 
   return rounds[0]!.label;
 }
-
-export function getTiesCalledRatio(
-  rounds: BracketRoundResultView[],
-  bronzeMatch: KnockoutMatchView | null,
-): { correct: number; decided: number } {
-  const allMatches = rounds.flatMap((r) => r.matches).concat(bronzeMatch ? [bronzeMatch] : []);
-  const decidedMatches = allMatches.filter(isMatchDecided);
-  const correct = decidedMatches.filter((m) => m.hit === 'exact' || m.hit === 'outcome').length;
-  return { correct, decided: decidedMatches.length };
-}

@@ -3,7 +3,6 @@ import {
   getRoundPlayedCount,
   isRoundInProgress,
   pickDefaultExpandedRound,
-  getTiesCalledRatio,
 } from './knockout-mobile-view';
 import type { BracketRoundResultView, KnockoutMatchView } from './types';
 
@@ -112,29 +111,5 @@ describe('pickDefaultExpandedRound', () => {
       round('QF', [match({ bracketMatchKey: 'm3' })]),
     ];
     expect(pickDefaultExpandedRound(rounds)).toBe('R16');
-  });
-});
-
-describe('getTiesCalledRatio', () => {
-  it('counts correct picks out of decided matches, including the bronze match', () => {
-    const rounds = [
-      round('R32', [
-        decidedMatch('m1', 'outcome'),
-        decidedMatch('m2', 'missed'),
-        match({ bracketMatchKey: 'm3' }),
-      ]),
-    ];
-    const bronze = decidedMatch('bronze', 'exact');
-    expect(getTiesCalledRatio(rounds, bronze)).toEqual({ correct: 2, decided: 3 });
-  });
-
-  it('handles a null bronze match', () => {
-    const rounds = [round('R32', [decidedMatch('m1', 'outcome')])];
-    expect(getTiesCalledRatio(rounds, null)).toEqual({ correct: 1, decided: 1 });
-  });
-
-  it('returns zero/zero when nothing is decided', () => {
-    const rounds = [round('R32', [match()])];
-    expect(getTiesCalledRatio(rounds, null)).toEqual({ correct: 0, decided: 0 });
   });
 });

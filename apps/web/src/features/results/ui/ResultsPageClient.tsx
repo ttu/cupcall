@@ -12,7 +12,6 @@ import { TodayMatchesFeed } from './TodayMatchesFeed';
 import { KnockoutBracket } from './KnockoutBracket';
 import { KnockoutMobileSummary } from './KnockoutMobileSummary';
 import { KnockoutRoundAccordion } from './KnockoutRoundAccordion';
-import { getTiesCalledRatio } from '../domain/knockout-mobile-view';
 import { BracketHealthPanel } from './BracketHealthPanel';
 import { KnockoutPointsPanel } from './KnockoutPointsPanel';
 import { PointsRaceTab } from './PointsRaceTab';
@@ -145,10 +144,7 @@ export function ResultsPageClient({
 
           <div className="md:hidden flex flex-col gap-4">
             {view.userKnockoutSummary && (
-              <KnockoutMobileSummary
-                summary={view.userKnockoutSummary}
-                tiesCalled={getTiesCalledRatio(view.bracketRounds, view.bronzeMatch)}
-              />
+              <KnockoutMobileSummary summary={view.userKnockoutSummary} />
             )}
             <KnockoutRoundAccordion
               rounds={view.bracketRounds}
