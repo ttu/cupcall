@@ -431,6 +431,15 @@ export function buildPerUserKnockoutCanStillGet(
       for (const sfKey of sfKeys) {
         const sfWinner = picks.get(sfKey) ?? null;
         if (!sfWinner) continue;
+        // If the SF winner pick itself is already busted, the whole predicted sub-bracket for
+        // this slot is unreliable — the "other" QF feeder pick below may look alive only because
+        // it never played a real knockout match (e.g. upstream R32/R16 picks already diverged
+        // from reality), not because it's a genuine live bronze contender. Treat this slot's
+        // bronze pair as busted too, mirroring the Final calculation above.
+        if (!isNotBusted(sfKey)) {
+          bustedBronzePairs++;
+          continue;
+        }
         const [qfKey1, qfKey2] = sfQfFeeders.get(sfKey) ?? [null, null];
         const qfW1 = qfKey1 ? (picks.get(qfKey1) ?? null) : null;
         const qfW2 = qfKey2 ? (picks.get(qfKey2) ?? null) : null;

@@ -246,6 +246,34 @@ describe('buildPerUserKnockoutCanStillGet', () => {
     expect(result.get('u1')).toBe(15 + 15 + 15); // 45
   });
 
+  it('busts the derived bronze pair when the SF winner pick itself is already busted', () => {
+    // Reproduces a real production discrepancy: a user's SF winner pick (B2) is already
+    // known-eliminated (qf1 final, A1 won), so Final correctly counts it as busted. But the
+    // *other* QF feeder used to derive the bronze pair (Z9 — a team the user picked for qf2
+    // that was never actually one of qf2's real participants, e.g. because upstream R32/R16
+    // picks had already diverged from reality) never lost an actual knockout match, so it's
+    // absent from `knockoutEliminatedTeams` and slips through as a "still-live" bronze pick.
+    // Bronze must be at least as busted as Final for the same SF slot.
+    const matches = makeQfMatchRows({ qf1Status: 'final', qf1Home: 2, qf1Away: 0 }); // A1 beat B2
+    const picks = [
+      makePick('u1', 'qf1', 'B2'), // busted — B2 lost
+      makePick('u1', 'qf2', 'Z9'), // busted — Z9 isn't even a real qf2 participant (C1 vs D2)
+      makePick('u1', 'sf1', 'B2'), // busted — B2 is already eliminated
+    ];
+    const result = buildPerUserKnockoutCanStillGet(
+      picks,
+      matches,
+      miniTournament,
+      emptyActualResults,
+    );
+    // topFour: qf1 busted, qf2 busted → nonBustedQf=2 → topFour=10
+    // Final: sf1 busted (B2 eliminated), sf2 no pick → bustedSfPicks=1 → max(0,2-1)×5+5=10
+    // Bronze: sf1's SF-winner pick is busted, so its derived bronze slot must be busted too
+    //   (not merely re-derived from Z9, which looks "alive" only because it never played a
+    //   real knockout match) → bustedBronzePairs=1 → max(0,2-1)×5+5=10
+    expect(result.get('u1')).toBe(10 + 10 + 10); // 30
+  });
+
   it('differentiates two players: one with a viable pick, one with a busted pick', () => {
     const matches = makeQfMatchRows({ qf1Status: 'final', qf1Home: 2, qf1Away: 0 });
     const picks = [
