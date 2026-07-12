@@ -324,7 +324,10 @@ function buildKnockoutMilestoneDeltas(
 
   const bronzeDate = raceMilestoneDate([def.bracket.bronzeMatch], allMatches);
   const finalDate = raceMilestoneDate([def.bracket.finalMatch], allMatches);
-  const topFourDate = maxDateStr(finalDate, bronzeDate);
+  // topFour ("reached semifinal") resolves once every QF match is final — mirrors
+  // scoreTopFour, which reads off actual.answers.roundOf4 as soon as it's populated.
+  // It must not wait for Bronze/Final, which are played days later.
+  const topFourDate = raceMilestoneDate(def.bracket.roundOf8Matches, allMatches);
 
   for (const entry of leaderboard) {
     const bd = entry.breakdown;
@@ -356,12 +359,6 @@ function raceMilestoneDate(matchKeys: string[], allMatches: MatchRow[]): string 
     const d = utcDateStr(m.kickoff!);
     return latest === null || d > latest ? d : latest;
   }, null);
-}
-
-function maxDateStr(a: string | null, b: string | null): string | null {
-  if (!a) return b;
-  if (!b) return a;
-  return a >= b ? a : b;
 }
 
 function findLastCompleteMatchDay(allMatches: MatchRow[]): string | null {

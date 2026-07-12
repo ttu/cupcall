@@ -197,15 +197,19 @@ describe('buildKnockoutMilestoneDeltasForTest', () => {
 
     const deltas = buildKnockoutMilestoneDeltasForTest([entry], allMatches, milestoneDef);
 
-    // roundOf8 credited to Jun 29 (last R16 match day), NOT Jul 3
+    // roundOf8 credited to Jun 29 (last R16 match day); topFour credited to Jul 3
+    // (last QF match day) — the two categories resolve at different milestones.
     expect(deltas.get(userId('u1'))?.get('2026-06-29')).toBe(9);
-    expect(deltas.get(userId('u1'))?.get('2026-07-03')).toBeUndefined();
+    expect(deltas.get(userId('u1'))?.get('2026-07-03')).toBe(5);
   });
 
   it('does NOT attribute roundOf16 points (handled by slot deltas instead)', () => {
     const allMatches: MatchRow[] = [
       ...milestoneR16Matches.map((id) =>
         makeKnockoutMatch(id, 'final', new Date('2026-06-29T18:00:00Z'), 'T1'),
+      ),
+      ...milestoneQFMatches.map((id) =>
+        makeKnockoutMatch(id, 'final', new Date('2026-07-03T18:00:00Z'), 'T1'),
       ),
       makeKnockoutMatch('final', 'final', new Date('2026-07-10T18:00:00Z'), 'T1'),
       makeKnockoutMatch('bronze', 'final', new Date('2026-07-09T18:00:00Z'), 'T1'),
@@ -218,6 +222,44 @@ describe('buildKnockoutMilestoneDeltasForTest', () => {
     const total = allPoints.reduce((a, b) => a + b, 0);
     // roundOf8(9) + topFour(5) + final(10) + specials(5) = 29; roundOf16(6) NOT included
     expect(total).toBe(29);
+  });
+
+  it('attributes topFour to QF completion date, not Final/Bronze date', () => {
+    // R16 done Jun 29; QF (roundOf8Matches) done Jul 3; Bronze Jul 9; Final Jul 10.
+    // topFour ("reached semifinal") resolves once QF completes — it must NOT wait
+    // for Bronze/Final, which can happen many days later (or not at all yet).
+    const allMatches: MatchRow[] = [
+      ...milestoneR16Matches.map((id, i) =>
+        makeKnockoutMatch(id, 'final', new Date(`2026-06-29T${10 + i}:00:00Z`), 'T1'),
+      ),
+      ...milestoneQFMatches.map((id) =>
+        makeKnockoutMatch(id, 'final', new Date('2026-07-03T18:00:00Z'), 'T1'),
+      ),
+      makeKnockoutMatch('final', 'final', new Date('2026-07-10T18:00:00Z'), 'T1'),
+      makeKnockoutMatch('bronze', 'final', new Date('2026-07-09T18:00:00Z'), 'T1'),
+    ];
+
+    const deltas = buildKnockoutMilestoneDeltasForTest([entry], allMatches, milestoneDef);
+
+    expect(deltas.get(userId('u1'))?.get('2026-07-03')).toBe(5);
+    expect(deltas.get(userId('u1'))?.get('2026-07-10')).toBe(15); // final(10) + specials(5)
+  });
+
+  it('attributes topFour to QF completion even when Final/Bronze are not yet played', () => {
+    const allMatches: MatchRow[] = [
+      ...milestoneR16Matches.map((id, i) =>
+        makeKnockoutMatch(id, 'final', new Date(`2026-06-29T${10 + i}:00:00Z`), 'T1'),
+      ),
+      ...milestoneQFMatches.map((id) =>
+        makeKnockoutMatch(id, 'final', new Date('2026-07-03T18:00:00Z'), 'T1'),
+      ),
+      makeKnockoutMatch('final', 'scheduled', null, null),
+      makeKnockoutMatch('bronze', 'scheduled', null, null),
+    ];
+
+    const deltas = buildKnockoutMilestoneDeltasForTest([entry], allMatches, milestoneDef);
+
+    expect(deltas.get(userId('u1'))?.get('2026-07-03')).toBe(5);
   });
 
   it('keeps current roundOf8 date for tournaments without R16 (mini-tournament)', () => {
@@ -235,8 +277,9 @@ describe('buildKnockoutMilestoneDeltasForTest', () => {
     const miniEntry = { ...entry };
     const deltas = buildKnockoutMilestoneDeltasForTest([miniEntry], allMatches, miniTournament);
 
-    // For mini, roundOf8 credited when all 4 QF matches done = Jun 26
-    expect(deltas.get(userId('u1'))?.get('2026-06-26')).toBe(9);
+    // For mini (entry round == QF), roundOf8(9) and topFour(5) both resolve once
+    // all 4 QF matches are done = Jun 26.
+    expect(deltas.get(userId('u1'))?.get('2026-06-26')).toBe(14);
   });
 });
 
