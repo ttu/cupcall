@@ -30,7 +30,7 @@ export function SpecialBetRow({
           ? 'border-line-soft bg-surface'
           : isHit
             ? 'border-green-300 bg-green-050'
-            : 'border-line-soft bg-surface-2',
+            : 'border-red-300 bg-red-050',
       )}
     >
       <div className="w-8.5 h-8.5 rounded-cup-sm bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)] grid place-items-center text-ink-muted">
@@ -78,7 +78,7 @@ export function SpecialBetRow({
             +{bet.pointsAwarded}
           </span>
         ) : isMissed ? (
-          <span className="chip" style={{ height: 24, fontSize: 11 }}>
+          <span className="chip red" style={{ height: 24, fontSize: 11 }}>
             +0
           </span>
         ) : null}
