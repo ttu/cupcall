@@ -744,6 +744,28 @@
       "winner": "ESP",
       "decidedBy": "regulation",
       "kickoff": "2026-07-10T19:00:00Z"
+    },
+    {
+      "round": "QF",
+      "matchId": "qf99",
+      "home": "NOR",
+      "away": "ENG",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "winner": "ENG",
+      "decidedBy": "extraTime",
+      "kickoff": "2026-07-11T21:00:00Z"
+    },
+    {
+      "round": "QF",
+      "matchId": "qf100",
+      "home": "ARG",
+      "away": "SUI",
+      "homeGoals": 3,
+      "awayGoals": 1,
+      "winner": "ARG",
+      "decidedBy": "extraTime",
+      "kickoff": "2026-07-12T01:00:00Z"
     }
   ],
   "groupOrder": {
