@@ -109,12 +109,12 @@ On the import screen, expand **Build and Output Settings** and set:
 | Setting              | Value                            |
 | -------------------- | -------------------------------- |
 | **Framework Preset** | Next.js                          |
-| **Root Directory**   | _(leave blank — use repo root)_  |
+| **Root Directory**   | `apps/web`                       |
 | **Build Command**    | `pnpm -C apps/web build`         |
 | **Output Directory** | `apps/web/.next`                 |
 | **Install Command**  | `pnpm install --frozen-lockfile` |
 
-> Leaving root directory blank lets Vercel install from the workspace root so all workspace packages (`@cup/engine`, `@cup/db`, `@cup/schemas`) are available during the build.
+> `vercel.json` (redirects, headers, etc.) must live in `apps/web/`, not the repo root — Vercel only reads it from the configured Root Directory.
 
 ### 3c. Set environment variables
 
