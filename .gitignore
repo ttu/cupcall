@@ -9,3 +9,4 @@ settings.local.json
 .playwright-mcp/
 .agents/skills/
 .claude/skills/
+apps/web/e2e/.e2e-fixture-ids.json

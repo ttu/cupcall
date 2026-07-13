@@ -7,7 +7,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../../..');
 
 export default function globalSetup(): void {
-  // Ensure wc-2026 tournament data is present in the dev DB before tests run.
-  // The sync script auto-loads apps/web/.env.local when DATABASE_URL is not set.
-  execSync('pnpm sync -- wc-2026', { cwd: repoRoot, stdio: 'inherit' });
+  // Loads the static e2e-open/e2e-seeded fixtures (never touches the live wc-2026 data, so
+  // specs stay stable regardless of the real tournament's progress) and seeds a 10-member pool
+  // with varied predictions for the leaderboard/results/late-joiner specs.
+  // The script auto-loads apps/web/.env.local when DATABASE_URL is not set.
+  execSync('pnpm seed:e2e', { cwd: repoRoot, stdio: 'inherit' });
 }

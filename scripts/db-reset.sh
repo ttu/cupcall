@@ -17,9 +17,12 @@ done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Load env vars so DATABASE_URL is available.
+# Load env vars so DATABASE_URL is available — but only when it isn't already set
+# (e.g. by the devcontainer's ambient environment). apps/web/.env.local targets the
+# host machine's forwarded port and would otherwise override a working in-container
+# DATABASE_URL. Mirrors the same guard used in scripts/seed.ts and scripts/sync.ts.
 ENV_FILE="$ROOT/apps/web/.env.local"
-if [[ -f "$ENV_FILE" ]]; then
+if [[ -z "${DATABASE_URL:-}" && -f "$ENV_FILE" ]]; then
   set -o allexport
   # shellcheck disable=SC1090
   source "$ENV_FILE"

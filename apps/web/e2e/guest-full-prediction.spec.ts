@@ -11,6 +11,9 @@ test('guest can log in, create a pool, fill all predictions, and reopen them', a
   await page.waitForURL('**/pools');
 
   // ── 2. Create a pool ───────────────────────────────────────────────────────
+  // Explicitly pick e2e-open: with two fixtures now synced, the tournament select's default
+  // is whichever sorts first by firstKickoff, not necessarily this one.
+  await page.getByLabel('Tournament').selectOption('e2e-open');
   await page.getByLabel('Pool name').fill('WC26 Test Pool');
   await page.getByRole('button', { name: 'Create' }).click();
   // CreatePoolForm calls router.push('/pools/<id>') on success

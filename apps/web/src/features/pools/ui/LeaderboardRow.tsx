@@ -24,6 +24,7 @@ export function LeaderboardRow({
 }: Props): ReactElement {
   const row = (
     <div
+      data-testid={`leaderboard-row-${rank}`}
       className={cn(
         'grid items-center gap-2 px-4 py-2.5 grid-cols-[34px_1fr_60px_60px]',
         isSelf && 'bg-green-050',
@@ -42,7 +43,9 @@ export function LeaderboardRow({
         </span>
       </div>
       <div className="text-right leading-tight">
-        <div className="display tnum text-base text-ink">{entry.pointsTotal}</div>
+        <div data-testid="leaderboard-points" className="display tnum text-base text-ink">
+          {entry.pointsTotal}
+        </div>
         {lastDayPts > 0 && (
           <div className="text-[10px] font-bold text-green-600 tabular-nums">+{lastDayPts}</div>
         )}

@@ -1,0 +1,1773 @@
+{
+  "id": "e2e-open",
+  "name": "E2E Open",
+  "firstKickoff": "2099-01-01T00:00:00Z",
+  "knockoutRounds": ["R32", "R16", "QF", "SF", "Final"],
+  "scoring": {
+    "groupMatch": {
+      "exactScore": 6,
+      "correctOutcome": 3
+    },
+    "groupOrder": {
+      "allCorrect": 6,
+      "twoCorrect": 3,
+      "oneCorrect": 1
+    },
+    "groupTopScoringTeam": 10,
+    "groupTopConcedingTeam": 10,
+    "roundOf16PerTeam": 2,
+    "roundOf8PerTeam": 3,
+    "bronze": {
+      "exactScore": 5,
+      "perTeam": 5
+    },
+    "final": {
+      "exactScore": 5,
+      "perTeam": 5
+    },
+    "roundOf4PerTeam": 5,
+    "tournamentTopScoringTeam": 10,
+    "tournamentTopConcedingTeam": 10,
+    "highestMatchGoals": 10,
+    "mostYellowCardsTeam": 15,
+    "firstRedCardPlayer": 20,
+    "penaltyShootoutCount": 10,
+    "finalDecidedByPenalties": 10,
+    "finalDecisiveGoalPlayer": 20,
+    "topScorerPlayer": 15
+  },
+  "teams": [
+    {
+      "id": "MEX",
+      "name": "Mexico",
+      "fifaRanking": 17
+    },
+    {
+      "id": "RSA",
+      "name": "South Africa",
+      "fifaRanking": 60
+    },
+    {
+      "id": "KOR",
+      "name": "South Korea",
+      "fifaRanking": 23
+    },
+    {
+      "id": "CZE",
+      "name": "Czechia",
+      "fifaRanking": 37
+    },
+    {
+      "id": "CAN",
+      "name": "Canada",
+      "fifaRanking": 49
+    },
+    {
+      "id": "BIH",
+      "name": "Bosnia-Herzegovina",
+      "fifaRanking": 69
+    },
+    {
+      "id": "QAT",
+      "name": "Qatar",
+      "fifaRanking": 61
+    },
+    {
+      "id": "SUI",
+      "name": "Switzerland",
+      "fifaRanking": 19
+    },
+    {
+      "id": "BRA",
+      "name": "Brazil",
+      "fifaRanking": 6
+    },
+    {
+      "id": "MAR",
+      "name": "Morocco",
+      "fifaRanking": 14
+    },
+    {
+      "id": "HAI",
+      "name": "Haiti",
+      "fifaRanking": 107
+    },
+    {
+      "id": "SCO",
+      "name": "Scotland",
+      "fifaRanking": 41
+    },
+    {
+      "id": "USA",
+      "name": "United States",
+      "fifaRanking": 16
+    },
+    {
+      "id": "PAR",
+      "name": "Paraguay",
+      "fifaRanking": 51
+    },
+    {
+      "id": "AUS",
+      "name": "Australia",
+      "fifaRanking": 24
+    },
+    {
+      "id": "TUR",
+      "name": "T\u00fcrkiye",
+      "fifaRanking": 33
+    },
+    {
+      "id": "GER",
+      "name": "Germany",
+      "fifaRanking": 12
+    },
+    {
+      "id": "CUW",
+      "name": "Cura\u00e7ao",
+      "fifaRanking": 100
+    },
+    {
+      "id": "CIV",
+      "name": "Ivory Coast",
+      "fifaRanking": 57
+    },
+    {
+      "id": "ECU",
+      "name": "Ecuador",
+      "fifaRanking": 46
+    },
+    {
+      "id": "NED",
+      "name": "Netherlands",
+      "fifaRanking": 8
+    },
+    {
+      "id": "JPN",
+      "name": "Japan",
+      "fifaRanking": 18
+    },
+    {
+      "id": "SWE",
+      "name": "Sweden",
+      "fifaRanking": 31
+    },
+    {
+      "id": "TUN",
+      "name": "Tunisia",
+      "fifaRanking": 39
+    },
+    {
+      "id": "BEL",
+      "name": "Belgium",
+      "fifaRanking": 5
+    },
+    {
+      "id": "EGY",
+      "name": "Egypt",
+      "fifaRanking": 44
+    },
+    {
+      "id": "IRN",
+      "name": "Iran",
+      "fifaRanking": 25
+    },
+    {
+      "id": "NZL",
+      "name": "New Zealand",
+      "fifaRanking": 91
+    },
+    {
+      "id": "ESP",
+      "name": "Spain",
+      "fifaRanking": 3
+    },
+    {
+      "id": "CPV",
+      "name": "Cape Verde",
+      "fifaRanking": 79
+    },
+    {
+      "id": "KSA",
+      "name": "Saudi Arabia",
+      "fifaRanking": 58
+    },
+    {
+      "id": "URU",
+      "name": "Uruguay",
+      "fifaRanking": 15
+    },
+    {
+      "id": "FRA",
+      "name": "France",
+      "fifaRanking": 2
+    },
+    {
+      "id": "SEN",
+      "name": "Senegal",
+      "fifaRanking": 20
+    },
+    {
+      "id": "IRQ",
+      "name": "Iraq",
+      "fifaRanking": 68
+    },
+    {
+      "id": "NOR",
+      "name": "Norway",
+      "fifaRanking": 27
+    },
+    {
+      "id": "ARG",
+      "name": "Argentina",
+      "fifaRanking": 1
+    },
+    {
+      "id": "ALG",
+      "name": "Algeria",
+      "fifaRanking": 55
+    },
+    {
+      "id": "AUT",
+      "name": "Austria",
+      "fifaRanking": 28
+    },
+    {
+      "id": "JOR",
+      "name": "Jordan",
+      "fifaRanking": 74
+    },
+    {
+      "id": "POR",
+      "name": "Portugal",
+      "fifaRanking": 7
+    },
+    {
+      "id": "COD",
+      "name": "DR Congo",
+      "fifaRanking": 67
+    },
+    {
+      "id": "UZB",
+      "name": "Uzbekistan",
+      "fifaRanking": 86
+    },
+    {
+      "id": "COL",
+      "name": "Colombia",
+      "fifaRanking": 9
+    },
+    {
+      "id": "ENG",
+      "name": "England",
+      "fifaRanking": 4
+    },
+    {
+      "id": "CRO",
+      "name": "Croatia",
+      "fifaRanking": 10
+    },
+    {
+      "id": "GHA",
+      "name": "Ghana",
+      "fifaRanking": 63
+    },
+    {
+      "id": "PAN",
+      "name": "Panama",
+      "fifaRanking": 73
+    }
+  ],
+  "players": [
+    {
+      "id": "mex-lozano",
+      "name": "Hirving Lozano",
+      "team": "MEX"
+    },
+    {
+      "id": "mex-jimenez",
+      "name": "Ra\u00fal Jim\u00e9nez",
+      "team": "MEX"
+    },
+    {
+      "id": "mex-alvarez",
+      "name": "Edson \u00c1lvarez",
+      "team": "MEX"
+    },
+    {
+      "id": "rsa-tau",
+      "name": "Percy Tau",
+      "team": "RSA"
+    },
+    {
+      "id": "rsa-makgopa",
+      "name": "Evidence Makgopa",
+      "team": "RSA"
+    },
+    {
+      "id": "rsa-zungu",
+      "name": "Bongani Zungu",
+      "team": "RSA"
+    },
+    {
+      "id": "rsa-sithole",
+      "name": "Lucas Sithole",
+      "team": "RSA"
+    },
+    {
+      "id": "kor-son",
+      "name": "Son Heung-min",
+      "team": "KOR"
+    },
+    {
+      "id": "kor-hwang",
+      "name": "Hwang Hee-chan",
+      "team": "KOR"
+    },
+    {
+      "id": "kor-lee",
+      "name": "Lee Jae-sung",
+      "team": "KOR"
+    },
+    {
+      "id": "cze-schick",
+      "name": "Patrik Schick",
+      "team": "CZE"
+    },
+    {
+      "id": "cze-soucek",
+      "name": "Tom\u00e1\u0161 Sou\u010dek",
+      "team": "CZE"
+    },
+    {
+      "id": "cze-provod",
+      "name": "Luk\u00e1\u0161 Provod",
+      "team": "CZE"
+    },
+    {
+      "id": "can-davies",
+      "name": "Alphonso Davies",
+      "team": "CAN"
+    },
+    {
+      "id": "can-david",
+      "name": "Jonathan David",
+      "team": "CAN"
+    },
+    {
+      "id": "can-larin",
+      "name": "Cyle Larin",
+      "team": "CAN"
+    },
+    {
+      "id": "bih-dzeko",
+      "name": "Edin D\u017eeko",
+      "team": "BIH"
+    },
+    {
+      "id": "bih-pjanic",
+      "name": "Miralem Pjani\u0107",
+      "team": "BIH"
+    },
+    {
+      "id": "bih-kolasinac",
+      "name": "Sead Kola\u0161inac",
+      "team": "BIH"
+    },
+    {
+      "id": "qat-afif",
+      "name": "Akram Afif",
+      "team": "QAT"
+    },
+    {
+      "id": "qat-ali",
+      "name": "Almoez Ali",
+      "team": "QAT"
+    },
+    {
+      "id": "qat-hassan",
+      "name": "Abdelkarim Hassan",
+      "team": "QAT"
+    },
+    {
+      "id": "sui-xhaka",
+      "name": "Granit Xhaka",
+      "team": "SUI"
+    },
+    {
+      "id": "sui-shaqiri",
+      "name": "Xherdan Shaqiri",
+      "team": "SUI"
+    },
+    {
+      "id": "sui-embolo",
+      "name": "Breel Embolo",
+      "team": "SUI"
+    },
+    {
+      "id": "bra-vinicius",
+      "name": "Vin\u00edcius Jr.",
+      "team": "BRA"
+    },
+    {
+      "id": "bra-neymar",
+      "name": "Neymar",
+      "team": "BRA"
+    },
+    {
+      "id": "bra-rodrygo",
+      "name": "Rodrygo",
+      "team": "BRA"
+    },
+    {
+      "id": "bra-martinelli",
+      "name": "Gabriel Martinelli",
+      "team": "BRA"
+    },
+    {
+      "id": "mar-hakimi",
+      "name": "Achraf Hakimi",
+      "team": "MAR"
+    },
+    {
+      "id": "mar-ziyech",
+      "name": "Hakim Ziyech",
+      "team": "MAR"
+    },
+    {
+      "id": "mar-ennesyri",
+      "name": "Youssef En-Nesyri",
+      "team": "MAR"
+    },
+    {
+      "id": "hai-nazon",
+      "name": "Duckens Nazon",
+      "team": "HAI"
+    },
+    {
+      "id": "hai-etienne",
+      "name": "Derrick Etienne",
+      "team": "HAI"
+    },
+    {
+      "id": "hai-pierrot",
+      "name": "Frantzdy Pierrot",
+      "team": "HAI"
+    },
+    {
+      "id": "sco-robertson",
+      "name": "Andrew Robertson",
+      "team": "SCO"
+    },
+    {
+      "id": "sco-mctominay",
+      "name": "Scott McTominay",
+      "team": "SCO"
+    },
+    {
+      "id": "sco-dykes",
+      "name": "Lyndon Dykes",
+      "team": "SCO"
+    },
+    {
+      "id": "usa-pulisic",
+      "name": "Christian Pulisic",
+      "team": "USA"
+    },
+    {
+      "id": "usa-reyna",
+      "name": "Gio Reyna",
+      "team": "USA"
+    },
+    {
+      "id": "usa-pepi",
+      "name": "Ricardo Pepi",
+      "team": "USA"
+    },
+    {
+      "id": "par-almiron",
+      "name": "Miguel Almir\u00f3n",
+      "team": "PAR"
+    },
+    {
+      "id": "par-enciso",
+      "name": "Julio Enciso",
+      "team": "PAR"
+    },
+    {
+      "id": "par-rojas",
+      "name": "Robert Rojas",
+      "team": "PAR"
+    },
+    {
+      "id": "aus-leckie",
+      "name": "Mat Leckie",
+      "team": "AUS"
+    },
+    {
+      "id": "aus-boyle",
+      "name": "Martin Boyle",
+      "team": "AUS"
+    },
+    {
+      "id": "aus-ryan",
+      "name": "Mathew Ryan",
+      "team": "AUS"
+    },
+    {
+      "id": "tur-calhanoglu",
+      "name": "Hakan \u00c7alhano\u011flu",
+      "team": "TUR"
+    },
+    {
+      "id": "tur-guler",
+      "name": "Arda G\u00fcler",
+      "team": "TUR"
+    },
+    {
+      "id": "tur-akturkoglu",
+      "name": "Kerem Akt\u00fcrko\u011flu",
+      "team": "TUR"
+    },
+    {
+      "id": "ger-musiala",
+      "name": "Jamal Musiala",
+      "team": "GER"
+    },
+    {
+      "id": "ger-wirtz",
+      "name": "Florian Wirtz",
+      "team": "GER"
+    },
+    {
+      "id": "ger-havertz",
+      "name": "Kai Havertz",
+      "team": "GER"
+    },
+    {
+      "id": "ger-guirassy",
+      "name": "Serhou Guirassy",
+      "team": "GER"
+    },
+    {
+      "id": "cuw-bacuna",
+      "name": "Leandro Bacuna",
+      "team": "CUW"
+    },
+    {
+      "id": "cuw-martina",
+      "name": "Cuco Martina",
+      "team": "CUW"
+    },
+    {
+      "id": "cuw-janga",
+      "name": "Rangelo Janga",
+      "team": "CUW"
+    },
+    {
+      "id": "civ-haller",
+      "name": "S\u00e9bastien Haller",
+      "team": "CIV"
+    },
+    {
+      "id": "civ-kessie",
+      "name": "Franck Kessi\u00e9",
+      "team": "CIV"
+    },
+    {
+      "id": "civ-pepe",
+      "name": "Nicolas P\u00e9p\u00e9",
+      "team": "CIV"
+    },
+    {
+      "id": "ecu-caicedo",
+      "name": "Mois\u00e9s Caicedo",
+      "team": "ECU"
+    },
+    {
+      "id": "ecu-plata",
+      "name": "Gonzalo Plata",
+      "team": "ECU"
+    },
+    {
+      "id": "ecu-valencia",
+      "name": "Enner Valencia",
+      "team": "ECU"
+    },
+    {
+      "id": "ned-gakpo",
+      "name": "Cody Gakpo",
+      "team": "NED"
+    },
+    {
+      "id": "ned-simons",
+      "name": "Xavi Simons",
+      "team": "NED"
+    },
+    {
+      "id": "ned-vandijk",
+      "name": "Virgil van Dijk",
+      "team": "NED"
+    },
+    {
+      "id": "jpn-minamino",
+      "name": "Takumi Minamino",
+      "team": "JPN"
+    },
+    {
+      "id": "jpn-doan",
+      "name": "Ritsu Doan",
+      "team": "JPN"
+    },
+    {
+      "id": "jpn-kamada",
+      "name": "Daichi Kamada",
+      "team": "JPN"
+    },
+    {
+      "id": "swe-isak",
+      "name": "Alexander Isak",
+      "team": "SWE"
+    },
+    {
+      "id": "swe-kulusevski",
+      "name": "Dejan Kulusevski",
+      "team": "SWE"
+    },
+    {
+      "id": "swe-gyokeres",
+      "name": "Viktor Gy\u00f6keres",
+      "team": "SWE"
+    },
+    {
+      "id": "tun-msakni",
+      "name": "Youssef Msakni",
+      "team": "TUN"
+    },
+    {
+      "id": "tun-khazri",
+      "name": "Wahbi Khazri",
+      "team": "TUN"
+    },
+    {
+      "id": "tun-laidouni",
+      "name": "A\u00efssa La\u00efdouni",
+      "team": "TUN"
+    },
+    {
+      "id": "bel-lukaku",
+      "name": "Romelu Lukaku",
+      "team": "BEL"
+    },
+    {
+      "id": "bel-trossard",
+      "name": "Leandro Trossard",
+      "team": "BEL"
+    },
+    {
+      "id": "bel-openda",
+      "name": "Lois Openda",
+      "team": "BEL"
+    },
+    {
+      "id": "egy-salah",
+      "name": "Mohamed Salah",
+      "team": "EGY"
+    },
+    {
+      "id": "egy-zizo",
+      "name": "Ahmed Sayed Zizo",
+      "team": "EGY"
+    },
+    {
+      "id": "egy-marmoush",
+      "name": "Omar Marmoush",
+      "team": "EGY"
+    },
+    {
+      "id": "irn-taremi",
+      "name": "Mehdi Taremi",
+      "team": "IRN"
+    },
+    {
+      "id": "irn-azmoun",
+      "name": "Sardar Azmoun",
+      "team": "IRN"
+    },
+    {
+      "id": "irn-jahanbakhsh",
+      "name": "Alireza Jahanbakhsh",
+      "team": "IRN"
+    },
+    {
+      "id": "nzl-wood",
+      "name": "Chris Wood",
+      "team": "NZL"
+    },
+    {
+      "id": "nzl-rojas",
+      "name": "Marco Rojas",
+      "team": "NZL"
+    },
+    {
+      "id": "nzl-cacace",
+      "name": "Liberato Cacace",
+      "team": "NZL"
+    },
+    {
+      "id": "esp-yamal",
+      "name": "Lamine Yamal",
+      "team": "ESP"
+    },
+    {
+      "id": "esp-pedri",
+      "name": "Pedri",
+      "team": "ESP"
+    },
+    {
+      "id": "esp-morata",
+      "name": "\u00c1lvaro Morata",
+      "team": "ESP"
+    },
+    {
+      "id": "cpv-martins",
+      "name": "Gelson Martins",
+      "team": "CPV"
+    },
+    {
+      "id": "cpv-mendes",
+      "name": "Ryan Mendes",
+      "team": "CPV"
+    },
+    {
+      "id": "cpv-rocha",
+      "name": "Kenny Rocha Santos",
+      "team": "CPV"
+    },
+    {
+      "id": "ksa-aldawsari",
+      "name": "Salem Al-Dawsari",
+      "team": "KSA"
+    },
+    {
+      "id": "ksa-alburaikan",
+      "name": "Firas Al-Buraikan",
+      "team": "KSA"
+    },
+    {
+      "id": "ksa-alowais",
+      "name": "Mohammed Al-Owais",
+      "team": "KSA"
+    },
+    {
+      "id": "uru-nunez",
+      "name": "Darwin N\u00fa\u00f1ez",
+      "team": "URU"
+    },
+    {
+      "id": "uru-valverde",
+      "name": "Federico Valverde",
+      "team": "URU"
+    },
+    {
+      "id": "uru-bentancur",
+      "name": "Rodrigo Bentancur",
+      "team": "URU"
+    },
+    {
+      "id": "fra-mbappe",
+      "name": "Kylian Mbapp\u00e9",
+      "team": "FRA"
+    },
+    {
+      "id": "fra-dembele",
+      "name": "Ousmane Demb\u00e9l\u00e9",
+      "team": "FRA"
+    },
+    {
+      "id": "fra-griezmann",
+      "name": "Antoine Griezmann",
+      "team": "FRA"
+    },
+    {
+      "id": "fra-thuram",
+      "name": "Marcus Thuram",
+      "team": "FRA"
+    },
+    {
+      "id": "sen-mane",
+      "name": "Sadio Man\u00e9",
+      "team": "SEN"
+    },
+    {
+      "id": "sen-sarr",
+      "name": "Isma\u00efla Sarr",
+      "team": "SEN"
+    },
+    {
+      "id": "sen-papesarr",
+      "name": "Pape Matar Sarr",
+      "team": "SEN"
+    },
+    {
+      "id": "irq-ali",
+      "name": "Mohanad Ali",
+      "team": "IRQ"
+    },
+    {
+      "id": "irq-ousou",
+      "name": "Aiham Ousou",
+      "team": "IRQ"
+    },
+    {
+      "id": "irq-attwan",
+      "name": "Amjed Attwan",
+      "team": "IRQ"
+    },
+    {
+      "id": "nor-haaland",
+      "name": "Erling Haaland",
+      "team": "NOR"
+    },
+    {
+      "id": "nor-odegaard",
+      "name": "Martin \u00d8degaard",
+      "team": "NOR"
+    },
+    {
+      "id": "nor-sorloth",
+      "name": "Alexander S\u00f8rloth",
+      "team": "NOR"
+    },
+    {
+      "id": "arg-messi",
+      "name": "Lionel Messi",
+      "team": "ARG"
+    },
+    {
+      "id": "arg-lautaro",
+      "name": "Lautaro Mart\u00ednez",
+      "team": "ARG"
+    },
+    {
+      "id": "arg-jalvarez",
+      "name": "Juli\u00e1n \u00c1lvarez",
+      "team": "ARG"
+    },
+    {
+      "id": "arg-efernandez",
+      "name": "Enzo Fern\u00e1ndez",
+      "team": "ARG"
+    },
+    {
+      "id": "alg-mahrez",
+      "name": "Riyad Mahrez",
+      "team": "ALG"
+    },
+    {
+      "id": "alg-slimani",
+      "name": "Islam Slimani",
+      "team": "ALG"
+    },
+    {
+      "id": "alg-boudaoui",
+      "name": "Hicham Boudaoui",
+      "team": "ALG"
+    },
+    {
+      "id": "aut-sabitzer",
+      "name": "Marcel Sabitzer",
+      "team": "AUT"
+    },
+    {
+      "id": "aut-alaba",
+      "name": "David Alaba",
+      "team": "AUT"
+    },
+    {
+      "id": "aut-gregoritsch",
+      "name": "Michael Gregoritsch",
+      "team": "AUT"
+    },
+    {
+      "id": "jor-alnaimat",
+      "name": "Yazan Al-Naimat",
+      "team": "JOR"
+    },
+    {
+      "id": "jor-aldarabseh",
+      "name": "Hamza Aldarabseh",
+      "team": "JOR"
+    },
+    {
+      "id": "jor-suleiman",
+      "name": "Musa Suleiman",
+      "team": "JOR"
+    },
+    {
+      "id": "por-ronaldo",
+      "name": "Cristiano Ronaldo",
+      "team": "POR"
+    },
+    {
+      "id": "por-bsilva",
+      "name": "Bernardo Silva",
+      "team": "POR"
+    },
+    {
+      "id": "por-bfernandes",
+      "name": "Bruno Fernandes",
+      "team": "POR"
+    },
+    {
+      "id": "por-leao",
+      "name": "Rafael Le\u00e3o",
+      "team": "POR"
+    },
+    {
+      "id": "cod-bakambu",
+      "name": "C\u00e9dric Bakambu",
+      "team": "COD"
+    },
+    {
+      "id": "cod-mbemba",
+      "name": "Chancel Mbemba",
+      "team": "COD"
+    },
+    {
+      "id": "cod-bongonda",
+      "name": "Th\u00e9o Bongonda",
+      "team": "COD"
+    },
+    {
+      "id": "uzb-shomurodov",
+      "name": "Eldor Shomurodov",
+      "team": "UZB"
+    },
+    {
+      "id": "uzb-masharipov",
+      "name": "Jaloliddin Masharipov",
+      "team": "UZB"
+    },
+    {
+      "id": "uzb-fayzullaev",
+      "name": "Abbosbek Fayzullaev",
+      "team": "UZB"
+    },
+    {
+      "id": "col-ldiaz",
+      "name": "Luis D\u00edaz",
+      "team": "COL"
+    },
+    {
+      "id": "col-cucho",
+      "name": "Cucho Hern\u00e1ndez",
+      "team": "COL"
+    },
+    {
+      "id": "col-rios",
+      "name": "Richard R\u00edos",
+      "team": "COL"
+    },
+    {
+      "id": "eng-kane",
+      "name": "Harry Kane",
+      "team": "ENG"
+    },
+    {
+      "id": "eng-bellingham",
+      "name": "Jude Bellingham",
+      "team": "ENG"
+    },
+    {
+      "id": "eng-saka",
+      "name": "Bukayo Saka",
+      "team": "ENG"
+    },
+    {
+      "id": "eng-foden",
+      "name": "Phil Foden",
+      "team": "ENG"
+    },
+    {
+      "id": "cro-kovacic",
+      "name": "Mateo Kova\u010di\u0107",
+      "team": "CRO"
+    },
+    {
+      "id": "cro-modric",
+      "name": "Luka Modri\u0107",
+      "team": "CRO"
+    },
+    {
+      "id": "cro-petkovic",
+      "name": "Bruno Petkovi\u0107",
+      "team": "CRO"
+    },
+    {
+      "id": "gha-kudus",
+      "name": "Mohammed Kudus",
+      "team": "GHA"
+    },
+    {
+      "id": "gha-jayew",
+      "name": "Jordan Ayew",
+      "team": "GHA"
+    },
+    {
+      "id": "gha-iwilliams",
+      "name": "I\u00f1aki Williams",
+      "team": "GHA"
+    },
+    {
+      "id": "pan-carrasquilla",
+      "name": "Adalberto Carrasquilla",
+      "team": "PAN"
+    },
+    {
+      "id": "pan-blackburn",
+      "name": "Rolando Blackburn",
+      "team": "PAN"
+    },
+    {
+      "id": "pan-rodriguez",
+      "name": "Jos\u00e9 Luis Rodr\u00edguez",
+      "team": "PAN"
+    }
+  ],
+  "groups": [
+    {
+      "id": "A",
+      "teams": ["MEX", "KOR", "CZE", "RSA"]
+    },
+    {
+      "id": "B",
+      "teams": ["CAN", "SUI", "BIH", "QAT"]
+    },
+    {
+      "id": "C",
+      "teams": ["BRA", "MAR", "SCO", "HAI"]
+    },
+    {
+      "id": "D",
+      "teams": ["USA", "TUR", "AUS", "PAR"]
+    },
+    {
+      "id": "E",
+      "teams": ["GER", "ECU", "CIV", "CUW"]
+    },
+    {
+      "id": "F",
+      "teams": ["NED", "JPN", "SWE", "TUN"]
+    },
+    {
+      "id": "G",
+      "teams": ["BEL", "IRN", "EGY", "NZL"]
+    },
+    {
+      "id": "H",
+      "teams": ["ESP", "URU", "KSA", "CPV"]
+    },
+    {
+      "id": "I",
+      "teams": ["FRA", "NOR", "SEN", "IRQ"]
+    },
+    {
+      "id": "J",
+      "teams": ["ARG", "AUT", "ALG", "JOR"]
+    },
+    {
+      "id": "K",
+      "teams": ["POR", "COL", "COD", "UZB"]
+    },
+    {
+      "id": "L",
+      "teams": ["ENG", "CRO", "GHA", "PAN"]
+    }
+  ],
+  "groupMatches": [
+    {
+      "id": "mA1",
+      "group": "A",
+      "home": "MEX",
+      "away": "RSA",
+      "kickoff": "2026-06-11T19:00:00Z"
+    },
+    {
+      "id": "mA2",
+      "group": "A",
+      "home": "KOR",
+      "away": "CZE",
+      "kickoff": "2026-06-12T02:00:00Z"
+    },
+    {
+      "id": "mA3",
+      "group": "A",
+      "home": "CZE",
+      "away": "RSA",
+      "kickoff": "2026-06-18T16:00:00Z"
+    },
+    {
+      "id": "mA4",
+      "group": "A",
+      "home": "MEX",
+      "away": "KOR",
+      "kickoff": "2026-06-19T03:00:00Z"
+    },
+    {
+      "id": "mA5",
+      "group": "A",
+      "home": "CZE",
+      "away": "MEX",
+      "kickoff": "2026-06-25T01:00:00Z"
+    },
+    {
+      "id": "mA6",
+      "group": "A",
+      "home": "RSA",
+      "away": "KOR",
+      "kickoff": "2026-06-25T01:00:00Z"
+    },
+    {
+      "id": "mB1",
+      "group": "B",
+      "home": "CAN",
+      "away": "BIH",
+      "kickoff": "2026-06-12T19:00:00Z"
+    },
+    {
+      "id": "mB2",
+      "group": "B",
+      "home": "QAT",
+      "away": "SUI",
+      "kickoff": "2026-06-13T19:00:00Z"
+    },
+    {
+      "id": "mB3",
+      "group": "B",
+      "home": "SUI",
+      "away": "BIH",
+      "kickoff": "2026-06-18T19:00:00Z"
+    },
+    {
+      "id": "mB4",
+      "group": "B",
+      "home": "CAN",
+      "away": "QAT",
+      "kickoff": "2026-06-18T22:00:00Z"
+    },
+    {
+      "id": "mB5",
+      "group": "B",
+      "home": "SUI",
+      "away": "CAN",
+      "kickoff": "2026-06-24T19:00:00Z"
+    },
+    {
+      "id": "mB6",
+      "group": "B",
+      "home": "BIH",
+      "away": "QAT",
+      "kickoff": "2026-06-24T19:00:00Z"
+    },
+    {
+      "id": "mC1",
+      "group": "C",
+      "home": "BRA",
+      "away": "MAR",
+      "kickoff": "2026-06-13T22:00:00Z"
+    },
+    {
+      "id": "mC2",
+      "group": "C",
+      "home": "HAI",
+      "away": "SCO",
+      "kickoff": "2026-06-14T01:00:00Z"
+    },
+    {
+      "id": "mC3",
+      "group": "C",
+      "home": "SCO",
+      "away": "MAR",
+      "kickoff": "2026-06-19T22:00:00Z"
+    },
+    {
+      "id": "mC4",
+      "group": "C",
+      "home": "BRA",
+      "away": "HAI",
+      "kickoff": "2026-06-20T01:00:00Z"
+    },
+    {
+      "id": "mC5",
+      "group": "C",
+      "home": "SCO",
+      "away": "BRA",
+      "kickoff": "2026-06-24T22:00:00Z"
+    },
+    {
+      "id": "mC6",
+      "group": "C",
+      "home": "MAR",
+      "away": "HAI",
+      "kickoff": "2026-06-24T22:00:00Z"
+    },
+    {
+      "id": "mD1",
+      "group": "D",
+      "home": "USA",
+      "away": "PAR",
+      "kickoff": "2026-06-13T01:00:00Z"
+    },
+    {
+      "id": "mD2",
+      "group": "D",
+      "home": "AUS",
+      "away": "TUR",
+      "kickoff": "2026-06-14T04:00:00Z"
+    },
+    {
+      "id": "mD3",
+      "group": "D",
+      "home": "USA",
+      "away": "AUS",
+      "kickoff": "2026-06-19T19:00:00Z"
+    },
+    {
+      "id": "mD4",
+      "group": "D",
+      "home": "TUR",
+      "away": "PAR",
+      "kickoff": "2026-06-20T04:00:00Z"
+    },
+    {
+      "id": "mD5",
+      "group": "D",
+      "home": "TUR",
+      "away": "USA",
+      "kickoff": "2026-06-26T02:00:00Z"
+    },
+    {
+      "id": "mD6",
+      "group": "D",
+      "home": "PAR",
+      "away": "AUS",
+      "kickoff": "2026-06-26T02:00:00Z"
+    },
+    {
+      "id": "mE1",
+      "group": "E",
+      "home": "GER",
+      "away": "CUW",
+      "kickoff": "2026-06-14T17:00:00Z"
+    },
+    {
+      "id": "mE2",
+      "group": "E",
+      "home": "CIV",
+      "away": "ECU",
+      "kickoff": "2026-06-14T23:00:00Z"
+    },
+    {
+      "id": "mE3",
+      "group": "E",
+      "home": "GER",
+      "away": "CIV",
+      "kickoff": "2026-06-20T20:00:00Z"
+    },
+    {
+      "id": "mE4",
+      "group": "E",
+      "home": "ECU",
+      "away": "CUW",
+      "kickoff": "2026-06-21T00:00:00Z"
+    },
+    {
+      "id": "mE5",
+      "group": "E",
+      "home": "ECU",
+      "away": "GER",
+      "kickoff": "2026-06-25T20:00:00Z"
+    },
+    {
+      "id": "mE6",
+      "group": "E",
+      "home": "CUW",
+      "away": "CIV",
+      "kickoff": "2026-06-25T20:00:00Z"
+    },
+    {
+      "id": "mF1",
+      "group": "F",
+      "home": "NED",
+      "away": "JPN",
+      "kickoff": "2026-06-14T20:00:00Z"
+    },
+    {
+      "id": "mF2",
+      "group": "F",
+      "home": "SWE",
+      "away": "TUN",
+      "kickoff": "2026-06-15T02:00:00Z"
+    },
+    {
+      "id": "mF3",
+      "group": "F",
+      "home": "NED",
+      "away": "SWE",
+      "kickoff": "2026-06-20T17:00:00Z"
+    },
+    {
+      "id": "mF4",
+      "group": "F",
+      "home": "TUN",
+      "away": "JPN",
+      "kickoff": "2026-06-21T04:00:00Z"
+    },
+    {
+      "id": "mF5",
+      "group": "F",
+      "home": "JPN",
+      "away": "SWE",
+      "kickoff": "2026-06-25T23:00:00Z"
+    },
+    {
+      "id": "mF6",
+      "group": "F",
+      "home": "TUN",
+      "away": "NED",
+      "kickoff": "2026-06-25T23:00:00Z"
+    },
+    {
+      "id": "mG1",
+      "group": "G",
+      "home": "BEL",
+      "away": "EGY",
+      "kickoff": "2026-06-15T22:00:00Z"
+    },
+    {
+      "id": "mG2",
+      "group": "G",
+      "home": "IRN",
+      "away": "NZL",
+      "kickoff": "2026-06-16T04:00:00Z"
+    },
+    {
+      "id": "mG3",
+      "group": "G",
+      "home": "BEL",
+      "away": "IRN",
+      "kickoff": "2026-06-21T19:00:00Z"
+    },
+    {
+      "id": "mG4",
+      "group": "G",
+      "home": "NZL",
+      "away": "EGY",
+      "kickoff": "2026-06-22T01:00:00Z"
+    },
+    {
+      "id": "mG5",
+      "group": "G",
+      "home": "EGY",
+      "away": "IRN",
+      "kickoff": "2026-06-27T03:00:00Z"
+    },
+    {
+      "id": "mG6",
+      "group": "G",
+      "home": "NZL",
+      "away": "BEL",
+      "kickoff": "2026-06-27T03:00:00Z"
+    },
+    {
+      "id": "mH1",
+      "group": "H",
+      "home": "ESP",
+      "away": "CPV",
+      "kickoff": "2026-06-15T17:00:00Z"
+    },
+    {
+      "id": "mH2",
+      "group": "H",
+      "home": "KSA",
+      "away": "URU",
+      "kickoff": "2026-06-15T22:00:00Z"
+    },
+    {
+      "id": "mH3",
+      "group": "H",
+      "home": "ESP",
+      "away": "KSA",
+      "kickoff": "2026-06-21T16:00:00Z"
+    },
+    {
+      "id": "mH4",
+      "group": "H",
+      "home": "URU",
+      "away": "CPV",
+      "kickoff": "2026-06-21T22:00:00Z"
+    },
+    {
+      "id": "mH5",
+      "group": "H",
+      "home": "CPV",
+      "away": "KSA",
+      "kickoff": "2026-06-27T00:00:00Z"
+    },
+    {
+      "id": "mH6",
+      "group": "H",
+      "home": "URU",
+      "away": "ESP",
+      "kickoff": "2026-06-27T00:00:00Z"
+    },
+    {
+      "id": "mI1",
+      "group": "I",
+      "home": "FRA",
+      "away": "SEN",
+      "kickoff": "2026-06-16T19:00:00Z"
+    },
+    {
+      "id": "mI2",
+      "group": "I",
+      "home": "IRQ",
+      "away": "NOR",
+      "kickoff": "2026-06-16T22:00:00Z"
+    },
+    {
+      "id": "mI3",
+      "group": "I",
+      "home": "FRA",
+      "away": "IRQ",
+      "kickoff": "2026-06-22T21:00:00Z"
+    },
+    {
+      "id": "mI4",
+      "group": "I",
+      "home": "NOR",
+      "away": "SEN",
+      "kickoff": "2026-06-23T00:00:00Z"
+    },
+    {
+      "id": "mI5",
+      "group": "I",
+      "home": "NOR",
+      "away": "FRA",
+      "kickoff": "2026-06-26T19:00:00Z"
+    },
+    {
+      "id": "mI6",
+      "group": "I",
+      "home": "SEN",
+      "away": "IRQ",
+      "kickoff": "2026-06-26T19:00:00Z"
+    },
+    {
+      "id": "mJ1",
+      "group": "J",
+      "home": "ARG",
+      "away": "ALG",
+      "kickoff": "2026-06-17T01:00:00Z"
+    },
+    {
+      "id": "mJ2",
+      "group": "J",
+      "home": "AUT",
+      "away": "JOR",
+      "kickoff": "2026-06-17T04:00:00Z"
+    },
+    {
+      "id": "mJ3",
+      "group": "J",
+      "home": "ARG",
+      "away": "AUT",
+      "kickoff": "2026-06-22T17:00:00Z"
+    },
+    {
+      "id": "mJ4",
+      "group": "J",
+      "home": "JOR",
+      "away": "ALG",
+      "kickoff": "2026-06-23T03:00:00Z"
+    },
+    {
+      "id": "mJ5",
+      "group": "J",
+      "home": "ALG",
+      "away": "AUT",
+      "kickoff": "2026-06-28T02:00:00Z"
+    },
+    {
+      "id": "mJ6",
+      "group": "J",
+      "home": "JOR",
+      "away": "ARG",
+      "kickoff": "2026-06-28T02:00:00Z"
+    },
+    {
+      "id": "mK1",
+      "group": "K",
+      "home": "POR",
+      "away": "COD",
+      "kickoff": "2026-06-17T17:00:00Z"
+    },
+    {
+      "id": "mK2",
+      "group": "K",
+      "home": "UZB",
+      "away": "COL",
+      "kickoff": "2026-06-18T02:00:00Z"
+    },
+    {
+      "id": "mK3",
+      "group": "K",
+      "home": "POR",
+      "away": "UZB",
+      "kickoff": "2026-06-23T17:00:00Z"
+    },
+    {
+      "id": "mK4",
+      "group": "K",
+      "home": "COL",
+      "away": "COD",
+      "kickoff": "2026-06-24T02:00:00Z"
+    },
+    {
+      "id": "mK5",
+      "group": "K",
+      "home": "COL",
+      "away": "POR",
+      "kickoff": "2026-06-27T23:30:00Z"
+    },
+    {
+      "id": "mK6",
+      "group": "K",
+      "home": "COD",
+      "away": "UZB",
+      "kickoff": "2026-06-27T23:30:00Z"
+    },
+    {
+      "id": "mL1",
+      "group": "L",
+      "home": "ENG",
+      "away": "CRO",
+      "kickoff": "2026-06-17T20:00:00Z"
+    },
+    {
+      "id": "mL2",
+      "group": "L",
+      "home": "GHA",
+      "away": "PAN",
+      "kickoff": "2026-06-17T23:00:00Z"
+    },
+    {
+      "id": "mL3",
+      "group": "L",
+      "home": "ENG",
+      "away": "GHA",
+      "kickoff": "2026-06-23T20:00:00Z"
+    },
+    {
+      "id": "mL4",
+      "group": "L",
+      "home": "PAN",
+      "away": "CRO",
+      "kickoff": "2026-06-23T23:00:00Z"
+    },
+    {
+      "id": "mL5",
+      "group": "L",
+      "home": "PAN",
+      "away": "ENG",
+      "kickoff": "2026-06-27T21:00:00Z"
+    },
+    {
+      "id": "mL6",
+      "group": "L",
+      "home": "CRO",
+      "away": "GHA",
+      "kickoff": "2026-06-27T21:00:00Z"
+    }
+  ],
+  "qualification": {
+    "autoQualifyPerGroup": 2,
+    "bestThirdPlaced": 8
+  },
+  "standingsTiebreak": [
+    "points",
+    "h2hPoints",
+    "h2hGoalDifference",
+    "h2hGoalsFor",
+    "goalDifference",
+    "goalsFor",
+    "conductScore"
+  ],
+  "bracket": {
+    "rounds": ["R32", "R16", "QF", "SF", "Final"],
+    "entryRound": "R32",
+    "roundOf16Matches": [
+      "r16m89",
+      "r16m90",
+      "r16m91",
+      "r16m92",
+      "r16m93",
+      "r16m94",
+      "r16m95",
+      "r16m96"
+    ],
+    "roundOf8Matches": ["qf97", "qf98", "qf99", "qf100"],
+    "slots": [
+      {
+        "match": "r32m74",
+        "home": "1E",
+        "away": "3D"
+      },
+      {
+        "match": "r32m77",
+        "home": "1I",
+        "away": "3F"
+      },
+      {
+        "match": "r32m73",
+        "home": "2A",
+        "away": "2B"
+      },
+      {
+        "match": "r32m75",
+        "home": "1F",
+        "away": "2C"
+      },
+      {
+        "match": "r32m83",
+        "home": "2K",
+        "away": "2L"
+      },
+      {
+        "match": "r32m84",
+        "home": "1H",
+        "away": "2J"
+      },
+      {
+        "match": "r32m81",
+        "home": "1D",
+        "away": "3B"
+      },
+      {
+        "match": "r32m82",
+        "home": "1G",
+        "away": "3I"
+      },
+      {
+        "match": "r32m76",
+        "home": "1C",
+        "away": "2F"
+      },
+      {
+        "match": "r32m78",
+        "home": "2E",
+        "away": "2I"
+      },
+      {
+        "match": "r32m79",
+        "home": "1A",
+        "away": "3E"
+      },
+      {
+        "match": "r32m80",
+        "home": "1L",
+        "away": "3K"
+      },
+      {
+        "match": "r32m86",
+        "home": "1J",
+        "away": "2H"
+      },
+      {
+        "match": "r32m88",
+        "home": "2D",
+        "away": "2G"
+      },
+      {
+        "match": "r32m85",
+        "home": "1B",
+        "away": "3J"
+      },
+      {
+        "match": "r32m87",
+        "home": "1K",
+        "away": "3L"
+      }
+    ],
+    "progression": [
+      {
+        "match": "r16m89",
+        "from": ["r32m74", "r32m77"]
+      },
+      {
+        "match": "r16m90",
+        "from": ["r32m73", "r32m75"]
+      },
+      {
+        "match": "r16m93",
+        "from": ["r32m83", "r32m84"]
+      },
+      {
+        "match": "r16m94",
+        "from": ["r32m81", "r32m82"]
+      },
+      {
+        "match": "r16m91",
+        "from": ["r32m76", "r32m78"]
+      },
+      {
+        "match": "r16m92",
+        "from": ["r32m79", "r32m80"]
+      },
+      {
+        "match": "r16m95",
+        "from": ["r32m86", "r32m88"]
+      },
+      {
+        "match": "r16m96",
+        "from": ["r32m85", "r32m87"]
+      },
+      {
+        "match": "qf97",
+        "from": ["r16m89", "r16m90"]
+      },
+      {
+        "match": "qf98",
+        "from": ["r16m93", "r16m94"]
+      },
+      {
+        "match": "qf99",
+        "from": ["r16m91", "r16m92"]
+      },
+      {
+        "match": "qf100",
+        "from": ["r16m95", "r16m96"]
+      },
+      {
+        "match": "sf101",
+        "from": ["qf97", "qf98"]
+      },
+      {
+        "match": "sf102",
+        "from": ["qf99", "qf100"]
+      },
+      {
+        "match": "final",
+        "from": ["sf101", "sf102"]
+      },
+      {
+        "match": "bronze",
+        "from": ["sf101", "sf102"]
+      }
+    ],
+    "semiFinals": ["sf101", "sf102"],
+    "finalMatch": "final",
+    "bronzeMatch": "bronze"
+  }
+}

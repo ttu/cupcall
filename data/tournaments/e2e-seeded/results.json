@@ -1,0 +1,841 @@
+{
+  "tournamentId": "e2e-seeded",
+  "matchResults": [
+    {
+      "matchId": "mA1",
+      "home": 2,
+      "away": 0,
+      "homeConduct": -5,
+      "awayConduct": -9
+    },
+    {
+      "matchId": "mA2",
+      "home": 2,
+      "away": 1,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mB1",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -2,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mB2",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -2,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mC1",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -2
+    },
+    {
+      "matchId": "mC2",
+      "home": 0,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mD1",
+      "home": 4,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -4
+    },
+    {
+      "matchId": "mD2",
+      "home": 2,
+      "away": 0
+    },
+    {
+      "matchId": "mE1",
+      "home": 7,
+      "away": 1
+    },
+    {
+      "matchId": "mF1",
+      "home": 2,
+      "away": 2,
+      "homeConduct": -3
+    },
+    {
+      "matchId": "mE2",
+      "home": 1,
+      "away": 0,
+      "homeConduct": -3,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mF2",
+      "home": 5,
+      "away": 1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mG1",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -2,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mH1",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mH2",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mG2",
+      "home": 2,
+      "away": 2,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mI1",
+      "home": 3,
+      "away": 1
+    },
+    {
+      "matchId": "mI2",
+      "home": 1,
+      "away": 4,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mJ1",
+      "home": 3,
+      "away": 0
+    },
+    {
+      "matchId": "mJ2",
+      "home": 3,
+      "away": 1,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mK1",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -3,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mL1",
+      "home": 4,
+      "away": 2
+    },
+    {
+      "matchId": "mL2",
+      "home": 1,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mK2",
+      "home": 1,
+      "away": 3,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mA3",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mB3",
+      "home": 4,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -6
+    },
+    {
+      "matchId": "mB4",
+      "home": 6,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -13
+    },
+    {
+      "matchId": "mA4",
+      "home": 1,
+      "away": 0,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mC3",
+      "home": 0,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mC4",
+      "home": 3,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mD3",
+      "home": 2,
+      "away": 0,
+      "homeConduct": -3,
+      "awayConduct": -5
+    },
+    {
+      "matchId": "mD4",
+      "home": 0,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -5
+    },
+    {
+      "matchId": "mE3",
+      "home": 2,
+      "away": 1
+    },
+    {
+      "matchId": "mE4",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -5
+    },
+    {
+      "matchId": "mF3",
+      "home": 5,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mF4",
+      "home": 0,
+      "away": 4,
+      "homeConduct": -1
+    },
+    {
+      "matchId": "mG3",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -6,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mG4",
+      "home": 1,
+      "away": 3,
+      "homeConduct": -2,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mH3",
+      "home": 4,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mH4",
+      "home": 2,
+      "away": 2,
+      "homeConduct": -2,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mI3",
+      "home": 3,
+      "away": 0
+    },
+    {
+      "matchId": "mI4",
+      "home": 3,
+      "away": 2
+    },
+    {
+      "matchId": "mJ3",
+      "home": 2,
+      "away": 0
+    },
+    {
+      "matchId": "mJ4",
+      "home": 1,
+      "away": 2
+    },
+    {
+      "matchId": "mK3",
+      "home": 5,
+      "away": 0
+    },
+    {
+      "matchId": "mK4",
+      "home": 1,
+      "away": 0
+    },
+    {
+      "matchId": "mL3",
+      "home": 0,
+      "away": 0
+    },
+    {
+      "matchId": "mL4",
+      "home": 0,
+      "away": 1
+    },
+    {
+      "matchId": "mA5",
+      "home": 0,
+      "away": 3,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mA6",
+      "home": 1,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mB5",
+      "home": 2,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mB6",
+      "home": 3,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -4
+    },
+    {
+      "matchId": "mC5",
+      "home": 0,
+      "away": 3,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mC6",
+      "home": 4,
+      "away": 2,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mD5",
+      "home": 3,
+      "away": 2,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mD6",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mE5",
+      "home": 2,
+      "away": 1,
+      "homeConduct": -3,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mE6",
+      "home": 0,
+      "away": 2,
+      "homeConduct": -2,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mF5",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mF6",
+      "home": 1,
+      "away": 3
+    },
+    {
+      "matchId": "mG5",
+      "home": 1,
+      "away": 1,
+      "homeConduct": -3,
+      "awayConduct": -4
+    },
+    {
+      "matchId": "mG6",
+      "home": 1,
+      "away": 5
+    },
+    {
+      "matchId": "mH5",
+      "home": 0,
+      "away": 0,
+      "homeConduct": -1,
+      "awayConduct": -3
+    },
+    {
+      "matchId": "mH6",
+      "home": 0,
+      "away": 1,
+      "homeConduct": -7,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mI5",
+      "home": 1,
+      "away": 4,
+      "homeConduct": -1,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mI6",
+      "home": 5,
+      "away": 0,
+      "homeConduct": -2,
+      "awayConduct": -6
+    },
+    {
+      "matchId": "mJ5",
+      "home": 3,
+      "away": 3,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mJ6",
+      "home": 1,
+      "away": 3,
+      "homeConduct": -3
+    },
+    {
+      "matchId": "mK5",
+      "home": 0,
+      "away": 0
+    },
+    {
+      "matchId": "mK6",
+      "home": 3,
+      "away": 1,
+      "homeConduct": -3,
+      "awayConduct": -2
+    },
+    {
+      "matchId": "mL5",
+      "home": 0,
+      "away": 2,
+      "homeConduct": -2,
+      "awayConduct": -1
+    },
+    {
+      "matchId": "mL6",
+      "home": 2,
+      "away": 1,
+      "homeConduct": -1,
+      "awayConduct": -1
+    }
+  ],
+  "knockout": [
+    {
+      "round": "R32",
+      "matchId": "r32m73",
+      "home": "RSA",
+      "away": "CAN",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "winner": "CAN",
+      "decidedBy": "regulation",
+      "kickoff": "2026-06-28T19:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m76",
+      "home": "BRA",
+      "away": "JPN",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "BRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-06-29T17:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m74",
+      "home": "GER",
+      "away": "PAR",
+      "homeGoals": 1,
+      "awayGoals": 1,
+      "winner": "PAR",
+      "decidedBy": "penalties",
+      "kickoff": "2026-06-29T20:30:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m75",
+      "home": "NED",
+      "away": "MAR",
+      "homeGoals": 1,
+      "awayGoals": 1,
+      "winner": "MAR",
+      "decidedBy": "penalties",
+      "kickoff": "2026-06-30T01:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m78",
+      "home": "CIV",
+      "away": "NOR",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "winner": "NOR",
+      "decidedBy": "regulation",
+      "kickoff": "2026-06-30T17:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m77",
+      "home": "FRA",
+      "away": "SWE",
+      "homeGoals": 3,
+      "awayGoals": 0,
+      "winner": "FRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-06-30T21:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m79",
+      "home": "MEX",
+      "away": "ECU",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "winner": "MEX",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-01T01:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m80",
+      "home": "ENG",
+      "away": "COD",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "ENG",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-01T16:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m82",
+      "home": "BEL",
+      "away": "SEN",
+      "homeGoals": 3,
+      "awayGoals": 2,
+      "winner": "BEL",
+      "decidedBy": "extraTime",
+      "kickoff": "2026-07-01T20:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m81",
+      "home": "USA",
+      "away": "BIH",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "winner": "USA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-02T00:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m84",
+      "home": "ESP",
+      "away": "AUT",
+      "homeGoals": 3,
+      "awayGoals": 0,
+      "winner": "ESP",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-02T19:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m83",
+      "home": "POR",
+      "away": "CRO",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "POR",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-02T23:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m85",
+      "home": "SUI",
+      "away": "ALG",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "winner": "SUI",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-03T03:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m88",
+      "home": "AUS",
+      "away": "EGY",
+      "homeGoals": 1,
+      "awayGoals": 1,
+      "winner": "EGY",
+      "decidedBy": "penalties",
+      "kickoff": "2026-07-03T18:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m86",
+      "home": "ARG",
+      "away": "CPV",
+      "homeGoals": 3,
+      "awayGoals": 2,
+      "winner": "ARG",
+      "decidedBy": "extraTime",
+      "kickoff": "2026-07-03T22:00:00Z"
+    },
+    {
+      "round": "R32",
+      "matchId": "r32m87",
+      "home": "COL",
+      "away": "GHA",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "winner": "COL",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-04T01:30:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m89",
+      "home": "PAR",
+      "away": "FRA",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "winner": "FRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-04T16:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m90",
+      "home": "CAN",
+      "away": "MAR",
+      "homeGoals": 0,
+      "awayGoals": 3,
+      "winner": "MAR",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-04T17:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m91",
+      "home": "BRA",
+      "away": "NOR",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "winner": "NOR",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-05T20:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m92",
+      "home": "MEX",
+      "away": "ENG",
+      "homeGoals": 2,
+      "awayGoals": 3,
+      "winner": "ENG",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-06T00:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m93",
+      "home": "POR",
+      "away": "ESP",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "winner": "ESP",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-06T19:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m94",
+      "home": "USA",
+      "away": "BEL",
+      "homeGoals": 1,
+      "awayGoals": 4,
+      "winner": "BEL",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-07T00:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m95",
+      "home": "ARG",
+      "away": "EGY",
+      "homeGoals": 3,
+      "awayGoals": 2,
+      "winner": "ARG",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-07T16:00:00Z"
+    },
+    {
+      "round": "R16",
+      "matchId": "r16m96",
+      "home": "SUI",
+      "away": "COL",
+      "homeGoals": 0,
+      "awayGoals": 0,
+      "winner": "SUI",
+      "decidedBy": "penalties",
+      "kickoff": "2026-07-07T20:00:00Z"
+    },
+    {
+      "round": "QF",
+      "matchId": "qf97",
+      "home": "FRA",
+      "away": "MAR",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "winner": "FRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-09T20:00:00Z"
+    },
+    {
+      "round": "QF",
+      "matchId": "qf98",
+      "home": "ESP",
+      "away": "BEL",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "ESP",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-10T19:00:00Z"
+    },
+    {
+      "round": "QF",
+      "matchId": "qf99",
+      "home": "NOR",
+      "away": "ENG",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "winner": "ENG",
+      "decidedBy": "extraTime",
+      "kickoff": "2026-07-11T21:00:00Z"
+    },
+    {
+      "round": "QF",
+      "matchId": "qf100",
+      "home": "ARG",
+      "away": "SUI",
+      "homeGoals": 3,
+      "awayGoals": 1,
+      "winner": "ARG",
+      "decidedBy": "extraTime",
+      "kickoff": "2026-07-12T01:00:00Z"
+    },
+    {
+      "round": "SF",
+      "matchId": "sf101",
+      "home": "FRA",
+      "away": "ESP",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "FRA",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-15T20:00:00Z"
+    },
+    {
+      "round": "SF",
+      "matchId": "sf102",
+      "home": "ENG",
+      "away": "ARG",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "winner": "ARG",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-15T23:00:00Z"
+    },
+    {
+      "round": "Final",
+      "matchId": "final",
+      "home": "FRA",
+      "away": "ARG",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "winner": "ARG",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-19T19:00:00Z"
+    },
+    {
+      "round": "bronze",
+      "matchId": "bronze",
+      "home": "ESP",
+      "away": "ENG",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "winner": "ESP",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-18T16:00:00Z"
+    }
+  ],
+  "groupOrder": {
+    "A": ["MEX", "RSA", "KOR", "CZE"],
+    "B": ["SUI", "CAN", "BIH", "QAT"],
+    "C": ["BRA", "MAR", "SCO", "HAI"],
+    "D": ["USA", "AUS", "PAR", "TUR"],
+    "E": ["GER", "CIV", "ECU", "CUW"],
+    "F": ["NED", "JPN", "SWE", "TUN"],
+    "G": ["BEL", "EGY", "IRN", "NZL"],
+    "H": ["ESP", "CPV", "URU", "KSA"],
+    "I": ["FRA", "NOR", "SEN", "IRQ"],
+    "J": ["ARG", "AUT", "ALG", "JOR"],
+    "K": ["COL", "POR", "COD", "UZB"],
+    "L": ["ENG", "CRO", "GHA", "PAN"]
+  },
+  "answers": {
+    "groupTopScoringTeam": ["GER", "NED", "FRA"],
+    "groupTopConcedingTeam": ["TUN", "IRQ"],
+    "tournamentTopScoringTeam": "ESP",
+    "tournamentTopConcedingTeam": "CUW",
+    "highestMatchGoals": 8,
+    "mostYellowCardsTeam": "ARG",
+    "penaltyShootoutCount": 4,
+    "finalDecidedByPenalties": false,
+    "finalDecisiveGoalPlayer": "arg-messi",
+    "topScorerPlayer": "arg-lautaro"
+  }
+}

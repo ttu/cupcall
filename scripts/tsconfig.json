@@ -5,6 +5,7 @@
     "outDir": "dist",
     "paths": {
       "@cup/engine": ["../packages/engine/src/index.ts"],
+      "@cup/engine/testing": ["../packages/engine/src/__fixtures__/mini-tournament.ts"],
       "@cup/schemas": ["../packages/schemas/src/index.ts"],
       "@cup/db": ["../packages/db/src/index.ts"],
       "@cup/db/schema": ["../packages/db/src/schema/index.ts"],

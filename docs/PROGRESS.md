@@ -287,12 +287,67 @@ already exceeded the guess), never "currently trailing." Mirrors the knockout br
 - No new `hit` enum value — an impossible pick renders exactly like an officially-resolved miss.
 - **Design:** `docs/superpowers/specs/2026-07-12-special-bet-impossibility-design.md`.
 
+## E2E test data: static fixtures + varied seeded pool (2026-07-13)
+
+`apps/web/e2e/global-setup.ts` used to sync the **real, live** `wc-2026` tournament
+(`pnpm sync -- wc-2026`) before every Playwright run. On a genuinely fresh DB (exactly what CI's
+Postgres service provides), that data's real-world `firstKickoff` and already-recorded
+group/R32/R16/QF results meant `bracket-picks.spec.ts` was clicking pick buttons already `disabled`
+by real-world date progression — **broken today**, papered over locally only because
+`guest-full-prediction.spec.ts` used a dev-only no-lock-check bypass. There was also zero e2e
+coverage for the leaderboard, results/points-race, or the late-joiner partial-prediction UI, since
+every spec created a single fresh user/pool and never saw another member's predictions.
+
+Fixed by replacing the live sync with two static, date-independent tournament fixtures plus a
+seeded multi-member pool:
+
+- **`data/tournaments/e2e-open/`** — copy of `wc-2026`'s full real shape (48 teams, 12 groups, full
+  R32 bracket, players), `firstKickoff` overridden to `2099-01-01` (never elapses) and
+  `results.json` empty. Backs `guest-full-prediction.spec.ts` and `bracket-picks.spec.ts`: every
+  pool created against it stays `editable` forever, regardless of the real-world CI run date.
+- **`data/tournaments/e2e-seeded/`** — same shape, `firstKickoff` overridden to `2000-01-01`
+  (permanently in the past) and `results.json` extended with the real wc-2026 group/R32/R16/QF
+  results plus synthesized SF/Final/Bronze results carried forward from the real QF winners
+  (FRA/ESP/ENG/ARG) to a synthetic champion. `answers.firstRedCardPlayer` is deliberately left
+  unset — a legitimate "no red card shown" state — so late joiners have exactly one genuinely open
+  item to predict. Two fixtures are needed because one tournament-wide `firstKickoff` can't
+  simultaneously be "always editable" (for the fill-in-prediction specs) and "already locked with
+  resolved results and late joiners" (for the leaderboard/results/late-joiner specs).
+- **`scripts/e2e-seed/prediction-variety.ts`** — a deterministic (mulberry32-seeded), pure-function
+  generator that produces varied group scores, bracket picks, finish scores, and special bets,
+  informed by real production prediction-distribution stats (11 predictions, 1 pool, queried
+  read-only — not live-queried at seed time): scorelines weighted toward realistic low-scoring
+  results (2-0, 1-1, 2-1 most common), bracket picks concentrated on a favorite but never unanimous
+  (~75/25 splits), specials clustered on a few popular teams/players with a long tail. Documented in
+  `docs/superpowers/specs/2026-07-13-e2e-test-data-design.md`; unit-tested for determinism and
+  distribution shape.
+- **`scripts/seed-e2e.ts`** — syncs both fixtures and seeds a 10-member pool under `e2e-seeded`: 1
+  fixed dev-login owner/viewer, 7 on-time members with full generator-produced predictions, and 2
+  late joiners with predictions only for the one open item. Writes
+  `apps/web/e2e/.e2e-fixture-ids.json` so specs can navigate straight to the seeded pool.
+  `global-setup.ts` now runs this instead of `pnpm sync -- wc-2026`.
+- **3 new specs** in `apps/web/e2e/`: `leaderboard.spec.ts` (member ordering matches score totals,
+  viewer's own rank highlighted), `results.spec.ts` (results/points-race page renders the resolved
+  bracket, group order, and special-bet outcomes for the completed `e2e-seeded` tournament), and
+  `late-joiner.spec.ts` (a late-joiner member sees the partial-prediction banner, only
+  `firstRedCardPlayer` is editable, everything else shows locked). The 2 pre-existing specs
+  (`guest-full-prediction.spec.ts`, `bracket-picks.spec.ts`) were fixed to explicitly select the
+  `e2e-open` tournament rather than relying on whichever tournament sorts first.
+- **Design/plan:** `docs/superpowers/specs/2026-07-13-e2e-test-data-design.md` /
+  `docs/superpowers/plans/2026-07-13-e2e-test-data.md`.
+- Out of scope / untouched: `scripts/seed.ts` / `seed-current.ts` / `seed-ongoing.ts` (dev/demo
+  seeding) and lock/late-joiner domain logic itself — this only exercises existing behavior with
+  better fixture data.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:
 
 1. Merge `design-system` branch to `main` (squash into one `feat(design): ...` commit).
-2. Playwright E2E for critical flows (sign-in, create pool, join, predict, leaderboard).
+2. Playwright E2E now covers create-pool/predict (`guest-full-prediction`, `bracket-picks`),
+   leaderboard ordering, the results/points-race page, and the late-joiner partial-prediction flow
+   (2026-07-13, above). Still deferred: an explicit sign-in-via-magic-link e2e test (see "Deferred /
+   known follow-ups" below — already tracked there, not duplicated here).
 3. Real tournament data (`data/tournaments/`) for a live competition.
 4. Email notifications for pool events (join, kick, lock).
 

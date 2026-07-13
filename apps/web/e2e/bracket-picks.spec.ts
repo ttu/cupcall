@@ -16,6 +16,7 @@ test('bracket: correct teams, both sides pickable, cascade, final ≠ bronze', a
   await page.getByRole('button', { name: 'Get started' }).click();
   await page.waitForURL('**/pools');
 
+  await page.getByLabel('Tournament').selectOption('e2e-open');
   await page.getByLabel('Pool name').fill('Bracket Test Pool');
   await page.getByRole('button', { name: 'Create' }).click();
   await page.waitForURL(/\/pools\/[^/]+$/);

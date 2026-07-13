@@ -133,7 +133,10 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
       </div>
 
       {card.status === 'partial' && card.lateJoinerDeadline && (
-        <div className="flex items-start gap-2.5 p-[12px_16px] mb-5 rounded-[10px] bg-surface-2 border border-line text-[13px] text-ink-soft">
+        <div
+          data-testid="late-joiner-banner"
+          className="flex items-start gap-2.5 p-[12px_16px] mb-5 rounded-[10px] bg-surface-2 border border-line text-[13px] text-ink-soft"
+        >
           <span className="font-extrabold text-base">⏱</span>
           <span>
             You joined after the tournament started — you have until{' '}
