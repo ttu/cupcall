@@ -11,6 +11,8 @@ on:
 
 jobs:
   sync:
+    # Disabled: sync no longer runs from CI (push or manual dispatch).
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
