@@ -39,8 +39,13 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
   const hasActualScore = match.actualHome !== null && match.actualAway !== null;
   const hasPredictedScore = match.predictedHome !== null && match.predictedAway !== null;
 
-  const pickLeftId = match.homeTeamId ?? match.predictedHomeTeamId;
-  const pickRightId = match.awayTeamId ?? match.predictedAwayTeamId;
+  // pickedHomeTeamId/pickedAwayTeamId reflect the user's own SF/QF bracket picks, never
+  // substituted with actual results, so "Your pick" keeps showing what the user predicted even
+  // after the real bracket resolves to different teams. Fall back to the actual/derived
+  // participants (and finally the generic predicted-slot fields) only when the user's own pick
+  // chain is unavailable.
+  const pickLeftId = match.pickedHomeTeamId ?? match.homeTeamId ?? match.predictedHomeTeamId;
+  const pickRightId = match.pickedAwayTeamId ?? match.awayTeamId ?? match.predictedAwayTeamId;
   // When the predicted participant chain is broken (e.g. the team was eliminated before
   // reaching this match), pickedWinnerId or pickedOpponentId carry the user's original picks.
   // Try pickedWinnerId first: when the implicit winner (derived from the finish score) is the

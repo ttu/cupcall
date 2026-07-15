@@ -144,6 +144,19 @@ export type KnockoutMatchView = {
   /** User's predicted away team for this slot — populated only when awayTeamId is null and the pick is still alive. */
   predictedAwayTeamId: string | null;
   predictedAwayTeamName: string | null;
+  /**
+   * Final/Bronze only: the user's own predicted home-side finalist, derived purely from their
+   * SF/QF bracket picks — never substituted with actual results. Home side = SF1's team
+   * (winner for Final, loser for Bronze), matching the side convention used when the finish
+   * score was saved. Stays populated even after the real participants are confirmed, so the
+   * "Your pick" row keeps showing what the user predicted. Null for all other rounds or when
+   * the feeder picks are incomplete.
+   */
+  pickedHomeTeamId: string | null;
+  pickedHomeTeamName: string | null;
+  /** Final/Bronze only: same as {@link pickedHomeTeamId} for the away side (SF2's team). */
+  pickedAwayTeamId: string | null;
+  pickedAwayTeamName: string | null;
   /** True when this match is the first knockout round (R32/QF depending on tournament size). */
   isEntryRound: boolean;
   /** % of pool members who predicted this team would be playing in this round. For the entry round: derived from group-score predictions. For later rounds: derived from knockout winner picks. Null when team slot is unknown or no predictions exist. */

@@ -224,6 +224,10 @@ export function buildBracketRounds(
       teamMap,
     );
 
+    const pickedFinalistPair = isFinale ? (userPickedParticipants.get(key) ?? null) : null;
+    const pickedHomeTeamId = pickedFinalistPair?.[0] ?? null;
+    const pickedAwayTeamId = pickedFinalistPair?.[1] ?? null;
+
     // For progression matches: when a feeder entry-round pick is already definitively wrong
     // (the picked team is not a participant in the upcoming match) and the slot is empty,
     // capture the picked teamId. This lets the UI render the country badge instead of ?.
@@ -309,6 +313,14 @@ export function buildBracketRounds(
         bronzeMatchKey,
       ),
       ...predictedTeams,
+      pickedHomeTeamId,
+      pickedHomeTeamName: pickedHomeTeamId
+        ? (teamMap.get(pickedHomeTeamId) ?? pickedHomeTeamId)
+        : null,
+      pickedAwayTeamId,
+      pickedAwayTeamName: pickedAwayTeamId
+        ? (teamMap.get(pickedAwayTeamId) ?? pickedAwayTeamId)
+        : null,
       homeTeamUserPredictedParticipant:
         !isEntryRound && homeId !== null && userPickedParticipants.get(key)?.[0] === homeId,
       awayTeamUserPredictedParticipant:
@@ -951,6 +963,23 @@ function computeUserPickedParticipants(
         fk1 ? getUserPickedWinner(fk1) : null,
       ]);
     }
+  }
+
+  // Bronze match: participants are the SF losers implied by the user's own SF winner picks
+  // (never substituting actual results, unlike computeUserPredictedParticipants's bronze branch).
+  const bronzeProg = def.bracket.progression.find((p) => p.match === bronzeKey);
+  if (bronzeProg) {
+    const getSfLoser = (sfKey: string): string | null => {
+      const sfParts = predicted.get(sfKey);
+      if (!sfParts) return null;
+      const sfPick = pickMap.get(sfKey) ?? null;
+      if (!sfPick) return null;
+      if (sfParts[0] === sfPick) return sfParts[1];
+      if (sfParts[1] === sfPick) return sfParts[0];
+      return null;
+    };
+    const [sf1, sf2] = bronzeProg.from;
+    predicted.set(bronzeKey, [sf1 ? getSfLoser(sf1) : null, sf2 ? getSfLoser(sf2) : null]);
   }
 
   return predicted;

@@ -832,6 +832,73 @@ describe('Final/Bronze: implicit pickedWinnerId from finish score when no explic
   });
 });
 
+describe("buildBracketRounds — pickedHomeTeamId/pickedAwayTeamId keep showing the user's own SF picks after real results diverge", () => {
+  // Regression: once both SFs are actually played, the real winners get substituted into
+  // homeTeamId/awayTeamId (and into predictedHomeTeamId/predictedAwayTeamId's source,
+  // userPredictedParticipants). But the "Your pick" row must keep showing what the user
+  // themselves predicted for Final/Bronze, even when the real SF2 result contradicts it.
+  const sf1Real = makeMatch('sf1', 'SF', {
+    homeTeamId: 'A1',
+    awayTeamId: 'C1',
+    winnerTeamId: 'A1',
+    homeGoals: 2,
+    awayGoals: 1,
+    status: 'final',
+  });
+  // Real SF2 winner is D1 — but the user picked B1 to win sf2 (see knockoutPicks below).
+  const sf2Real = makeMatch('sf2', 'SF', {
+    homeTeamId: 'B1',
+    awayTeamId: 'D1',
+    winnerTeamId: 'D1',
+    homeGoals: 1,
+    awayGoals: 2,
+    status: 'final',
+  });
+  const picks = [
+    { bracketMatchKey: 'qf1', winner: 'A1' },
+    { bracketMatchKey: 'qf2', winner: 'C1' },
+    { bracketMatchKey: 'qf3', winner: 'B1' },
+    { bracketMatchKey: 'qf4', winner: 'D1' },
+    { bracketMatchKey: 'sf1', winner: 'A1' },
+    { bracketMatchKey: 'sf2', winner: 'B1' }, // user's pick — actual sf2 winner is D1
+  ];
+
+  it("Final: shows the user's own predicted finalists (A1, B1), not the real finalists (A1, D1)", () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalQf1, finalQf2, finalQf3, finalQf4, sf1Real, sf2Real],
+      { knockoutPicks: picks, finishScores: {} },
+      [],
+      [],
+    );
+    const finalCard = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    // Sanity check: the real, confirmed Final participants are A1 and D1 (D1 actually won sf2).
+    expect(finalCard.homeTeamId).toBe('A1');
+    expect(finalCard.awayTeamId).toBe('D1');
+    // But the user's own bracket picked A1 and B1 as finalists.
+    expect(finalCard.pickedHomeTeamId).toBe('A1');
+    expect(finalCard.pickedAwayTeamId).toBe('B1');
+  });
+
+  it("Bronze: shows the user's own predicted SF losers (C1, D1), not the real bronze pair (C1, B1)", () => {
+    const { bronzeMatch } = buildBracketRounds(
+      miniTournament,
+      [finalQf1, finalQf2, finalQf3, finalQf4, sf1Real, sf2Real],
+      { knockoutPicks: picks, finishScores: {} },
+      [],
+      [],
+    );
+    expect(bronzeMatch).not.toBeNull();
+    // Real bronze pair: C1 (lost sf1) and B1 (lost sf2 for real).
+    expect(bronzeMatch!.homeTeamId).toBe('C1');
+    expect(bronzeMatch!.awayTeamId).toBe('B1');
+    // User's own bracket: C1 lost sf1 (matches), but the user predicted B1 to WIN sf2,
+    // so the user's own bronze pair is C1 and D1 (D1 = the team the user predicted to lose sf2).
+    expect(bronzeMatch!.pickedHomeTeamId).toBe('C1');
+    expect(bronzeMatch!.pickedAwayTeamId).toBe('D1');
+  });
+});
+
 describe('buildBracketRounds — poolPickHomePct / poolPickAwayPct', () => {
   // qf1: A1 (home) vs B2 (away), not yet played
   const scheduledQf1 = makeMatch('qf1', 'QF', {
