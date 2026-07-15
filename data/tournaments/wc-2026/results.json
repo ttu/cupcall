@@ -766,6 +766,17 @@
       "winner": "ARG",
       "decidedBy": "extraTime",
       "kickoff": "2026-07-12T01:00:00Z"
+    },
+    {
+      "round": "SF",
+      "matchId": "sf101",
+      "home": "FRA",
+      "away": "ESP",
+      "homeGoals": 0,
+      "awayGoals": 2,
+      "winner": "ESP",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-14T19:00:00Z"
     }
   ],
   "groupOrder": {
