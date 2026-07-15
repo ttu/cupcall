@@ -42,9 +42,15 @@ const ROWS: Row[] = [
     hint: (s) => `per correct team +${s.roundOf8PerTeam} (max +${s.roundOf8PerTeam * 8})`,
   },
   {
-    label: 'SF',
-    key: 'topFour',
+    label: 'SF · Teams',
+    key: 'topFourTeams',
     hint: (s) => `per correct semifinalist +${s.roundOf4PerTeam} (max +${s.roundOf4PerTeam * 4})`,
+  },
+  {
+    label: 'SF · Position',
+    key: 'topFourPosition',
+    hint: (s) =>
+      `per correct final standing (1st–4th) +${s.topFourPositionBonus} (max +${s.topFourPositionBonus * 4})`,
   },
   {
     label: 'Final',

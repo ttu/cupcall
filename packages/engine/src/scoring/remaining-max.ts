@@ -119,6 +119,8 @@ export function computeRemainingMaxPoints(
     roundOf16: points(roundOf16Max),
     roundOf8: points(roundOf8Max),
     topFour: points(topFourMax),
+    topFourTeams: points(topFourMembershipMax),
+    topFourPosition: points(topFourPositionMax),
     specials: points(specialsMax),
     total: points(total),
   };

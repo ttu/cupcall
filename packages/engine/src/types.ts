@@ -206,7 +206,12 @@ export interface ScoreBreakdown {
   final: Points;
   roundOf16: Points;
   roundOf8: Points;
+  /** Equals topFourTeams + topFourPosition. See scoreTopFour. */
   topFour: Points;
+  /** Correct top-4 (semifinalist) team predictions only — set membership, no order. Subset of topFour. */
+  topFourTeams: Points;
+  /** Position bonus (1st/2nd/3rd/4th exact slot) earned within topFour. Subset of topFour. */
+  topFourPosition: Points;
   specials: Points;
   total: Points;
 }

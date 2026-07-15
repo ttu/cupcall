@@ -210,6 +210,8 @@ describe('scoreCard — §7.7 worked example', () => {
     expect(breakdown.groupOrder).toBe(3); // 2 correct (twoCorrect)
     expect(breakdown.roundOf8).toBe(18); // 6 × 3
     expect(breakdown.topFour).toBe(26); // 4×5 membership + 2×3 Final position bonus
+    expect(breakdown.topFourTeams).toBe(20); // 4×5 membership
+    expect(breakdown.topFourPosition).toBe(6); // 2×3 Final position bonus
     expect(breakdown.final).toBe(15); // 10 teams + 5 exact
     expect(breakdown.bronze).toBe(0); // no bronzeMatch in actual
     expect(breakdown.specials).toBe(25); // 15 + 10
@@ -327,5 +329,8 @@ describe('scoreCard — integration sanity', () => {
       breakdown.topFour +
       breakdown.specials;
     expect(breakdown.total).toBe(expectedTotal);
+
+    // topFour is the sum of its two sub-categories
+    expect(breakdown.topFourTeams + breakdown.topFourPosition).toBe(breakdown.topFour);
   });
 });

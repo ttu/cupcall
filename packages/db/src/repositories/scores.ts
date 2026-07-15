@@ -39,6 +39,21 @@ function toScoreRow(raw: typeof schema.scores.$inferSelect): ScoreRow {
   };
 }
 
+/**
+ * `breakdown` is stored as jsonb with no runtime schema enforcement, so a row written before a
+ * ScoreBreakdown field existed (e.g. topFourTeams/topFourPosition) can lack it at runtime even
+ * though the type says it's always present. Default missing fields to 0 until the prediction is
+ * next rescored — this is the single read boundary for `breakdown`, so fixing it here covers
+ * every consumer.
+ */
+function normalizeBreakdown(raw: ScoreBreakdown): ScoreBreakdown {
+  return {
+    ...raw,
+    topFourTeams: raw.topFourTeams ?? points(0),
+    topFourPosition: raw.topFourPosition ?? points(0),
+  };
+}
+
 /** Deletes the score row for (poolId, userId). No-op if no row exists. */
 export async function deleteScore(db: Database, poolId: PoolId, uid: UserId): Promise<void> {
   await db
@@ -143,7 +158,7 @@ export async function getLeaderboard(
       userId: userId(r.userId),
       displayName: r.displayName,
       pointsTotal: points(r.pointsTotal ?? 0),
-      breakdown: r.breakdown ?? null,
+      breakdown: r.breakdown ? normalizeBreakdown(r.breakdown) : null,
       completionPercent,
     };
   });

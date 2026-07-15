@@ -161,6 +161,8 @@ describe('buildKnockoutMilestoneDeltasForTest', () => {
       roundOf16: points(6), // should NOT appear here — handled by slot deltas
       roundOf8: points(9),
       topFour: points(5),
+      topFourTeams: points(5),
+      topFourPosition: points(0),
       final: points(10),
       bronze: points(0),
       specials: points(5),

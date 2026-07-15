@@ -50,25 +50,24 @@ export function scoreTopFour(
   scoring: Scoring,
 ): Points {
   return points(
-    scoreTopFourMembership(derived, actual, scoring) +
-      scoreTopFourPositionBonus(derived, actual, scoring),
+    scoreTopFourTeams(derived, actual, scoring) + scoreTopFourPosition(derived, actual, scoring),
   );
 }
 
 /** Correct top-4 (semifinalist) team predictions, set membership only — order never matters. */
-function scoreTopFourMembership(
+export function scoreTopFourTeams(
   derived: DerivedCard,
   actual: ActualResults,
   scoring: Scoring,
-): number {
+): Points {
   if (actual.answers.roundOf4 === undefined) {
-    return 0;
+    return points(0);
   }
 
   const actualSet = new Set(actual.answers.roundOf4);
   const correctCount = derived.roundOf4.filter((team) => actualSet.has(team)).length;
 
-  return correctCount * scoring.roundOf4PerTeam;
+  return points(correctCount * scoring.roundOf4PerTeam);
 }
 
 /**
@@ -78,11 +77,11 @@ function scoreTopFourMembership(
  * if it also earned membership points — reaching the Final/Bronze match implies being one of the
  * 4 real semifinalists, so no separate membership check is needed here.
  */
-function scoreTopFourPositionBonus(
+export function scoreTopFourPosition(
   derived: DerivedCard,
   actual: ActualResults,
   scoring: Scoring,
-): number {
+): Points {
   const [predictedFinalWinner, predictedFinalLoser, predictedBronzeWinner, predictedBronzeLoser] =
     derived.topFour;
   let total = 0;
@@ -101,5 +100,5 @@ function scoreTopFourPositionBonus(
     if (predictedBronzeLoser === loser) total += scoring.topFourPositionBonus;
   }
 
-  return total;
+  return points(total);
 }

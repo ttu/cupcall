@@ -402,6 +402,45 @@ Final team points (above).
 - **Design/plan:** `docs/superpowers/specs/2026-07-15-topfour-position-bonus-design.md`,
   `docs/superpowers/plans/2026-07-15-topfour-position-bonus.md`.
 
+## Split SF teams/position in the score breakdown (2026-07-15)
+
+Two bugs surfaced after the Top Four position bonus launch (above): the static `ScoringGuide`
+"Semifinalists" max and the `ScoreBreakdownCard` "SF" row hint both still showed the pre-bonus max
+(`roundOf4PerTeam × 4`), undercounting by the 12 pts (`topFourPositionBonus × 4`) the position bonus
+adds. Fixed those two display bugs, then split the combined "SF" row in `ScoreBreakdownCard` into
+two rows — "SF · Teams" and "SF · Position" — so users can see membership and position-bonus points
+earned separately.
+
+- **`ScoreBreakdown.topFourTeams` / `.topFourPosition`** (`packages/engine/src/types.ts`) — new
+  fields alongside the existing combined `topFour` (kept for sorting/race-chart/leaderboard
+  consumers; equals the sum of the two new fields).
+- **`scoreTopFourTeams()` / `scoreTopFourPosition()`** (`packages/engine/src/scoring/sets-rankings.ts`)
+  — the functions backing `scoreTopFour()` were already split internally; just exported publicly
+  under names matching the new `ScoreBreakdown` fields.
+- **`computeRemainingMaxPoints()`** (`packages/engine/src/scoring/remaining-max.ts`) — already computed
+  `topFourMembershipMax`/`topFourPositionMax` separately before summing; exposed both under the same
+  two new field names, so "remaining" stays consistent with "earned."
+- **`ScoreBreakdownCard`** (`apps/web/.../results/ui/`) — renders "SF · Teams" and "SF · Position" as
+  separate rows; `score-breakdown-utils.ts`'s `CATEGORY_KEYS` swapped `'topFour'` for the two new keys
+  so both rows keep showing per-category pool leaders.
+- **Non-goal:** `KnockoutPointsPanel`'s combined "SF" earned/missed/avail row was left as-is — only
+  the Score breakdown card was split.
+- **Rollout gap, found by code review and fixed:** `scripts/sync.ts`'s rescore loop actually
+  `catch`es and _skips_ (not rescues) any prediction that throws during scoring — e.g. an
+  incomplete card — leaving its existing DB `breakdown` row untouched **permanently**, not just
+  until the next sync. Old rows missing `topFourTeams`/`topFourPosition` rendered `+undefined` in
+  `ScoreBreakdownCard` and were silently excluded from the "leaders" chips (`undefined > 0` is
+  `false`). Fixed at the single read boundary instead of patching every UI consumer:
+  `getLeaderboard()` (`packages/db/src/repositories/scores.ts`) now runs a `normalizeBreakdown()`
+  step that defaults missing fields to 0 for any row, regardless of when it was last rescored.
+- **Dead-code cleanup, also from review:** `score.ts` had started re-deriving
+  `topFour = topFourTeams + topFourPosition` inline, duplicating the identical sum already inside
+  `scoreTopFour()` (now otherwise uncalled in production). Switched `score.ts` back to calling
+  `scoreTopFour()` directly, so there's exactly one place that defines "topFour = teams +
+  position."
+- **Design/plan:** discussed inline (no separate spec/plan doc — small, already-scoped bugfix +
+  follow-on feature).
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

@@ -11,7 +11,8 @@ function mkBreakdown(
   const go = partial.groupOrder ?? 0;
   const r16 = partial.roundOf16 ?? 0;
   const r8 = partial.roundOf8 ?? 0;
-  const tf = partial.topFour ?? 0;
+  const tfTeams = partial.topFourTeams ?? 0;
+  const tfPosition = partial.topFourPosition ?? 0;
   const fn = partial.final ?? 0;
   const br = partial.bronze ?? 0;
   const sp = partial.specials ?? 0;
@@ -20,11 +21,13 @@ function mkBreakdown(
     groupOrder: points(go),
     roundOf16: points(r16),
     roundOf8: points(r8),
-    topFour: points(tf),
+    topFour: points(tfTeams + tfPosition),
+    topFourTeams: points(tfTeams),
+    topFourPosition: points(tfPosition),
     final: points(fn),
     bronze: points(br),
     specials: points(sp),
-    total: points(g + go + r16 + r8 + tf + fn + br + sp),
+    total: points(g + go + r16 + r8 + tfTeams + tfPosition + fn + br + sp),
   };
 }
 
@@ -96,6 +99,16 @@ describe('deriveTopByCategory', () => {
     const result = deriveTopByCategory(leaderboard, undefined);
     expect(result.groupMatches).toHaveLength(1);
     expect(result.groupMatches?.[0]?.displayName).toBe('Bob');
+  });
+
+  it('computes leaders for topFourTeams and topFourPosition independently', () => {
+    const leaderboard = [
+      mkEntry('u1', 'Alice', mkBreakdown({ topFourTeams: 20, topFourPosition: 3 })),
+      mkEntry('u2', 'Bob', mkBreakdown({ topFourTeams: 15, topFourPosition: 9 })),
+    ];
+    const result = deriveTopByCategory(leaderboard, undefined);
+    expect(result.topFourTeams?.map((l) => l.displayName)).toEqual(['Alice', 'Bob']);
+    expect(result.topFourPosition?.map((l) => l.displayName)).toEqual(['Bob', 'Alice']);
   });
 
   it('slices at 3 even when more members qualify', () => {

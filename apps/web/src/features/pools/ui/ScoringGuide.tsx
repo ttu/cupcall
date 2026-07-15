@@ -50,7 +50,7 @@ export function ScoringGuide({ scoring }: Props): ReactElement {
   const finishMatchMax = scoring.final.perTeam * 2 + scoring.final.exactScore;
   const roundOf16Max = scoring.roundOf16PerTeam * 16;
   const roundOf8Max = scoring.roundOf8PerTeam * 8;
-  const roundOf4Max = scoring.roundOf4PerTeam * 4;
+  const roundOf4Max = scoring.roundOf4PerTeam * 4 + scoring.topFourPositionBonus * 4;
 
   return (
     <div className="space-y-4">
@@ -98,7 +98,12 @@ export function ScoringGuide({ scoring }: Props): ReactElement {
           pts={scoring.roundOf4PerTeam}
           note="resolves as each QF match completes"
         />
-        <Row label="Maximum (all 4 correct)" pts={roundOf4Max} />
+        <Row
+          label="Position bonus (1st, 2nd, 3rd or 4th place correct)"
+          pts={scoring.topFourPositionBonus}
+          note="per position, up to 4"
+        />
+        <Row label="Maximum (all 4 correct + all positions correct)" pts={roundOf4Max} />
       </SectionCard>
 
       {/* Special Bets */}

@@ -4,7 +4,7 @@ import { makeTestDb } from '../testing/make-test-db';
 import { testScoring } from '../testing/fixtures';
 import type { Db } from '../client';
 import * as schema from './index';
-import { userId, type Points } from '@cup/engine';
+import { userId, points } from '@cup/engine';
 import type { ScoreBreakdown } from '@cup/engine';
 
 // Unique id helpers
@@ -14,15 +14,17 @@ const now = () => new Date();
 
 // Minimal valid ScoreBreakdown
 const testBreakdown: ScoreBreakdown = {
-  groupMatches: 0 as Points,
-  groupOrder: 0 as Points,
-  bronze: 0 as Points,
-  final: 0 as Points,
-  roundOf16: 0 as Points,
-  roundOf8: 0 as Points,
-  topFour: 0 as Points,
-  specials: 0 as Points,
-  total: 0 as Points,
+  groupMatches: points(0),
+  groupOrder: points(0),
+  bronze: points(0),
+  final: points(0),
+  roundOf16: points(0),
+  roundOf8: points(0),
+  topFour: points(0),
+  topFourTeams: points(0),
+  topFourPosition: points(0),
+  specials: points(0),
+  total: points(0),
 };
 
 describe('migrations apply cleanly', () => {

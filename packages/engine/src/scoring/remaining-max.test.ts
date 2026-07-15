@@ -25,7 +25,9 @@ const MAX_GROUP_ORDER = NUM_GROUPS * miniScoring.groupOrder.allCorrect;
 const MAX_ROUND_OF_16 =
   miniTournament.bracket.roundOf16Matches.length * 2 * miniScoring.roundOf16PerTeam; // 0 for mini-tournament
 const MAX_ROUND_OF_8 = NUM_QF_MATCHES * 2 * miniScoring.roundOf8PerTeam;
-const MAX_TOP_FOUR = 4 * miniScoring.roundOf4PerTeam + 4 * miniScoring.topFourPositionBonus;
+const MAX_TOP_FOUR_TEAMS = 4 * miniScoring.roundOf4PerTeam;
+const MAX_TOP_FOUR_POSITION = 4 * miniScoring.topFourPositionBonus;
+const MAX_TOP_FOUR = MAX_TOP_FOUR_TEAMS + MAX_TOP_FOUR_POSITION;
 const MAX_BRONZE = 2 * miniScoring.bronze.perTeam + miniScoring.bronze.exactScore;
 const MAX_FINAL = 2 * miniScoring.final.perTeam + miniScoring.final.exactScore;
 const MAX_SPECIALS =
@@ -68,6 +70,8 @@ describe('computeRemainingMaxPoints — overall', () => {
     expect(result.roundOf16).toBe(MAX_ROUND_OF_16);
     expect(result.roundOf8).toBe(MAX_ROUND_OF_8);
     expect(result.topFour).toBe(MAX_TOP_FOUR);
+    expect(result.topFourTeams).toBe(MAX_TOP_FOUR_TEAMS);
+    expect(result.topFourPosition).toBe(MAX_TOP_FOUR_POSITION);
     expect(result.bronze).toBe(MAX_BRONZE);
     expect(result.final).toBe(MAX_FINAL);
     expect(result.specials).toBe(MAX_SPECIALS);
@@ -82,6 +86,8 @@ describe('computeRemainingMaxPoints — overall', () => {
     expect(result.roundOf16).toBe(0);
     expect(result.roundOf8).toBe(0);
     expect(result.topFour).toBe(0);
+    expect(result.topFourTeams).toBe(0);
+    expect(result.topFourPosition).toBe(0);
     expect(result.bronze).toBe(0);
     expect(result.final).toBe(0);
     expect(result.specials).toBe(0);
@@ -109,6 +115,7 @@ describe('computeRemainingMaxPoints — overall', () => {
         r.final +
         r.specials;
       expect(r.total).toBe(sum);
+      expect(r.topFourTeams + r.topFourPosition).toBe(r.topFour);
     }
   });
 });

@@ -21,6 +21,8 @@ function makeBreakdown(total: number): ScoreBreakdown {
     roundOf16: points(0),
     roundOf8: points(0),
     topFour: points(0),
+    topFourTeams: points(0),
+    topFourPosition: points(0),
     specials: points(0),
     total: points(total),
   };
@@ -197,6 +199,34 @@ describe('scores repository', () => {
     it('returns empty array when pool has no members', async () => {
       const board = await getLeaderboard(db, poolId);
       expect(board).toHaveLength(0);
+    });
+
+    it('defaults missing topFourTeams/topFourPosition to 0 for rows written before those fields existed', async () => {
+      await addMember(db, poolId, userId1);
+      // Simulates a pre-migration DB row: jsonb isn't runtime-validated, so a legacy
+      // breakdown blob can lack fields the current ScoreBreakdown type claims are required.
+      const legacyBreakdown = {
+        groupMatches: points(10),
+        groupOrder: points(0),
+        bronze: points(0),
+        final: points(0),
+        roundOf16: points(0),
+        roundOf8: points(0),
+        topFour: points(15),
+        specials: points(0),
+        total: points(25),
+      } as ScoreBreakdown;
+      await db.insert(schema.scores).values({
+        poolId,
+        userId: userId1,
+        pointsTotal: 25,
+        breakdown: legacyBreakdown,
+      });
+
+      const [entry] = await getLeaderboard(db, poolId);
+      expect(entry?.breakdown?.topFourTeams).toBe(0);
+      expect(entry?.breakdown?.topFourPosition).toBe(0);
+      expect(entry?.breakdown?.topFour).toBe(15);
     });
 
     describe('completionPercent', () => {
