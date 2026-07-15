@@ -178,7 +178,7 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
               {match.homeTeamPredictedPct}%
             </span>
           )}
-          {match.pickedWinnerId !== null && match.pickedWinnerId === match.homeTeamId && (
+          {match.actualWinnerId !== null && match.pickedWinnerId === match.homeTeamId && (
             <Icon name="check" size={11} color="var(--green-600)" />
           )}
         </div>
@@ -213,7 +213,7 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
               {match.awayTeamPredictedPct}%
             </span>
           )}
-          {match.pickedWinnerId !== null && match.pickedWinnerId === match.awayTeamId && (
+          {match.actualWinnerId !== null && match.pickedWinnerId === match.awayTeamId && (
             <Icon name="check" size={11} color="var(--green-600)" />
           )}
         </div>
