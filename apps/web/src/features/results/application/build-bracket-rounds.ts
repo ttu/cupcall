@@ -551,7 +551,7 @@ function computeDerivedParticipants(
 function computeEntryRoundPredictionPcts(
   def: Tournament,
   poolGroupScores: PoolGroupScore[],
-): Map<string, number> {
+): Map<string, number> | null {
   const byUser = new Map<string, GroupScore[]>();
   for (const s of poolGroupScores) {
     const uid = s.userId as string;
@@ -559,7 +559,9 @@ function computeEntryRoundPredictionPcts(
     byUser.get(uid)!.push({ matchId: matchId(s.matchId), home: s.home, away: s.away });
   }
 
-  if (byUser.size === 0) return new Map();
+  // Distinguish "no pool predictions exist at all" (null → hide the badge) from
+  // "predictions exist but this specific team got zero of them" (0% → still shown below).
+  if (byUser.size === 0) return null;
 
   const qualifierCounts = new Map<string, number>();
   for (const scores of byUser.values()) {
@@ -723,24 +725,28 @@ function computeKnockoutRoundPcts(
  * - Entry round: derived from group-score qualification predictions.
  * - Bronze: always null (participants are SF losers; no direct pick exists for this).
  * - Other rounds: % of users who picked `teamId` to win their feeder match (prog.from[slotIndex]).
+ *
+ * A team that legitimately got zero pool picks for its feeder match must still show "0%",
+ * not be hidden — only the absence of any prediction data at all yields null.
  */
 function computeTeamRoundPct(
   matchKey: string,
   teamId: string | null,
   slotIndex: 0 | 1,
   isEntryRound: boolean,
-  r32PredPcts: Map<string, number>,
+  r32PredPcts: Map<string, number> | null,
   progressionByMatch: Map<string, { from: string[] }>,
   knockoutRoundPcts: Map<string, Map<string, number>>,
   bronzeMatchKey: string,
 ): number | null {
   if (!teamId) return null;
-  if (isEntryRound) return r32PredPcts.get(teamId) ?? null;
+  if (isEntryRound) return r32PredPcts === null ? null : (r32PredPcts.get(teamId) ?? 0);
   if (matchKey === bronzeMatchKey) return null;
   const prog = progressionByMatch.get(matchKey);
   const feederKey = prog?.from[slotIndex];
   if (!feederKey) return null;
-  return knockoutRoundPcts.get(feederKey)?.get(teamId) ?? null;
+  const feederPcts = knockoutRoundPcts.get(feederKey);
+  return feederPcts === undefined ? null : (feederPcts.get(teamId) ?? 0);
 }
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {

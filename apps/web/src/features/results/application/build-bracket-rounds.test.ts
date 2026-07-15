@@ -946,6 +946,80 @@ describe('buildBracketRounds — poolPickHomePct / poolPickAwayPct', () => {
   });
 });
 
+describe('buildBracketRounds — homeTeamPredictedPct / awayTeamPredictedPct', () => {
+  it('shows 0% (not hidden) for a team nobody in the pool picked to win its feeder match', () => {
+    const qf1 = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: 'A1',
+      homeGoals: 2,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const qf2 = makeMatch('qf2', 'QF', {
+      homeTeamId: 'C1',
+      awayTeamId: 'D2',
+      winnerTeamId: 'C1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const qf3 = makeMatch('qf3', 'QF', {
+      homeTeamId: 'B1',
+      awayTeamId: 'A2',
+      winnerTeamId: 'B1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const qf4 = makeMatch('qf4', 'QF', {
+      homeTeamId: 'D1',
+      awayTeamId: 'C2',
+      winnerTeamId: 'D1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const sf1 = makeMatch('sf1', 'SF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'C1',
+      winnerTeamId: 'A1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    // Every pool user picked D1 to win sf2, but B1 upsets it — B1 reaches the Final with 0 pool picks.
+    const sf2 = makeMatch('sf2', 'SF', {
+      homeTeamId: 'B1',
+      awayTeamId: 'D1',
+      winnerTeamId: 'B1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const picks: PoolKnockoutPick[] = [
+      { userId: userId('u1'), bracketMatchKey: bmk('sf1'), winnerTeamId: 'A1' },
+      { userId: userId('u1'), bracketMatchKey: bmk('sf2'), winnerTeamId: 'D1' },
+      { userId: userId('u2'), bracketMatchKey: bmk('sf1'), winnerTeamId: 'A1' },
+      { userId: userId('u2'), bracketMatchKey: bmk('sf2'), winnerTeamId: 'D1' },
+    ];
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1, qf2, qf3, qf4, sf1, sf2],
+      null,
+      [],
+      picks,
+    );
+    const finalMatch = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+
+    expect(finalMatch.homeTeamId).toBe('A1');
+    expect(finalMatch.awayTeamId).toBe('B1');
+    expect(finalMatch.homeTeamPredictedPct).toBe(100);
+    // B1 got zero picks in the pool for sf2, but that's a known (not missing) round — must be 0, not null.
+    expect(finalMatch.awayTeamPredictedPct).toBe(0);
+  });
+});
+
 describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-round match)', () => {
   // Scenario maps to the production bug:
   //   r32m86 (ARG vs CPV) → qf1 (A1 vs B2): user picks A1 — valid ✓
