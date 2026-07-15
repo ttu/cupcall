@@ -385,7 +385,8 @@ function buildKnockoutRoundBreakdown(
   const canStillGet = {
     roundOf16: perTeamAvail(r16Health, r16Answered, totalMax.roundOf16),
     roundOf8: perTeamAvail(r8Health, r8Answered, totalMax.roundOf8),
-    topFour: (roundOf4FullyKnown ? 0 : membershipMaxPossible) + topFourPositionCeiling,
+    topFourTeams: roundOf4FullyKnown ? 0 : membershipMaxPossible,
+    topFourPosition: topFourPositionCeiling,
     bronze: finaleAvail(def.scoring.bronze, bd?.bronze ?? 0, bronzePlayed, effectiveBronzeBusted),
     final: finaleAvail(def.scoring.final, bd?.final ?? 0, finalPlayed, bustedSfPicks),
   };
@@ -407,7 +408,13 @@ function buildKnockoutRoundBreakdown(
       missed: perTeamMissed(r8Health, r8Answered, totalMax.roundOf8, r8Earned),
       canStillGet: canStillGet.roundOf8,
     },
-    row('SF', bd?.topFour ?? 0, totalMax.topFour, canStillGet.topFour),
+    row('SF · Teams', bd?.topFourTeams ?? 0, totalMax.topFourTeams, canStillGet.topFourTeams),
+    row(
+      'SF · Position',
+      bd?.topFourPosition ?? 0,
+      totalMax.topFourPosition,
+      canStillGet.topFourPosition,
+    ),
     row('Final', bd?.final ?? 0, totalMax.final, canStillGet.final),
     row('Bronze', bd?.bronze ?? 0, totalMax.bronze, canStillGet.bronze),
   ];

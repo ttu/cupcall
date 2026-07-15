@@ -2393,9 +2393,9 @@ describe('getResultsView', () => {
       expect(s.missed).toBe(rows.reduce((sum, r) => sum + r.missed, 0));
       expect(s.canStillGet).toBe(rows.reduce((sum, r) => sum + r.canStillGet, 0));
 
-      // The SF row (topFour) must show missed points due to the busted QF pick.
-      const sfRow = rows.find((r) => r.label === 'SF')!;
-      expect(sfRow.missed).toBe(1 * miniTournament.scoring.roundOf4PerTeam); // 1 of 4 QF picks busted
+      // The SF · Teams row (topFourTeams) must show missed points due to the busted QF pick.
+      const sfTeamsRow = rows.find((r) => r.label === 'SF · Teams')!;
+      expect(sfTeamsRow.missed).toBe(1 * miniTournament.scoring.roundOf4PerTeam); // 1 of 4 QF picks busted
       expect(s.missed).toBeGreaterThan(0);
     });
   });
@@ -2415,20 +2415,29 @@ describe('getResultsView', () => {
       const rows = view!.userKnockoutRoundBreakdown!;
       const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
 
-      expect(rows).toHaveLength(5);
-      expect(rows.map((r) => r.label)).toEqual(['Round of 16', 'QF', 'SF', 'Final', 'Bronze']);
+      expect(rows).toHaveLength(6);
+      expect(rows.map((r) => r.label)).toEqual([
+        'Round of 16',
+        'QF',
+        'SF · Teams',
+        'SF · Position',
+        'Final',
+        'Bronze',
+      ]);
       expect(rows.every((r) => r.earned === 0)).toBe(true);
       expect(rows.every((r) => r.missed === 0)).toBe(true);
 
       const r16 = rows.find((r) => r.label === 'Round of 16')!;
       const r8 = rows.find((r) => r.label === 'QF')!;
-      const topFour = rows.find((r) => r.label === 'SF')!;
+      const sfTeams = rows.find((r) => r.label === 'SF · Teams')!;
+      const sfPosition = rows.find((r) => r.label === 'SF · Position')!;
       const finalRow = rows.find((r) => r.label === 'Final')!;
       const bronzeRow = rows.find((r) => r.label === 'Bronze')!;
 
       expect(r16.canStillGet).toBe(totalMax.roundOf16);
       expect(r8.canStillGet).toBe(totalMax.roundOf8);
-      expect(topFour.canStillGet).toBe(totalMax.topFour);
+      expect(sfTeams.canStillGet).toBe(totalMax.topFourTeams);
+      expect(sfPosition.canStillGet).toBe(totalMax.topFourPosition);
       expect(finalRow.canStillGet).toBe(totalMax.final);
       expect(bronzeRow.canStillGet).toBe(totalMax.bronze);
     });
@@ -2457,7 +2466,8 @@ describe('getResultsView', () => {
       const rows = view!.userKnockoutRoundBreakdown!;
 
       expect(rows.find((r) => r.label === 'QF')!.earned).toBe(10);
-      expect(rows.find((r) => r.label === 'SF')!.earned).toBe(8);
+      expect(rows.find((r) => r.label === 'SF · Teams')!.earned).toBe(8);
+      expect(rows.find((r) => r.label === 'SF · Position')!.earned).toBe(0);
       expect(rows.find((r) => r.label === 'Bronze')!.earned).toBe(4);
       expect(rows.find((r) => r.label === 'Final')!.earned).toBe(3);
     });
@@ -2490,12 +2500,15 @@ describe('getResultsView', () => {
       const rows = view!.userKnockoutRoundBreakdown!;
       const totalMax = computeRemainingMaxPoints(miniTournament, { finalMatchIds: new Set() });
 
-      const topFour = rows.find((r) => r.label === 'SF')!;
+      const sfTeams = rows.find((r) => r.label === 'SF · Teams')!;
+      const sfPosition = rows.find((r) => r.label === 'SF · Position')!;
       const finalRow = rows.find((r) => r.label === 'Final')!;
       const bronzeRow = rows.find((r) => r.label === 'Bronze')!;
 
-      expect(topFour.canStillGet).toBe(0);
-      expect(topFour.missed).toBe(totalMax.topFour); // earned=0, resolved → all missed
+      expect(sfTeams.canStillGet).toBe(0);
+      expect(sfTeams.missed).toBe(totalMax.topFourTeams); // earned=0, resolved → all missed
+      expect(sfPosition.canStillGet).toBe(0);
+      expect(sfPosition.missed).toBe(totalMax.topFourPosition); // earned=0, resolved → all missed
       expect(finalRow.canStillGet).toBe(0);
       expect(finalRow.missed).toBe(totalMax.final);
       expect(bronzeRow.canStillGet).toBe(0);
@@ -2541,14 +2554,17 @@ describe('getResultsView', () => {
       const rows = view!.userKnockoutRoundBreakdown!;
       const { roundOf4PerTeam, topFourPositionBonus } = miniTournament.scoring;
 
-      const sfRow = rows.find((r) => r.label === 'SF')!;
-      // membership: 3 of 4 QF picks still viable → 3×roundOf4PerTeam; position bonus: neither
-      // Final nor Bronze played, no SF/bronze picks made → fully open, 4×topFourPositionBonus.
-      expect(sfRow.canStillGet).toBe(3 * roundOf4PerTeam + 4 * topFourPositionBonus);
-      // missed reflects only the lost membership point — the busted QF pick doesn't affect the
-      // still-open position bonus.
-      expect(sfRow.missed).toBe(1 * roundOf4PerTeam);
-      expect(sfRow.earned).toBe(0);
+      const sfTeams = rows.find((r) => r.label === 'SF · Teams')!;
+      const sfPosition = rows.find((r) => r.label === 'SF · Position')!;
+      // membership: 3 of 4 QF picks still viable → 3×roundOf4PerTeam.
+      expect(sfTeams.canStillGet).toBe(3 * roundOf4PerTeam);
+      expect(sfTeams.missed).toBe(1 * roundOf4PerTeam);
+      expect(sfTeams.earned).toBe(0);
+      // position bonus: neither Final nor Bronze played, no SF/bronze picks made → fully open,
+      // 4×topFourPositionBonus. The busted QF pick doesn't affect the still-open position bonus.
+      expect(sfPosition.canStillGet).toBe(4 * topFourPositionBonus);
+      expect(sfPosition.missed).toBe(0);
+      expect(sfPosition.earned).toBe(0);
     });
 
     it('reduces Final canStillGet and shows missed when an SF pick is busted', async () => {
