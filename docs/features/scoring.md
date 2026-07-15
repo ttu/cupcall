@@ -76,10 +76,9 @@ Resolved when `actualResults.answers.roundOf16` / `.roundOf8` are populated.
 predicts will reach the semifinal. Each SF match's two participants are always exactly the winner
 picks of its two feeding QF matches, so this is derivable from QF picks alone — present as soon as
 the player has made their QF picks, independent of whether they've made SF, Final, or Bronze picks
-yet. (This is a **separate field** from `DerivedCard.topFour` — see §3 — which is order-dependent
-and used only for the Predict page's "predicted final standings" display, not for scoring.)
+yet.
 
-Scoring counts how many of those four teams are in `actualResults.answers.roundOf4` (teams
+**Membership** counts how many of those four teams are in `actualResults.answers.roundOf4` (teams
 confirmed to have won their QF match), **order-agnostic**. `answers.roundOf4` is auto-derived from
 QF match winners in `scripts/sync.ts` — same pattern as `roundOf16`/`roundOf8` — so this resolves
 incrementally as QF matches complete, not at the end of the tournament.
@@ -91,6 +90,28 @@ incrementally as QF matches complete, not at the end of the tournament.
 | 2                     | 10              |
 | 1                     | 5               |
 | 0                     | 0               |
+
+**Position bonus** — `DerivedCard.topFour` — see §3 — is now also used for scoring, not just the
+Predict page's "predicted final standings" display: `[finalWinner, finalLoser, bronzeWinner,
+bronzeLoser]`, i.e. the player's predicted 1st/2nd/3rd/4th place. For each slot whose predicted
+team exactly matches the actual team in that slot (determined from `actualResults.finalMatch.winner`
+/ `bronzeMatch.winner`, since goals alone can't disambiguate a penalty shootout), the player earns an
+additional **3 points** (`topFourPositionBonus`) — on top of that team's 5-point membership score.
+A team can only earn the position bonus once it's also correctly predicted as a semifinalist —
+reaching the Final or Bronze match implies being one of the 4 real semifinalists, so no separate
+membership check is needed.
+
+The position bonus resolves **independently per finish match**, not per QF match: the 1st/2nd bonus
+banks as soon as the Final is played, the 3rd/4th bonus as soon as the Bronze match is played — so
+it can remain open even after the membership table above has fully resolved (all 4 QF matches
+played).
+
+Worked example: a player predicts [ARG (1st), FRA (2nd), NED (3rd), POR (4th)]. All four reach the
+semifinal (20 membership points). ARG then beats FRA in the Final exactly as predicted (+6 position
+bonus: 2 slots × 3), but NED loses the Bronze match to POR, the reverse of the prediction (+0 bronze
+position bonus). Total: 20 + 6 = **26**.
+
+Max per team: 5 (membership) + 3 (position) = **8**. Max for the category: 4 × 8 = **32**.
 
 **Implementation:** `scoreTopFour()` — `packages/engine/src/scoring/sets-rankings.ts`
 
@@ -179,16 +200,19 @@ CardInputs (raw picks)
        ├─ roundOf8   — teams in QF entry slots (implicit QF participants)
        ├─ finalists  — SF winner picks (→ Final participants)
        ├─ bronzePair — SF losers derived from SF winner pick + SF participants
-       ├─ roundOf4   — the 4 QF-winner picks (predicted semifinalists) — used for SF scoring
-       └─ topFour    — [finalWinner, finalLoser, bronzeWinner, bronzeLoser] — Predict page display only
+       ├─ roundOf4   — the 4 QF-winner picks (predicted semifinalists) — used for SF membership scoring
+       └─ topFour    — [finalWinner, finalLoser, bronzeWinner, bronzeLoser] — Predict page display AND
+                        the SF position-bonus scoring input (see §2.4)
 ```
 
 Key invariants:
 
 - `bronzePair` is _never_ the explicit bronze bracket pick; it is always the two SF losers.
 - `roundOf4` needs only the 4 QF-winner picks; it does not depend on SF, Final, or Bronze picks.
-- `topFour` requires all four of final+bronze to be resolved; it may be shorter for partial cards.
-  It is **not** used for scoring (see §2.4) — only for the Predict page's ordered standings display.
+- `topFour` requires final+bronze picks to be resolved to populate each slot; it may be shorter for
+  partial cards. Used both for the Predict page's ordered standings display and, since the top-four
+  position bonus was added, for scoring (see §2.4) — a slot that's absent (partial card) simply
+  can't earn its position bonus.
 - Stale picks (team not a match participant) are silently dropped; partial cards score 0 for
   unresolvable rounds.
 
@@ -218,16 +242,31 @@ canStillGet = health.maxPossiblePoints - health.earnedPoints
 
 `maxPossiblePoints = (alivePicks + pendingPicks) × ptsPerPick`
 
-**Top-four:**
+**Top-four:** membership and the position bonus (§2.4) resolve independently, so `canStillGet` sums
+two separately-computed ceilings:
 
 ```
-sfRemaining  = sfHealth.totalPicks - sfHealth.bustedPicks
-sfMaxPossible = sfRemaining × scoring.roundOf4PerTeam
-canStillGet   = sfMaxPossible - (alreadyEarned)
+// Membership — zero once every QF match has been played (roundOf4FullyKnown)
+sfRemaining          = sfHealth.totalPicks - sfHealth.bustedPicks - sfHealth.alivePicks
+membershipMaxPossible = sfRemaining × scoring.roundOf4PerTeam
+
+// Position bonus — resolves independently per finish match
+topFourPositionCeiling =
+  (finalPlayed  ? 0 : max(0, 2 - bustedSfPicks)         × scoring.topFourPositionBonus) +
+  (bronzePlayed ? 0 : max(0, 2 - effectiveBronzeBusted) × scoring.topFourPositionBonus)
+
+canStillGet = (roundOf4FullyKnown ? 0 : membershipMaxPossible) + topFourPositionCeiling
 ```
 
 `sfHealth.totalPicks` equals the number of QF matches (4 for WC2026), not the number of picks
-made. Busted QF picks reduce the achievable ceiling; unpicked slots do not.
+made. Busted QF picks reduce the membership ceiling; unpicked slots do not. Subtracting
+`sfHealth.alivePicks` (not just `bustedPicks`) avoids double-counting picks already banked, since
+`bd.topFour` now combines membership and position-bonus earnings and can no longer be subtracted
+directly the way the old single-category ceiling did.
+
+The position bonus stays open even after membership has fully resolved — it only closes once its
+own finish match (Final for 1st/2nd, Bronze for 3rd/4th) has been played, reusing the same
+`bustedSfPicks`/`effectiveBronzeBusted` counts computed for the Final/Bronze ceilings below.
 
 **Final / Bronze:**
 Both finals slots (home/away) are occupied by _derived_ participants from the two SF picks.
@@ -260,10 +299,14 @@ Computed in `buildPerUserKnockoutCanStillGet()` — `apps/web/src/features/resul
 
 Uses `MatchRow[]` directly to detect eliminated teams. Applies the same logic:
 
-- **Top-four:** (non-busted QF picks − already-confirmed-correct picks) × `roundOf4PerTeam`,
-  clamped to 0 — the confirmed portion is subtracted so it isn't double-counted against points
-  already banked via `scoreTopFour`.
-- **Final/Bronze:** count busted SF-slot pairs → `max(0, 2 - busted) × perTeam + exactScore`
+- **Top-four membership:** (non-busted QF picks − already-confirmed-correct picks) ×
+  `roundOf4PerTeam`, clamped to 0 — the confirmed portion is subtracted so it isn't double-counted
+  against points already banked via `scoreTopFour`.
+- **Final/Bronze:** count busted SF-slot pairs → `max(0, 2 - busted) × perTeam + exactScore`, plus
+  `max(0, 2 - busted) × topFourPositionBonus` for the corresponding top-four position-bonus slots
+  (1st/2nd for Final, 3rd/4th for Bronze) — reusing the same busted-pair counts as the line above,
+  each added inside the `if (!finalPlayed)` / `if (!bronzePlayed)` guard so the position-bonus
+  upside disappears the moment its finish match is played.
 
 ---
 
@@ -278,7 +321,10 @@ final. Used as the ceiling for `canStillGet` calculations and for the "missed" f
 Notable conservative choices:
 
 - `roundOf16` and `roundOf8` are locked to 0 once the group stage is complete (bracket is fixed).
-- `topFour` is locked once every QF match is played (all four semifinalists are then known).
+- `topFour`'s **membership** portion locks once every QF match is played (all four semifinalists
+  are then known); its **position-bonus** portion locks independently — 1st/2nd once the Final is
+  played, 3rd/4th once Bronze is played — so `topFour`'s overall ceiling can stay above 0 even
+  after membership has fully resolved.
 - `final`'s team portion (2 × `perTeam`) locks once both SF matches are played, leaving only
   `exactScore` attainable until the Final itself is played — mirroring `topFour`'s QF-completion
   treatment, one round later. Bronze is unaffected: its full `2 × perTeam + exactScore` upside

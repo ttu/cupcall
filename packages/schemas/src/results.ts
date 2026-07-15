@@ -20,6 +20,7 @@ const actualFinishMatchSchema = z.object({
   away: teamIdSchema,
   homeGoals: z.number().int().nonnegative(),
   awayGoals: z.number().int().nonnegative(),
+  winner: teamIdSchema,
 });
 
 const decidedBySchema = z.enum(['regulation', 'extraTime', 'penalties']);
@@ -147,6 +148,7 @@ export const resultsSchema: z.ZodType<ActualResults, z.ZodTypeDef, unknown> =
         away: fm.away,
         homeGoals: fm.homeGoals,
         awayGoals: fm.awayGoals,
+        winner: fm.winner,
         ...(fm.decidedBy !== undefined && { decidedBy: fm.decidedBy }),
         ...(fm.decisiveGoalPlayer !== undefined && { decisiveGoalPlayer: fm.decisiveGoalPlayer }),
       };
@@ -163,12 +165,19 @@ export type ResultsInput = {
     awayConduct?: number;
   }>;
   groupOrder: Record<string, string[]>;
-  bronzeMatch?: { home: string; away: string; homeGoals: number; awayGoals: number };
+  bronzeMatch?: {
+    home: string;
+    away: string;
+    homeGoals: number;
+    awayGoals: number;
+    winner: string;
+  };
   finalMatch?: {
     home: string;
     away: string;
     homeGoals: number;
     awayGoals: number;
+    winner: string;
     decidedBy?: 'regulation' | 'extraTime' | 'penalties';
     decisiveGoalPlayer?: string;
   };

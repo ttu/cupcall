@@ -173,6 +173,7 @@ export async function syncTournament(
         away: teamId(derivedBronzeMatch.away),
         homeGoals: derivedBronzeMatch.homeGoals,
         awayGoals: derivedBronzeMatch.awayGoals,
+        winner: teamId(derivedBronzeMatch.winner),
       },
     }),
     ...(derivedFinalMatch !== undefined && {
@@ -181,6 +182,7 @@ export async function syncTournament(
         away: teamId(derivedFinalMatch.away),
         homeGoals: derivedFinalMatch.homeGoals,
         awayGoals: derivedFinalMatch.awayGoals,
+        winner: teamId(derivedFinalMatch.winner),
         ...(derivedFinalMatch.decidedBy !== undefined && {
           decidedBy: derivedFinalMatch.decidedBy,
         }),

@@ -100,11 +100,8 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       miniTournament,
       emptyActualResults,
     );
-    // topFour(4 non-busted)=20, Final=2×5+5=15, Bronze=2×5+5=15 (2 sf picks → 2 bronze pairs)
-    // But u1 has no SF picks → bustedSfPicks=0 (no-picks not counted as busted)
-    //   Final: max(0,2-0)×5+5=15
-    //   Bronze: no sfWinner picks → sfWinner=null → no busted bronze pairs counted → 2×5+5=15
-    expect(result.get('u1')).toBe(20 + 15 + 15); // 50
+    // topFour(4 non-busted)=20, Final=2×5+5+2×3=21, Bronze=2×5+5+2×3=21 (0 busted SF picks)
+    expect(result.get('u1')).toBe(20 + 21 + 21); // 62
   });
 
   it('reduces topFour tier when a QF pick is busted', () => {
@@ -123,8 +120,8 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       emptyActualResults,
     );
     // 1 busted QF pick → nonBustedQf = 4-1 = 3 → topFour(3)=15
-    // Final: 15, Bronze: 15
-    expect(result.get('u1')).toBe(15 + 15 + 15); // 45
+    // Final: 15 + 2×3=6 = 21; Bronze: 21 (0 busted SF picks)
+    expect(result.get('u1')).toBe(15 + 21 + 21); // 57
   });
 
   it('gives 0 topFour when roundOf4 is already fully known', () => {
@@ -139,8 +136,9 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       miniTournament,
       resolvedActual,
     );
-    // No topFour (resolved), no SF picks → Final=15, Bronze=15 (no-picks not counted as busted)
-    expect(result.get('u1')).toBe(0 + 15 + 15); // 30
+    // No topFour (resolved); Final/Bronze position bonus still open (0 busted SF picks)
+    // Final=15+6=21, Bronze=15+6=21
+    expect(result.get('u1')).toBe(0 + 21 + 21); // 42
   });
 
   it('gives Final canStillGet = 2×perTeam+exactScore when no SF picks are busted', () => {
@@ -158,15 +156,10 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       miniTournament,
       emptyActualResults,
     );
-    // topFour: 4 - 0 busted (only qf1, qf2 picked) → wait, qfKeys = [qf1,qf2,qf3,qf4], nonBustedQf starts at 4
-    // u1 has picks for qf1 (A1, viable) and qf2 (C1, viable), qf3 and qf4 (no pick = not busted)
-    // nonBustedQf = 4 (all unbusted)
-    // topFour = 20
-    // Final: 2 sf picks, both viable → bustedSf=0 → max(0,2-0)×5+5=15
-    // Bronze: sf1 winner=A1, qf1→A1, qf2→C1; sf1 loser=C1 (qf2 winner ≠ sf1 winner A1)
-    //         sf2 winner=B1, qf3=null, qf4=null; sfWinner=B1 but no qf picks → bronzeTeam=null → skip
-    //   → bustedBronzePairs=0 → 2×5+5=15
-    expect(result.get('u1')).toBe(20 + 15 + 15); // 50
+    // topFour = 20 (nonBustedQf=4, all unbusted)
+    // Final: bustedSf=0 → 2×5+5+2×3=21
+    // Bronze: bustedBronzePairs=0 → 2×5+5+2×3=21
+    expect(result.get('u1')).toBe(20 + 21 + 21); // 62
   });
 
   it('gives 0 Final canStillGet when final match is already played', () => {
@@ -178,6 +171,7 @@ describe('buildPerUserKnockoutCanStillGet', () => {
         away: 'C1' as TeamId,
         homeGoals: 2,
         awayGoals: 1,
+        winner: 'A1' as TeamId,
         decidedBy: 'regulation',
       },
     };
@@ -187,8 +181,9 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       miniTournament,
       resolvedActual,
     );
-    // Final played → 0 for Final; Bronze not played → 15
-    expect(result.get('u1')).toBe(20 + 0 + 15); // 35
+    // Final played → 0 for Final (position bonus for 1st/2nd also gone, block skipped entirely)
+    // Bronze not played → 15 + 2×3=6 = 21 (0 busted SF picks: sf1 unresolved → conservatively viable)
+    expect(result.get('u1')).toBe(20 + 0 + 21); // 41
   });
 
   it('marks pick as busted when the picked team is eliminated from tournament', () => {
@@ -201,8 +196,8 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       miniTournament,
       emptyActualResults,
     );
-    // nonBustedQf = 4-1=3 → topFour=15; Final: no SF picks → 15; Bronze: 15
-    expect(result.get('u1')).toBe(15 + 15 + 15); // 45
+    // nonBustedQf = 4-1=3 → topFour=15; Final: no SF picks → 21; Bronze: 21
+    expect(result.get('u1')).toBe(15 + 21 + 21); // 57
   });
 
   it('marks pick as busted when both participants confirmed and pick not among them', () => {
@@ -215,7 +210,8 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       emptyActualResults,
     );
     // qf1 pick busted (C1 not in A1 vs B2 when both known) → nonBustedQf=3 → topFour=15
-    expect(result.get('u1')).toBe(15 + 15 + 15); // 45
+    // Final/Bronze: no SF picks → 21 each
+    expect(result.get('u1')).toBe(15 + 21 + 21); // 57
   });
 
   it('conservatively treats pick as viable when match participants are TBD', () => {
@@ -228,9 +224,9 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       emptyActualResults,
     );
     // QF: no picks (or not busted) → topFour=20
-    // SF1 pick viable (TBD) → bustedSfPicks=0 → Final=15
-    // Bronze: sf1 winner=A1 but no QF picks for sf1 feeders → bronzeTeam=null → 0 busted → Bronze=15
-    expect(result.get('u1')).toBe(20 + 15 + 15); // 50
+    // SF1 pick viable (TBD) → bustedSfPicks=0 → Final=15+6=21
+    // Bronze: sf1 winner=A1 but no QF picks for sf1 feeders → bronzeTeam=null → 0 busted → Bronze=21
+    expect(result.get('u1')).toBe(20 + 21 + 21); // 62
   });
 
   it('returns 0 for a player whose only picks are for already-final matches', () => {
@@ -242,9 +238,9 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       miniTournament,
       emptyActualResults,
     );
-    // qf1 is final and pick=B2 lost → busted → nonBustedQf=3 → topFour=15, Final=15, Bronze=15
+    // qf1 is final and pick=B2 lost → busted → nonBustedQf=3 → topFour=15, Final=21, Bronze=21
     // Note: Final and Bronze are still available for u1 (they just don't have SF picks)
-    expect(result.get('u1')).toBe(15 + 15 + 15); // 45
+    expect(result.get('u1')).toBe(15 + 21 + 21); // 57
   });
 
   it('busts the derived bronze pair when the SF winner pick itself is already busted', () => {
@@ -268,11 +264,11 @@ describe('buildPerUserKnockoutCanStillGet', () => {
       emptyActualResults,
     );
     // topFour: qf1 busted, qf2 busted → nonBustedQf=2 → topFour=10
-    // Final: sf1 busted (B2 eliminated), sf2 no pick → bustedSfPicks=1 → max(0,2-1)×5+5=10
+    // Final: sf1 busted (B2 eliminated), sf2 no pick → bustedSfPicks=1 → max(0,2-1)×5+5+max(0,2-1)×3=13
     // Bronze: sf1's SF-winner pick is busted, so its derived bronze slot must be busted too
     //   (not merely re-derived from Z9, which looks "alive" only because it never played a
-    //   real knockout match) → bustedBronzePairs=1 → max(0,2-1)×5+5=10
-    expect(result.get('u1')).toBe(10 + 10 + 10); // 30
+    //   real knockout match) → bustedBronzePairs=1 → max(0,2-1)×5+5+max(0,2-1)×3=13
+    expect(result.get('u1')).toBe(10 + 13 + 13); // 36
   });
 
   it('differentiates two players: one with a viable pick, one with a busted pick', () => {
@@ -292,8 +288,9 @@ describe('buildPerUserKnockoutCanStillGet', () => {
     // u2: qf1 final, pick=B2 lost → nonBustedQf=3, confirmedQf=0 → ceiling=15, banked=0 → 15
     // Both surface the same *remaining* upside — u1's already-confirmed 5 points show up in
     // their banked pointsTotal instead, not here (avoids double-counting).
-    expect(result.get('u1')).toBe(15 + 15 + 15); // 45
-    expect(result.get('u2')).toBe(15 + 15 + 15); // 45
+    // Final/Bronze: neither u1 nor u2 has SF picks → 0 busted → 21 each
+    expect(result.get('u1')).toBe(15 + 21 + 21); // 57
+    expect(result.get('u2')).toBe(15 + 21 + 21); // 57
   });
 });
 

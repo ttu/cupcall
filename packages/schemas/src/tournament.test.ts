@@ -15,6 +15,7 @@ const validTournamentJson = {
     bronze: { exactScore: 5, perTeam: 5 },
     final: { exactScore: 5, perTeam: 5 },
     roundOf4PerTeam: 5,
+    topFourPositionBonus: 3,
     tournamentTopScoringTeam: 10,
     tournamentTopConcedingTeam: 10,
     highestMatchGoals: 10,
@@ -83,6 +84,7 @@ describe('tournamentSchema', () => {
     expect(result.bracket.bronzeMatch).toBe('bronze-1');
     expect(result.scoring.groupMatch.exactScore).toBe(6);
     expect(result.scoring.roundOf4PerTeam).toBe(5);
+    expect(result.scoring.topFourPositionBonus).toBe(3);
   });
 
   it('strips knockoutRounds (display-only label, not part of the engine type)', () => {

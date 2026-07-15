@@ -143,7 +143,14 @@ describe('scoreSpecials — finalDecidedByPenalties', () => {
     const inputs = makeInputs({ finalDecidedByPenalties: true });
     const actual = makeActual(
       {},
-      { home: ARG, away: teamId('FRA'), homeGoals: 3, awayGoals: 2, decidedBy: 'penalties' },
+      {
+        home: ARG,
+        away: teamId('FRA'),
+        homeGoals: 3,
+        awayGoals: 2,
+        winner: ARG,
+        decidedBy: 'penalties',
+      },
     );
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(10);
   });
@@ -152,7 +159,14 @@ describe('scoreSpecials — finalDecidedByPenalties', () => {
     const inputs = makeInputs({ finalDecidedByPenalties: false });
     const actual = makeActual(
       {},
-      { home: ARG, away: teamId('FRA'), homeGoals: 1, awayGoals: 0, decidedBy: 'regulation' },
+      {
+        home: ARG,
+        away: teamId('FRA'),
+        homeGoals: 1,
+        awayGoals: 0,
+        winner: ARG,
+        decidedBy: 'regulation',
+      },
     );
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(10);
   });
@@ -161,7 +175,14 @@ describe('scoreSpecials — finalDecidedByPenalties', () => {
     const inputs = makeInputs({ finalDecidedByPenalties: true });
     const actual = makeActual(
       {},
-      { home: ARG, away: teamId('FRA'), homeGoals: 1, awayGoals: 0, decidedBy: 'regulation' },
+      {
+        home: ARG,
+        away: teamId('FRA'),
+        homeGoals: 1,
+        awayGoals: 0,
+        winner: ARG,
+        decidedBy: 'regulation',
+      },
     );
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(0);
   });
@@ -170,7 +191,14 @@ describe('scoreSpecials — finalDecidedByPenalties', () => {
     const inputs = makeInputs({ finalDecidedByPenalties: false });
     const actual = makeActual(
       {},
-      { home: ARG, away: teamId('FRA'), homeGoals: 3, awayGoals: 2, decidedBy: 'penalties' },
+      {
+        home: ARG,
+        away: teamId('FRA'),
+        homeGoals: 3,
+        awayGoals: 2,
+        winner: ARG,
+        decidedBy: 'penalties',
+      },
     );
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(0);
   });
@@ -185,7 +213,14 @@ describe('scoreSpecials — finalDecidedByPenalties', () => {
     const inputs = makeInputs({});
     const actual = makeActual(
       {},
-      { home: ARG, away: teamId('FRA'), homeGoals: 3, awayGoals: 2, decidedBy: 'penalties' },
+      {
+        home: ARG,
+        away: teamId('FRA'),
+        homeGoals: 3,
+        awayGoals: 2,
+        winner: ARG,
+        decidedBy: 'penalties',
+      },
     );
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(0);
   });
@@ -201,6 +236,7 @@ describe('scoreSpecials — finalDecisiveGoalPlayer', () => {
         away: teamId('FRA'),
         homeGoals: 3,
         awayGoals: 2,
+        winner: ARG,
         decisiveGoalPlayer: GOAL_SCORER,
       },
     );
@@ -216,6 +252,7 @@ describe('scoreSpecials — finalDecisiveGoalPlayer', () => {
         away: teamId('FRA'),
         homeGoals: 3,
         awayGoals: 2,
+        winner: ARG,
         decisiveGoalPlayer: GOAL_SCORER,
       },
     );
@@ -230,7 +267,10 @@ describe('scoreSpecials — finalDecisiveGoalPlayer', () => {
 
   it('finalMatch present but no decisiveGoalPlayer → 0', () => {
     const inputs = makeInputs({ finalDecisiveGoalPlayer: GOAL_SCORER });
-    const actual = makeActual({}, { home: ARG, away: teamId('FRA'), homeGoals: 3, awayGoals: 2 });
+    const actual = makeActual(
+      {},
+      { home: ARG, away: teamId('FRA'), homeGoals: 3, awayGoals: 2, winner: ARG },
+    );
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(0);
   });
 });
@@ -271,6 +311,7 @@ describe('scoreSpecials — full house', () => {
         away: teamId('FRA'),
         homeGoals: 3,
         awayGoals: 2,
+        winner: ARG,
         decidedBy: 'penalties',
         decisiveGoalPlayer: GOAL_SCORER,
       },

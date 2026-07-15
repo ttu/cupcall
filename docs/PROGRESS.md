@@ -367,6 +367,41 @@ Bronze is intentionally unchanged (out of scope) — see scoring.md §2.5 for th
   alive/pending counts were already derived from real match state, independent of point banking.
 - **Design/plan:** `docs/superpowers/plans/2026-07-15-finalist-points-at-sf-completion.md`.
 
+## Top Four position bonus (2026-07-15)
+
+Added a position-accuracy bonus on top of the existing Semifinalists (Top Four) scoring: +3 pts per
+team whose predicted final-standing slot (1st/2nd from the Final, 3rd/4th from Bronze) exactly
+matches the actual slot, in addition to the existing 5 pts/team membership score. Max per team
+5 + 3 = 8 (was 5); max for the category 4 × 8 = 32 (was 20). Resolves incrementally per finish
+match, mirroring the QF-completion precedent for membership and the SF-completion precedent for
+Final team points (above).
+
+- **`Scoring.topFourPositionBonus: number`** (`packages/engine/src/types.ts`) — new config field,
+  set to 3 in every tournament config (`data/tournaments/*/tournament.json`) and test fixture.
+- **`ActualFinishMatch.winner: TeamId`** (`packages/engine/src/types.ts`) — new **required** field.
+  Goals alone can't determine the winner of a penalty-decided Final/Bronze (confirmed real case:
+  `data/tournaments/test-wc-2026/results.json`'s Final, `1-1, decidedBy: penalties`). The raw
+  `knockout[]` results format already carried a `winner` per match — it was just discarded when
+  `scripts/sync.ts` built `finalMatch`/`bronzeMatch`. Threaded through `packages/schemas/src/results.ts`,
+  `scripts/sync.ts`, and `packages/db/src/repositories/actual-results.ts` (read side; the write side
+  already stores the object verbatim). Every existing fixture across the repo got a `winner` field
+  added, inferred from its own `homeGoals`/`awayGoals`.
+- **`scoreTopFour()`** (`packages/engine/src/scoring/sets-rankings.ts`) — split into
+  `scoreTopFourMembership()` (unchanged logic) + `scoreTopFourPositionBonus()` (new), summed. The
+  position bonus compares `DerivedCard.topFour` (now used for scoring, not just the Predict page
+  display) against `actual.finalMatch`/`bronzeMatch`'s `winner`/`home`/`away`.
+- **Three duplicated "canStillGet" ceiling calculations updated in lockstep** — discovered mid-plan
+  that the ceiling logic isn't centralized: `computeRemainingMaxPoints()`
+  (`packages/engine/src/scoring/remaining-max.ts`, tournament-wide),
+  `buildPerUserKnockoutCanStillGet()` (`apps/web/.../build-race-view.ts`, Points Race projections),
+  and `buildKnockoutRoundBreakdown()` (`apps/web/.../get-results-view.ts`, the bracket-health "SF"
+  row) all needed the same treatment: membership ceiling unchanged, plus
+  `max(0, 2 - bustedCount) × topFourPositionBonus` per finish match not yet played, reusing each
+  file's existing `bustedSfPicks`/`bustedBronzePairs` (or `effectiveBronzeBusted`) counts. If a
+  fourth ceiling computation is ever added, it needs the same treatment — there's no shared helper.
+- **Design/plan:** `docs/superpowers/specs/2026-07-15-topfour-position-bonus-design.md`,
+  `docs/superpowers/plans/2026-07-15-topfour-position-bonus.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

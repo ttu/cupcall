@@ -305,18 +305,24 @@ function buildKnockoutRoundBreakdown(
     return isAnswered ? Math.max(0, totalMaxPts - earned) : 0;
   }
 
-  // For topFour: if some QF picks are busted, the achievable ceiling decreases.
-  // Use the 'SF' health row (populated from QF picks) to count still-possible picks.
-  // Use totalPicks - bustedPicks (not alivePicks + pendingPicks) so that 'no-pick' slots
-  // don't incorrectly reduce the achievable ceiling.
-  const sfRemaining = sfHealth !== null ? sfHealth.totalPicks - sfHealth.bustedPicks : null;
-  const sfMaxPossible =
-    sfRemaining !== null ? sfRemaining * def.scoring.roundOf4PerTeam : totalMax.topFour;
+  // For topFour membership: if some QF picks are busted or already confirmed correct, the
+  // achievable ceiling shrinks accordingly. Use totalPicks - bustedPicks - alivePicks (not just
+  // totalPicks - bustedPicks) so already-banked picks aren't double-counted as still-reachable
+  // upside — 'no-pick' and 'pending' slots remain counted as reachable, matching
+  // buildPerUserKnockoutCanStillGet's equivalent (nonBustedQf - confirmedQf) formula.
+  const sfRemaining =
+    sfHealth !== null ? sfHealth.totalPicks - sfHealth.bustedPicks - sfHealth.alivePicks : null;
+  const membershipMaxPossible =
+    sfRemaining !== null
+      ? sfRemaining * def.scoring.roundOf4PerTeam
+      : 4 * def.scoring.roundOf4PerTeam;
 
   // Once every QF match's winner is known, roundOf4 has as many entries as there are QF
-  // matches — at that point topFour is fully resolved and no further upside remains, even in
-  // contexts (e.g. tests, or a sync run that never wrote individual match rows) where the
-  // bracket-health `sfHealth` ceiling wouldn't otherwise reflect that.
+  // matches — at that point topFour membership is fully resolved and no further membership
+  // upside remains, even in contexts (e.g. tests, or a sync run that never wrote individual
+  // match rows) where the bracket-health `sfHealth` ceiling wouldn't otherwise reflect that.
+  // The position bonus (below) resolves independently of membership via the Final/Bronze
+  // matches, so it can remain attainable after membership itself has fully resolved.
   const roundOf4FullyKnown =
     (actualResults.answers.roundOf4?.length ?? 0) >= def.bracket.roundOf8Matches.length;
 
@@ -366,22 +372,22 @@ function buildKnockoutRoundBreakdown(
   const r16Earned = bd?.roundOf16 ?? 0;
   const r8Earned = bd?.roundOf8 ?? 0;
 
+  const finalPlayed = actualResults.finalMatch !== undefined;
+  const bronzePlayed = actualResults.bronzeMatch !== undefined;
+
+  // Position bonus (1st/2nd from the Final, 3rd/4th from Bronze) resolves independently of
+  // membership, once each finish match is played — reuses the same busted-pick counts as the
+  // Final/Bronze ceilings below, since a slot can only pay out if its predicted team is alive.
+  const topFourPositionCeiling =
+    (finalPlayed ? 0 : Math.max(0, 2 - bustedSfPicks) * def.scoring.topFourPositionBonus) +
+    (bronzePlayed ? 0 : Math.max(0, 2 - effectiveBronzeBusted) * def.scoring.topFourPositionBonus);
+
   const canStillGet = {
     roundOf16: perTeamAvail(r16Health, r16Answered, totalMax.roundOf16),
     roundOf8: perTeamAvail(r8Health, r8Answered, totalMax.roundOf8),
-    topFour: roundOf4FullyKnown ? 0 : sfMaxPossible - (bd?.topFour ?? 0),
-    bronze: finaleAvail(
-      def.scoring.bronze,
-      bd?.bronze ?? 0,
-      actualResults.bronzeMatch !== undefined,
-      effectiveBronzeBusted,
-    ),
-    final: finaleAvail(
-      def.scoring.final,
-      bd?.final ?? 0,
-      actualResults.finalMatch !== undefined,
-      bustedSfPicks,
-    ),
+    topFour: (roundOf4FullyKnown ? 0 : membershipMaxPossible) + topFourPositionCeiling,
+    bronze: finaleAvail(def.scoring.bronze, bd?.bronze ?? 0, bronzePlayed, effectiveBronzeBusted),
+    final: finaleAvail(def.scoring.final, bd?.final ?? 0, finalPlayed, bustedSfPicks),
   };
 
   function row(label: string, earned: number, max: number, avail: number): KnockoutRoundRow {

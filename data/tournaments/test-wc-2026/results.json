@@ -103,13 +103,15 @@
     "home": "GER",
     "away": "BRA",
     "homeGoals": 2,
-    "awayGoals": 1
+    "awayGoals": 1,
+    "winner": "GER"
   },
   "finalMatch": {
     "home": "ESP",
     "away": "ARG",
     "homeGoals": 1,
     "awayGoals": 1,
+    "winner": "ESP",
     "decidedBy": "penalties"
   },
   "answers": {

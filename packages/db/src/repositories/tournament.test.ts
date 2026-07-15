@@ -206,12 +206,19 @@ describe('tournament repository', () => {
         matchResults: [],
         groupOrder: {},
         answers: {},
-        bronzeMatch: { home: teamId('A1'), away: teamId('B1'), homeGoals: 2, awayGoals: 0 },
+        bronzeMatch: {
+          home: teamId('A1'),
+          away: teamId('B1'),
+          homeGoals: 2,
+          awayGoals: 0,
+          winner: teamId('A1'),
+        },
         finalMatch: {
           home: teamId('C1'),
           away: teamId('D1'),
           homeGoals: 1,
           awayGoals: 0,
+          winner: teamId('C1'),
           decidedBy: 'regulation',
         },
       };

@@ -57,19 +57,19 @@ match kickoff**. As real results are entered, points are awarded automatically a
 
 ## 2. Glossary
 
-| Term                   | Meaning                                                                                                                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Tournament**         | A cup competition defined in JSON (teams, groups, matches, bracket rules).                                                                                                       |
-| **Group** (tournament) | A first-stage group of teams (e.g. Group A). 2026 WC has 12 groups of 4.                                                                                                         |
-| **Pool**               | A private social group of users with its own leaderboard. (Named "pool" to avoid clashing with tournament groups.)                                                               |
-| **Match**              | A single fixture with two teams; group or knockout. Has a kickoff time and, once played, a result.                                                                               |
-| **Prediction** (card)  | A user's complete set of answers for one pool (§6). One card per user per pool.                                                                                                  |
-| **Group order**        | The final 1st–4th finishing order of a group. Derived from predicted scores and scored (§7.2).                                                                                   |
-| **Round of 8**         | The eight teams that reach the quarter-finals. Derived from each player's bracket (§6.3).                                                                                        |
-| **Semifinalists**      | The four teams that reach the SF. Derived from the player's four QF-winner picks (§6.3); scored by count of correct teams, resolved incrementally as QF matches complete (§7.4). |
-| **Special bets**       | Tournament-wide novelty predictions (top scorer, cards, shootouts, etc.) — §6.6.                                                                                                 |
-| **Top scorer**         | The player who scores the most goals across the whole tournament.                                                                                                                |
-| **Lock time**          | Kickoff of the tournament's first match. Predictions are read-only afterward.                                                                                                    |
+| Term                   | Meaning                                                                                                                                                                                                                                                                |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tournament**         | A cup competition defined in JSON (teams, groups, matches, bracket rules).                                                                                                                                                                                             |
+| **Group** (tournament) | A first-stage group of teams (e.g. Group A). 2026 WC has 12 groups of 4.                                                                                                                                                                                               |
+| **Pool**               | A private social group of users with its own leaderboard. (Named "pool" to avoid clashing with tournament groups.)                                                                                                                                                     |
+| **Match**              | A single fixture with two teams; group or knockout. Has a kickoff time and, once played, a result.                                                                                                                                                                     |
+| **Prediction** (card)  | A user's complete set of answers for one pool (§6). One card per user per pool.                                                                                                                                                                                        |
+| **Group order**        | The final 1st–4th finishing order of a group. Derived from predicted scores and scored (§7.2).                                                                                                                                                                         |
+| **Round of 8**         | The eight teams that reach the quarter-finals. Derived from each player's bracket (§6.3).                                                                                                                                                                              |
+| **Semifinalists**      | The four teams that reach the SF. Derived from the player's four QF-winner picks (§6.3); scored by count of correct teams, resolved incrementally as QF matches complete, plus a position bonus for correctly predicting each team's exact final-standing slot (§7.4). |
+| **Special bets**       | Tournament-wide novelty predictions (top scorer, cards, shootouts, etc.) — §6.6.                                                                                                                                                                                       |
+| **Top scorer**         | The player who scores the most goals across the whole tournament.                                                                                                                                                                                                      |
+| **Lock time**          | Kickoff of the tournament's first match. Predictions are read-only afterward.                                                                                                                                                                                          |
 
 ---
 
@@ -111,6 +111,7 @@ tournaments or enter results.
     "bronze": { "exactScore": 5, "perTeam": 5 }, // max 15
     "final": { "exactScore": 5, "perTeam": 5 }, // max 15
     "roundOf4PerTeam": 5, // max 20 (4 teams)
+    "topFourPositionBonus": 3, // max 12 (4 slots) — bonus on top of roundOf4PerTeam, see §7.4
     "tournamentTopScoringTeam": 10,
     "tournamentTopConcedingTeam": 10,
     "highestMatchGoals": 10, // most goals in any single match, regulation time
@@ -413,6 +414,14 @@ So a perfect bronze or final prediction = 10 (teams) + 5 (score) = **15**.
   matches complete) → **5** (`roundOf4PerTeam`). Order and eventual Final/Bronze outcome are
   irrelevant — once a team reaches the SF it counts, permanently. _(max 20, 4 teams.)_ Resolves
   incrementally as each QF match completes — no need to wait for the Final or Bronze match.
+- **Semifinalist position bonus** — on top of the above, for each team whose predicted
+  final-standing slot (1st/2nd = predicted Final winner/loser, 3rd/4th = predicted Bronze
+  winner/loser, derived from the player's Final/Bronze bracket picks, §6.3) exactly matches the
+  actual slot → **+3** (`topFourPositionBonus`). A team can only earn this once it's also correctly
+  predicted as a semifinalist — reaching the Final or Bronze match implies being one of the 4 real
+  semifinalists. _(max 12, 4 slots.)_ Resolves independently per finish match: the 1st/2nd bonus as
+  soon as the Final is played, the 3rd/4th bonus as soon as the Bronze match is played — so it can
+  remain open even after the Semifinalists category above has fully resolved.
 
 ### 7.5 Special bets
 
@@ -448,6 +457,8 @@ Each correct answer scores once, from `results.answers` (or the final match for 
 - Round of 8: 6 of the player's 8 picks reached the QFs → 6 × 3 = **18**.
 - Semifinalists: player predicted [ARG, FRA, NED, POR] to reach the SF; all four actually did
   (`results.answers.roundOf4` = [ARG, FRA, NED, POR] once all QF matches complete) → 4 correct = **20**.
+  Player's bracket also predicted ARG to win the Final (1st) and FRA to lose it (2nd); the actual
+  Final result confirms both → position bonus 2 × 3 = **+6** (26 total for this category).
 - Final predicted ARG–FRA 3–2; actual ARG–FRA 3–2 → both teams (10) + exact (5) = **15**.
 - Top scorer FRA-9 correct → **15**; final decided by penalties, predicted "yes", correct → **10**.
 

@@ -109,11 +109,11 @@ describe('scoreCard — partial prediction', () => {
 // groupMatches:   correct-outcome-only(3) + exact(6)       = 9
 // groupOrder:     2 positions correct                       = 3
 // roundOf8:       6-of-8 correct × 3                       = 18
-// topFour:        all 4 predicted semifinalists confirmed (tier 20) = 20
+// topFour:        all 4 predicted semifinalists confirmed (20) + 2 correct Final positions (6) = 26
 // final:          both teams + exact 3–2                    = 15
 // bronze:         none                                      = 0
 // specials:       topScorerPlayer(15) + penalties(10)       = 25
-// total:                                                    = 90
+// total:                                                    = 96
 
 const ARG = teamId('ARG');
 const FRA = teamId('FRA');
@@ -192,27 +192,28 @@ const actual77: ActualResults = {
     away: FRA,
     homeGoals: 3,
     awayGoals: 2,
+    winner: ARG,
     decidedBy: 'penalties',
   },
   answers: {
     roundOf8: ACTUAL_R8,
-    roundOf4: [ARG, FRA, NED, POR], // all 4 of the player's predicted semifinalists confirmed → tier 20
+    roundOf4: [ARG, FRA, NED, POR], // all 4 of the player's predicted semifinalists confirmed → 20
     topScorerPlayer: [FRA9],
   },
 };
 
 describe('scoreCard — §7.7 worked example', () => {
-  it('produces the correct ScoreBreakdown with total 90', () => {
+  it('produces the correct ScoreBreakdown with total 96', () => {
     const breakdown = scoreCard(derived77, inputs77, actual77, miniScoring);
 
     expect(breakdown.groupMatches).toBe(9); // 3 + 6
     expect(breakdown.groupOrder).toBe(3); // 2 correct (twoCorrect)
     expect(breakdown.roundOf8).toBe(18); // 6 × 3
-    expect(breakdown.topFour).toBe(20); // all 4 predicted semifinalists confirmed
+    expect(breakdown.topFour).toBe(26); // 4×5 membership + 2×3 Final position bonus
     expect(breakdown.final).toBe(15); // 10 teams + 5 exact
     expect(breakdown.bronze).toBe(0); // no bronzeMatch in actual
     expect(breakdown.specials).toBe(25); // 15 + 10
-    expect(breakdown.total).toBe(90);
+    expect(breakdown.total).toBe(96);
   });
 });
 

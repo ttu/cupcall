@@ -95,6 +95,7 @@ export async function getActualResults(
         away: teamId(rawBronze.away as string),
         homeGoals: rawBronze.homeGoals as number,
         awayGoals: rawBronze.awayGoals as number,
+        winner: teamId(rawBronze.winner as string),
       }
     : undefined;
 
@@ -113,6 +114,7 @@ export async function getActualResults(
         away: teamId(rawFinal.away as string),
         homeGoals: rawFinal.homeGoals as number,
         awayGoals: rawFinal.awayGoals as number,
+        winner: teamId(rawFinal.winner as string),
         ...(rawFinalDecidedBy !== undefined ? { decidedBy: rawFinalDecidedBy } : {}),
         ...(finalDecisiveGoalPlayer !== undefined
           ? { decisiveGoalPlayer: finalDecisiveGoalPlayer }

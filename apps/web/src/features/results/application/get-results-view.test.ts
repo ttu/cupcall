@@ -2305,12 +2305,19 @@ describe('getResultsView', () => {
         answers: {
           roundOf4: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')],
         },
-        bronzeMatch: { home: teamId('C1'), away: teamId('D1'), homeGoals: 1, awayGoals: 0 },
+        bronzeMatch: {
+          home: teamId('C1'),
+          away: teamId('D1'),
+          homeGoals: 1,
+          awayGoals: 0,
+          winner: teamId('C1'),
+        },
         finalMatch: {
           home: teamId('A1'),
           away: teamId('B1'),
           homeGoals: 2,
           awayGoals: 1,
+          winner: teamId('A1'),
           decidedBy: 'regulation',
         },
       });
@@ -2444,12 +2451,19 @@ describe('getResultsView', () => {
         answers: {
           roundOf4: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')],
         },
-        bronzeMatch: { home: teamId('C1'), away: teamId('D1'), homeGoals: 1, awayGoals: 0 },
+        bronzeMatch: {
+          home: teamId('C1'),
+          away: teamId('D1'),
+          homeGoals: 1,
+          awayGoals: 0,
+          winner: teamId('C1'),
+        },
         finalMatch: {
           home: teamId('A1'),
           away: teamId('B1'),
           homeGoals: 2,
           awayGoals: 1,
+          winner: teamId('A1'),
           decidedBy: 'regulation',
         },
       });
@@ -2507,11 +2521,15 @@ describe('getResultsView', () => {
 
       const view = await getResultsView({ db, poolId, userId, now: NOW });
       const rows = view!.userKnockoutRoundBreakdown!;
-      const { roundOf4PerTeam } = miniTournament.scoring;
+      const { roundOf4PerTeam, topFourPositionBonus } = miniTournament.scoring;
 
       const sfRow = rows.find((r) => r.label === 'SF')!;
-      expect(sfRow.canStillGet).toBe(3 * roundOf4PerTeam); // 3 of 4 QF picks still viable
-      expect(sfRow.missed).toBe(1 * roundOf4PerTeam); // 1 of 4 QF picks busted
+      // membership: 3 of 4 QF picks still viable → 3×roundOf4PerTeam; position bonus: neither
+      // Final nor Bronze played, no SF/bronze picks made → fully open, 4×topFourPositionBonus.
+      expect(sfRow.canStillGet).toBe(3 * roundOf4PerTeam + 4 * topFourPositionBonus);
+      // missed reflects only the lost membership point — the busted QF pick doesn't affect the
+      // still-open position bonus.
+      expect(sfRow.missed).toBe(1 * roundOf4PerTeam);
       expect(sfRow.earned).toBe(0);
     });
 

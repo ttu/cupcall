@@ -709,15 +709,13 @@ describe('syncTournament integration', () => {
 
       // Predict ESP to win sf101 (i.e. reach the Final). scoreFinal should award
       // final.perTeam for ESP as soon as sf101 is confirmed, before finalMatch exists.
-      await db
-        .insert(schema.predictionKnockoutPicks)
-        .values([
-          {
-            predictionId: predRow.id,
-            bracketMatchKey: bracketMatchKey('sf101'),
-            winnerTeamId: 'ESP',
-          },
-        ]);
+      await db.insert(schema.predictionKnockoutPicks).values([
+        {
+          predictionId: predRow.id,
+          bracketMatchKey: bracketMatchKey('sf101'),
+          winnerTeamId: 'ESP',
+        },
+      ]);
 
       const result = await syncTournament(db, 'test-wc-2026', scratch);
       expect(result.scored).toBe(1);

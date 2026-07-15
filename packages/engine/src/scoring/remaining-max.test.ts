@@ -25,7 +25,7 @@ const MAX_GROUP_ORDER = NUM_GROUPS * miniScoring.groupOrder.allCorrect;
 const MAX_ROUND_OF_16 =
   miniTournament.bracket.roundOf16Matches.length * 2 * miniScoring.roundOf16PerTeam; // 0 for mini-tournament
 const MAX_ROUND_OF_8 = NUM_QF_MATCHES * 2 * miniScoring.roundOf8PerTeam;
-const MAX_TOP_FOUR = 4 * miniScoring.roundOf4PerTeam;
+const MAX_TOP_FOUR = 4 * miniScoring.roundOf4PerTeam + 4 * miniScoring.topFourPositionBonus;
 const MAX_BRONZE = 2 * miniScoring.bronze.perTeam + miniScoring.bronze.exactScore;
 const MAX_FINAL = 2 * miniScoring.final.perTeam + miniScoring.final.exactScore;
 const MAX_SPECIALS =
@@ -208,20 +208,33 @@ describe('computeRemainingMaxPoints — finish matches', () => {
     expect(result.bronze).toBe(MAX_BRONZE);
   });
 
-  it('top-four upside is unaffected by bronze/final alone (needs QF, not finish matches)', () => {
-    expect(computeRemainingMaxPoints(miniTournament, progress([BRONZE_KEY])).topFour).toBe(
-      MAX_TOP_FOUR,
-    );
-    expect(computeRemainingMaxPoints(miniTournament, progress([FINAL_KEY])).topFour).toBe(
-      MAX_TOP_FOUR,
-    );
-    expect(
-      computeRemainingMaxPoints(miniTournament, progress([BRONZE_KEY, FINAL_KEY])).topFour,
-    ).toBe(MAX_TOP_FOUR);
+  it('top-four membership upside is unaffected by bronze/final alone (needs QF)', () => {
+    // Membership (4 × roundOf4PerTeam) stays fully open regardless of bronze/final progress;
+    // only the position-bonus portion shrinks as bronze/final are played.
+    const membershipMax = 4 * miniScoring.roundOf4PerTeam;
+    const bronzeOnly = computeRemainingMaxPoints(miniTournament, progress([BRONZE_KEY]));
+    const finalOnly = computeRemainingMaxPoints(miniTournament, progress([FINAL_KEY]));
+    const both = computeRemainingMaxPoints(miniTournament, progress([BRONZE_KEY, FINAL_KEY]));
+
+    // bronze played → its 2-slot position upside (3rd/4th) is gone; final's (1st/2nd) remains
+    expect(bronzeOnly.topFour).toBe(membershipMax + 2 * miniScoring.topFourPositionBonus);
+    // final played → its 2-slot position upside (1st/2nd) is gone; bronze's (3rd/4th) remains
+    expect(finalOnly.topFour).toBe(membershipMax + 2 * miniScoring.topFourPositionBonus);
+    // both played → no position upside remains, only membership (QF not yet played)
+    expect(both.topFour).toBe(membershipMax);
   });
 
-  it('top-four upside zeroes once every QF match is played', () => {
+  it('top-four membership upside zeroes once every QF match is played, but position bonus remains open', () => {
     const result = computeRemainingMaxPoints(miniTournament, progress(QF_KEYS));
+    // Membership resolved (0); position bonus still fully open (neither final nor bronze played)
+    expect(result.topFour).toBe(4 * miniScoring.topFourPositionBonus);
+  });
+
+  it('top-four fully zeroes once QF, Final, and Bronze have all been played', () => {
+    const result = computeRemainingMaxPoints(
+      miniTournament,
+      progress([...QF_KEYS, FINAL_KEY, BRONZE_KEY]),
+    );
     expect(result.topFour).toBe(0);
   });
 
@@ -324,44 +337,48 @@ describe('computeRemainingMaxPoints — stage transitions', () => {
     expect(result.total).toBe(MAX_TOP_FOUR + MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
   });
 
-  it('after QF: top-four resolves; bronze, final, and specials remain', () => {
+  it('after QF: top-four membership resolves but position bonus stays open; bronze, final, and specials remain', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS]),
     );
-    expect(result.topFour).toBe(0);
-    expect(result.total).toBe(MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
+    const topFourPositionMax = 4 * miniScoring.topFourPositionBonus;
+    expect(result.topFour).toBe(topFourPositionMax);
+    expect(result.total).toBe(MAX_BRONZE + MAX_FINAL + MAX_SPECIALS + topFourPositionMax);
   });
 
-  it('after SF: top-four already resolved (QF complete); final drops to exactScore-only (both SFs final); bronze + specials open', () => {
+  it('after SF: top-four membership already resolved (QF complete), position bonus still fully open; final drops to exactScore-only (both SFs final); bronze + specials open', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS, ...SF_KEYS]),
     );
-    expect(result.topFour).toBe(0);
+    const topFourPositionMax = 4 * miniScoring.topFourPositionBonus;
+    expect(result.topFour).toBe(topFourPositionMax);
     expect(result.final).toBe(miniScoring.final.exactScore);
-    expect(result.total).toBe(MAX_BRONZE + miniScoring.final.exactScore + MAX_SPECIALS);
+    expect(result.total).toBe(
+      MAX_BRONZE + miniScoring.final.exactScore + MAX_SPECIALS + topFourPositionMax,
+    );
   });
 
-  it('after bronze only: bronze locked, top-four already resolved, final at exactScore-only (both SFs already final), specials open', () => {
+  it('after bronze only: bronze locked, top-four membership resolved but Final-slot position bonus remains, final at exactScore-only, specials open', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS, ...SF_KEYS, BRONZE_KEY]),
     );
     expect(result.bronze).toBe(0);
     expect(result.final).toBe(miniScoring.final.exactScore);
-    expect(result.topFour).toBe(0);
+    expect(result.topFour).toBe(2 * miniScoring.topFourPositionBonus); // Final slots only
     expect(result.specials).toBe(MAX_SPECIALS);
   });
 
-  it('after final only (bronze still pending): final locked, top-four already resolved, bronze + specials open', () => {
+  it('after final only (bronze still pending): final locked, top-four membership resolved but Bronze-slot position bonus remains, bronze + specials open', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS, ...SF_KEYS, FINAL_KEY]),
     );
     expect(result.final).toBe(0);
     expect(result.bronze).toBe(MAX_BRONZE);
-    expect(result.topFour).toBe(0);
+    expect(result.topFour).toBe(2 * miniScoring.topFourPositionBonus); // Bronze slots only
     expect(result.specials).toBe(MAX_SPECIALS);
   });
 
@@ -428,6 +445,7 @@ describe('computeRemainingMaxPoints — scoring config sensitivity', () => {
         bronze: { exactScore: 0, perTeam: 0 },
         final: { exactScore: 0, perTeam: 0 },
         roundOf4PerTeam: 0,
+        topFourPositionBonus: 0,
         tournamentTopScoringTeam: 0,
         tournamentTopConcedingTeam: 0,
         highestMatchGoals: 0,

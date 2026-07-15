@@ -9,12 +9,13 @@ const validResultsJson = {
   groupOrder: {
     A: ['MEX', 'ARG', 'RSA', 'KOR'],
   },
-  bronzeMatch: { home: 'NED', away: 'POR', homeGoals: 2, awayGoals: 1 },
+  bronzeMatch: { home: 'NED', away: 'POR', homeGoals: 2, awayGoals: 1, winner: 'NED' },
   finalMatch: {
     home: 'ARG',
     away: 'FRA',
     homeGoals: 3,
     awayGoals: 2,
+    winner: 'ARG',
     decidedBy: 'penalties',
     decisiveGoalPlayer: 'ARG-10',
   },

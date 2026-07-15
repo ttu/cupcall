@@ -30,26 +30,26 @@ Plus the domain types (`Tournament`, `CardInputs`, `DerivedCard`, `ActualResults
    same metrics (deterministic tie-break by group index then seed).
 3. **Bracket** — `buildBracket`: resolves entry-round slot refs (`1A`, `2B`, `3rd[i]`), propagates the
    player's per-tie winner picks, and derives `roundOf8`, `finalists`, `bronzePair`, `roundOf4` (the 4
-   QF-winner picks — used for SF scoring, needs only QF picks), and `topFour`
-   (`[finalWinner, finalLoser, bronzeWinner, bronzeLoser]` — Predict page display only, needs explicit
-   Final/Bronze picks). **Bronze is contested by the two SF losers** (fixed cup convention). Throws on
-   a pick naming a non-participant.
+   QF-winner picks — used for SF membership scoring, needs only QF picks), and `topFour`
+   (`[finalWinner, finalLoser, bronzeWinner, bronzeLoser]` — Predict page display AND the SF
+   position-bonus scoring input, needs explicit Final/Bronze picks). **Bronze is contested by the two
+   SF losers** (fixed cup convention). Throws on a pick naming a non-participant.
 
 ## Scoring (`scoreCard`, functional-spec §7)
 
 Every point value comes from the tournament's `scoring` block — no hard-coded numbers. Sub-scorers
 (in `scoring/`), each returning branded `Points`:
 
-| Module           | Rule                                                                                                                                                                                                                                                                                     |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `group-matches`  | exact 6, else correct outcome 3, else 0 (no stacking)                                                                                                                                                                                                                                    |
-| `group-order`    | per group: 4 positions→6, 2→3, 1→1 (3 impossible)                                                                                                                                                                                                                                        |
-| `finish-matches` | bronze & final: 5 per correct team (side-agnostic) + 5 exact score (home/away must match exactly), independent; max 15 each. Final's team points bank as each SF completes (`answers.finalists`), not only once the Final is played — see scoring.md §2.5. Bronze's timing is unchanged. |
-| `sets-rankings`  | round-of-8: 3 per correct team (max 24); top-4: `max(positionTier, 2×teamsInActualTop4)` — **not additive**                                                                                                                                                                              |
-| `specials`       | each tournament-wide bet scores iff predicted-and-actual-present-and-equal                                                                                                                                                                                                               |
+| Module           | Rule                                                                                                                                                                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `group-matches`  | exact 6, else correct outcome 3, else 0 (no stacking)                                                                                                                                                                                                                                       |
+| `group-order`    | per group: 4 positions→6, 2→3, 1→1 (3 impossible)                                                                                                                                                                                                                                           |
+| `finish-matches` | bronze & final: 5 per correct team (side-agnostic) + 5 exact score (home/away must match exactly), independent; max 15 each. Final's team points bank as each SF completes (`answers.finalists`), not only once the Final is played — see scoring.md §2.5. Bronze's timing is unchanged.    |
+| `sets-rankings`  | round-of-8: 3 per correct team (max 24); top-4 membership: 5 per correct semifinalist (max 20), order-agnostic; top-4 position bonus: +3 per team whose predicted final-standing slot (1st/2nd from Final, 3rd/4th from Bronze) matches actual (max 12) — **additive** on top of membership |
+| `specials`       | each tournament-wide bet scores iff predicted-and-actual-present-and-equal                                                                                                                                                                                                                  |
 
 `scoreCard` sums the seven categories into a `ScoreBreakdown`. The functional-spec §7.7 worked example
-is a literal test (total **76**).
+is a literal test (total **96**).
 
 ## Guarantees
 

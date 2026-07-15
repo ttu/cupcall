@@ -60,7 +60,7 @@ describe('scoreFinal', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 3, away: 2 });
     const actual = makeActual({
-      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2 },
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(15);
   });
@@ -69,7 +69,7 @@ describe('scoreFinal', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 1, away: 0 });
     const actual = makeActual({
-      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2 },
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10);
   });
@@ -79,7 +79,7 @@ describe('scoreFinal', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 3, away: 2 });
     const actual = makeActual({
-      finalMatch: { home: A1, away: B1, homeGoals: 3, awayGoals: 2 },
+      finalMatch: { home: A1, away: B1, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10);
   });
@@ -89,7 +89,7 @@ describe('scoreFinal', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 3, away: 2 }); // predicted 3-2
     const actual = makeActual({
-      finalMatch: { home: A2, away: A1, homeGoals: 2, awayGoals: 3 }, // actual 2-3
+      finalMatch: { home: A2, away: A1, homeGoals: 2, awayGoals: 3, winner: A1 }, // actual 2-3
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10); // 10 teams + 0 exact
   });
@@ -98,7 +98,7 @@ describe('scoreFinal', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 2, away: 3 }); // predicted 2-3
     const actual = makeActual({
-      finalMatch: { home: B1, away: B2, homeGoals: 3, awayGoals: 2 }, // actual 3-2
+      finalMatch: { home: B1, away: B2, homeGoals: 3, awayGoals: 2, winner: B1 }, // actual 3-2
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(0); // 0 teams + 0 exact
   });
@@ -107,7 +107,7 @@ describe('scoreFinal', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 1, away: 0 });
     const actual = makeActual({
-      finalMatch: { home: B1, away: B2, homeGoals: 3, awayGoals: 2 },
+      finalMatch: { home: B1, away: B2, homeGoals: 3, awayGoals: 2, winner: B1 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(0);
   });
@@ -124,7 +124,7 @@ describe('scoreFinal', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs(undefined); // no final score
     const actual = makeActual({
-      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2 },
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10);
   });
@@ -155,7 +155,7 @@ describe('scoreFinal', () => {
     const inputs = makeInputs({ home: 3, away: 2 });
     const actual = makeActual({
       finalists: [A1, A2],
-      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2 },
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(15); // 10 teams + 5 exact
   });
@@ -166,7 +166,7 @@ describe('scoreBronze', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs(undefined, { home: 1, away: 0 });
     const actual = makeActual({
-      bronzeMatch: { home: B1, away: B2, homeGoals: 1, awayGoals: 0 },
+      bronzeMatch: { home: B1, away: B2, homeGoals: 1, awayGoals: 0, winner: B1 },
     });
     expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(15);
   });
@@ -185,7 +185,7 @@ describe('scoreBronze', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs(undefined, { home: 2, away: 1 });
     const actual = makeActual({
-      bronzeMatch: { home: B1, away: B2, homeGoals: 2, awayGoals: 1 },
+      bronzeMatch: { home: B1, away: B2, homeGoals: 2, awayGoals: 1, winner: B1 },
     });
     expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(15);
   });
@@ -194,7 +194,7 @@ describe('scoreBronze', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs(undefined, { home: 3, away: 0 }); // predicted 3-0
     const actual = makeActual({
-      bronzeMatch: { home: B2, away: B1, homeGoals: 0, awayGoals: 3 }, // actual 0-3
+      bronzeMatch: { home: B2, away: B1, homeGoals: 0, awayGoals: 3, winner: B1 }, // actual 0-3
     });
     // Both teams correct (B1 and B2 in bronzePair), but score doesn't match exactly
     expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(10);

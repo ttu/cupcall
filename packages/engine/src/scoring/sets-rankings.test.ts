@@ -25,6 +25,7 @@ function makeDerived(
   roundOf8: TeamId[],
   roundOf4: TeamId[],
   roundOf16: TeamId[] = [],
+  topFour: TeamId[] = [],
 ): DerivedCard {
   return {
     groupOrders: {},
@@ -33,7 +34,7 @@ function makeDerived(
     roundOf8,
     finalists: [],
     bronzePair: [],
-    topFour: [],
+    topFour,
     roundOf4,
   };
 }
@@ -42,6 +43,8 @@ function makeActual(opts: {
   roundOf16?: TeamId[];
   roundOf8?: TeamId[];
   roundOf4?: TeamId[];
+  finalMatch?: ActualResults['finalMatch'];
+  bronzeMatch?: ActualResults['bronzeMatch'];
 }): ActualResults {
   return {
     matchResults: [],
@@ -51,6 +54,8 @@ function makeActual(opts: {
       ...(opts.roundOf8 !== undefined ? { roundOf8: opts.roundOf8 } : {}),
       ...(opts.roundOf4 !== undefined ? { roundOf4: opts.roundOf4 } : {}),
     },
+    ...(opts.finalMatch !== undefined ? { finalMatch: opts.finalMatch } : {}),
+    ...(opts.bronzeMatch !== undefined ? { bronzeMatch: opts.bronzeMatch } : {}),
   };
 }
 
@@ -246,5 +251,68 @@ describe('scoreTopFour', () => {
     const afterOneQf = scoreTopFour(derived, makeActual({ roundOf4: [ARG] }), miniScoring);
     const afterTwoQf = scoreTopFour(derived, makeActual({ roundOf4: [ARG, FRA] }), miniScoring);
     expect(afterTwoQf).toBeGreaterThanOrEqual(afterOneQf);
+  });
+
+  it('position bonus: all 4 slots correct when Final and Bronze both resolve as predicted', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [ARG, FRA, NED, POR]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 2, awayGoals: 1, winner: ARG },
+      bronzeMatch: { home: NED, away: POR, homeGoals: 1, awayGoals: 0, winner: NED },
+    });
+    // membership: 4 × 5 = 20; position: 4 × 3 = 12
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(32);
+  });
+
+  it('position bonus: 0 when the Final result swaps the predicted 1st/2nd', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [ARG, FRA, NED, POR]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 1, awayGoals: 2, winner: FRA },
+    });
+    // membership: 20; position: 0 (predicted ARG=1st/FRA=2nd, actual FRA=1st/ARG=2nd)
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(20);
+  });
+
+  it('position bonus banks for Final slots before Bronze is played', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [ARG, FRA, NED, POR]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 2, awayGoals: 1, winner: ARG },
+    });
+    // membership: 20; position: 2 × 3 = 6 (Final slots only — Bronze not yet played)
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(26);
+  });
+
+  it('position bonus banks for Bronze slots independently of the Final', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [ARG, FRA, NED, POR]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      bronzeMatch: { home: NED, away: POR, homeGoals: 1, awayGoals: 0, winner: NED },
+    });
+    // membership: 20; position: 2 × 3 = 6 (Bronze slots only — Final not yet played)
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(26);
+  });
+
+  it('position bonus is order-sensitive even though membership is not', () => {
+    // derived.roundOf4 (membership) has no order; derived.topFour (position) does.
+    // Predicted topFour has ARG/FRA swapped relative to who actually won the Final.
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [FRA, ARG, NED, POR]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 2, awayGoals: 1, winner: ARG },
+    });
+    // membership: 20 (order-agnostic, all 4 present); position: 0 (predicted 1st=FRA, actual 1st=ARG)
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(20);
+  });
+
+  it('position bonus is 0 for a partial card missing Final/Bronze picks, even once both matches resolve', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], []); // no Final/Bronze picks made
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 2, awayGoals: 1, winner: ARG },
+      bronzeMatch: { home: NED, away: POR, homeGoals: 1, awayGoals: 0, winner: NED },
+    });
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(20); // membership only
   });
 });

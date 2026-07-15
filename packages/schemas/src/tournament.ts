@@ -78,6 +78,7 @@ const scoringSchema = z.object({
     perTeam: z.number(),
   }),
   roundOf4PerTeam: z.number(),
+  topFourPositionBonus: z.number(),
   tournamentTopScoringTeam: z.number(),
   tournamentTopConcedingTeam: z.number(),
   highestMatchGoals: z.number(),

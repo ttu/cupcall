@@ -64,6 +64,12 @@ export interface Scoring {
   final: { exactScore: number; perTeam: number };
   /** Per confirmed semifinalist (see scoreTopFour). Order never matters. */
   roundOf4PerTeam: number;
+  /**
+   * Bonus per team whose predicted final-standing slot (1st/2nd from the Final, 3rd/4th from
+   * Bronze) exactly matches the actual slot. See scoreTopFour. Independent of roundOf4PerTeam —
+   * resolves per finish match, not per QF match.
+   */
+  topFourPositionBonus: number;
   tournamentTopScoringTeam: number;
   tournamentTopConcedingTeam: number;
   highestMatchGoals: number;
@@ -159,6 +165,8 @@ export interface ActualFinishMatch {
   away: TeamId;
   homeGoals: number;
   awayGoals: number;
+  /** Not derivable from goals alone when the match went to penalties (tied goals). */
+  winner: TeamId;
 }
 export interface ActualResults {
   matchResults: ActualMatchResult[];

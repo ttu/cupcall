@@ -258,9 +258,11 @@ function resolveKnockoutWinner(m: MatchRow | null): string | null {
  * pick viability, so results are accurate for every pool member regardless of who
  * is viewing the page. Covers:
  *   - Per-match scored rounds (R32 → roundOf16PerTeam, R16 → roundOf8PerTeam)
- *   - TopFour tier based on non-busted QF picks
- *   - Final: max(0, 2 − bustedSfPicks) × perTeam + exactScore
- *   - Bronze: max(0, 2 − bustedBronzePairs) × perTeam + exactScore
+ *   - TopFour membership based on non-busted QF picks
+ *   - Final: max(0, 2 − bustedSfPicks) × perTeam + exactScore, plus the same non-busted count ×
+ *     topFourPositionBonus (1st/2nd place)
+ *   - Bronze: max(0, 2 − bustedBronzePairs) × perTeam + exactScore, plus the same non-busted
+ *     count × topFourPositionBonus (3rd/4th place)
  *
  * Returns a Map<userId, points>. Users with no picks are absent from the map.
  */
@@ -427,6 +429,9 @@ export function buildPerUserKnockoutCanStillGet(
       }
       canStillGet +=
         Math.max(0, 2 - bustedSfPicks) * scoring.final.perTeam + scoring.final.exactScore;
+      // TopFour position bonus (1st/2nd place): reachable while the predicted finalist is
+      // still alive, independent of the Final team-points ceiling above.
+      canStillGet += Math.max(0, 2 - bustedSfPicks) * scoring.topFourPositionBonus;
     }
 
     // Bronze: bronzePair perTeam × non-busted implied SF-loser picks + exactScore.
@@ -465,6 +470,9 @@ export function buildPerUserKnockoutCanStillGet(
       }
       canStillGet +=
         Math.max(0, 2 - bustedBronzePairs) * scoring.bronze.perTeam + scoring.bronze.exactScore;
+      // TopFour position bonus (3rd/4th place): reachable while the predicted bronze
+      // participant is still alive, independent of the Bronze team-points ceiling above.
+      canStillGet += Math.max(0, 2 - bustedBronzePairs) * scoring.topFourPositionBonus;
     }
 
     result.set(userId, canStillGet);

@@ -368,12 +368,19 @@ function buildActualResults(checkpoint: SimulationCheckpoint): ActualResults {
   // finals-done
   return {
     ...baseGroupsDone,
-    bronzeMatch: { home: teamId('GER'), away: teamId('BRA'), homeGoals: 2, awayGoals: 1 },
+    bronzeMatch: {
+      home: teamId('GER'),
+      away: teamId('BRA'),
+      homeGoals: 2,
+      awayGoals: 1,
+      winner: teamId('GER'),
+    },
     finalMatch: {
       home: teamId('ESP'),
       away: teamId('ARG'),
       homeGoals: 1,
       awayGoals: 1,
+      winner: teamId('ESP'),
       decidedBy: 'penalties',
     },
     answers: {

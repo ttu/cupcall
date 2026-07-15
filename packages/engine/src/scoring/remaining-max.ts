@@ -20,8 +20,10 @@ export interface TournamentProgress {
  *  - roundOf8:     once the group stage is complete the QF participants are
  *                  fixed, so the category is locked; before then the full
  *                  2 × |QF matches| × roundOf8PerTeam upside remains.
- *  - topFour:      resolves once every QF match has been played (the four
- *                  semifinalists are then fully known).
+ *  - topFour:      membership resolves once every QF match has been played (the four
+ *                  semifinalists are then fully known); the position bonus resolves
+ *                  independently per finish match (1st/2nd at the Final, 3rd/4th at
+ *                  Bronze) and can remain attainable after membership has resolved.
  *  - bronze:       yields 2 × perTeam + exactScore until played.
  *  - final:        yields 2 × perTeam + exactScore until both SFs are final (team points bank
  *                  as each SF completes — see finish-matches.ts scoreFinal); once both SFs are
@@ -77,10 +79,16 @@ export function computeRemainingMaxPoints(
       ? scoring.final.exactScore
       : 2 * scoring.final.perTeam + scoring.final.exactScore;
 
-  // Top four (semifinalists): resolves once every QF match is played — at that point the
-  // four actual semifinalists are fully known, independent of Final/Bronze results.
+  // Top four (semifinalists): membership resolves once every QF match is played — at that
+  // point the four actual semifinalists are fully known. The position bonus resolves
+  // independently per finish match: 1st/2nd once the Final is played, 3rd/4th once Bronze is
+  // played — so it can remain attainable even after membership has fully resolved.
   const qfComplete = bracket.roundOf8Matches.every(isFinal);
-  const topFourMax = qfComplete ? 0 : 4 * scoring.roundOf4PerTeam;
+  const topFourMembershipMax = qfComplete ? 0 : 4 * scoring.roundOf4PerTeam;
+  const topFourPositionMax =
+    (finalPlayed ? 0 : 2 * scoring.topFourPositionBonus) +
+    (bronzePlayed ? 0 : 2 * scoring.topFourPositionBonus);
+  const topFourMax = topFourMembershipMax + topFourPositionMax;
 
   // Specials: conservatively treat as fully open until the tournament is
   // entirely complete.
