@@ -339,6 +339,34 @@ seeded multi-member pool:
   seeding) and lock/late-joiner domain logic itself — this only exercises existing behavior with
   better fixture data.
 
+## Finalist points at SF completion (2026-07-15)
+
+Fixed: a card could show `Finalist 1/2 · 1 pending` (one predicted finalist already confirmed by
+winning its semifinal) yet still earn `+0` from the Final category until the Final was actually
+played. Mirrors the Live SF scoring precedent above (2026-07-11), one round later: a team _becomes_
+a finalist the moment it wins its SF, so its `perTeam` points bank then, not at tournament end.
+Bronze is intentionally unchanged (out of scope) — see scoring.md §2.5 for the asymmetry rationale.
+
+- **`scoreFinal()`** (`packages/engine/src/scoring/finish-matches.ts`) — team points now come from a
+  confirmed-finalists set (`answers.finalists` plus, once played, `finalMatch`'s participants),
+  independent of whether `finalMatch` exists yet. The exact-score component is unchanged (still
+  requires the Final to be played). Extracted a small `exactScorePoints()` helper shared with
+  `scoreBronze` to stay DRY without touching bronze's timing.
+- **`ActualResults.answers.finalists?: TeamId[]`** (`packages/engine/src/types.ts`) — same shape as
+  `roundOf4`, auto-derived from SF winners in `scripts/sync.ts`.
+- **DB repository gap found and fixed:** `upsertTournamentResults` (write) and `getActualResults`
+  (read) in `packages/db/src/repositories/{tournament,actual-results}.ts` enumerate each answer key
+  explicitly — there's no generic fallback. The plan didn't call these files out, but without wiring
+  `finalists` through both, the derived value would never survive a DB round-trip (only sync's own
+  in-process scoring pass would see it). Added the `finalists` case to both, with tests.
+- **`computeRemainingMaxPoints`** (`packages/engine/src/scoring/remaining-max.ts`) — `finalMax` drops
+  to `exactScore`-only once both SF matches are final (team portion resolved), mirroring `topFourMax`
+  locking to 0 at QF completion.
+- **UI verified, no changes needed:** `ScoreBreakdownCard` reads `breakdown.final` directly (updates
+  automatically once the DB round-trip above is fixed); the bracket-health "Finalist" row's
+  alive/pending counts were already derived from real match state, independent of point banking.
+- **Design/plan:** `docs/superpowers/plans/2026-07-15-finalist-points-at-sf-completion.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

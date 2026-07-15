@@ -22,7 +22,10 @@ export interface TournamentProgress {
  *                  2 × |QF matches| × roundOf8PerTeam upside remains.
  *  - topFour:      resolves once every QF match has been played (the four
  *                  semifinalists are then fully known).
- *  - bronze/final: each yields 2 × perTeam + exactScore until played.
+ *  - bronze:       yields 2 × perTeam + exactScore until played.
+ *  - final:        yields 2 × perTeam + exactScore until both SFs are final (team points bank
+ *                  as each SF completes — see finish-matches.ts scoreFinal); once both SFs are
+ *                  final, only exactScore remains until the final itself is played.
  *  - specials:     resolved only once the tournament is fully complete
  *                  (every group match and every bracket match final). Until
  *                  then, the sum of every special's scoring value remains
@@ -60,12 +63,19 @@ export function computeRemainingMaxPoints(
     ? 0
     : bracket.roundOf8Matches.length * 2 * scoring.roundOf8PerTeam;
 
-  // Bronze / final: locked when each match is played.
+  // Bronze: locked when played.
   const bronzePlayed = isFinal(bracket.bronzeMatch);
-  const finalPlayed = isFinal(bracket.finalMatch);
-
   const bronzeMax = bronzePlayed ? 0 : 2 * scoring.bronze.perTeam + scoring.bronze.exactScore;
-  const finalMax = finalPlayed ? 0 : 2 * scoring.final.perTeam + scoring.final.exactScore;
+
+  // Final: team points bank as each SF completes, so once both SFs are final the team
+  // portion is resolved (banked or lost) — only exactScore remains attainable.
+  const finalPlayed = isFinal(bracket.finalMatch);
+  const bothSemisFinal = bracket.semiFinals.every(isFinal);
+  const finalMax = finalPlayed
+    ? 0
+    : bothSemisFinal
+      ? scoring.final.exactScore
+      : 2 * scoring.final.perTeam + scoring.final.exactScore;
 
   // Top four (semifinalists): resolves once every QF match is played — at that point the
   // four actual semifinalists are fully known, independent of Final/Bronze results.

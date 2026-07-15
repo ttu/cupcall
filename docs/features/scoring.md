@@ -123,6 +123,20 @@ This means:
 - Getting both SF losers right → 10 bronze pts (regardless of who the explicit bronze pick is).
 - Predicting the exact final score → 5 pts (regardless of which finalists actually play).
 
+**Final's team points bank as each SF completes**, independent of the Final being played — mirroring
+the roundOf4/QF-completion precedent in §2.4. A team _becomes_ a finalist the moment it wins its SF,
+so `scoreFinal()` awards its `perTeam` points immediately rather than waiting for the Final. The
+exact-score component still requires the Final to actually be played. Concretely:
+
+- `actualResults.answers.finalists` grows incrementally as SF matches complete — auto-derived from
+  SF winners in `scripts/sync.ts`, same pattern as `roundOf16`/`roundOf8`/`roundOf4`.
+- `scoreFinal()` counts `derived.finalists` teams present in the confirmed-finalists set (`answers.finalists`,
+  plus `finalMatch`'s participants once played) — awarding `perTeam` per confirmed team regardless of
+  whether the Final itself has been played yet.
+- **Bronze is not changed** — bronze's team points still require `actualResults.bronzeMatch` to be
+  set (i.e. the Bronze match played), even though the bronze pair (SF losers) is technically known at
+  SF completion too. This asymmetry is intentional and out of scope for now.
+
 **Implementation:** `scoreBronze()`, `scoreFinal()` — `packages/engine/src/scoring/finish-matches.ts`
 
 ---
@@ -221,8 +235,13 @@ Both finals slots (home/away) are occupied by _derived_ participants from the tw
 ```
 bustedSfPicks         = finalistHealth.bustedPicks   // wrong SF winner picks
 effectiveBronzeBusted = max(bustedSfPicks, bronzePicksBusted)
-canStillGet           = max(0, (2 - bustedCount)) × perTeam + exactScore
+maxPossible           = max(0, (2 - bustedCount)) × perTeam + exactScore
+canStillGet           = max(0, maxPossible - alreadyEarned)
 ```
+
+For Final, `alreadyEarned` can now be non-zero before the Final is played (team points banked as
+each SF completes — see §2.5), so the subtraction is load-bearing, not just defensive. For Bronze,
+`alreadyEarned` stays 0 until the Bronze match is played (bronze's timing is unchanged).
 
 For `bronzePicksBusted`, two scenarios must be distinguished:
 
@@ -259,5 +278,9 @@ final. Used as the ceiling for `canStillGet` calculations and for the "missed" f
 Notable conservative choices:
 
 - `roundOf16` and `roundOf8` are locked to 0 once the group stage is complete (bracket is fixed).
-- `topFour` is locked once both Final and Bronze are played.
+- `topFour` is locked once every QF match is played (all four semifinalists are then known).
+- `final`'s team portion (2 × `perTeam`) locks once both SF matches are played, leaving only
+  `exactScore` attainable until the Final itself is played — mirroring `topFour`'s QF-completion
+  treatment, one round later. Bronze is unaffected: its full `2 × perTeam + exactScore` upside
+  remains open until the Bronze match is played.
 - Specials are treated as fully open until the whole tournament is complete.

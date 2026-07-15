@@ -655,6 +655,90 @@ describe('syncTournament integration', () => {
     }
   });
 
+  it('derives finalists from SF winners and immediately scores predictions, before the Final is played', async () => {
+    // Regression: a finalist's team points must bank the moment its SF is decided (see
+    // finish-matches.ts scoreFinal), not only once the Final is played. Mirrors the
+    // roundOf4-from-QF-winners derivation above, one round later.
+
+    const scratch = mkdtempSync(join(tmpdir(), 'sync-sf-'));
+    try {
+      cpSync(testWc2026Dir, scratch, { recursive: true });
+
+      const resultsPath = join(scratch, 'results.json');
+      const results = fixtureResultsSchema.parse(JSON.parse(readFileSync(resultsPath, 'utf-8')));
+      // test-wc-2026's fixture ships an explicit top-level finalMatch (a "finals resolved"
+      // snapshot). Delete it so this test isolates SF-only derivation, before the Final exists.
+      delete (results as Record<string, unknown>)['finalMatch'];
+      (results as Record<string, unknown>).knockout = [
+        {
+          round: 'SF',
+          matchId: 'sf101',
+          home: 'ESP',
+          away: 'FRA',
+          homeGoals: 2,
+          awayGoals: 0,
+          winner: 'ESP',
+          decidedBy: 'regulation',
+          kickoff: '2026-07-14T20:00:00Z',
+        },
+      ];
+      writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+
+      await syncTournament(db, 'test-wc-2026', scratch); // creates the tournament definition
+
+      const owner = await createUser(db, {
+        email: `owner-${crypto.randomUUID()}@x.com`,
+        displayName: 'Owner',
+      });
+      const user = await createUser(db, {
+        email: `user-${crypto.randomUUID()}@x.com`,
+        displayName: 'Alice',
+      });
+      const pool = await createPool(db, {
+        tournamentId: asTournamentId('test-wc-2026'),
+        ownerId: owner.id,
+        name: 'SF Pool',
+        inviteTokenHash: `h-sf-${crypto.randomUUID()}`,
+      });
+
+      const [predRow] = await db
+        .insert(schema.predictions)
+        .values({ poolId: pool.id, userId: user.id, tournamentId: 'test-wc-2026' })
+        .returning();
+      if (!predRow) throw new Error('No prediction row returned');
+
+      // Predict ESP to win sf101 (i.e. reach the Final). scoreFinal should award
+      // final.perTeam for ESP as soon as sf101 is confirmed, before finalMatch exists.
+      await db
+        .insert(schema.predictionKnockoutPicks)
+        .values([
+          {
+            predictionId: predRow.id,
+            bracketMatchKey: bracketMatchKey('sf101'),
+            winnerTeamId: 'ESP',
+          },
+        ]);
+
+      const result = await syncTournament(db, 'test-wc-2026', scratch);
+      expect(result.scored).toBe(1);
+
+      const answers = await db.select().from(schema.actualAnswers);
+      const finalistsAnswer = answers.find((a) => a.betKey === 'finalists');
+      expect(finalistsAnswer).toBeDefined();
+      expect(finalistsAnswer?.value).toEqual(['ESP']);
+
+      const finalAnswer = answers.find((a) => a.betKey === 'finalMatch');
+      expect(finalAnswer).toBeUndefined(); // the Final has not been played
+
+      const allScores = await db.select().from(schema.scores);
+      const score = allScores.find((s) => s.poolId === pool.id);
+      expect(score).toBeDefined();
+      expect(score?.breakdown?.final).toBeGreaterThan(0);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
   it('derives finalMatch from a knockout Final entry', async () => {
     // Regression: the `knockout` array already carries Final/bronze results (used to
     // populate the matches table for the bracket UI), but sync never turned those into

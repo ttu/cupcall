@@ -123,6 +123,7 @@ export async function getActualResults(
   const roundOf16 = getTeamIds('roundOf16');
   const roundOf8 = getTeamIds('roundOf8');
   const roundOf4 = getTeamIds('roundOf4');
+  const finalists = getTeamIds('finalists');
   const groupTopScoringTeam = getTeamIds('groupTopScoringTeam');
   const groupTopConcedingTeam = getTeamIds('groupTopConcedingTeam');
   const tournamentTopScoringTeam = getTeamIds('tournamentTopScoringTeam');
@@ -142,6 +143,7 @@ export async function getActualResults(
       ...(roundOf16 !== undefined ? { roundOf16 } : {}),
       ...(roundOf8 !== undefined ? { roundOf8 } : {}),
       ...(roundOf4 !== undefined ? { roundOf4 } : {}),
+      ...(finalists !== undefined ? { finalists } : {}),
       ...(groupTopScoringTeam !== undefined ? { groupTopScoringTeam } : {}),
       ...(groupTopConcedingTeam !== undefined ? { groupTopConcedingTeam } : {}),
       ...(tournamentTopScoringTeam !== undefined ? { tournamentTopScoringTeam } : {}),

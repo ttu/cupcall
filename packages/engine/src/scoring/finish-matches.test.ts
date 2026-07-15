@@ -41,11 +41,14 @@ function makeInputs(
 function makeActual(opts?: {
   finalMatch?: ActualResults['finalMatch'];
   bronzeMatch?: ActualResults['bronzeMatch'];
+  finalists?: TeamId[];
 }): ActualResults {
   return {
     matchResults: [],
     groupOrder: {},
-    answers: {},
+    answers: {
+      ...(opts?.finalists !== undefined ? { finalists: opts.finalists } : {}),
+    },
     ...(opts?.finalMatch !== undefined ? { finalMatch: opts.finalMatch } : {}),
     ...(opts?.bronzeMatch !== undefined ? { bronzeMatch: opts.bronzeMatch } : {}),
   };
@@ -124,6 +127,37 @@ describe('scoreFinal', () => {
       finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10);
+  });
+
+  it('one predicted finalist confirmed via SF completion, final unplayed → perTeam banked early', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs(undefined);
+    const actual = makeActual({ finalists: [A1] }); // A1's SF is decided, final not played
+    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(5); // 1 * perTeam
+  });
+
+  it('both predicted finalists confirmed via SF completion, final unplayed → 2 * perTeam, no exact', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs({ home: 3, away: 2 }); // predicted score irrelevant, final unplayed
+    const actual = makeActual({ finalists: [A1, A2] });
+    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10); // 2 * perTeam
+  });
+
+  it('predicted finalist NOT in confirmed set → 0 for that team', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs(undefined);
+    const actual = makeActual({ finalists: [B1] }); // neither A1 nor A2 confirmed
+    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(0);
+  });
+
+  it('finalists confirmed pre-final, then final played with matching exact score → team + exact', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs({ home: 3, away: 2 });
+    const actual = makeActual({
+      finalists: [A1, A2],
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2 },
+    });
+    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(15); // 10 teams + 5 exact
   });
 });
 

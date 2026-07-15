@@ -301,6 +301,9 @@ export async function upsertTournamentResults(
   if (answers.roundOf4 !== undefined) {
     answerEntries.push({ tournamentId, betKey: 'roundOf4', value: answers.roundOf4 });
   }
+  if (answers.finalists !== undefined) {
+    answerEntries.push({ tournamentId, betKey: 'finalists', value: answers.finalists });
+  }
   if (answers.groupTopScoringTeam !== undefined) {
     answerEntries.push({
       tournamentId,

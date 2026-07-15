@@ -174,6 +174,9 @@ export interface ActualResults {
     /** Teams confirmed to have won their QF match (i.e. reached the SF). Grows incrementally as
      * QF matches complete — auto-derived in scripts/sync.ts, never manually entered. */
     roundOf4?: TeamId[];
+    /** Teams confirmed to have won their SF match (i.e. reached the Final). Grows incrementally as
+     * SF matches complete — auto-derived in scripts/sync.ts, never manually entered. */
+    finalists?: TeamId[];
     /** One or more teams when there is a tie for the top spot. */
     groupTopScoringTeam?: TeamId[];
     groupTopConcedingTeam?: TeamId[];

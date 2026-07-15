@@ -139,11 +139,12 @@ export async function syncTournament(
     ...actual.groupOrder,
   };
 
-  // 4b. Parse knockout match results and derive roundOf16/roundOf8/roundOf4 answers, plus the
-  // finalMatch/bronzeMatch scoring objects.
+  // 4b. Parse knockout match results and derive roundOf16/roundOf8/roundOf4/finalists answers,
+  // plus the finalMatch/bronzeMatch scoring objects.
   // R32 winners qualify for R16 → they are the actual roundOf16 participants.
   // R16 winners qualify for QF  → they are the actual roundOf8  participants.
   // QF winners qualify for SF   → they are the actual roundOf4  participants (semifinalists).
+  // SF winners qualify for the Final → they are the actual finalists participants.
   // The Final/bronze entries themselves are the finalMatch/bronzeMatch scoring objects — no
   // need to wait for a winner to "qualify" anywhere, they're the terminal matches.
   // Explicit answers/finalMatch/bronzeMatch in results.json take precedence over derived values.
@@ -152,6 +153,7 @@ export async function syncTournament(
   const r32Winners = knockoutMatches.filter((m) => m.round === 'R32').map((m) => teamId(m.winner));
   const r16Winners = knockoutMatches.filter((m) => m.round === 'R16').map((m) => teamId(m.winner));
   const qfWinners = knockoutMatches.filter((m) => m.round === 'QF').map((m) => teamId(m.winner));
+  const sfWinners = knockoutMatches.filter((m) => m.round === 'SF').map((m) => teamId(m.winner));
   const derivedFinalMatch = knockoutMatches.find((m) => m.round === 'Final');
   const derivedBronzeMatch = knockoutMatches.find((m) => m.round === 'bronze');
 
@@ -162,6 +164,7 @@ export async function syncTournament(
       ...(r32Winners.length > 0 ? { roundOf16: r32Winners } : {}),
       ...(r16Winners.length > 0 ? { roundOf8: r16Winners } : {}),
       ...(qfWinners.length > 0 ? { roundOf4: qfWinners } : {}),
+      ...(sfWinners.length > 0 ? { finalists: sfWinners } : {}),
       ...actual.answers, // explicit answers in results.json override derived values
     },
     ...(derivedBronzeMatch !== undefined && {

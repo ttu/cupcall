@@ -232,6 +232,24 @@ describe('computeRemainingMaxPoints — finish matches', () => {
   it('final max = 2 × perTeam + exactScore', () => {
     expect(MAX_FINAL).toBe(2 * miniScoring.final.perTeam + miniScoring.final.exactScore);
   });
+
+  // Final's team points bank as each SF completes (see finish-matches.ts scoreFinal), so once
+  // both SFs are final the team portion is resolved (banked or lost) — only exactScore remains
+  // attainable, mirroring topFourMax's QF-completion treatment above.
+  it('final upside is unaffected while only one SF is final', () => {
+    const result = computeRemainingMaxPoints(miniTournament, progress([SF_KEYS[0]!]));
+    expect(result.final).toBe(MAX_FINAL);
+  });
+
+  it('final upside drops to exactScore-only once both SFs are final', () => {
+    const result = computeRemainingMaxPoints(miniTournament, progress(SF_KEYS));
+    expect(result.final).toBe(miniScoring.final.exactScore);
+  });
+
+  it('final upside zeroes once the final itself is played, regardless of SF state', () => {
+    const result = computeRemainingMaxPoints(miniTournament, progress([...SF_KEYS, FINAL_KEY]));
+    expect(result.final).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -315,22 +333,23 @@ describe('computeRemainingMaxPoints — stage transitions', () => {
     expect(result.total).toBe(MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
   });
 
-  it('after SF: top-four already resolved (QF complete), bronze + final + specials open', () => {
+  it('after SF: top-four already resolved (QF complete); final drops to exactScore-only (both SFs final); bronze + specials open', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS, ...SF_KEYS]),
     );
     expect(result.topFour).toBe(0);
-    expect(result.total).toBe(MAX_BRONZE + MAX_FINAL + MAX_SPECIALS);
+    expect(result.final).toBe(miniScoring.final.exactScore);
+    expect(result.total).toBe(MAX_BRONZE + miniScoring.final.exactScore + MAX_SPECIALS);
   });
 
-  it('after bronze only: bronze locked, top-four already resolved, final + specials open', () => {
+  it('after bronze only: bronze locked, top-four already resolved, final at exactScore-only (both SFs already final), specials open', () => {
     const result = computeRemainingMaxPoints(
       miniTournament,
       progress([...ALL_GROUP_MATCH_IDS, ...QF_KEYS, ...SF_KEYS, BRONZE_KEY]),
     );
     expect(result.bronze).toBe(0);
-    expect(result.final).toBe(MAX_FINAL);
+    expect(result.final).toBe(miniScoring.final.exactScore);
     expect(result.topFour).toBe(0);
     expect(result.specials).toBe(MAX_SPECIALS);
   });

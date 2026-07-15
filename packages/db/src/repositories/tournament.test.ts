@@ -181,6 +181,26 @@ describe('tournament repository', () => {
       expect(keys).toContain('penaltyShootoutCount');
     });
 
+    it('stores answers.finalists as a betKey/value row', async () => {
+      // finalists grows incrementally as SF matches complete, mirroring roundOf4 — it must be
+      // persisted so scoreFinal's team points are banked as soon as an SF is confirmed, not
+      // only once the Final is played.
+      const actual: ActualResults = {
+        matchResults: [],
+        groupOrder: {},
+        answers: { finalists: [teamId('A1')] },
+      };
+      await upsertTournamentResults(db, asTournamentId('mini-2026'), actual);
+
+      const rows = await db
+        .select()
+        .from(schema.actualAnswers)
+        .where(eq(schema.actualAnswers.tournamentId, 'mini-2026'));
+
+      const finalistsRow = rows.find((r) => r.betKey === 'finalists');
+      expect(finalistsRow?.value).toEqual(['A1']);
+    });
+
     it('stores bronzeMatch and finalMatch as answer keys', async () => {
       const actual: ActualResults = {
         matchResults: [],
