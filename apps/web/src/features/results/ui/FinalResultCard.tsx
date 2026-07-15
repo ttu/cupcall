@@ -71,6 +71,12 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
       : null);
   const leftIsWinner = pickRowLeftId !== null && pickRowLeftId === pickWinnerId;
   const rightIsWinner = pickRowRightId !== null && pickRowRightId === pickWinnerId;
+  // A tied predicted score doesn't reveal the picked winner by itself (the match went to
+  // penalties), so the checkmark is only needed in that case — a non-tied score already shows it.
+  const isTiePrediction =
+    match.predictedHome !== null &&
+    match.predictedAway !== null &&
+    match.predictedHome === match.predictedAway;
 
   const championId = match.actualWinnerId ?? match.pickedWinnerId;
   const championName =
@@ -130,8 +136,10 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
           <span>Your pick:</span>
           {pickRowLeftId && (
             <>
+              {isTiePrediction && leftIsWinner && (
+                <Icon name="check" size={11} color="var(--green-600)" />
+              )}
               <TeamBadge teamId={pickRowLeftId} size="sm" />
-              {leftIsWinner && <Icon name="check" size={11} color="var(--green-600)" />}
             </>
           )}
           <span>
@@ -139,8 +147,10 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
           </span>
           {pickRowRightId && (
             <>
+              {isTiePrediction && rightIsWinner && (
+                <Icon name="check" size={11} color="var(--green-600)" />
+              )}
               <TeamBadge teamId={pickRowRightId} size="sm" />
-              {rightIsWinner && <Icon name="check" size={11} color="var(--green-600)" />}
             </>
           )}
         </div>
@@ -158,6 +168,16 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
             {teamLabel(match.homeTeamName, match.homeTeamId)}
           </span>
           <TeamBadge teamId={match.homeTeamId} size="sm" />
+          {match.homeTeamPredictedPct !== null && (
+            <span
+              className={cn(
+                'text-[10px] font-bold tabular-nums shrink-0',
+                isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+              )}
+            >
+              {match.homeTeamPredictedPct}%
+            </span>
+          )}
           {match.pickedWinnerId !== null && match.pickedWinnerId === match.homeTeamId && (
             <Icon name="check" size={11} color="var(--green-600)" />
           )}
@@ -183,6 +203,16 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
           >
             {teamLabel(match.awayTeamName, match.awayTeamId)}
           </span>
+          {match.awayTeamPredictedPct !== null && (
+            <span
+              className={cn(
+                'text-[10px] font-bold tabular-nums shrink-0',
+                isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+              )}
+            >
+              {match.awayTeamPredictedPct}%
+            </span>
+          )}
           {match.pickedWinnerId !== null && match.pickedWinnerId === match.awayTeamId && (
             <Icon name="check" size={11} color="var(--green-600)" />
           )}
