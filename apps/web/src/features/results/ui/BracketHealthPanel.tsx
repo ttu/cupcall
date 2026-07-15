@@ -12,7 +12,8 @@ const COLOR_TEXT = { danger: 'text-danger', warning: 'text-amber-600', ok: 'text
 const COLOR_BAR = { danger: 'bg-danger', warning: 'bg-amber-400', ok: 'bg-green-500' };
 
 function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement {
-  const { numerator, pendingAnnotation, missedAnnotation, color } = getRoundHealthDisplay(round);
+  const { numerator, pendingAnnotation, bustedAnnotation, noPickAnnotation, color } =
+    getRoundHealthDisplay(round);
   const total = round.totalPicks;
   const possible = round.alivePicks + round.pendingPicks;
 
@@ -38,8 +39,11 @@ function RoundHealthRow({ round }: { round: BracketRoundHealth }): ReactElement 
         {pendingAnnotation !== null && (
           <span className="text-green-500"> · {pendingAnnotation} pending</span>
         )}
-        {missedAnnotation !== null && (
-          <span className="text-danger"> · {missedAnnotation} missed</span>
+        {bustedAnnotation !== null && (
+          <span className="text-danger"> · {bustedAnnotation} eliminated</span>
+        )}
+        {noPickAnnotation !== null && (
+          <span className="text-danger"> · {noPickAnnotation} no pick</span>
         )}
       </span>
     </div>
@@ -149,9 +153,8 @@ export function BracketHealthPanel({ health, championPick, bronzeMatch }: Props)
           <p className="text-[11px] font-semibold mt-2 text-ink-muted">
             {[
               health.pendingPicks > 0 && `${health.alivePicks} confirmed`,
-              health.bustedPicks > 0 &&
-                `${health.bustedPicks} pick${health.bustedPicks !== 1 ? 's' : ''} busted`,
-              health.missedPicks > 0 && `${health.missedPicks} missed`,
+              health.bustedPicks > 0 && `${health.bustedPicks} eliminated`,
+              health.missedPicks > 0 && `${health.missedPicks} no pick made`,
             ]
               .filter(Boolean)
               .join(' · ')}

@@ -81,36 +81,41 @@ describe('getRoundHealthDisplay', () => {
     });
   });
 
-  describe('missedAnnotation', () => {
-    it('is null when all picks are alive or pending', () => {
+  describe('bustedAnnotation and noPickAnnotation', () => {
+    it('are both null when all picks are alive or pending', () => {
       const d = getRoundHealthDisplay(round({ alivePicks: 2, pendingPicks: 11, totalPicks: 13 }));
-      expect(d.missedAnnotation).toBeNull();
+      expect(d.bustedAnnotation).toBeNull();
+      expect(d.noPickAnnotation).toBeNull();
     });
 
-    it('counts busted picks toward missedAnnotation', () => {
+    it('reports busted picks under bustedAnnotation, not noPickAnnotation', () => {
       const d = getRoundHealthDisplay(
         round({ alivePicks: 2, pendingPicks: 11, bustedPicks: 3, totalPicks: 16 }),
       );
-      expect(d.missedAnnotation).toBe(3);
+      expect(d.bustedAnnotation).toBe(3);
+      expect(d.noPickAnnotation).toBeNull();
     });
 
-    it('counts no-pick slots toward missedAnnotation', () => {
-      // 2 alive + 11 pending + 0 busted + 3 no-pick = 16 total → missed = 3
+    it('reports no-pick slots under noPickAnnotation, not bustedAnnotation', () => {
+      // 2 alive + 11 pending + 0 busted + 3 no-pick = 16 total
       const d = getRoundHealthDisplay(round({ alivePicks: 2, pendingPicks: 11, totalPicks: 16 }));
-      expect(d.missedAnnotation).toBe(3);
+      expect(d.bustedAnnotation).toBeNull();
+      expect(d.noPickAnnotation).toBe(3);
     });
 
-    it('combines busted and no-pick in missedAnnotation', () => {
-      // 2 alive + 9 pending + 2 busted + 3 no-pick = 16 → missed = 5
+    it('keeps busted and no-pick counts separate when both are present', () => {
+      // 2 alive + 9 pending + 2 busted + 3 no-pick = 16
       const d = getRoundHealthDisplay(
         round({ alivePicks: 2, pendingPicks: 9, bustedPicks: 2, totalPicks: 16 }),
       );
-      expect(d.missedAnnotation).toBe(5);
+      expect(d.bustedAnnotation).toBe(2);
+      expect(d.noPickAnnotation).toBe(3);
     });
 
-    it('is null when total is zero', () => {
+    it('are both null when total is zero', () => {
       const d = getRoundHealthDisplay(round({}));
-      expect(d.missedAnnotation).toBeNull();
+      expect(d.bustedAnnotation).toBeNull();
+      expect(d.noPickAnnotation).toBeNull();
     });
   });
 });
