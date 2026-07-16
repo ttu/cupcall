@@ -49,6 +49,8 @@ test('tapping the Final result card opens the match summary sheet with pool pred
   await expect(sheet).toBeVisible();
   await expect(sheet.locator('[data-testid="match-summary-pool-bar"]')).toBeVisible();
   await expect(sheet.locator('[data-testid="match-summary-predictions"]')).toBeVisible();
+  await expect(sheet.locator('[data-testid="home-team-predicted-pct"]')).toBeVisible();
+  await expect(sheet.locator('[data-testid="away-team-predicted-pct"]')).toBeVisible();
 
   await sheet.locator('[data-testid="match-summary-close"]').click();
   await expect(sheet).not.toBeVisible();

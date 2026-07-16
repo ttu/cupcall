@@ -52,6 +52,14 @@ function SheetHeader({
           <span className="text-[14px] font-bold text-ink truncate">
             {match.homeTeamName ?? match.homeTeamId ?? 'TBD'}
           </span>
+          {match.homeTeamPredictedPct !== null && (
+            <span
+              data-testid="home-team-predicted-pct"
+              className="text-[11px] font-bold text-ink-muted tabular-nums shrink-0"
+            >
+              {match.homeTeamPredictedPct}%
+            </span>
+          )}
           {hasScore ? (
             <span className="display tnum text-lg text-ink shrink-0">
               {match.actualHome}–{match.actualAway}
@@ -62,6 +70,14 @@ function SheetHeader({
           <span className="text-[14px] font-bold text-ink truncate">
             {match.awayTeamName ?? match.awayTeamId ?? 'TBD'}
           </span>
+          {match.awayTeamPredictedPct !== null && (
+            <span
+              data-testid="away-team-predicted-pct"
+              className="text-[11px] font-bold text-ink-muted tabular-nums shrink-0"
+            >
+              {match.awayTeamPredictedPct}%
+            </span>
+          )}
           <TeamBadge teamId={match.awayTeamId} size="sm" />
         </div>
         {!hasScore && match.kickoff && (
