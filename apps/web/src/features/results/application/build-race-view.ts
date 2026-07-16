@@ -584,11 +584,23 @@ export function buildKnockoutMatrix(params: {
     ...(bronzeMatch ? [bronzeMatch] : []),
   ];
 
+  // A semifinal loser is not eliminated from the tournament — it advances to play Bronze.
+  // So it must not count as "eliminated" when checking impossibility for a Bronze pick,
+  // even though the same loss does eliminate it from Final contention.
+  const semiFinals = new Set<string>(def.bracket.semiFinals as string[]);
   const eliminatedTeams = new Set<string>();
+  const semiFinalLoserTeams = new Set<string>();
   for (const m of allKnockoutMatches) {
     if (m.status === 'final' && m.actualWinnerId) {
-      if (m.homeTeamId && m.homeTeamId !== m.actualWinnerId) eliminatedTeams.add(m.homeTeamId);
-      if (m.awayTeamId && m.awayTeamId !== m.actualWinnerId) eliminatedTeams.add(m.awayTeamId);
+      const isSemiFinal = semiFinals.has(m.bracketMatchKey);
+      if (m.homeTeamId && m.homeTeamId !== m.actualWinnerId) {
+        eliminatedTeams.add(m.homeTeamId);
+        if (isSemiFinal) semiFinalLoserTeams.add(m.homeTeamId);
+      }
+      if (m.awayTeamId && m.awayTeamId !== m.actualWinnerId) {
+        eliminatedTeams.add(m.awayTeamId);
+        if (isSemiFinal) semiFinalLoserTeams.add(m.awayTeamId);
+      }
     }
   }
 
@@ -733,9 +745,14 @@ export function buildKnockoutMatrix(params: {
 
       if (m.status !== 'final') {
         const bothKnown = m.homeTeamId !== null && m.awayTeamId !== null;
+        const isBronzeMatch = m.bracketMatchKey === bronzeMatchKey;
+        const isEliminated =
+          pickedWinnerId !== null &&
+          eliminatedTeams.has(pickedWinnerId) &&
+          !(isBronzeMatch && semiFinalLoserTeams.has(pickedWinnerId));
         const isImpossible =
           pickedWinnerId !== null &&
-          (eliminatedTeams.has(pickedWinnerId) ||
+          (isEliminated ||
             (bothKnown && pickedWinnerId !== m.homeTeamId && pickedWinnerId !== m.awayTeamId));
         return {
           bracketMatchKey: m.bracketMatchKey,

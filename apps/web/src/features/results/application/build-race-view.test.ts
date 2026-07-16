@@ -1117,6 +1117,33 @@ describe('buildKnockoutMatrix', () => {
       expect(finalCell.pickedWinnerId).toBe('B1');
     });
 
+    it('keeps a Bronze pick pending for a team that only lost the semifinal (SF loser plays Bronze, not eliminated)', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const sf1 = makeKnockoutMatch('sf1', 'SF', 'final', {
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+        actualWinnerId: 'A1',
+      });
+      const bronze = makeKnockoutMatch('bronze', 'Bronze', 'scheduled', {
+        homeTeamId: 'B1',
+        awayTeamId: 'D1',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('SF', [sf1])],
+        bronzeMatch: bronze,
+        poolKnockoutPicks: [makePick('u1', 'bronze', 'B1')],
+        poolFinishScores: [],
+        def: miniTournament,
+      });
+
+      const bronzeCell = knockoutMatrix[0]!.cells.find((c) => c.bracketMatchKey === 'bronze')!;
+      expect(bronzeCell.hit).toBe('pending');
+      expect(bronzeCell.pickedWinnerId).toBe('B1');
+    });
+
     it('keeps pending for a still-alive team in an unresolved match (no regression)', () => {
       const alice = makeLeaderboardEntry('u1', 'Alice');
       const sf1 = makeKnockoutMatch('sf1', 'SF', 'scheduled');
