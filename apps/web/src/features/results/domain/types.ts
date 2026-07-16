@@ -113,6 +113,8 @@ export type KnockoutMatchView = {
   actualAway: number | null;
   actualWinnerId: string | null;
   actualWinnerName: string | null;
+  /** How the match was decided. Null until the match is played. */
+  decidedBy: 'regulation' | 'extraTime' | 'penalties' | null;
   kickoff: string | null;
   status: 'scheduled' | 'final';
   pickedWinnerId: string | null;

@@ -85,6 +85,7 @@ function makeKnockoutMatch(
     pickedOpponentStatus: 'no-pick',
     homeSlotFeederPickedId: null,
     awaySlotFeederPickedId: null,
+    decidedBy: null,
   };
 }
 

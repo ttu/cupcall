@@ -93,6 +93,7 @@ function match(pickStatus: KnockoutMatchView['pickStatus'], key = 'qf1'): Knocko
     pickedOpponentStatus: 'no-pick',
     homeSlotFeederPickedId: null,
     awaySlotFeederPickedId: null,
+    decidedBy: null,
   };
 }
 

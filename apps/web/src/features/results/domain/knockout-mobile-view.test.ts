@@ -49,6 +49,7 @@ function match(overrides: Partial<KnockoutMatchView> = {}): KnockoutMatchView {
     poolPickAwayPct: null,
     homeSlotFeederPickedId: null,
     awaySlotFeederPickedId: null,
+    decidedBy: null,
     ...overrides,
   };
 }

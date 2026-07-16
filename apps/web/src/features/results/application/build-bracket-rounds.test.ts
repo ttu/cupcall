@@ -1197,3 +1197,60 @@ describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-
     expect(qf1Card.awaySlotFeederPickedId).toBeNull();
   });
 });
+
+describe('buildBracketRounds — decidedBy propagation', () => {
+  it('propagates decidedBy=penalties for a Final decided on penalties', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [
+        makeMatch('final', 'Final', {
+          homeTeamId: 'A1',
+          awayTeamId: 'C1',
+          winnerTeamId: 'A1',
+          homeGoals: 1,
+          awayGoals: 1,
+          decidedBy: 'penalties',
+          status: 'final',
+        }),
+      ],
+      { knockoutPicks: [], finishScores: {} },
+      [],
+      [],
+    );
+    const finalRound = bracketRounds.find((r) => r.label === 'Final')!;
+    expect(finalRound.matches[0]!.decidedBy).toBe('penalties');
+  });
+
+  it('propagates decidedBy=regulation for the Bronze match', () => {
+    const { bronzeMatch } = buildBracketRounds(
+      miniTournament,
+      [
+        makeMatch('bronze', 'bronze', {
+          homeTeamId: 'B2',
+          awayTeamId: 'D2',
+          winnerTeamId: 'B2',
+          homeGoals: 2,
+          awayGoals: 1,
+          decidedBy: 'regulation',
+          status: 'final',
+        }),
+      ],
+      { knockoutPicks: [], finishScores: {} },
+      [],
+      [],
+    );
+    expect(bronzeMatch!.decidedBy).toBe('regulation');
+  });
+
+  it('is null when the Final has not been played yet', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      { knockoutPicks: [], finishScores: {} },
+      [],
+      [],
+    );
+    const finalRound = bracketRounds.find((r) => r.label === 'Final')!;
+    expect(finalRound.matches[0]!.decidedBy).toBeNull();
+  });
+});

@@ -104,24 +104,20 @@ function FinalCards({
   return (
     <div className="min-w-55" style={{ paddingTop }}>
       {finalMatch && (
-        <>
-          <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>
-          <FinalResultCard
-            match={finalMatch}
-            matchKey="final"
-            onSelect={onOpenMatch ? () => onOpenMatch(finalMatch.bracketMatchKey) : undefined}
-          />
-        </>
+        <FinalResultCard
+          match={finalMatch}
+          matchKey="final"
+          onSelect={onOpenMatch ? () => onOpenMatch(finalMatch.bracketMatchKey) : undefined}
+        />
       )}
       {bronzeMatch && (
-        <>
-          <div className="eyebrow text-ink-muted mt-4 mb-2 pl-0.5">3rd Place</div>
+        <div className="mt-4">
           <FinalResultCard
             match={bronzeMatch}
             matchKey="bronze"
             onSelect={onOpenMatch ? () => onOpenMatch(bronzeMatch.bracketMatchKey) : undefined}
           />
-        </>
+        </div>
       )}
     </div>
   );

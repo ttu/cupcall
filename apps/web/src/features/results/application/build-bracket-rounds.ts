@@ -271,6 +271,7 @@ export function buildBracketRounds(
       actualAway: actual?.awayGoals ?? null,
       actualWinnerId: winnerId,
       actualWinnerName: winnerId ? (teamMap.get(winnerId) ?? winnerId) : null,
+      decidedBy: actual?.decidedBy ?? null,
       kickoff: actual?.kickoff?.toISOString() ?? null,
       status: actual?.status === 'final' ? 'final' : 'scheduled',
       pickedWinnerId: effectivePickedId,

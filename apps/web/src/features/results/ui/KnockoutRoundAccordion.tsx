@@ -74,8 +74,15 @@ export function KnockoutRoundAccordion({
   userPredictedKnockoutTeamIds,
   onOpenMatch,
 }: Props): ReactElement {
+  // The Final round no longer renders inside a collapsible AccordionSection (FinalResultCard now
+  // owns its own header), so it's excluded from both the accordion list and the auto-expand pick —
+  // otherwise a fully-played Final would "consume" the default-expand slot and leave every other
+  // round collapsed with nothing open.
+  const mainRounds = rounds.filter((r) => r.label !== 'Final');
+  const finalRound = rounds.find((r) => r.label === 'Final') ?? null;
+
   const [openLabels, setOpenLabels] = useState<Set<string>>(() => {
-    const defaultLabel = pickDefaultExpandedRound(rounds);
+    const defaultLabel = pickDefaultExpandedRound(mainRounds);
     return new Set(defaultLabel ? [defaultLabel] : []);
   });
 
@@ -102,7 +109,7 @@ export function KnockoutRoundAccordion({
 
   return (
     <div className="flex flex-col gap-3">
-      {rounds.map((round, i) => (
+      {mainRounds.map((round, i) => (
         <AccordionSection
           key={round.label}
           label={round.label}
@@ -110,40 +117,33 @@ export function KnockoutRoundAccordion({
           isOpen={openLabels.has(round.label)}
           onToggle={() => toggle(round.label)}
         >
-          {round.label === 'Final' ? (
-            <FinalResultCard
-              match={round.matches[0]!}
-              matchKey="final"
-              onSelect={
-                onOpenMatch ? () => onOpenMatch(round.matches[0]!.bracketMatchKey) : undefined
-              }
+          {round.matches.map((match) => (
+            <BracketMatchCard
+              key={match.bracketMatchKey}
+              match={match}
+              predictedQualifierIds={i === 0 ? predictedQualifierIds : new Set()}
+              onSelect={onOpenMatch ? () => onOpenMatch(match.bracketMatchKey) : undefined}
             />
-          ) : (
-            round.matches.map((match) => (
-              <BracketMatchCard
-                key={match.bracketMatchKey}
-                match={match}
-                predictedQualifierIds={i === 0 ? predictedQualifierIds : new Set()}
-                onSelect={onOpenMatch ? () => onOpenMatch(match.bracketMatchKey) : undefined}
-              />
-            ))
-          )}
+          ))}
         </AccordionSection>
       ))}
 
+      {finalRound && (
+        <FinalResultCard
+          match={finalRound.matches[0]!}
+          matchKey="final"
+          onSelect={
+            onOpenMatch ? () => onOpenMatch(finalRound.matches[0]!.bracketMatchKey) : undefined
+          }
+        />
+      )}
+
       {bronzeMatch && (
-        <AccordionSection
-          label="3rd Place"
-          statusChip={<RoundStatusChip round={{ label: '3rd Place', matches: [bronzeMatch] }} />}
-          isOpen={openLabels.has('3rd Place')}
-          onToggle={() => toggle('3rd Place')}
-        >
-          <FinalResultCard
-            match={bronzeMatch}
-            matchKey="bronze"
-            onSelect={onOpenMatch ? () => onOpenMatch(bronzeMatch.bracketMatchKey) : undefined}
-          />
-        </AccordionSection>
+        <FinalResultCard
+          match={bronzeMatch}
+          matchKey="bronze"
+          onSelect={onOpenMatch ? () => onOpenMatch(bronzeMatch.bracketMatchKey) : undefined}
+        />
       )}
     </div>
   );

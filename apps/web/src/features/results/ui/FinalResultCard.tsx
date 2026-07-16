@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react';
-import type { KnockoutMatchView } from '../domain/types';
-import { HitChip } from './HitChip';
+import type { KnockoutMatchView, MatchHit } from '../domain/types';
 import { TeamBadge, Icon, cn } from '@/shared/ui';
 
 type Props = {
@@ -13,33 +12,149 @@ function teamLabel(name: string | null, id: string | null): string {
   return name ?? id ?? '—';
 }
 
-type ChampionPillProps = { championId: string; championName: string; isFinal: boolean };
+function formatDate(kickoff: string): string {
+  return new Date(kickoff).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+}
 
-function ChampionPill({ championId, championName, isFinal }: ChampionPillProps): ReactElement {
-  const pillBgClass = isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]';
-  const pillTextClass = isFinal ? 'text-[oklch(0.28_0.06_80)]' : 'text-[oklch(0.32_0.06_55)]';
+function CardHeader({
+  matchKey,
+  match,
+}: {
+  matchKey: 'final' | 'bronze';
+  match: KnockoutMatchView;
+}): ReactElement {
+  const hasActualScore = match.actualHome !== null && match.actualAway !== null;
+  const title = matchKey === 'final' ? 'THE FINAL' : '3RD-PLACE PLAYOFF';
+  const subtitle = hasActualScore
+    ? match.kickoff !== null
+      ? `FT · ${formatDate(match.kickoff)}`
+      : 'FT'
+    : match.kickoff !== null
+      ? formatDate(match.kickoff)
+      : null;
+
   return (
-    <div className="flex justify-center px-2 pb-2.5">
-      <div
+    <div className="flex flex-col items-center gap-0.5 pb-2 text-center">
+      <span
+        data-testid="final-card-title"
+        className="text-[12px] font-extrabold tracking-[0.12em] text-green-600 uppercase"
+      >
+        {title}
+      </span>
+      {subtitle !== null && (
+        <span className="text-[11px] font-semibold text-ink-muted">{subtitle}</span>
+      )}
+    </div>
+  );
+}
+
+function TeamRow({
+  teamId,
+  teamName,
+  isWinner,
+  nameTestId,
+}: {
+  teamId: string | null;
+  teamName: string | null;
+  isWinner: boolean;
+  nameTestId: string;
+}): ReactElement {
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 p-[8px_10px] rounded-[8px]',
+        isWinner && 'bg-green-600/15',
+      )}
+    >
+      <TeamBadge teamId={teamId} size="sm" />
+      <span
+        data-testid={nameTestId}
         className={cn(
-          'inline-flex items-center gap-1.5 py-1 pr-2.5 pl-1.5 rounded-full',
-          pillBgClass,
+          'flex-1 text-[13px] font-bold truncate',
+          isWinner ? 'text-on-dark' : 'text-on-dark-soft',
         )}
       >
-        <TeamBadge teamId={championId} size="sm" />
-        <span className={cn('display text-[11px] tracking-[0.04em]', pillTextClass)}>
-          {championName}
+        {teamLabel(teamName, teamId)}
+      </span>
+      {isWinner && <Icon name="check" size={13} color="var(--green-500)" />}
+    </div>
+  );
+}
+
+function ScoreLine({ match }: { match: KnockoutMatchView }): ReactElement | null {
+  if (match.actualHome === null || match.actualAway === null) return null;
+  return (
+    <div className="text-center pt-2">
+      <span className="tnum text-[15px] font-extrabold text-on-dark">
+        {match.actualHome}–{match.actualAway}
+      </span>
+      {match.decidedBy === 'penalties' && (
+        <span className="text-[11px] font-semibold text-on-dark-soft">
+          {' '}
+          &middot; Decided on penalties
         </span>
-      </div>
+      )}
+    </div>
+  );
+}
+
+function borderClassForPickHit(hit: MatchHit): string {
+  if (hit === 'exact' || hit === 'outcome') return 'border-green-300';
+  if (hit === 'missed') return 'border-red-300';
+  return 'border-line-soft';
+}
+
+function PickBadge({ hit }: { hit: MatchHit }): ReactElement | null {
+  if (hit === 'exact' || hit === 'outcome') {
+    return (
+      <span className="absolute -right-1.5 -top-1.5 grid place-items-center w-5 h-5 rounded-full bg-green-500">
+        <Icon name="check" size={11} color="var(--on-dark)" />
+      </span>
+    );
+  }
+  if (hit === 'missed') {
+    return (
+      <span className="absolute -right-1.5 -top-1.5 grid place-items-center w-5 h-5 rounded-full bg-red-600">
+        <Icon name="close" size={11} color="var(--on-dark)" />
+      </span>
+    );
+  }
+  return null;
+}
+
+function PickPill({
+  leftId,
+  rightId,
+  predictedHome,
+  predictedAway,
+  hit,
+}: {
+  leftId: string | null;
+  rightId: string | null;
+  predictedHome: number;
+  predictedAway: number;
+  hit: MatchHit;
+}): ReactElement {
+  return (
+    <div
+      data-testid="final-card-pick-pill"
+      className={cn(
+        'relative flex items-center gap-1.5 mt-2.5 p-[8px_14px] rounded-full border bg-surface w-fit mx-auto',
+        borderClassForPickHit(hit),
+      )}
+    >
+      <span className="text-[11px] font-bold text-ink-muted">Your pick:</span>
+      {leftId !== null && <TeamBadge teamId={leftId} size="sm" />}
+      <span className="tnum text-[12px] font-extrabold text-ink">
+        {predictedHome}–{predictedAway}
+      </span>
+      {rightId !== null && <TeamBadge teamId={rightId} size="sm" />}
+      <PickBadge hit={hit} />
     </div>
   );
 }
 
 export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElement {
-  const isFinal = matchKey === 'final';
-  const hasActualScore = match.actualHome !== null && match.actualAway !== null;
-  const hasPredictedScore = match.predictedHome !== null && match.predictedAway !== null;
-
   // pickedHomeTeamId/pickedAwayTeamId reflect the user's own SF/QF bracket picks, never
   // substituted with actual results, so "Your pick" keeps showing what the user predicted even
   // after the real bracket resolves to different teams. That chain can come up empty for one
@@ -73,35 +188,6 @@ export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElem
       : null) ??
     match.awayTeamId ??
     match.predictedAwayTeamId;
-  // Explicit winner pick takes priority; fall back to whichever team has more predicted goals
-  const pickWinnerId: string | null =
-    match.pickedWinnerId ??
-    (match.predictedHome !== null &&
-    match.predictedAway !== null &&
-    match.homeTeamId &&
-    match.awayTeamId
-      ? match.predictedHome > match.predictedAway
-        ? match.homeTeamId
-        : match.predictedAway > match.predictedHome
-          ? match.awayTeamId
-          : null
-      : null);
-  const leftIsWinner = pickRowLeftId !== null && pickRowLeftId === pickWinnerId;
-  const rightIsWinner = pickRowRightId !== null && pickRowRightId === pickWinnerId;
-  // A tied predicted score doesn't reveal the picked winner by itself (the match went to
-  // penalties), so the checkmark is only needed in that case — a non-tied score already shows it.
-  const isTiePrediction =
-    match.predictedHome !== null &&
-    match.predictedAway !== null &&
-    match.predictedHome === match.predictedAway;
-
-  const championId = match.actualWinnerId ?? match.pickedWinnerId;
-  const championName =
-    (match.actualWinnerId
-      ? (match.actualWinnerName ?? match.actualWinnerId)
-      : match.pickedWinnerId
-        ? (match.pickedWinnerName ?? match.pickedWinnerId)
-        : null) ?? null;
 
   // A tie is only worth opening once at least one side is a confirmed (non-TBD) team.
   const isTappable =
@@ -109,139 +195,42 @@ export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElem
   const Root = isTappable ? 'button' : 'div';
 
   return (
-    <Root
-      type={isTappable ? 'button' : undefined}
-      onClick={isTappable ? onSelect : undefined}
-      data-testid={`${matchKey}-result-card`}
-      className={cn(
-        'rounded-cup overflow-hidden shadow-cup-sm w-full text-left',
-        isTappable && 'cursor-pointer',
-        isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
-      )}
-    >
-      {(hasActualScore || match.kickoff || match.hit !== 'pending') && (
-        <div className="flex items-center justify-between gap-1.5 p-[8px_10px_6px]">
-          {hasActualScore ? (
-            <span
-              className={cn('tnum text-base font-extrabold', isFinal ? 'text-on-dark' : 'text-ink')}
-            >
-              {match.actualHome}–{match.actualAway}
-            </span>
-          ) : match.kickoff ? (
-            <span
-              className={cn(
-                'text-[11px] font-bold',
-                isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-              )}
-            >
-              {new Date(match.kickoff).toLocaleDateString('en-GB', {
-                month: 'short',
-                day: 'numeric',
-              })}
-            </span>
-          ) : (
-            <span />
-          )}
-          <HitChip hit={match.hit} />
+    <div className="flex flex-col items-center w-full">
+      <CardHeader matchKey={matchKey} match={match} />
+      <Root
+        type={isTappable ? 'button' : undefined}
+        onClick={isTappable ? onSelect : undefined}
+        data-testid={`${matchKey}-result-card`}
+        className={cn(
+          'rounded-cup overflow-hidden shadow-cup-sm w-full text-left bg-ink-900 border-0 p-2.5',
+          isTappable && 'cursor-pointer',
+        )}
+      >
+        <div className="flex flex-col gap-1">
+          <TeamRow
+            teamId={match.homeTeamId}
+            teamName={match.homeTeamName}
+            isWinner={match.actualWinnerId !== null && match.actualWinnerId === match.homeTeamId}
+            nameTestId="home-team-name"
+          />
+          <TeamRow
+            teamId={match.awayTeamId}
+            teamName={match.awayTeamName}
+            isWinner={match.actualWinnerId !== null && match.actualWinnerId === match.awayTeamId}
+            nameTestId="away-team-name"
+          />
         </div>
+        <ScoreLine match={match} />
+      </Root>
+      {match.predictedHome !== null && match.predictedAway !== null && (
+        <PickPill
+          leftId={pickRowLeftId}
+          rightId={pickRowRightId}
+          predictedHome={match.predictedHome}
+          predictedAway={match.predictedAway}
+          hit={match.hit}
+        />
       )}
-
-      {hasPredictedScore && (
-        <div
-          className={cn(
-            'flex items-center gap-1.5 px-2.5 pb-1.5 text-[11px] font-bold tracking-[0.02em]',
-            isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-          )}
-        >
-          <span>Your pick:</span>
-          {pickRowLeftId && (
-            <>
-              {isTiePrediction && leftIsWinner && (
-                <Icon name="check" size={11} color="var(--green-600)" />
-              )}
-              <TeamBadge teamId={pickRowLeftId} size="sm" />
-            </>
-          )}
-          <span>
-            {match.predictedHome}–{match.predictedAway}
-          </span>
-          {pickRowRightId && (
-            <>
-              {isTiePrediction && rightIsWinner && (
-                <Icon name="check" size={11} color="var(--green-600)" />
-              )}
-              <TeamBadge teamId={pickRowRightId} size="sm" />
-            </>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 p-[6px_10px_10px]">
-        <div className="flex items-center justify-end gap-[5px] min-w-0">
-          <span
-            data-testid="home-team-name"
-            className={cn(
-              'text-[11px] font-bold truncate text-right',
-              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-            )}
-          >
-            {teamLabel(match.homeTeamName, match.homeTeamId)}
-          </span>
-          <TeamBadge teamId={match.homeTeamId} size="sm" />
-          {match.homeTeamPredictedPct !== null && (
-            <span
-              className={cn(
-                'text-[10px] font-bold tabular-nums shrink-0',
-                isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-              )}
-            >
-              {match.homeTeamPredictedPct}%
-            </span>
-          )}
-          {match.actualWinnerId !== null && match.pickedWinnerId === match.homeTeamId && (
-            <Icon name="check" size={11} color="var(--green-600)" />
-          )}
-        </div>
-
-        <span
-          className={cn(
-            'text-[10px] font-bold tracking-[0.04em]',
-            isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-          )}
-        >
-          vs
-        </span>
-
-        <div className="flex items-center gap-[5px] min-w-0">
-          <TeamBadge teamId={match.awayTeamId} size="sm" />
-          <span
-            data-testid="away-team-name"
-            className={cn(
-              'text-[11px] font-bold truncate',
-              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-            )}
-          >
-            {teamLabel(match.awayTeamName, match.awayTeamId)}
-          </span>
-          {match.awayTeamPredictedPct !== null && (
-            <span
-              className={cn(
-                'text-[10px] font-bold tabular-nums shrink-0',
-                isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-              )}
-            >
-              {match.awayTeamPredictedPct}%
-            </span>
-          )}
-          {match.actualWinnerId !== null && match.pickedWinnerId === match.awayTeamId && (
-            <Icon name="check" size={11} color="var(--green-600)" />
-          )}
-        </div>
-      </div>
-
-      {match.actualWinnerId !== null && championId !== null && championName !== null && (
-        <ChampionPill championId={championId} championName={championName} isFinal={isFinal} />
-      )}
-    </Root>
+    </div>
   );
 }
