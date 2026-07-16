@@ -31,7 +31,11 @@ import {
   buildDailyChartPlayers,
   RACE_COLORS,
 } from '../domain/race-chart';
-import { deriveImplicitFinaleWinner, derivePredictedOpponent } from './build-bracket-rounds';
+import {
+  deriveImplicitFinaleWinner,
+  derivePredictedOpponent,
+  resolveFinaleWinner,
+} from '../domain/finale-winner';
 import {
   computeSpecialBetImpossibility,
   type SpecialBetImpossibility,
@@ -712,38 +716,30 @@ export function buildKnockoutMatrix(params: {
             { teamId: fs.homeTeamId, goals: fs.home },
             { teamId: fs.awayTeamId, goals: fs.away },
           ];
-          const predictedByTeam = new Map(predictedScoreByTeam.map((s) => [s.teamId, s.goals]));
-          if (fs.home !== fs.away) {
-            pickedWinnerId = fs.home > fs.away ? fs.homeTeamId : fs.awayTeamId;
-          } else {
-            pickedWinnerId = knockoutPick;
-          }
           if (
             m.actualHome !== null &&
             m.actualAway !== null &&
             m.homeTeamId !== null &&
             m.awayTeamId !== null
           ) {
+            const predictedByTeam = new Map(predictedScoreByTeam.map((s) => [s.teamId, s.goals]));
             isExactScore =
               predictedByTeam.get(m.homeTeamId) === m.actualHome &&
               predictedByTeam.get(m.awayTeamId) === m.actualAway;
           }
-        } else if (fs !== undefined && fs.home !== fs.away) {
-          // Fallback for finish scores without a team-id snapshot (pre-migration, not yet
-          // backfilled) — unchanged from today's behavior.
-          pickedWinnerId = deriveImplicitFinaleWinner(
-            m.bracketMatchKey,
-            def.bracket,
-            userPickMap,
-            fs.home,
-            fs.away,
-          );
-          if (pickedWinnerId === null) {
-            pickedWinnerId = deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick);
-          }
-        } else {
-          pickedWinnerId = deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick);
         }
+
+        // resolveFinaleWinner prefers the snapshot above when present (tied → null, so the
+        // fallback below applies the same "explicit penalty pick" rule as the no-snapshot path);
+        // deriveFromPicks only runs for legacy rows that predate the snapshot.
+        const derivedWinner = resolveFinaleWinner(fs, (home, away) =>
+          deriveImplicitFinaleWinner(m.bracketMatchKey, def.bracket, userPickMap, home, away),
+        );
+        pickedWinnerId =
+          derivedWinner ??
+          (fs !== undefined
+            ? deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick)
+            : knockoutPick);
       }
 
       // Final/Bronze only: the other finalist/bronze participant from this user's own SF/QF

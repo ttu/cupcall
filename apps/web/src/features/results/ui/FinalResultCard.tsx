@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { KnockoutMatchView, MatchHit } from '../domain/types';
+import { resolveGoalsByTeamId } from '../domain/predicted-goals';
 import { TeamBadge, Icon, cn } from '@/shared/ui';
 
 type Props = {
@@ -193,17 +194,13 @@ export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElem
   // is correct regardless of which fallback branch produced pickRowLeftId/pickRowRightId above.
   // Falls back to the legacy positional fields (predictedHome/predictedAway), which assume
   // leftId===home-slot-team, when no snapshot exists (pre-migration/unbackfilled rows).
-  const goalsByTeam =
-    match.predictedGoalsByTeam !== null
-      ? new Map(match.predictedGoalsByTeam.map((s) => [s.teamId, s.goals]))
-      : null;
   const pickLeftGoals =
-    goalsByTeam !== null && pickRowLeftId !== null
-      ? (goalsByTeam.get(pickRowLeftId) ?? null)
+    match.predictedGoalsByTeam !== null
+      ? resolveGoalsByTeamId(match.predictedGoalsByTeam, pickRowLeftId)
       : match.predictedHome;
   const pickRightGoals =
-    goalsByTeam !== null && pickRowRightId !== null
-      ? (goalsByTeam.get(pickRowRightId) ?? null)
+    match.predictedGoalsByTeam !== null
+      ? resolveGoalsByTeamId(match.predictedGoalsByTeam, pickRowRightId)
       : match.predictedAway;
 
   // A tie is only worth opening once at least one side is a confirmed (non-TBD) team.

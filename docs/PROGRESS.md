@@ -500,6 +500,29 @@ Fix: prefer the snapshot when present, falling back to the live-pickMap derivati
 without one (`build-bracket-rounds.ts`, `deriveImplicitFinaleWinner` call site). One new regression
 test in `build-bracket-rounds.test.ts`.
 
+**Fixed — candidates 2 and 5: centralize the two duplicated resolution rules.**
+
+- **Candidate 5** — the "snapshot-first, else derive from live picks" rule (the actual bug class) was
+  duplicated between `build-bracket-rounds.ts` and `build-race-view.ts`. Extracted into one shared,
+  unit-tested function `resolveFinaleWinner()` (new file
+  `apps/web/src/features/results/domain/finale-winner.ts`, alongside relocated
+  `deriveImplicitFinaleWinner`/`derivePredictedOpponent`), used by both call sites. A full
+  discriminated-union reshape of `FinishScore` (the review's original idealized solution) was
+  deliberately **not** done — `FinishScore` is used across ~15 files including the predict page's
+  live-editing flow, where a score can be genuinely unresolved-but-not-legacy; reshaping the type was
+  judged out of proportion to this session's scope. See the review doc's implementation note.
+- **Candidate 2** — the "look up predicted goals for a team from the identity snapshot" `new
+Map(...).get(...)` snippet was duplicated in `FinalResultCard.tsx`, `KnockoutUpcomingFeed.tsx`, and
+  `knockout-match-detail.ts`. Extracted into one pure function `resolveGoalsByTeamId()` (new file
+  `apps/web/src/features/results/domain/predicted-goals.ts`), used by all three. Fixed plain
+  `pickedGoals`/`opponentGoals` fields (the review's original idea) were **not** added —
+  `FinalResultCard.tsx` resolves goals for whichever team lands on the visual left/right side after a
+  multi-step fallback chain that isn't always `pickedWinnerId`/`pickedOpponentId`, so fixed fields
+  would have silently dropped a tied-score edge case. See the review doc's implementation note.
+
+All 450 tests in `features/results` + `features/predictions` pass; typecheck and lint clean.
+Candidates 3, 4, and 6 in the review doc remain open, not yet scheduled.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

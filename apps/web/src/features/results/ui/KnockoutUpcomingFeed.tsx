@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { BracketRoundResultView, KnockoutMatchView } from '../domain/types';
+import { resolveGoalsByTeamId } from '../domain/predicted-goals';
 import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = {
@@ -44,17 +45,13 @@ function KnockoutUpcomingRow({ match }: { match: KnockoutMatchView }): ReactElem
   // For Final/Bronze, predictedHome/Away are set — show score alongside pick. Resolve by team
   // identity when a snapshot is available so "you → WINNER · X–Y" always pairs X with the
   // winner's own goals, regardless of home/away orientation.
-  const goalsByTeam =
-    match.predictedGoalsByTeam !== null
-      ? new Map(match.predictedGoalsByTeam.map((s) => [s.teamId, s.goals]))
-      : null;
   const winnerGoals =
-    goalsByTeam !== null && match.pickedWinnerId !== null
-      ? (goalsByTeam.get(match.pickedWinnerId) ?? null)
+    match.predictedGoalsByTeam !== null
+      ? resolveGoalsByTeamId(match.predictedGoalsByTeam, match.pickedWinnerId)
       : match.predictedHome;
   const opponentGoals =
-    goalsByTeam !== null && match.pickedOpponentId !== null
-      ? (goalsByTeam.get(match.pickedOpponentId) ?? null)
+    match.predictedGoalsByTeam !== null
+      ? resolveGoalsByTeamId(match.predictedGoalsByTeam, match.pickedOpponentId)
       : match.predictedAway;
   const pickLabel =
     match.pickedWinnerName !== null

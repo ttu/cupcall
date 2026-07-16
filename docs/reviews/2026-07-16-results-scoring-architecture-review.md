@@ -70,9 +70,22 @@ exists (pre-migration rows).
 
 ## 2. "Resolve goals by team identity" is re-implemented three times in the UI layer
 
-**Strength:** Strong
+**Strength:** Strong · **Status: implemented (2026-07-16)**
 **Files:** `ui/FinalResultCard.tsx:196-207`, `ui/KnockoutUpcomingFeed.tsx:47-58`,
 `domain/knockout-match-detail.ts:56-59`
+
+> **Implementation note:** the original "add plain `pickedGoals`/`opponentGoals` fields" solution
+> below doesn't hold up under inspection — `FinalResultCard.tsx` resolves goals for whichever team
+> ends up on the visual left/right side after a multi-step fallback chain (`pickedHomeTeamId` →
+> `pickedWinnerId` → `pickedOpponentId` → `homeTeamId` → `predictedHomeTeamId`), which isn't always
+> `pickedWinnerId`/`pickedOpponentId`. Fixed fields would silently return `null` for a tied-score edge
+> case the old generic lookup handled correctly. Implemented instead as a shared pure function,
+> `resolveGoalsByTeamId(scoreByTeam, teamId)` (`domain/predicted-goals.ts`), used by all three call
+> sites in place of each one's own `new Map(...).get(...)`. This removes the literal duplication
+> (same win: one implementation, three call sites) without changing any consumer's actual field
+> shape or introducing a regression. The three-fixed-fields version remains available as a future,
+> larger step if the two straightforward consumers (`KnockoutUpcomingFeed`, `knockout-match-detail`)
+> are ever worth decoupling from `FinalResultCard`'s more complex resolution.
 
 ### Before — three shallow readers
 
@@ -193,8 +206,21 @@ parity test: for any user, "my own path" and "the race-view row for me" must pro
 
 ## 5. Optional team-id snapshot is a shallow escape hatch by construction
 
-**Strength:** Strong
+**Strength:** Strong · **Status: partially implemented (2026-07-16)**
 **Files:** `packages/engine/src/types.ts:109-119` (`FinishScore`)
+
+> **Implementation note:** the discriminated-union type change below was not made — `FinishScore`
+> is used across ~15 files including the predict page's live-editing flow (`BracketSection.tsx`,
+> `OwnerCardEditor.tsx`), where a genuinely third state exists that doesn't fit a `resolved | legacy`
+> union: a score just entered, pair not yet known (not "legacy," just "not yet resolvable"). Reshaping
+> the type risked a much wider, riskier change than this review's scope. Implemented instead: the
+> "snapshot-first, fall back to live-pickMap derivation" _decision_ — the actual duplicated logic
+> candidate 1 found re-broken in a sibling file — is now centralized in one function,
+> `resolveFinaleWinner()` (`domain/finale-winner.ts`), unit-tested directly, and used by both
+> `build-bracket-rounds.ts` and `build-race-view.ts` instead of each having its own copy of the rule.
+> This closes the "next sibling-file recurrence" risk without the type reshape. The discriminated
+> union remains available as a future, larger step if the optional-field ambiguity causes another
+> incident.
 
 ### Before
 

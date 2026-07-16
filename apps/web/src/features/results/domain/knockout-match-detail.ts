@@ -4,6 +4,7 @@ import type {
   KnockoutMatchView,
   KnockoutMatrixEntry,
 } from './types';
+import { resolveGoalsByTeamId } from './predicted-goals';
 
 function resolveTeamName(match: KnockoutMatchView, teamId: string): string | null {
   if (teamId === match.homeTeamId) return match.homeTeamName;
@@ -52,15 +53,12 @@ export function buildKnockoutMatchDetail(
 
     let predictedHome = c?.predictedHome ?? null;
     let predictedAway = c?.predictedAway ?? null;
-    if (c?.predictedScoreByTeam != null && pickedTeamId !== null) {
-      const goalsByTeam = new Map(c.predictedScoreByTeam.map((s) => [s.teamId, s.goals]));
-      const pickedGoals = goalsByTeam.get(pickedTeamId);
-      const opponentGoals =
-        pickedOpponentId !== null ? goalsByTeam.get(pickedOpponentId) : undefined;
-      if (pickedGoals !== undefined && opponentGoals !== undefined) {
-        predictedHome = pickedGoals;
-        predictedAway = opponentGoals;
-      }
+    const scoreByTeam = c?.predictedScoreByTeam ?? null;
+    const pickedGoals = resolveGoalsByTeamId(scoreByTeam, pickedTeamId);
+    const opponentGoals = resolveGoalsByTeamId(scoreByTeam, pickedOpponentId);
+    if (pickedGoals !== null && opponentGoals !== null) {
+      predictedHome = pickedGoals;
+      predictedAway = opponentGoals;
     }
 
     return {
