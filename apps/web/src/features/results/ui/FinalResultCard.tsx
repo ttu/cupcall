@@ -110,37 +110,32 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
       )}
     >
-      <div className="flex items-center justify-between gap-1.5 p-[8px_10px_6px]">
-        {hasActualScore ? (
-          <span
-            className={cn('tnum text-base font-extrabold', isFinal ? 'text-on-dark' : 'text-ink')}
-          >
-            {match.actualHome}–{match.actualAway}
-          </span>
-        ) : match.kickoff ? (
-          <span
-            className={cn(
-              'text-[11px] font-bold',
-              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-            )}
-          >
-            {new Date(match.kickoff).toLocaleDateString('en-GB', {
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
-        ) : (
-          <span
-            className={cn(
-              'text-[11px] font-bold',
-              isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
-            )}
-          >
-            {isFinal ? 'Final' : '3rd Place'}
-          </span>
-        )}
-        <HitChip hit={match.hit} />
-      </div>
+      {(hasActualScore || match.kickoff || match.hit !== 'pending') && (
+        <div className="flex items-center justify-between gap-1.5 p-[8px_10px_6px]">
+          {hasActualScore ? (
+            <span
+              className={cn('tnum text-base font-extrabold', isFinal ? 'text-on-dark' : 'text-ink')}
+            >
+              {match.actualHome}–{match.actualAway}
+            </span>
+          ) : match.kickoff ? (
+            <span
+              className={cn(
+                'text-[11px] font-bold',
+                isFinal ? 'text-on-dark-soft' : 'text-ink-muted',
+              )}
+            >
+              {new Date(match.kickoff).toLocaleDateString('en-GB', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+          ) : (
+            <span />
+          )}
+          <HitChip hit={match.hit} />
+        </div>
+      )}
 
       {hasPredictedScore && (
         <div
