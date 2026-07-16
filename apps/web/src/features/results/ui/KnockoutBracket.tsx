@@ -72,6 +72,7 @@ type Props = {
   rounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
   userPredictedKnockoutTeamIds: string[] | null;
+  onOpenMatch?: ((bracketMatchKey: string) => void) | undefined;
 };
 
 function BracketInfoBanner(): ReactElement {
@@ -90,22 +91,36 @@ type FinalCardsProps = {
   finalMatch: KnockoutMatchView | null;
   bronzeMatch: KnockoutMatchView | null;
   paddingTop: number;
+  onOpenMatch?: ((bracketMatchKey: string) => void) | undefined;
 };
 
-function FinalCards({ finalMatch, bronzeMatch, paddingTop }: FinalCardsProps): ReactElement | null {
+function FinalCards({
+  finalMatch,
+  bronzeMatch,
+  paddingTop,
+  onOpenMatch,
+}: FinalCardsProps): ReactElement | null {
   if (!finalMatch && !bronzeMatch) return null;
   return (
     <div className="min-w-55" style={{ paddingTop }}>
       {finalMatch && (
         <>
           <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>
-          <FinalResultCard match={finalMatch} matchKey="final" />
+          <FinalResultCard
+            match={finalMatch}
+            matchKey="final"
+            onSelect={onOpenMatch ? () => onOpenMatch(finalMatch.bracketMatchKey) : undefined}
+          />
         </>
       )}
       {bronzeMatch && (
         <>
           <div className="eyebrow text-ink-muted mt-4 mb-2 pl-0.5">3rd Place</div>
-          <FinalResultCard match={bronzeMatch} matchKey="bronze" />
+          <FinalResultCard
+            match={bronzeMatch}
+            matchKey="bronze"
+            onSelect={onOpenMatch ? () => onOpenMatch(bronzeMatch.bracketMatchKey) : undefined}
+          />
         </>
       )}
     </div>
@@ -116,6 +131,7 @@ export function KnockoutBracket({
   rounds,
   bronzeMatch,
   userPredictedKnockoutTeamIds,
+  onOpenMatch,
 }: Props): ReactElement {
   if (rounds.length === 0) {
     return (
@@ -174,6 +190,7 @@ export function KnockoutBracket({
                       key={match.bracketMatchKey}
                       match={match}
                       predictedQualifierIds={i === 0 ? predictedQualifierIds : new Set()}
+                      onSelect={onOpenMatch ? () => onOpenMatch(match.bracketMatchKey) : undefined}
                     />
                   ))}
                 </div>
@@ -191,6 +208,7 @@ export function KnockoutBracket({
             finalMatch={finalMatch}
             bronzeMatch={bronzeMatch}
             paddingTop={columnPaddingTop(finalColumnIndex)}
+            onOpenMatch={onOpenMatch}
           />
         </div>
       </div>

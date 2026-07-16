@@ -33,3 +33,23 @@ test('results page shows a fully resolved bracket, specials, and points race', a
   await page.locator('[data-testid="points-race-subtab-race"]').click();
   await expect(page.locator('[data-testid="score-breakdown-card"]')).toBeVisible();
 });
+
+test('tapping the Final result card opens the match summary sheet with pool predictions', async ({
+  page,
+}) => {
+  await page.goto('/login/e2e-seeded-owner');
+  await page.waitForURL('**/pools');
+  await page.goto(`/pools/${fixtureIds.seededPoolId}/results`);
+
+  await page.locator('[data-testid="results-tab-knockout"]').click();
+  const finalCard = page.locator('[data-testid="final-result-card"]:visible');
+  await finalCard.click();
+
+  const sheet = page.locator('[data-testid="match-summary-sheet"]');
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator('[data-testid="match-summary-pool-bar"]')).toBeVisible();
+  await expect(sheet.locator('[data-testid="match-summary-predictions"]')).toBeVisible();
+
+  await sheet.locator('[data-testid="match-summary-close"]').click();
+  await expect(sheet).not.toBeVisible();
+});

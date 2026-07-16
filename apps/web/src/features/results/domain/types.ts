@@ -265,6 +265,11 @@ export type KnockoutMatrixCell = {
   hit: KnockoutMatchHit;
   points: number;
   pickedWinnerId: string | null;
+  /** Final/Bronze only: the user's predicted scoreline for this tie. Null everywhere else. */
+  predictedHome: number | null;
+  predictedAway: number | null;
+  /** Final/Bronze only: true when predictedHome/Away matched the actual score exactly. */
+  isExactScore: boolean;
 };
 
 export type KnockoutMatrixEntry = {
@@ -285,6 +290,34 @@ export type KnockoutMatrixMatch = {
   actualWinnerId: string | null;
   kickoff: string | null;
   status: 'scheduled' | 'final';
+};
+
+export type KnockoutMatchDetailPrediction = {
+  userId: string;
+  displayName: string;
+  isCurrentUser: boolean;
+  pickedTeamId: string | null;
+  pickedTeamName: string | null;
+  /** Final/Bronze only. */
+  predictedHome: number | null;
+  predictedAway: number | null;
+  hit: KnockoutMatchHit;
+  /** Final/Bronze only: true when the predicted score matched the actual score exactly. */
+  isExactScore: boolean;
+  points: number;
+};
+
+export type KnockoutMatchDetail = {
+  totalPredictions: number;
+  homePickCount: number;
+  awayPickCount: number;
+  /** Null when totalPredictions is 0. */
+  homePickPct: number | null;
+  awayPickPct: number | null;
+  /** Null when totalPredictions is 0. */
+  insight: string | null;
+  /** Sorted: current user first (if present), then by points DESC, then displayName ASC. */
+  predictions: KnockoutMatchDetailPrediction[];
 };
 
 export type ProjectedEntry = {

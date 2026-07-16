@@ -12,6 +12,7 @@ type Props = {
   rounds: BracketRoundResultView[];
   bronzeMatch: KnockoutMatchView | null;
   userPredictedKnockoutTeamIds: string[] | null;
+  onOpenMatch?: ((bracketMatchKey: string) => void) | undefined;
 };
 
 function formatRoundDate(round: BracketRoundResultView): string | null {
@@ -71,6 +72,7 @@ export function KnockoutRoundAccordion({
   rounds,
   bronzeMatch,
   userPredictedKnockoutTeamIds,
+  onOpenMatch,
 }: Props): ReactElement {
   const [openLabels, setOpenLabels] = useState<Set<string>>(() => {
     const defaultLabel = pickDefaultExpandedRound(rounds);
@@ -109,13 +111,20 @@ export function KnockoutRoundAccordion({
           onToggle={() => toggle(round.label)}
         >
           {round.label === 'Final' ? (
-            <FinalResultCard match={round.matches[0]!} matchKey="final" />
+            <FinalResultCard
+              match={round.matches[0]!}
+              matchKey="final"
+              onSelect={
+                onOpenMatch ? () => onOpenMatch(round.matches[0]!.bracketMatchKey) : undefined
+              }
+            />
           ) : (
             round.matches.map((match) => (
               <BracketMatchCard
                 key={match.bracketMatchKey}
                 match={match}
                 predictedQualifierIds={i === 0 ? predictedQualifierIds : new Set()}
+                onSelect={onOpenMatch ? () => onOpenMatch(match.bracketMatchKey) : undefined}
               />
             ))
           )}
@@ -129,7 +138,11 @@ export function KnockoutRoundAccordion({
           isOpen={openLabels.has('3rd Place')}
           onToggle={() => toggle('3rd Place')}
         >
-          <FinalResultCard match={bronzeMatch} matchKey="bronze" />
+          <FinalResultCard
+            match={bronzeMatch}
+            matchKey="bronze"
+            onSelect={onOpenMatch ? () => onOpenMatch(bronzeMatch.bracketMatchKey) : undefined}
+          />
         </AccordionSection>
       )}
     </div>

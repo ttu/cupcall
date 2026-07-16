@@ -675,9 +675,21 @@ export function buildKnockoutMatrix(params: {
       const isFinalOrBronze =
         m.bracketMatchKey === finalMatchKey || m.bracketMatchKey === bronzeMatchKey;
       let pickedWinnerId: string | null = knockoutPick;
+      let predictedHome: number | null = null;
+      let predictedAway: number | null = null;
+      let isExactScore = false;
       if (isFinalOrBronze) {
         const matchType = m.bracketMatchKey === finalMatchKey ? 'final' : 'bronze';
         const fs = finishScoreMap.get(e.userId)?.get(matchType);
+        if (fs !== undefined) {
+          predictedHome = fs.home;
+          predictedAway = fs.away;
+          isExactScore =
+            m.actualHome !== null &&
+            m.actualAway !== null &&
+            fs.home === m.actualHome &&
+            fs.away === m.actualAway;
+        }
         if (fs !== undefined && fs.home !== fs.away) {
           // Prefer deriving the winner from the user's own SF/QF pick chain — the score was
           // entered relative to the user's own predicted finalists, not the real match's
@@ -708,6 +720,9 @@ export function buildKnockoutMatrix(params: {
           hit: isImpossible ? 'impossible' : ('pending' as KnockoutMatchHit),
           points: 0,
           pickedWinnerId,
+          predictedHome,
+          predictedAway,
+          isExactScore,
         };
       }
 
@@ -726,6 +741,9 @@ export function buildKnockoutMatrix(params: {
           hit: 'hit' as KnockoutMatchHit,
           points: pts,
           pickedWinnerId,
+          predictedHome,
+          predictedAway,
+          isExactScore,
         };
       }
 
@@ -735,6 +753,9 @@ export function buildKnockoutMatrix(params: {
           hit: 'no-pick' as KnockoutMatchHit,
           points: 0,
           pickedWinnerId: null,
+          predictedHome,
+          predictedAway,
+          isExactScore,
         };
       }
 
@@ -743,6 +764,9 @@ export function buildKnockoutMatrix(params: {
         hit: 'miss' as KnockoutMatchHit,
         points: 0,
         pickedWinnerId,
+        predictedHome,
+        predictedAway,
+        isExactScore,
       };
     });
 

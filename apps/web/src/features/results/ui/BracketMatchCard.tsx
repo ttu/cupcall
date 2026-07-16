@@ -6,6 +6,7 @@ import { TeamBadge, cn } from '@/shared/ui';
 type Props = {
   match: KnockoutMatchView;
   predictedQualifierIds: Set<string>;
+  onSelect?: (() => void) | undefined;
 };
 
 function borderClassForHit(hit: MatchHit, softCard: boolean): string {
@@ -93,7 +94,7 @@ function TeamRow({
   );
 }
 
-export function BracketMatchCard({ match, predictedQualifierIds }: Props): ReactElement {
+export function BracketMatchCard({ match, predictedQualifierIds, onSelect }: Props): ReactElement {
   // Merge actual teams with user-predicted teams for TBD slots.
   // When a busted pick is not visible in any slot (e.g. team was eliminated two rounds earlier
   // so neither the actual participants nor the predicted chain includes them), surface the pick
@@ -144,11 +145,19 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
   const hasScore = match.actualHome !== null && match.actualAway !== null;
   const isFinal = match.status === 'final';
 
+  // A tie is only worth opening once at least one side is a confirmed (non-TBD) team.
+  const isTappable =
+    onSelect !== undefined && (match.homeTeamId !== null || match.awayTeamId !== null);
+  const Root = isTappable ? 'button' : 'div';
+
   return (
-    <div
+    <Root
+      type={isTappable ? 'button' : undefined}
+      onClick={isTappable ? onSelect : undefined}
       data-testid="bracket-tie-row"
       className={cn(
-        'card overflow-hidden min-w-37.5 min-h-[114px] p-1 border',
+        'card overflow-hidden min-w-37.5 min-h-[114px] p-1 border text-left',
+        isTappable && 'cursor-pointer',
         borderClassForHit(match.hit, softCard),
       )}
     >
@@ -216,6 +225,6 @@ export function BracketMatchCard({ match, predictedQualifierIds }: Props): React
           }
         />
       </div>
-    </div>
+    </Root>
   );
 }

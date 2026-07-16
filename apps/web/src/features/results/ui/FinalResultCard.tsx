@@ -6,6 +6,7 @@ import { TeamBadge, Icon, cn } from '@/shared/ui';
 type Props = {
   match: KnockoutMatchView;
   matchKey: 'final' | 'bronze';
+  onSelect?: (() => void) | undefined;
 };
 
 function teamLabel(name: string | null, id: string | null): string {
@@ -34,7 +35,7 @@ function ChampionPill({ championId, championName, isFinal }: ChampionPillProps):
   );
 }
 
-export function FinalResultCard({ match, matchKey }: Props): ReactElement {
+export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElement {
   const isFinal = matchKey === 'final';
   const hasActualScore = match.actualHome !== null && match.actualAway !== null;
   const hasPredictedScore = match.predictedHome !== null && match.predictedAway !== null;
@@ -102,11 +103,19 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
         ? (match.pickedWinnerName ?? match.pickedWinnerId)
         : null) ?? null;
 
+  // A tie is only worth opening once at least one side is a confirmed (non-TBD) team.
+  const isTappable =
+    onSelect !== undefined && (match.homeTeamId !== null || match.awayTeamId !== null);
+  const Root = isTappable ? 'button' : 'div';
+
   return (
-    <div
+    <Root
+      type={isTappable ? 'button' : undefined}
+      onClick={isTappable ? onSelect : undefined}
       data-testid={`${matchKey}-result-card`}
       className={cn(
-        'rounded-cup overflow-hidden shadow-cup-sm',
+        'rounded-cup overflow-hidden shadow-cup-sm w-full text-left',
+        isTappable && 'cursor-pointer',
         isFinal ? 'bg-ink-900 border-0' : 'bg-surface border border-line-soft',
       )}
     >
@@ -233,6 +242,6 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
       {match.actualWinnerId !== null && championId !== null && championName !== null && (
         <ChampionPill championId={championId} championName={championName} isFinal={isFinal} />
       )}
-    </div>
+    </Root>
   );
 }

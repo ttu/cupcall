@@ -27,7 +27,8 @@ type IconName =
   | 'arrow'
   | 'spark'
   | 'chevleft'
-  | 'clock';
+  | 'clock'
+  | 'close';
 
 type IconProps = {
   name: IconName;
@@ -68,6 +69,7 @@ const PATHS: Record<IconName, string> = {
   spark: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
   chevleft: 'M15 18l-6-6 6-6',
   clock: 'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 6v4l3 3',
+  close: 'M18 6L6 18M6 6l12 12',
 };
 
 export function Icon({

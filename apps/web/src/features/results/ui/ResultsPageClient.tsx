@@ -17,6 +17,8 @@ import { KnockoutPointsPanel } from './KnockoutPointsPanel';
 import { PointsRaceTab } from './PointsRaceTab';
 import { SpecialBetsPanel } from './SpecialBetsPanel';
 import { PointsSummaryPanel } from './PointsSummaryPanel';
+import { MatchSummarySheet } from './MatchSummarySheet';
+import { buildKnockoutMatchDetail } from '../domain/knockout-match-detail';
 
 type Tab = 'group' | 'knockout' | 'race' | 'specials';
 
@@ -88,9 +90,24 @@ export function ResultsPageClient({
   currentUserId,
 }: Props): ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [openMatchKey, setOpenMatchKey] = useState<string | null>(null);
 
   const finalRound = view.bracketRounds.find((r) => r.label === 'Final');
   const finalMatch = finalRound?.matches[0] ?? null;
+
+  const allKnockoutMatches = [
+    ...view.bracketRounds.flatMap((r) => r.matches),
+    ...(view.bronzeMatch ? [view.bronzeMatch] : []),
+  ];
+  const openMatch = allKnockoutMatches.find((m) => m.bracketMatchKey === openMatchKey) ?? null;
+  const openMatchType: 'final' | 'bronze' | null =
+    openMatch === null
+      ? null
+      : openMatch.bracketMatchKey === finalMatch?.bracketMatchKey
+        ? 'final'
+        : openMatch.bracketMatchKey === view.bronzeMatch?.bracketMatchKey
+          ? 'bronze'
+          : null;
 
   function jumpToGroup(groupId: string) {
     document
@@ -150,6 +167,7 @@ export function ResultsPageClient({
               rounds={view.bracketRounds}
               bronzeMatch={view.bronzeMatch}
               userPredictedKnockoutTeamIds={view.userPredictedKnockoutTeamIds}
+              onOpenMatch={setOpenMatchKey}
             />
             {!viewerMode && (
               <>
@@ -168,6 +186,7 @@ export function ResultsPageClient({
               rounds={view.bracketRounds}
               bronzeMatch={view.bronzeMatch}
               userPredictedKnockoutTeamIds={view.userPredictedKnockoutTeamIds}
+              onOpenMatch={setOpenMatchKey}
             />
             {!viewerMode && (
               <div className="flex flex-col gap-4">
@@ -212,6 +231,15 @@ export function ResultsPageClient({
           viewerMode={viewerMode}
           leaderboard={view.leaderboard}
           {...(currentUserId !== undefined && { currentUserId })}
+        />
+      )}
+
+      {openMatch && (
+        <MatchSummarySheet
+          match={openMatch}
+          matchKey={openMatchType}
+          detail={buildKnockoutMatchDetail(openMatch, view.pointsRaceView.knockoutMatrix)}
+          onClose={() => setOpenMatchKey(null)}
         />
       )}
     </div>

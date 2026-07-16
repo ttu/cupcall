@@ -38,6 +38,8 @@ function makeKnockoutMatch(
     awayTeamId?: string;
     awayTeamName?: string;
     actualWinnerId?: string | null;
+    actualHome?: number | null;
+    actualAway?: number | null;
     kickoff?: string | null;
   } = {},
 ): KnockoutMatchView {
@@ -48,8 +50,8 @@ function makeKnockoutMatch(
     homeTeamName: opts.homeTeamName ?? null,
     awayTeamId: opts.awayTeamId ?? null,
     awayTeamName: opts.awayTeamName ?? null,
-    actualHome: null,
-    actualAway: null,
+    actualHome: opts.actualHome ?? null,
+    actualAway: opts.actualAway ?? null,
     actualWinnerId: opts.actualWinnerId ?? null,
     actualWinnerName: null,
     kickoff: opts.kickoff ?? null,
@@ -720,6 +722,159 @@ describe('buildKnockoutMatrix', () => {
 
       const cell = knockoutMatrix[0]!.cells[0]!;
       expect(cell.pickedWinnerId).toBe('C1');
+    });
+  });
+
+  describe('predicted score fields on cell (final/bronze only)', () => {
+    it('populates predictedHome/predictedAway from the finish score on a final match', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+        actualHome: 2,
+        actualAway: 1,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.predictedHome).toBe(2);
+      expect(cell.predictedAway).toBe(1);
+    });
+
+    it('marks isExactScore true when the finish score matches the actual score exactly', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+        actualHome: 2,
+        actualAway: 1,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.isExactScore).toBe(true);
+    });
+
+    it('marks isExactScore false when the finish score does not match the actual score', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+        actualHome: 2,
+        actualAway: 0,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.isExactScore).toBe(false);
+    });
+
+    it('leaves predictedHome/predictedAway null and isExactScore false when no finish score exists', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+        actualHome: 2,
+        actualAway: 1,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'final', 'USA')],
+        poolFinishScores: [],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.predictedHome).toBeNull();
+      expect(cell.predictedAway).toBeNull();
+      expect(cell.isExactScore).toBe(false);
+    });
+
+    it('populates the same fields for a bronze match', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const bronze = makeKnockoutMatch('bronze', 'Bronze', 'final', {
+        homeTeamId: 'ARG',
+        awayTeamId: 'FRA',
+        actualWinnerId: 'ARG',
+        actualHome: 3,
+        actualAway: 1,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [],
+        bronzeMatch: bronze,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'bronze', 3, 1)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.predictedHome).toBe(3);
+      expect(cell.predictedAway).toBe(1);
+      expect(cell.isExactScore).toBe(true);
+    });
+
+    it('leaves predictedHome/predictedAway null and isExactScore false for non-final/bronze rounds', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const sfMatch = makeKnockoutMatch('sf1', 'SF', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+        actualHome: 2,
+        actualAway: 1,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('SF', [sfMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [makePick('u1', 'sf1', 'USA')],
+        poolFinishScores: [],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.predictedHome).toBeNull();
+      expect(cell.predictedAway).toBeNull();
+      expect(cell.isExactScore).toBe(false);
     });
   });
 
