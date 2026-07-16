@@ -523,6 +523,20 @@ Map(...).get(...)` snippet was duplicated in `FinalResultCard.tsx`, `KnockoutUpc
 All 450 tests in `features/results` + `features/predictions` pass; typecheck and lint clean.
 Candidates 3, 4, and 6 in the review doc remain open, not yet scheduled.
 
+**Partially implemented — candidate 3: bracket topology walk duplication.**
+Investigating this finding turned up two genuinely byte-identical pure functions duplicated across
+2-3 files: `resolveActualWinner` (a.k.a. `getMatchWinner`/`resolveKnockoutWinner` — 3 copies across
+`build-bracket-rounds.ts`, `build-race-view.ts`, `special-bet-impossibility.ts`) and
+`computeKnockoutEliminatedTeams` (2 copies). Extracted both into a new unit-tested module,
+`apps/web/src/features/results/domain/knockout-match-winner.ts`, used everywhere via import aliases
+(no call-site churn). The finding's larger proposal — widening `@cup/engine`'s `buildBracket()` to
+absorb the whole topology walk — was **not** attempted: the results feature's inputs are `MatchRow[]`
+(a `@cup/db` type), not the engine's pure `ActualMatchResult` shape, and the remaining duplicated
+functions (`computeDerivedParticipants`, `computeUserPredictedParticipants`,
+`computeUserPickedParticipants`) encode results-specific policy (projected-vs-actual participants,
+cross-slot pick correction), not just boilerplate — merging them into the engine is real,
+higher-risk design work, left open. 459 tests pass; typecheck/lint clean.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

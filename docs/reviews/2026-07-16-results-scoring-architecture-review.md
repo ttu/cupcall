@@ -125,9 +125,25 @@ Delete `predictedScoreByTeam` from the view once nothing reads it directly.
 
 ## 3. Bracket topology walk is re-implemented outside the engine
 
-**Strength:** Strong
+**Strength:** Strong · **Status: partially implemented (2026-07-16)**
 **Files:** `apps/web/src/features/results/application/build-bracket-rounds.ts` (1088 lines) ·
 cf. `packages/engine/src/bracket.ts` (`buildBracket`)
+
+> **Implementation note:** the full solution below — widening the engine's `buildBracket()`
+> interface to cover projected/live-standings participants and moving the whole topology walk
+> there — was not attempted; it's a large, cross-package change (the results feature's inputs are
+> `MatchRow[]` from `@cup/db`, not the engine's pure `ActualMatchResult` shape, so the walk can't
+> move wholesale without a translation layer) and out of proportion to this session. What _was_
+> extracted: the two genuinely byte-identical duplicated pure functions found while investigating —
+> `resolveActualWinner` (a.k.a. `getMatchWinner`/`resolveKnockoutWinner`, three verbatim copies
+> across `build-bracket-rounds.ts`, `build-race-view.ts`, and `special-bet-impossibility.ts`) and
+> `computeKnockoutEliminatedTeams` (two verbatim copies) — into one shared, unit-tested module,
+> `domain/knockout-match-winner.ts`. The four bracket-walking functions this finding named
+> (`computeDerivedParticipants`, `computeUserPredictedParticipants`, `computeUserPickedParticipants`,
+> `deriveImplicitFinaleWinner`/`derivePredictedOpponent`, the latter two already centralized under
+> candidate 5) remain un-consolidated — they encode results-specific policy (projected vs. actual
+> participants, cross-slot pick correction) that isn't just duplicated boilerplate, and merging them
+> into the engine remains the higher-effort, higher-risk work this finding originally described.
 
 ```mermaid
 flowchart LR

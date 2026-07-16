@@ -37,6 +37,10 @@ import {
   resolveFinaleWinner,
 } from '../domain/finale-winner';
 import {
+  resolveActualWinner as resolveKnockoutWinner,
+  computeKnockoutEliminatedTeams,
+} from '../domain/knockout-match-winner';
+import {
   computeSpecialBetImpossibility,
   type SpecialBetImpossibility,
 } from '../domain/special-bet-impossibility';
@@ -240,21 +244,6 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
   };
 }
 
-/** Derives the winner of a knockout match from the DB row. */
-function resolveKnockoutWinner(m: MatchRow | null): string | null {
-  if (!m) return null;
-  if (m.winnerTeamId) return m.winnerTeamId;
-  if (
-    m.status === 'final' &&
-    m.homeGoals !== null &&
-    m.awayGoals !== null &&
-    m.homeGoals !== m.awayGoals
-  ) {
-    return m.homeGoals > m.awayGoals ? (m.homeTeamId ?? null) : (m.awayTeamId ?? null);
-  }
-  return null;
-}
-
 /**
  * Computes the maximum additional knockout points each user can still earn.
  *
@@ -285,14 +274,7 @@ export function buildPerUserKnockoutCanStillGet(
   }
 
   // Teams eliminated from any played knockout match.
-  const knockoutEliminatedTeams = new Set<string>();
-  for (const m of allMatches) {
-    if (m.stage === 'group' || m.status !== 'final') continue;
-    const winner = resolveKnockoutWinner(m);
-    if (!winner) continue;
-    if (m.homeTeamId && m.homeTeamId !== winner) knockoutEliminatedTeams.add(m.homeTeamId);
-    if (m.awayTeamId && m.awayTeamId !== winner) knockoutEliminatedTeams.add(m.awayTeamId);
-  }
+  const knockoutEliminatedTeams = computeKnockoutEliminatedTeams(allMatches);
 
   // Confirmed participants for progression matches (R16, QF, SF, Final),
   // derived from actual feeder match winners.

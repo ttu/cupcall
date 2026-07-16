@@ -10,6 +10,7 @@ import {
   computePenaltyShootoutCountLeader,
 } from './special-bet-current';
 import type { CurrentLeader } from './types';
+import { resolveActualWinner as getMatchWinner } from './knockout-match-winner';
 
 /**
  * Answers "can this specific pick still become correct?" for the special bets that have a
@@ -20,19 +21,6 @@ import type { CurrentLeader } from './types';
 export type SpecialBetImpossibility = {
   isImpossible(betKey: string, value: unknown): boolean;
 };
-
-function getMatchWinner(m: MatchRow): string | null {
-  if (m.winnerTeamId) return m.winnerTeamId;
-  if (
-    m.status === 'final' &&
-    m.homeGoals !== null &&
-    m.awayGoals !== null &&
-    m.homeGoals !== m.awayGoals
-  ) {
-    return m.homeGoals > m.awayGoals ? m.homeTeamId : m.awayTeamId;
-  }
-  return null;
-}
 
 function hasScore(m: MatchRow): boolean {
   return m.homeGoals !== null && m.awayGoals !== null;

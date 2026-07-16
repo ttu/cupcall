@@ -7,28 +7,12 @@ import {
   deriveImplicitFinaleWinner,
   resolveFinaleWinner,
 } from '../domain/finale-winner';
+import {
+  resolveActualWinner as getMatchWinner,
+  computeKnockoutEliminatedTeams,
+} from '../domain/knockout-match-winner';
 export { computeBracketHealth } from '../domain/bracket-health';
 export { derivePredictedOpponent, deriveImplicitFinaleWinner } from '../domain/finale-winner';
-
-/**
- * Derives the actual winner of a knockout match.
- * `winnerTeamId` is only stored in the DB when the match was decided by
- * penalties (a regulation-time draw). For regulation/extra-time winners the
- * score is the authoritative source.
- */
-function getMatchWinner(match: MatchRow | null): string | null {
-  if (!match) return null;
-  if (match.winnerTeamId) return match.winnerTeamId;
-  if (
-    match.status === 'final' &&
-    match.homeGoals !== null &&
-    match.awayGoals !== null &&
-    match.homeGoals !== match.awayGoals
-  ) {
-    return match.homeGoals > match.awayGoals ? match.homeTeamId : match.awayTeamId;
-  }
-  return null;
-}
 
 export function buildBracketRounds(
   def: Tournament,
@@ -56,15 +40,7 @@ export function buildBracketRounds(
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
 
-  // Teams that have already lost a knockout match and cannot advance further.
-  const knockoutEliminatedTeams = new Set<string>();
-  for (const m of allMatches) {
-    if (m.stage === 'group' || m.status !== 'final') continue;
-    const winner = getMatchWinner(m);
-    if (winner === null) continue;
-    if (m.homeTeamId && m.homeTeamId !== winner) knockoutEliminatedTeams.add(m.homeTeamId);
-    if (m.awayTeamId && m.awayTeamId !== winner) knockoutEliminatedTeams.add(m.awayTeamId);
-  }
+  const knockoutEliminatedTeams = computeKnockoutEliminatedTeams(allMatches);
   const pickMap = new Map<string, string>(
     (inputs?.knockoutPicks ?? []).map((kp) => [kp.bracketMatchKey, kp.winner]),
   );
