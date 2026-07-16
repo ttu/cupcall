@@ -129,6 +129,14 @@ export type KnockoutMatchView = {
   predictedHome: number | null;
   /** User's predicted score — only populated for Final and Bronze ties. */
   predictedAway: number | null;
+  /**
+   * Final/Bronze only, and only when the finish score has a team-id snapshot: the predicted
+   * goals for each of the two predicted teams, keyed by team identity. Prefer this over
+   * predictedHome/predictedAway + a positionally-assumed team pairing — it's immune to
+   * mismatches between whichever team ends up on which visual side. Null when no finish score
+   * exists, or the score predates the team-id snapshot.
+   */
+  predictedGoalsByTeam: { teamId: string; goals: number }[] | null;
   /** Per-tie hit:
    *   - Non-Final/Bronze: 'outcome' | 'missed' | 'pending' only ('exact' impossible — no score predicted).
    *   - Final/Bronze: any of 'exact' | 'outcome' | 'missed' | 'pending'.
@@ -272,6 +280,15 @@ export type KnockoutMatrixCell = {
   /** Final/Bronze only: the user's predicted scoreline for this tie. Null everywhere else. */
   predictedHome: number | null;
   predictedAway: number | null;
+  /**
+   * Final/Bronze only, and only when the finish score has a team-id snapshot (see migration
+   * 0008): the predicted goals for each of the two predicted teams, keyed by team identity
+   * instead of home/away position. Prefer this over predictedHome/predictedAway when non-null —
+   * it's immune to home/away orientation mismatches between the user's own predicted pair and
+   * the real match's home/away assignment. Null when no finish score exists, or the score
+   * predates the team-id snapshot.
+   */
+  predictedScoreByTeam: { teamId: string; goals: number }[] | null;
   /** Final/Bronze only: true when predictedHome/Away matched the actual score exactly. */
   isExactScore: boolean;
 };

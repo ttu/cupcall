@@ -8,6 +8,8 @@ import {
   clearPredictionInputs,
   getGroupScoresByPool,
   getKnockoutPicksByPool,
+  getFinishScoresByPool,
+  upsertFinishScore,
 } from './predictions';
 import { upsertTournamentDef } from './tournament';
 import { createUser } from './users';
@@ -155,6 +157,27 @@ describe('predictions repository', () => {
       const inputs = await getPredictionInputs(db, predId);
       expect(inputs.finishScores.final).toEqual({ home: 1, away: 0 });
       expect(inputs.finishScores.bronze).toEqual({ home: 2, away: 2 });
+    });
+
+    it('round-trips the home/away team-id snapshot when provided', async () => {
+      const predId = await seedPrediction(db, poolId, userId1, tournamentId);
+      await upsertFinishScore(db, predId, 'final', 2, 1, 'A1', 'B1');
+
+      const inputs = await getPredictionInputs(db, predId);
+      expect(inputs.finishScores.final).toEqual({
+        home: 2,
+        away: 1,
+        homeTeamId: teamId('A1'),
+        awayTeamId: teamId('B1'),
+      });
+    });
+
+    it('leaves the team-id snapshot undefined when not provided', async () => {
+      const predId = await seedPrediction(db, poolId, userId1, tournamentId);
+      await upsertFinishScore(db, predId, 'final', 2, 1);
+
+      const inputs = await getPredictionInputs(db, predId);
+      expect(inputs.finishScores.final).toEqual({ home: 2, away: 1 });
     });
 
     it('assembles special bets with branded types', async () => {
@@ -348,6 +371,20 @@ describe('predictions repository', () => {
       const result = await getKnockoutPicksByPool(db, poolId);
       expect(result).toHaveLength(1);
       expect(result[0]?.winnerTeamId).toBe('A1');
+    });
+  });
+
+  describe('getFinishScoresByPool', () => {
+    it('includes the team-id snapshot when present, null when absent', async () => {
+      const predId = await seedPrediction(db, poolId, userId1, tournamentId);
+      await upsertFinishScore(db, predId, 'final', 2, 1, 'A1', 'B1');
+      await upsertFinishScore(db, predId, 'bronze', 1, 1);
+
+      const rows = await getFinishScoresByPool(db, poolId);
+      const finalRow = rows.find((r) => r.match === 'final');
+      const bronzeRow = rows.find((r) => r.match === 'bronze');
+      expect(finalRow).toMatchObject({ homeTeamId: 'A1', awayTeamId: 'B1' });
+      expect(bronzeRow).toMatchObject({ homeTeamId: null, awayTeamId: null });
     });
   });
 });

@@ -41,11 +41,25 @@ function KnockoutUpcomingRow({ match }: { match: KnockoutMatchView }): ReactElem
 
   const hasPool = match.poolPickHomePct !== null && match.poolPickAwayPct !== null;
 
-  // For Final/Bronze, predictedHome/Away are set — show score alongside pick.
+  // For Final/Bronze, predictedHome/Away are set — show score alongside pick. Resolve by team
+  // identity when a snapshot is available so "you → WINNER · X–Y" always pairs X with the
+  // winner's own goals, regardless of home/away orientation.
+  const goalsByTeam =
+    match.predictedGoalsByTeam !== null
+      ? new Map(match.predictedGoalsByTeam.map((s) => [s.teamId, s.goals]))
+      : null;
+  const winnerGoals =
+    goalsByTeam !== null && match.pickedWinnerId !== null
+      ? (goalsByTeam.get(match.pickedWinnerId) ?? null)
+      : match.predictedHome;
+  const opponentGoals =
+    goalsByTeam !== null && match.pickedOpponentId !== null
+      ? (goalsByTeam.get(match.pickedOpponentId) ?? null)
+      : match.predictedAway;
   const pickLabel =
     match.pickedWinnerName !== null
-      ? match.predictedHome !== null
-        ? `you → ${match.pickedWinnerName} · ${match.predictedHome}–${match.predictedAway}`
+      ? winnerGoals !== null
+        ? `you → ${match.pickedWinnerName} · ${winnerGoals}–${opponentGoals}`
         : `you → ${match.pickedWinnerName}`
       : null;
 

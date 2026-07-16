@@ -150,6 +150,22 @@ async function invalidatePicksAfterKnockoutPickChange(
 }
 
 /**
+ * Resolves the finalists / bronze pair (home side, away side) for a prediction, or
+ * null when the pair isn't yet resolved (no SF picks).
+ */
+async function deriveFinishPair(
+  predictionId: PredictionId,
+  match: 'final' | 'bronze',
+  tournamentDef: Tournament,
+): Promise<[TeamId, TeamId] | null> {
+  const inputs = await getPredictionInputs(db, predictionId);
+  const derived = deriveCard(inputs, tournamentDef);
+  const pair = match === 'final' ? derived.finalists : derived.bronzePair;
+  if (pair.length < 2) return null;
+  return pair as [TeamId, TeamId];
+}
+
+/**
  * Derive the implicit winner of a finish match from the predicted scoreline.
  *
  * Returns the TeamId of the higher-scoring side using the resolved finalists / bronze pair,
@@ -166,12 +182,10 @@ async function deriveFinishWinner(
 ): Promise<TeamId | undefined> {
   if (home === away) return undefined;
 
-  const inputs = await getPredictionInputs(db, predictionId);
-  const derived = deriveCard(inputs, tournamentDef);
-  const pair = match === 'final' ? derived.finalists : derived.bronzePair;
-  if (pair.length < 2) return undefined;
+  const pair = await deriveFinishPair(predictionId, match, tournamentDef);
+  if (pair === null) return undefined;
 
-  const [homeSide, awaySide] = pair as [TeamId, TeamId];
+  const [homeSide, awaySide] = pair;
   return home > away ? homeSide : awaySide;
 }
 
@@ -522,7 +536,16 @@ export async function saveFinishScore(
       return matchHasResult(db, pool.tournamentId, matchKey);
     },
     async ({ tournamentDef, prediction }) => {
-      await upsertFinishScore(db, prediction.id, match, home, away);
+      const pair = await deriveFinishPair(prediction.id, match, tournamentDef);
+      await upsertFinishScore(
+        db,
+        prediction.id,
+        match,
+        home,
+        away,
+        pair?.[0] ?? null,
+        pair?.[1] ?? null,
+      );
       const implicitWinner = await deriveFinishWinner(
         prediction.id,
         match,
@@ -568,7 +591,16 @@ export async function ownerSaveFinishScore(
     userId(rawTargetUserId),
     reason,
     async ({ tournamentDef, prediction }) => {
-      await upsertFinishScore(db, prediction.id, match, home, away);
+      const pair = await deriveFinishPair(prediction.id, match, tournamentDef);
+      await upsertFinishScore(
+        db,
+        prediction.id,
+        match,
+        home,
+        away,
+        pair?.[0] ?? null,
+        pair?.[1] ?? null,
+      );
       const implicitWinner = await deriveFinishWinner(
         prediction.id,
         match,

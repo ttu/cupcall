@@ -649,10 +649,21 @@ export function buildKnockoutMatrix(params: {
   }
 
   // Per-user finish scores: userId → 'final'|'bronze' → {home, away}
-  const finishScoreMap = new Map<string, Map<'final' | 'bronze', { home: number; away: number }>>();
+  const finishScoreMap = new Map<
+    string,
+    Map<
+      'final' | 'bronze',
+      { home: number; away: number; homeTeamId: string | null; awayTeamId: string | null }
+    >
+  >();
   for (const fs of poolFinishScores) {
     if (!finishScoreMap.has(fs.userId)) finishScoreMap.set(fs.userId, new Map());
-    finishScoreMap.get(fs.userId)!.set(fs.match, { home: fs.home, away: fs.away });
+    finishScoreMap.get(fs.userId)!.set(fs.match, {
+      home: fs.home,
+      away: fs.away,
+      homeTeamId: fs.homeTeamId,
+      awayTeamId: fs.awayTeamId,
+    });
   }
 
   const finalMatchKey = def.bracket.finalMatch as string;
@@ -677,6 +688,7 @@ export function buildKnockoutMatrix(params: {
       let pickedWinnerId: string | null = knockoutPick;
       let predictedHome: number | null = null;
       let predictedAway: number | null = null;
+      let predictedScoreByTeam: { teamId: string; goals: number }[] | null = null;
       let isExactScore = false;
       if (isFinalOrBronze) {
         const matchType = m.bracketMatchKey === finalMatchKey ? 'final' : 'bronze';
@@ -690,10 +702,35 @@ export function buildKnockoutMatrix(params: {
             fs.home === m.actualHome &&
             fs.away === m.actualAway;
         }
-        if (fs !== undefined && fs.home !== fs.away) {
-          // Prefer deriving the winner from the user's own SF/QF pick chain — the score was
-          // entered relative to the user's own predicted finalists, not the real match's
-          // home/away teams, which can differ once real results diverge from the user's picks.
+
+        if (fs?.homeTeamId != null && fs.awayTeamId != null) {
+          // Team-identity path: the finish score has a snapshot of which real team each goal
+          // figure belongs to, captured at save time. Prefer this over the positional
+          // fallback below — it's correct regardless of how the real match's home/away
+          // assignment relates to the user's own predicted orientation.
+          predictedScoreByTeam = [
+            { teamId: fs.homeTeamId, goals: fs.home },
+            { teamId: fs.awayTeamId, goals: fs.away },
+          ];
+          const predictedByTeam = new Map(predictedScoreByTeam.map((s) => [s.teamId, s.goals]));
+          if (fs.home !== fs.away) {
+            pickedWinnerId = fs.home > fs.away ? fs.homeTeamId : fs.awayTeamId;
+          } else {
+            pickedWinnerId = knockoutPick;
+          }
+          if (
+            m.actualHome !== null &&
+            m.actualAway !== null &&
+            m.homeTeamId !== null &&
+            m.awayTeamId !== null
+          ) {
+            isExactScore =
+              predictedByTeam.get(m.homeTeamId) === m.actualHome &&
+              predictedByTeam.get(m.awayTeamId) === m.actualAway;
+          }
+        } else if (fs !== undefined && fs.home !== fs.away) {
+          // Fallback for finish scores without a team-id snapshot (pre-migration, not yet
+          // backfilled) — unchanged from today's behavior.
           pickedWinnerId = deriveImplicitFinaleWinner(
             m.bracketMatchKey,
             def.bracket,
@@ -730,6 +767,7 @@ export function buildKnockoutMatrix(params: {
           pickedOpponentId,
           predictedHome,
           predictedAway,
+          predictedScoreByTeam,
           isExactScore,
         };
       }
@@ -752,6 +790,7 @@ export function buildKnockoutMatrix(params: {
           pickedOpponentId,
           predictedHome,
           predictedAway,
+          predictedScoreByTeam,
           isExactScore,
         };
       }
@@ -765,6 +804,7 @@ export function buildKnockoutMatrix(params: {
           pickedOpponentId,
           predictedHome,
           predictedAway,
+          predictedScoreByTeam,
           isExactScore,
         };
       }
@@ -777,6 +817,7 @@ export function buildKnockoutMatrix(params: {
         pickedOpponentId,
         predictedHome,
         predictedAway,
+        predictedScoreByTeam,
         isExactScore,
       };
     });

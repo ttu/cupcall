@@ -199,7 +199,12 @@ describe('saveFinishScore — implicit winner derivation', () => {
     expect(result).toEqual({ ok: true });
 
     const inputs = await getPredictionInputs(testDb, predictionId);
-    expect(inputs.finishScores.final).toEqual({ home: 2, away: 1 });
+    expect(inputs.finishScores.final).toEqual({
+      home: 2,
+      away: 1,
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+    });
     const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
     expect(pick?.winner).toBe('A1'); // finalists = [A1, B1]; higher side = home = A1
   });
@@ -226,7 +231,12 @@ describe('saveFinishScore — implicit winner derivation', () => {
     await saveFinishScore({ poolId, match: 'final', home: 1, away: 1 });
 
     const inputs = await getPredictionInputs(testDb, predictionId);
-    expect(inputs.finishScores.final).toEqual({ home: 1, away: 1 });
+    expect(inputs.finishScores.final).toEqual({
+      home: 1,
+      away: 1,
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+    });
     const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
     expect(pick?.winner).toBe('B1');
   });
@@ -239,6 +249,14 @@ describe('saveFinishScore — implicit winner derivation', () => {
     const inputs = await getPredictionInputs(testDb, predictionId);
     expect(inputs.finishScores.final).toEqual({ home: 2, away: 1 });
     expect(inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final')).toBeUndefined();
+  });
+
+  it('snapshots the home/away team-id pair alongside the score', async () => {
+    await saveFinishScore({ poolId, match: 'final', home: 2, away: 1 });
+
+    const inputs = await getPredictionInputs(testDb, predictionId);
+    expect(inputs.finishScores.final?.homeTeamId).not.toBeUndefined();
+    expect(inputs.finishScores.final?.awayTeamId).not.toBeUndefined();
   });
 });
 

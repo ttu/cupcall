@@ -18,6 +18,19 @@ function exactScorePoints(
   if (finishScore === undefined || actualMatch === undefined) {
     return 0;
   }
+
+  if (finishScore.homeTeamId != null && finishScore.awayTeamId != null) {
+    const predictedByTeam = new Map<TeamId, number>([
+      [finishScore.homeTeamId, finishScore.home],
+      [finishScore.awayTeamId, finishScore.away],
+    ]);
+    return predictedByTeam.get(actualMatch.home) === actualMatch.homeGoals &&
+      predictedByTeam.get(actualMatch.away) === actualMatch.awayGoals
+      ? exactScore
+      : 0;
+  }
+
+  // Fallback for rows without a team-id snapshot (pre-migration, not yet backfilled).
   return finishScore.home === actualMatch.homeGoals && finishScore.away === actualMatch.awayGoals
     ? exactScore
     : 0;

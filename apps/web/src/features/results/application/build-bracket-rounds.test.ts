@@ -1254,3 +1254,75 @@ describe('buildBracketRounds — decidedBy propagation', () => {
     expect(finalRound.matches[0]!.decidedBy).toBeNull();
   });
 });
+
+describe('buildBracketRounds — predictedGoalsByTeam and team-identity exact-hit detection', () => {
+  // Same picks as the "Final/Bronze: implicit pickedWinnerId..." describe above: sf1 winner
+  // A1 fills the Final home slot, sf2 winner B1 fills the Final away slot (see the "Contract"
+  // test at line 746).
+  const fullBracketPicks = [
+    { bracketMatchKey: 'qf1', winner: 'A1' },
+    { bracketMatchKey: 'qf2', winner: 'C1' },
+    { bracketMatchKey: 'qf3', winner: 'B1' },
+    { bracketMatchKey: 'qf4', winner: 'D1' },
+    { bracketMatchKey: 'sf1', winner: 'A1' },
+    { bracketMatchKey: 'sf2', winner: 'B1' },
+  ];
+
+  it('populates predictedGoalsByTeam for the Final when the finish score has a team-id snapshot', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      {
+        knockoutPicks: fullBracketPicks,
+        finishScores: { final: { home: 2, away: 1, homeTeamId: 'A1', awayTeamId: 'B1' } },
+      },
+      [],
+      [],
+    );
+    const finalCard = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    expect(finalCard.predictedGoalsByTeam).toEqual(
+      expect.arrayContaining([
+        { teamId: 'A1', goals: 2 },
+        { teamId: 'B1', goals: 1 },
+      ]),
+    );
+  });
+
+  it('leaves predictedGoalsByTeam null when the finish score has no team-id snapshot', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      { knockoutPicks: fullBracketPicks, finishScores: { final: { home: 2, away: 1 } } },
+      [],
+      [],
+    );
+    const finalCard = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    expect(finalCard.predictedGoalsByTeam).toBeNull();
+  });
+
+  it('regression: hit is "exact" via team identity even when the real match home/away is swapped relative to the snapshot', () => {
+    // Real Final: A1 (home) 1 - 2 (away) B1. User's own predicted pair (snapshot) has
+    // B1=home/A1=away with score 2-1 — same teams, same per-team goals, different real
+    // home/away assignment. Must still register as an exact hit.
+    const finalPlayed = makeMatch(miniTournament.bracket.finalMatch as string, 'Final', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+      homeGoals: 1,
+      awayGoals: 2,
+      winnerTeamId: 'B1',
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [finalPlayed],
+      {
+        knockoutPicks: fullBracketPicks,
+        finishScores: { final: { home: 2, away: 1, homeTeamId: 'B1', awayTeamId: 'A1' } },
+      },
+      [],
+      [],
+    );
+    const finalCard = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    expect(finalCard.hit).toBe('exact');
+  });
+});

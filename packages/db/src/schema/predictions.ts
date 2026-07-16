@@ -77,6 +77,13 @@ export const predictionFinishScores = pgTable(
     match: finishMatchEnum('match').notNull(),
     homeGoals: integer('home_goals').notNull(),
     awayGoals: integer('away_goals').notNull(),
+    /**
+     * Snapshot of which real team each goal figure belongs to, captured at save time from the
+     * user's then-current derived finalist/bronze pair. Null for rows saved before this column
+     * existed, until the one-time backfill (scripts/backfill-finish-score-team-ids.ts) runs.
+     */
+    homeTeamId: text('home_team_id'),
+    awayTeamId: text('away_team_id'),
   },
   (fs) => [primaryKey({ columns: [fs.predictionId, fs.match] })],
 );

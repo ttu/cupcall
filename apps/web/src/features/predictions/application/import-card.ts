@@ -4,9 +4,10 @@ import {
   upsertFinishScore,
   upsertSpecialBet,
   createPredictionEdit,
+  getPredictionInputs,
 } from '@cup/db';
 import type { Db } from '@cup/db';
-import { bracketMatchKey as bmk } from '@cup/engine';
+import { bracketMatchKey as bmk, deriveCard } from '@cup/engine';
 import type {
   BracketMatchKey,
   MatchId,
@@ -97,25 +98,36 @@ export async function applyCardImport(deps: Deps): Promise<CardImportResult> {
     imported++;
   }
 
-  if (exportData.finishScores?.final) {
-    await upsertFinishScore(
-      db,
-      predictionId,
-      'final',
-      exportData.finishScores.final.home,
-      exportData.finishScores.final.away,
-    );
-    imported++;
-  }
-  if (exportData.finishScores?.bronze) {
-    await upsertFinishScore(
-      db,
-      predictionId,
-      'bronze',
-      exportData.finishScores.bronze.home,
-      exportData.finishScores.bronze.away,
-    );
-    imported++;
+  if (exportData.finishScores?.final || exportData.finishScores?.bronze) {
+    const inputs = await getPredictionInputs(db, predictionId);
+    const derived = deriveCard(inputs, tournamentDef);
+
+    if (exportData.finishScores.final) {
+      const pair = derived.finalists.length >= 2 ? (derived.finalists as [TeamId, TeamId]) : null;
+      await upsertFinishScore(
+        db,
+        predictionId,
+        'final',
+        exportData.finishScores.final.home,
+        exportData.finishScores.final.away,
+        pair?.[0] ?? null,
+        pair?.[1] ?? null,
+      );
+      imported++;
+    }
+    if (exportData.finishScores.bronze) {
+      const pair = derived.bronzePair.length >= 2 ? (derived.bronzePair as [TeamId, TeamId]) : null;
+      await upsertFinishScore(
+        db,
+        predictionId,
+        'bronze',
+        exportData.finishScores.bronze.home,
+        exportData.finishScores.bronze.away,
+        pair?.[0] ?? null,
+        pair?.[1] ?? null,
+      );
+      imported++;
+    }
   }
 
   for (const [betKey, value] of Object.entries(exportData.specials ?? {})) {

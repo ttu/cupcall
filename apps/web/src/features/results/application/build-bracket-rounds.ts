@@ -30,8 +30,18 @@ export function buildBracketRounds(
   inputs: {
     knockoutPicks: { bracketMatchKey: string; winner: string }[];
     finishScores: {
-      final?: { home: number; away: number };
-      bronze?: { home: number; away: number };
+      final?: {
+        home: number;
+        away: number;
+        homeTeamId?: string | null;
+        awayTeamId?: string | null;
+      };
+      bronze?: {
+        home: number;
+        away: number;
+        homeTeamId?: string | null;
+        awayTeamId?: string | null;
+      };
     };
   } | null,
   poolGroupScores: PoolGroupScore[],
@@ -145,13 +155,23 @@ export function buildBracketRounds(
     // Predicted score: only Final and Bronze have a finish score.
     let predictedHome: number | null = null;
     let predictedAway: number | null = null;
+    let predictedGoalsByTeam: { teamId: string; goals: number }[] | null = null;
     const isFinale = key === finalMatchKey || key === bronzeMatchKey;
-    if (key === finalMatchKey && finishScores.final) {
-      predictedHome = finishScores.final.home;
-      predictedAway = finishScores.final.away;
-    } else if (key === bronzeMatchKey && finishScores.bronze) {
-      predictedHome = finishScores.bronze.home;
-      predictedAway = finishScores.bronze.away;
+    const finishScoreForKey =
+      key === finalMatchKey
+        ? finishScores.final
+        : key === bronzeMatchKey
+          ? finishScores.bronze
+          : undefined;
+    if (finishScoreForKey) {
+      predictedHome = finishScoreForKey.home;
+      predictedAway = finishScoreForKey.away;
+      if (finishScoreForKey.homeTeamId != null && finishScoreForKey.awayTeamId != null) {
+        predictedGoalsByTeam = [
+          { teamId: finishScoreForKey.homeTeamId, goals: finishScoreForKey.home },
+          { teamId: finishScoreForKey.awayTeamId, goals: finishScoreForKey.away },
+        ];
+      }
     }
 
     // For Final/Bronze: if no explicit bracket pick was stored but the finish score is non-tied,
@@ -194,8 +214,11 @@ export function buildBracketRounds(
       stagePicks,
       predictedHome,
       predictedAway,
+      predictedGoalsByTeam,
       actualHome: actual?.homeGoals ?? null,
       actualAway: actual?.awayGoals ?? null,
+      actualHomeTeamId: actual?.homeTeamId ?? null,
+      actualAwayTeamId: actual?.awayTeamId ?? null,
     });
 
     const pickedOpponentId = isFinale
@@ -286,6 +309,7 @@ export function buildBracketRounds(
       pickedOpponentStatus,
       predictedHome,
       predictedAway,
+      predictedGoalsByTeam,
       hit,
       projected: projectedKeys.has(key),
       // Entry-round: confirmed when the team's source group is fully finalised.
@@ -406,8 +430,11 @@ function computeKnockoutHit(args: {
   stagePicks: Set<string> | null;
   predictedHome: number | null;
   predictedAway: number | null;
+  predictedGoalsByTeam: { teamId: string; goals: number }[] | null;
   actualHome: number | null;
   actualAway: number | null;
+  actualHomeTeamId: string | null;
+  actualAwayTeamId: string | null;
 }): MatchHit {
   const {
     pickedWinnerId,
@@ -415,22 +442,35 @@ function computeKnockoutHit(args: {
     stagePicks,
     predictedHome,
     predictedAway,
+    predictedGoalsByTeam,
     actualHome,
     actualAway,
+    actualHomeTeamId,
+    actualAwayTeamId,
   } = args;
 
   if (actualWinnerId === null) return 'pending';
 
   // Exact requires both predicted and actual scores; only Final/Bronze populate predicted.
-  if (
-    predictedHome !== null &&
-    predictedAway !== null &&
-    actualHome !== null &&
-    actualAway !== null &&
-    predictedHome === actualHome &&
-    predictedAway === actualAway
-  ) {
-    return 'exact';
+  // Prefer team-identity comparison when a snapshot is available — it's correct regardless of
+  // how the real match's home/away assignment relates to the user's own predicted orientation.
+  if (actualHome !== null && actualAway !== null) {
+    if (predictedGoalsByTeam !== null && actualHomeTeamId !== null && actualAwayTeamId !== null) {
+      const goalsByTeam = new Map(predictedGoalsByTeam.map((s) => [s.teamId, s.goals]));
+      if (
+        goalsByTeam.get(actualHomeTeamId) === actualHome &&
+        goalsByTeam.get(actualAwayTeamId) === actualAway
+      ) {
+        return 'exact';
+      }
+    } else if (
+      predictedHome !== null &&
+      predictedAway !== null &&
+      predictedHome === actualHome &&
+      predictedAway === actualAway
+    ) {
+      return 'exact';
+    }
   }
 
   // Credit the pick on the card where the predicted team actually played and won,

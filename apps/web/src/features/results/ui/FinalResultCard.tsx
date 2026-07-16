@@ -125,14 +125,14 @@ function PickBadge({ hit }: { hit: MatchHit }): ReactElement | null {
 function PickPill({
   leftId,
   rightId,
-  predictedHome,
-  predictedAway,
+  leftGoals,
+  rightGoals,
   hit,
 }: {
   leftId: string | null;
   rightId: string | null;
-  predictedHome: number;
-  predictedAway: number;
+  leftGoals: number | null;
+  rightGoals: number | null;
   hit: MatchHit;
 }): ReactElement {
   return (
@@ -146,7 +146,7 @@ function PickPill({
       <span className="text-[11px] font-bold text-ink-muted">Your pick:</span>
       {leftId !== null && <TeamBadge teamId={leftId} size="sm" />}
       <span className="tnum text-[12px] font-extrabold text-ink">
-        {predictedHome}–{predictedAway}
+        {leftGoals}–{rightGoals}
       </span>
       {rightId !== null && <TeamBadge teamId={rightId} size="sm" />}
       <PickBadge hit={hit} />
@@ -189,6 +189,23 @@ export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElem
     match.awayTeamId ??
     match.predictedAwayTeamId;
 
+  // Resolve each side's predicted goals by team identity when a snapshot is available — this
+  // is correct regardless of which fallback branch produced pickRowLeftId/pickRowRightId above.
+  // Falls back to the legacy positional fields (predictedHome/predictedAway), which assume
+  // leftId===home-slot-team, when no snapshot exists (pre-migration/unbackfilled rows).
+  const goalsByTeam =
+    match.predictedGoalsByTeam !== null
+      ? new Map(match.predictedGoalsByTeam.map((s) => [s.teamId, s.goals]))
+      : null;
+  const pickLeftGoals =
+    goalsByTeam !== null && pickRowLeftId !== null
+      ? (goalsByTeam.get(pickRowLeftId) ?? null)
+      : match.predictedHome;
+  const pickRightGoals =
+    goalsByTeam !== null && pickRowRightId !== null
+      ? (goalsByTeam.get(pickRowRightId) ?? null)
+      : match.predictedAway;
+
   // A tie is only worth opening once at least one side is a confirmed (non-TBD) team.
   const isTappable =
     onSelect !== undefined && (match.homeTeamId !== null || match.awayTeamId !== null);
@@ -222,12 +239,12 @@ export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElem
         </div>
         <ScoreLine match={match} />
       </Root>
-      {match.predictedHome !== null && match.predictedAway !== null && (
+      {pickLeftGoals !== null && pickRightGoals !== null && (
         <PickPill
           leftId={pickRowLeftId}
           rightId={pickRowRightId}
-          predictedHome={match.predictedHome}
-          predictedAway={match.predictedAway}
+          leftGoals={pickLeftGoals}
+          rightGoals={pickRightGoals}
           hit={match.hit}
         />
       )}

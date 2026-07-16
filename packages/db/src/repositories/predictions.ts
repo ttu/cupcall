@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import {
@@ -201,13 +201,22 @@ export async function upsertFinishScore(
   match: 'final' | 'bronze',
   homeGoals: number,
   awayGoals: number,
+  homeTeamId?: string | null,
+  awayTeamId?: string | null,
 ): Promise<void> {
   await db
     .insert(schema.predictionFinishScores)
-    .values({ predictionId, match, homeGoals, awayGoals })
+    .values({
+      predictionId,
+      match,
+      homeGoals,
+      awayGoals,
+      homeTeamId: homeTeamId ?? null,
+      awayTeamId: awayTeamId ?? null,
+    })
     .onConflictDoUpdate({
       target: [schema.predictionFinishScores.predictionId, schema.predictionFinishScores.match],
-      set: { homeGoals, awayGoals },
+      set: { homeGoals, awayGoals, homeTeamId: homeTeamId ?? null, awayTeamId: awayTeamId ?? null },
     });
 }
 
@@ -279,6 +288,8 @@ export type PoolFinishScore = {
   match: 'final' | 'bronze';
   home: number;
   away: number;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
 };
 
 /**
@@ -295,6 +306,8 @@ export async function getFinishScoresByPool(
       match: schema.predictionFinishScores.match,
       home: schema.predictionFinishScores.homeGoals,
       away: schema.predictionFinishScores.awayGoals,
+      homeTeamId: schema.predictionFinishScores.homeTeamId,
+      awayTeamId: schema.predictionFinishScores.awayTeamId,
     })
     .from(schema.predictions)
     .innerJoin(
@@ -308,7 +321,61 @@ export async function getFinishScoresByPool(
     match: r.match,
     home: r.home,
     away: r.away,
+    homeTeamId: r.homeTeamId,
+    awayTeamId: r.awayTeamId,
   }));
+}
+
+export type FinishScoreMissingTeamIds = {
+  predictionId: PredictionId;
+  match: 'final' | 'bronze';
+};
+
+/**
+ * Finds every final/bronze finish-score row for a tournament that has no team-id snapshot yet
+ * (saved before that column existed). Used by the one-time backfill script.
+ */
+export async function getFinishScoresMissingTeamIds(
+  db: Database,
+  tid: TournamentId,
+): Promise<FinishScoreMissingTeamIds[]> {
+  const rows = await db
+    .select({
+      predictionId: schema.predictionFinishScores.predictionId,
+      match: schema.predictionFinishScores.match,
+    })
+    .from(schema.predictionFinishScores)
+    .innerJoin(
+      schema.predictions,
+      eq(schema.predictions.id, schema.predictionFinishScores.predictionId),
+    )
+    .where(
+      and(
+        eq(schema.predictions.tournamentId, tid),
+        isNull(schema.predictionFinishScores.homeTeamId),
+      ),
+    );
+
+  return rows.map((r) => ({ predictionId: asPredictionId(r.predictionId), match: r.match }));
+}
+
+/** Sets the team-id snapshot on an existing finish-score row (does not touch the goal counts). */
+export async function setFinishScoreTeamIds(
+  db: Database,
+  predictionId: PredictionId,
+  match: 'final' | 'bronze',
+  homeTeamId: string,
+  awayTeamId: string,
+): Promise<void> {
+  await db
+    .update(schema.predictionFinishScores)
+    .set({ homeTeamId, awayTeamId })
+    .where(
+      and(
+        eq(schema.predictionFinishScores.predictionId, predictionId),
+        eq(schema.predictionFinishScores.match, match),
+      ),
+    );
 }
 
 /**
@@ -432,7 +499,12 @@ export async function getPredictionInputs(
 
   const finishScores: { final?: FinishScore; bronze?: FinishScore } = {};
   for (const r of finishRows) {
-    const score: FinishScore = { home: r.homeGoals, away: r.awayGoals };
+    const score: FinishScore = {
+      home: r.homeGoals,
+      away: r.awayGoals,
+      ...(r.homeTeamId !== null && { homeTeamId: teamId(r.homeTeamId) }),
+      ...(r.awayTeamId !== null && { awayTeamId: teamId(r.awayTeamId) }),
+    };
     if (r.match === 'final') {
       finishScores.final = score;
     } else {

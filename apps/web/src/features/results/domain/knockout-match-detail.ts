@@ -49,6 +49,20 @@ export function buildKnockoutMatchDetail(
     const c = row.cells.find((cell) => cell.bracketMatchKey === match.bracketMatchKey);
     const pickedTeamId = c?.pickedWinnerId ?? null;
     const pickedOpponentId = c?.pickedOpponentId ?? null;
+
+    let predictedHome = c?.predictedHome ?? null;
+    let predictedAway = c?.predictedAway ?? null;
+    if (c?.predictedScoreByTeam != null && pickedTeamId !== null) {
+      const goalsByTeam = new Map(c.predictedScoreByTeam.map((s) => [s.teamId, s.goals]));
+      const pickedGoals = goalsByTeam.get(pickedTeamId);
+      const opponentGoals =
+        pickedOpponentId !== null ? goalsByTeam.get(pickedOpponentId) : undefined;
+      if (pickedGoals !== undefined && opponentGoals !== undefined) {
+        predictedHome = pickedGoals;
+        predictedAway = opponentGoals;
+      }
+    }
+
     return {
       userId: row.userId,
       displayName: row.displayName,
@@ -58,8 +72,8 @@ export function buildKnockoutMatchDetail(
       pickedOpponentId,
       pickedOpponentName:
         pickedOpponentId !== null ? resolveTeamName(match, pickedOpponentId) : null,
-      predictedHome: c?.predictedHome ?? null,
-      predictedAway: c?.predictedAway ?? null,
+      predictedHome,
+      predictedAway,
       hit: c?.hit ?? 'no-pick',
       isExactScore: c?.isExactScore ?? false,
       points: c?.points ?? 0,

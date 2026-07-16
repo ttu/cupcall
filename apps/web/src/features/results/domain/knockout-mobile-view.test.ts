@@ -28,6 +28,7 @@ function match(overrides: Partial<KnockoutMatchView> = {}): KnockoutMatchView {
     pickedOpponentStatus: 'no-pick',
     predictedHome: null,
     predictedAway: null,
+    predictedGoalsByTeam: null,
     hit: 'pending',
     projected: false,
     homeTeamConfirmed: true,

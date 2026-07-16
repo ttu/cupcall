@@ -71,6 +71,7 @@ function match(pickStatus: KnockoutMatchView['pickStatus'], key = 'qf1'): Knocko
     pickStatus,
     predictedHome: null,
     predictedAway: null,
+    predictedGoalsByTeam: null,
     hit: 'pending',
     projected: false,
     homeTeamConfirmed: true,

@@ -109,6 +109,13 @@ export interface KnockoutPick {
 export interface FinishScore {
   home: number;
   away: number;
+  /**
+   * Snapshot of which real team each goal figure belongs to, captured at save time. Optional —
+   * absent for legacy rows saved before this field existed (until backfilled) and for the
+   * predict-page's own live-editing flow, which doesn't need it (see design doc, "Out of scope").
+   */
+  homeTeamId?: TeamId | null;
+  awayTeamId?: TeamId | null;
 }
 export interface SpecialBets {
   topScorerPlayer?: PlayerId;

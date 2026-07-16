@@ -24,6 +24,7 @@ function match(overrides: Partial<KnockoutMatchView> = {}): KnockoutMatchView {
     pickedOpponentStatus: 'no-pick',
     predictedHome: null,
     predictedAway: null,
+    predictedGoalsByTeam: null,
     hit: 'pending',
     projected: false,
     homeTeamConfirmed: true,
@@ -59,6 +60,7 @@ function cell(overrides: Partial<KnockoutMatrixCell> = {}): KnockoutMatrixCell {
     pickedOpponentId: null,
     predictedHome: null,
     predictedAway: null,
+    predictedScoreByTeam: null,
     isExactScore: false,
     ...overrides,
   };
@@ -347,5 +349,82 @@ describe('buildKnockoutMatchDetail', () => {
     const detail = buildKnockoutMatchDetail(m, entries);
 
     expect(detail.predictions.map((p) => p.displayName)).toEqual(['Amy', 'Zoe']);
+  });
+});
+
+describe('buildKnockoutMatchDetail — predicted score resolved by team identity', () => {
+  it('regression: shows the correct per-team score even when the picked team is on the "away" side of the snapshot', () => {
+    // Bug report scenario: TNH81 correctly predicted ENG beating ESP 2-1, but the summary
+    // showed "ENG vs ESP 1:2" — the numbers were swapped because they were displayed
+    // positionally instead of being resolved by team identity.
+    const m = match({
+      bracketMatchKey: 'final',
+      homeTeamId: 'ESP',
+      homeTeamName: 'Spain',
+      awayTeamId: 'ENG',
+      awayTeamName: 'England',
+      actualHome: 1,
+      actualAway: 2,
+      actualWinnerId: 'ENG',
+      status: 'final',
+    });
+    const entries = [
+      entry({
+        userId: 'tnh81',
+        displayName: 'TNH81',
+        cells: [
+          cell({
+            bracketMatchKey: 'final',
+            pickedWinnerId: 'ENG',
+            pickedOpponentId: 'ESP',
+            hit: 'hit',
+            // Snapshot: the user predicted their own home=ENG/away=ESP pair (an orientation
+            // that happens to be flipped relative to the real match's home=ESP/away=ENG).
+            predictedScoreByTeam: [
+              { teamId: 'ENG', goals: 2 },
+              { teamId: 'ESP', goals: 1 },
+            ],
+            isExactScore: true,
+          }),
+        ],
+      }),
+    ];
+
+    const detail = buildKnockoutMatchDetail(m, entries);
+    const prediction = detail.predictions.find((p) => p.userId === 'tnh81')!;
+
+    expect(prediction.pickedTeamId).toBe('ENG');
+    expect(prediction.pickedOpponentId).toBe('ESP');
+    expect(prediction.predictedHome).toBe(2); // ENG's (the picked team's) goals
+    expect(prediction.predictedAway).toBe(1); // ESP's (the opponent's) goals
+  });
+
+  it('falls back to the raw predictedHome/predictedAway when no team-id snapshot exists', () => {
+    const m = match({
+      bracketMatchKey: 'final',
+      homeTeamId: 'ESP',
+      awayTeamId: 'ENG',
+      status: 'scheduled',
+    });
+    const entries = [
+      entry({
+        userId: 'u1',
+        cells: [
+          cell({
+            bracketMatchKey: 'final',
+            pickedWinnerId: 'ENG',
+            pickedOpponentId: 'ESP',
+            predictedHome: 2,
+            predictedAway: 1,
+            predictedScoreByTeam: null,
+          }),
+        ],
+      }),
+    ];
+
+    const detail = buildKnockoutMatchDetail(m, entries);
+    const prediction = detail.predictions[0]!;
+    expect(prediction.predictedHome).toBe(2);
+    expect(prediction.predictedAway).toBe(1);
   });
 });

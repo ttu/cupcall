@@ -441,6 +441,46 @@ earned separately.
 - **Design/plan:** discussed inline (no separate spec/plan doc — small, already-scoped bugfix +
   follow-on feature).
 
+## Final/Bronze predicted-score team-identity fix (2026-07-16)
+
+Fixed a reported bug: knockout Final/Bronze match summaries showed home/away teams mixed up
+(e.g. "ENG vs ESP 1:2" displayed for a user who actually correctly predicted "ENG 2 - ESP 1").
+Root cause: `prediction_finish_scores` stored only positional home/away goals, with every
+consumer re-deriving "who is home" from the user's **current** bracket picks at read time —
+which diverges from what was true when the score was entered. The same root cause also affected
+the real point-scoring engine's exact-score bonus (a correctness bug, not just a display one).
+
+- **`packages/db`** — migration `0008_finish_score_team_ids.sql` adds nullable
+  `home_team_id`/`away_team_id` to `prediction_finish_scores`. `upsertFinishScore` gains two
+  optional trailing params; `getPredictionInputs`/`getFinishScoresByPool` read them back.
+- **`packages/engine`** — `FinishScore` gains an optional `homeTeamId`/`awayTeamId: TeamId | null`
+  snapshot. `exactScorePoints` (`scoring/finish-matches.ts`) now compares by team identity when
+  the snapshot is present, falling back to the old positional comparison otherwise.
+- **`apps/web` predictions** — `saveFinishScore`/`ownerSaveFinishScore`/`importCard` all snapshot
+  the team pair (reusing the existing derived-finalist computation) at save time.
+- **`apps/web` results** — two independent rendering paths both fixed, additively (existing
+  `predictedHome`/`predictedAway` fields kept unchanged for rows without a snapshot):
+  `build-race-view.ts`'s `buildKnockoutMatrix` (feeds `MatchSummarySheet`, the originally-reported
+  bug site) and `build-bracket-rounds.ts` (feeds the always-visible `FinalResultCard` +
+  `KnockoutUpcomingFeed` on the main results page — a second, independently-discovered occurrence
+  of the same bug class).
+- **`scripts/backfill-finish-score-team-ids.ts`** — one-time, idempotent backfill for
+  already-saved Final/Bronze predictions that predate the migration.
+- **Design/plan:** [`docs/superpowers/specs/2026-07-16-finish-score-team-identity-design.md`](./superpowers/specs/2026-07-16-finish-score-team-identity-design.md),
+  [`docs/superpowers/plans/2026-07-16-finish-score-team-identity.md`](./superpowers/plans/2026-07-16-finish-score-team-identity.md).
+
+**⚠️ Required rollout step before/at deploy — the real World Cup final is only days away:**
+Run `pnpm backfill-finish-score-team-ids -- wc-2026` against production **before** the real Final
+result is entered into `results.json`. The read-path changes are safe to deploy without it
+(rows without a snapshot keep today's fallback behavior), but any already-saved Final/Bronze
+prediction stays on the buggy path — display and exact-score bonus — until the backfill runs.
+
+**Known follow-ups (minor, from final review, not blocking):** the `teamId → goals` Map-building
+snippet is duplicated across 5 files (candidate for a small shared helper); the new field is named
+`predictedScoreByTeam` on `KnockoutMatrixCell` vs `predictedGoalsByTeam` on `KnockoutMatchView` for
+the identical shape (worth unifying); `saveFinishScore` now runs `deriveCard` twice per save
+(acknowledged, low-frequency action, not optimized).
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

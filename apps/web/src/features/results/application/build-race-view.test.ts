@@ -63,6 +63,7 @@ function makeKnockoutMatch(
     pickStatus: 'no-pick',
     predictedHome: null,
     predictedAway: null,
+    predictedGoalsByTeam: null,
     hit: 'pending',
     projected: false,
     homeTeamConfirmed: true,
@@ -106,8 +107,16 @@ function makeFinishScore(
   match: 'final' | 'bronze',
   home: number,
   away: number,
+  teamIds?: { homeTeamId: string; awayTeamId: string },
 ): PoolFinishScore {
-  return { userId: uid as UserId, match, home, away };
+  return {
+    userId: uid as UserId,
+    match,
+    home,
+    away,
+    homeTeamId: teamIds?.homeTeamId ?? null,
+    awayTeamId: teamIds?.awayTeamId ?? null,
+  };
 }
 
 describe('buildKnockoutMatrix', () => {
@@ -941,6 +950,97 @@ describe('buildKnockoutMatrix', () => {
       expect(cell.predictedHome).toBeNull();
       expect(cell.predictedAway).toBeNull();
       expect(cell.isExactScore).toBe(false);
+    });
+
+    it('populates predictedScoreByTeam when the finish score has a team-id snapshot', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+        actualHome: 2,
+        actualAway: 1,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [
+          makeFinishScore('u1', 'final', 2, 1, { homeTeamId: 'USA', awayTeamId: 'BRA' }),
+        ],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.predictedScoreByTeam).toEqual(
+        expect.arrayContaining([
+          { teamId: 'USA', goals: 2 },
+          { teamId: 'BRA', goals: 1 },
+        ]),
+      );
+    });
+
+    it('leaves predictedScoreByTeam null when the finish score has no team-id snapshot', () => {
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+        actualHome: 2,
+        actualAway: 1,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)], // no snapshot
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.predictedScoreByTeam).toBeNull();
+      // predictedHome/predictedAway (legacy fields) stay populated as before.
+      expect(cell.predictedHome).toBe(2);
+      expect(cell.predictedAway).toBe(1);
+    });
+
+    it('regression: isExactScore is true via team identity even when the real match home/away is swapped relative to the predicted pair', () => {
+      // This is the bug from the bug report: user correctly predicted USA beating BRA 2-1.
+      // The predicted pair was captured as home=USA/away=BRA. The REAL match happens to have
+      // BRA as home and USA as away (an unrelated real-world draw outcome) — same two teams,
+      // same two actual goal counts, just a different real home/away assignment. The predicted
+      // score is still exactly correct by team identity and must be marked isExactScore.
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'BRA',
+        awayTeamId: 'USA',
+        actualWinnerId: 'USA',
+        actualHome: 1, // BRA (real home) scored 1
+        actualAway: 2, // USA (real away) scored 2
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [
+          // User's own predicted pair: home=USA/away=BRA (their own SF-derived orientation)
+          makeFinishScore('u1', 'final', 2, 1, { homeTeamId: 'USA', awayTeamId: 'BRA' }),
+        ],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.isExactScore).toBe(true);
+      expect(cell.pickedWinnerId).toBe('USA');
     });
   });
 
