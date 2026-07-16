@@ -271,6 +271,62 @@ describe('buildPerUserKnockoutCanStillGet', () => {
     expect(result.get('u1')).toBe(10 + 13 + 13); // 36
   });
 
+  it('does not bust the bronze pair for a team that only lost the semifinal (SF loser plays Bronze, not eliminated)', () => {
+    // qf1: A1 beats B2 (final). qf2: C1 beats D2 (final). sf1: A1 beats C1 (final) — the user's
+    // own picks match reality exactly (qf1=A1, qf2=C1, sf1=A1), so the derived bronze team for
+    // this SF slot is C1 — the real SF1 loser, a live Bronze contender, not someone eliminated
+    // from the tournament. sf2 has no pick and is unplayed.
+    const matches = [
+      makeKnockoutMatchRow('qf1', 'QF', {
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        status: 'final',
+        homeGoals: 2,
+        awayGoals: 0,
+      }),
+      makeKnockoutMatchRow('qf2', 'QF', {
+        homeTeamId: 'C1',
+        awayTeamId: 'D2',
+        status: 'final',
+        homeGoals: 1,
+        awayGoals: 0,
+      }),
+      makeKnockoutMatchRow('qf3', 'QF', { homeTeamId: 'B1', awayTeamId: 'A2' }),
+      makeKnockoutMatchRow('qf4', 'QF', { homeTeamId: 'D1', awayTeamId: 'C2' }),
+      makeKnockoutMatchRow('sf1', 'SF', {
+        homeTeamId: 'A1',
+        awayTeamId: 'C1',
+        status: 'final',
+        homeGoals: 2,
+        awayGoals: 1,
+      }),
+      makeKnockoutMatchRow('sf2', 'SF'),
+      makeKnockoutMatchRow('final', 'Final'),
+      makeKnockoutMatchRow('bronze', 'bronze'),
+    ];
+    const picks = [
+      makePick('u1', 'qf1', 'A1'),
+      makePick('u1', 'qf2', 'C1'),
+      makePick('u1', 'qf3', 'B1'),
+      makePick('u1', 'qf4', 'D1'),
+      makePick('u1', 'sf1', 'A1'),
+      // no sf2 pick
+    ];
+    const result = buildPerUserKnockoutCanStillGet(
+      picks,
+      matches,
+      miniTournament,
+      emptyActualResults,
+    );
+    // topFour: qf1/qf2 final+confirmed-correct (confirmedQf=2), qf3/qf4 viable-not-confirmed
+    //   → nonBustedQf=4, (4-2)×5=10
+    // Final: sf1 not busted (pick=A1=real winner), sf2 no pick → bustedSfPicks=0 → 2×5+5+2×3=21
+    // Bronze: sf1's derived bronze team is C1 — the real SF1 loser, still a live Bronze
+    //   contender — must NOT count as busted just because it lost the semifinal.
+    //   bustedBronzePairs=0 → 2×5+5+2×3=21
+    expect(result.get('u1')).toBe(10 + 21 + 21); // 52
+  });
+
   it('differentiates two players: one with a viable pick, one with a busted pick', () => {
     const matches = makeQfMatchRows({ qf1Status: 'final', qf1Home: 2, qf1Away: 0 });
     const picks = [

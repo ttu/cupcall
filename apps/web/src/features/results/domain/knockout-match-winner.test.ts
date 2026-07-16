@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchRow } from '@cup/db';
-import { resolveActualWinner, computeKnockoutEliminatedTeams } from './knockout-match-winner';
+import {
+  resolveActualWinner,
+  computeKnockoutEliminatedTeams,
+  computeSemiFinalLoserTeams,
+} from './knockout-match-winner';
 
 function makeMatch(overrides: Partial<MatchRow> = {}): MatchRow {
   return {
@@ -92,5 +96,38 @@ describe('computeKnockoutEliminatedTeams', () => {
   it('ignores unplayed knockout matches', () => {
     const matches = [makeMatch({ status: 'scheduled' })];
     expect(computeKnockoutEliminatedTeams(matches).size).toBe(0);
+  });
+});
+
+describe('computeSemiFinalLoserTeams', () => {
+  it('returns the loser of a final semifinal match', () => {
+    const matches = [
+      makeMatch({
+        id: 'sf1',
+        homeTeamId: 'A1',
+        awayTeamId: 'C1',
+        status: 'final',
+        winnerTeamId: 'A1',
+      }),
+    ];
+    expect(computeSemiFinalLoserTeams(matches, ['sf1', 'sf2'])).toEqual(new Set(['C1']));
+  });
+
+  it('ignores non-semifinal matches even if they are final', () => {
+    const matches = [
+      makeMatch({
+        id: 'qf1',
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+        status: 'final',
+        winnerTeamId: 'A1',
+      }),
+    ];
+    expect(computeSemiFinalLoserTeams(matches, ['sf1', 'sf2']).size).toBe(0);
+  });
+
+  it('ignores an unplayed semifinal', () => {
+    const matches = [makeMatch({ id: 'sf1', status: 'scheduled' })];
+    expect(computeSemiFinalLoserTeams(matches, ['sf1', 'sf2']).size).toBe(0);
   });
 });

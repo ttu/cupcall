@@ -10,6 +10,7 @@ import {
 import {
   resolveActualWinner as getMatchWinner,
   computeKnockoutEliminatedTeams,
+  computeSemiFinalLoserTeams,
 } from '../domain/knockout-match-winner';
 import { resolveCrossSlotPick } from '../domain/cross-slot-pick';
 export { computeBracketHealth } from '../domain/bracket-health';
@@ -42,6 +43,10 @@ export function buildBracketRounds(
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
 
   const knockoutEliminatedTeams = computeKnockoutEliminatedTeams(allMatches);
+  // A semifinal loser advances to play Bronze — it is not out of the tournament, unlike a
+  // R32/R16/QF/SF loser elsewhere. Bronze-specific pick checks below must not treat it as
+  // eliminated, even though knockoutEliminatedTeams (correctly) does for Final purposes.
+  const semiFinalLoserTeams = computeSemiFinalLoserTeams(allMatches, def.bracket.semiFinals);
   const pickMap = new Map<string, string>(
     (inputs?.knockoutPicks ?? []).map((kp) => [kp.bracketMatchKey, kp.winner]),
   );
@@ -157,12 +162,16 @@ export function buildBracketRounds(
       );
     }
 
+    const isBronzeMatch = key === bronzeMatchKey;
+
     let pickStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
     if (effectivePickedId) {
       if (!winnerId) {
         const matchTeamsKnown = homeId !== null && awayId !== null;
         const pickedTeamAbsent = effectivePickedId !== homeId && effectivePickedId !== awayId;
-        const pickedTeamEliminated = knockoutEliminatedTeams.has(effectivePickedId);
+        const pickedTeamEliminated =
+          knockoutEliminatedTeams.has(effectivePickedId) &&
+          !(isBronzeMatch && semiFinalLoserTeams.has(effectivePickedId));
         pickStatus =
           (matchTeamsKnown && pickedTeamAbsent) || pickedTeamEliminated ? 'busted' : 'pending';
       } else if (winnerId === effectivePickedId) {
@@ -193,7 +202,9 @@ export function buildBracketRounds(
     let pickedOpponentStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
     if (pickedOpponentId !== null) {
       if (!winnerId) {
-        const opponentEliminated = knockoutEliminatedTeams.has(pickedOpponentId);
+        const opponentEliminated =
+          knockoutEliminatedTeams.has(pickedOpponentId) &&
+          !(isBronzeMatch && semiFinalLoserTeams.has(pickedOpponentId));
         const teamsKnown = homeId !== null && awayId !== null;
         const opponentAbsent = pickedOpponentId !== homeId && pickedOpponentId !== awayId;
         pickedOpponentStatus =

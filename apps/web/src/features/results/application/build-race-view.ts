@@ -39,6 +39,7 @@ import {
 import {
   resolveActualWinner as resolveKnockoutWinner,
   computeKnockoutEliminatedTeams,
+  computeSemiFinalLoserTeams,
 } from '../domain/knockout-match-winner';
 import { resolveCrossSlotPick } from '../domain/cross-slot-pick';
 import {
@@ -276,6 +277,13 @@ export function buildPerUserKnockoutCanStillGet(
 
   // Teams eliminated from any played knockout match.
   const knockoutEliminatedTeams = computeKnockoutEliminatedTeams(allMatches);
+  // A semifinal loser advances to play Bronze — it is not out of the tournament, unlike a
+  // R32/R16/QF/SF loser elsewhere. The Bronze busted-pair check below must not treat it as
+  // eliminated, even though knockoutEliminatedTeams (correctly) does for Final purposes.
+  const semiFinalLoserTeams = computeSemiFinalLoserTeams(
+    allMatches,
+    bracket.semiFinals as string[],
+  );
 
   // Confirmed participants for progression matches (R16, QF, SF, Final),
   // derived from actual feeder match winners.
@@ -445,7 +453,7 @@ export function buildPerUserKnockoutCanStillGet(
         const bronzeTeam =
           qfW1 && qfW1 !== sfWinner ? qfW1 : qfW2 && qfW2 !== sfWinner ? qfW2 : null;
         if (!bronzeTeam) continue;
-        if (knockoutEliminatedTeams.has(bronzeTeam)) {
+        if (knockoutEliminatedTeams.has(bronzeTeam) && !semiFinalLoserTeams.has(bronzeTeam)) {
           bustedBronzePairs++;
         } else {
           const bHome = bronzeMatchRow?.homeTeamId ?? null;

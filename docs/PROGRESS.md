@@ -537,6 +537,17 @@ functions (`computeDerivedParticipants`, `computeUserPredictedParticipants`,
 cross-slot pick correction), not just boilerplate — merging them into the engine is real,
 higher-risk design work, left open. 459 tests pass; typecheck/lint clean.
 
+**Bug found via the above extraction, fixed (2026-07-16): SF loser wrongly treated as eliminated
+for Bronze picks.** Centralizing `computeKnockoutEliminatedTeams` surfaced that it treats every
+knockout-match loser as fully eliminated — correct everywhere except the semifinal: an SF loser
+advances to play Bronze, so it's still a live pick there. `build-race-view.ts`'s `buildKnockoutMatrix`
+had already been fixed for this independently; `build-bracket-rounds.ts` (pickStatus/
+pickedOpponentStatus) and `build-race-view.ts`'s `buildPerUserKnockoutCanStillGet` (candidate 4's
+other subject — undercounted `canStillGet` for correctly-picked Bronze contenders) both still had it.
+Added `computeSemiFinalLoserTeams()` to `domain/knockout-match-winner.ts` and applied the carve-out
+at both remaining sites, each verified red→green with its own regression test. 471 tests pass;
+typecheck/lint clean. Candidates 4 and 6 remain open.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

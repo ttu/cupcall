@@ -668,6 +668,54 @@ describe('buildBracketRounds — regulation-decided matches (winnerTeamId null)'
   });
 });
 
+describe('Bronze pickStatus: a semifinal loser is not eliminated from Bronze contention', () => {
+  // A semifinal loser advances to play Bronze — it is not out of the tournament, unlike a
+  // QF/R16/R32 loser. knockoutEliminatedTeams must not flag a correctly-picked SF loser as
+  // busted for the Bronze match, mirroring the fix already applied to buildKnockoutMatrix
+  // (build-race-view.test.ts: "don't treat a semifinal loser as eliminated for Bronze picks").
+  const sf1Final = makeMatch('sf1', 'SF', {
+    homeTeamId: 'A1',
+    awayTeamId: 'C1',
+    winnerTeamId: 'A1',
+    homeGoals: 2,
+    awayGoals: 1,
+    status: 'final',
+  });
+  const sf2Final = makeMatch('sf2', 'SF', {
+    homeTeamId: 'B1',
+    awayTeamId: 'D1',
+    winnerTeamId: 'B1',
+    homeGoals: 1,
+    awayGoals: 0,
+    status: 'final',
+  });
+
+  it('keeps the Bronze pick pending (not busted) for a correctly-picked SF loser once both bronze participants are known', () => {
+    const { bronzeMatch } = buildBracketRounds(
+      miniTournament,
+      [finalQf1, finalQf2, finalQf3, finalQf4, sf1Final, sf2Final],
+      {
+        knockoutPicks: [
+          { bracketMatchKey: 'qf1', winner: 'A1' },
+          { bracketMatchKey: 'qf2', winner: 'C1' },
+          { bracketMatchKey: 'qf3', winner: 'B1' },
+          { bracketMatchKey: 'qf4', winner: 'D1' },
+          { bracketMatchKey: 'sf1', winner: 'A1' },
+          { bracketMatchKey: 'sf2', winner: 'B1' },
+          { bracketMatchKey: 'bronze', winner: 'C1' }, // C1 is the sf1 loser — a live Bronze contender
+        ],
+        finishScores: {},
+      },
+      [],
+      [],
+    );
+    expect(bronzeMatch).not.toBeNull();
+    expect(bronzeMatch!.homeTeamId).toBe('C1');
+    expect(bronzeMatch!.awayTeamId).toBe('D1');
+    expect(bronzeMatch!.pickStatus).toBe('pending');
+  });
+});
+
 describe('Final/Bronze: implicit pickedWinnerId from finish score when no explicit knock pick', () => {
   // Scenario: user saved the Final/Bronze score before filling in SF picks.
   // The implicit winner was never stored. Later, SF (and QF) picks were added.

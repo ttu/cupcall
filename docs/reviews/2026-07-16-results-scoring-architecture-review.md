@@ -144,6 +144,17 @@ cf. `packages/engine/src/bracket.ts` (`buildBracket`)
 > candidate 5) remain un-consolidated — they encode results-specific policy (projected vs. actual
 > participants, cross-slot pick correction) that isn't just duplicated boilerplate, and merging them
 > into the engine remains the higher-effort, higher-risk work this finding originally described.
+>
+> **Follow-up bug found via this extraction (fixed 2026-07-16):** centralizing
+> `computeKnockoutEliminatedTeams` surfaced that it (and its former duplicate copies) treats
+> semifinal losers as fully eliminated — correct for Final contention, wrong for Bronze, since an
+> SF loser advances to play Bronze. `build-race-view.ts`'s `buildKnockoutMatrix` had already been
+> fixed for this independently (commit `d42386c`, before this refactor); `build-bracket-rounds.ts`'s
+> pickStatus/pickedOpponentStatus checks and `build-race-view.ts`'s `buildPerUserKnockoutCanStillGet`
+> (candidate 4's other subject) both still had it — a correctly-picked SF-loser Bronze pick showed
+> as "busted" instead of "pending", and undercounted `canStillGet`. Added `computeSemiFinalLoserTeams`
+> to the same module and applied the carve-out at both remaining call sites, each with its own
+> red→green regression test.
 
 ```mermaid
 flowchart LR
