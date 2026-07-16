@@ -11,6 +11,8 @@ function prediction(
     isCurrentUser: false,
     pickedTeamId: 'ARG',
     pickedTeamName: 'Argentina',
+    pickedOpponentId: null,
+    pickedOpponentName: null,
     predictedHome: null,
     predictedAway: null,
     hit: 'hit',

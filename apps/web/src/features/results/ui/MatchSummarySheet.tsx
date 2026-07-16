@@ -115,17 +115,26 @@ function YourPickSection({
         <span className="text-[10.5px] font-extrabold tracking-[0.1em] text-green-700 uppercase">
           Your pick
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <TeamBadge teamId={yourPick.pickedTeamId} size="sm" />
           <span className="text-[13px] font-bold text-ink truncate">
             {yourPick.pickedTeamName ?? yourPick.pickedTeamId}
-            {isFinaleTie && yourPick.predictedHome !== null && yourPick.predictedAway !== null && (
-              <span className="text-ink-muted font-semibold">
-                {' '}
-                &middot; {yourPick.predictedHome}–{yourPick.predictedAway}
-              </span>
-            )}
           </span>
+          {isFinaleTie && yourPick.predictedHome !== null && yourPick.predictedAway !== null && (
+            <>
+              <span className="text-ink-muted font-semibold tnum text-[13px]">
+                {yourPick.predictedHome}–{yourPick.predictedAway}
+              </span>
+              {yourPick.pickedOpponentId !== null && (
+                <span data-testid="your-pick-opponent" className="inline-flex items-center gap-1.5">
+                  <TeamBadge teamId={yourPick.pickedOpponentId} size="sm" />
+                  <span className="text-[13px] font-bold text-ink truncate">
+                    {yourPick.pickedOpponentName ?? yourPick.pickedOpponentId}
+                  </span>
+                </span>
+              )}
+            </>
+          )}
         </div>
       </div>
       {display.kind === 'matchHit' ? (
@@ -213,9 +222,22 @@ function PredictionRow({
         {prediction.pickedTeamId !== null && (
           <span className="flex items-center gap-1.5 text-[12px] font-semibold text-ink-soft">
             <TeamBadge teamId={prediction.pickedTeamId} size="sm" />
-            {isFinaleTie && prediction.predictedHome !== null && prediction.predictedAway !== null
-              ? `${prediction.predictedHome}–${prediction.predictedAway}`
-              : (prediction.pickedTeamName ?? prediction.pickedTeamId)}
+            {isFinaleTie &&
+            prediction.predictedHome !== null &&
+            prediction.predictedAway !== null ? (
+              <>
+                <span className="tnum">
+                  {prediction.predictedHome}–{prediction.predictedAway}
+                </span>
+                {prediction.pickedOpponentId !== null && (
+                  <span data-testid="prediction-opponent">
+                    <TeamBadge teamId={prediction.pickedOpponentId} size="sm" />
+                  </span>
+                )}
+              </>
+            ) : (
+              (prediction.pickedTeamName ?? prediction.pickedTeamId)
+            )}
           </span>
         )}
         {display.kind === 'matchHit' ? (

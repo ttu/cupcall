@@ -265,6 +265,8 @@ export type KnockoutMatrixCell = {
   hit: KnockoutMatchHit;
   points: number;
   pickedWinnerId: string | null;
+  /** Final/Bronze only: the other finalist/bronze participant from this user's own SF/QF pick chain. Null for other rounds or when the chain is incomplete. */
+  pickedOpponentId: string | null;
   /** Final/Bronze only: the user's predicted scoreline for this tie. Null everywhere else. */
   predictedHome: number | null;
   predictedAway: number | null;
@@ -298,6 +300,9 @@ export type KnockoutMatchDetailPrediction = {
   isCurrentUser: boolean;
   pickedTeamId: string | null;
   pickedTeamName: string | null;
+  /** Final/Bronze only: the other finalist/bronze participant this user predicted. Null otherwise. */
+  pickedOpponentId: string | null;
+  pickedOpponentName: string | null;
   /** Final/Bronze only. */
   predictedHome: number | null;
   predictedAway: number | null;

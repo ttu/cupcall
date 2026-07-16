@@ -52,6 +52,10 @@ test('tapping the Final result card opens the match summary sheet with pool pred
   await expect(sheet.locator('[data-testid="home-team-predicted-pct"]')).toBeVisible();
   await expect(sheet.locator('[data-testid="away-team-predicted-pct"]')).toBeVisible();
 
+  // Final/Bronze predictions show the user's full prediction (both teams), not just the winner.
+  await expect(sheet.locator('[data-testid="your-pick-opponent"]')).toBeVisible();
+  await expect(sheet.locator('[data-testid="prediction-opponent"]').first()).toBeVisible();
+
   await sheet.locator('[data-testid="match-summary-close"]').click();
   await expect(sheet).not.toBeVisible();
 });

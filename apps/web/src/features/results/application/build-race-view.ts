@@ -31,7 +31,7 @@ import {
   buildDailyChartPlayers,
   RACE_COLORS,
 } from '../domain/race-chart';
-import { deriveImplicitFinaleWinner } from './build-bracket-rounds';
+import { deriveImplicitFinaleWinner, derivePredictedOpponent } from './build-bracket-rounds';
 import {
   computeSpecialBetImpossibility,
   type SpecialBetImpossibility,
@@ -709,6 +709,13 @@ export function buildKnockoutMatrix(params: {
         }
       }
 
+      // Final/Bronze only: the other finalist/bronze participant from this user's own SF/QF
+      // pick chain, so the summary sheet can show their full prediction (both teams), not just
+      // the winner they picked.
+      const pickedOpponentId = isFinalOrBronze
+        ? derivePredictedOpponent(m.bracketMatchKey, def.bracket, userPickMap, pickedWinnerId)
+        : null;
+
       if (m.status !== 'final') {
         const bothKnown = m.homeTeamId !== null && m.awayTeamId !== null;
         const isImpossible =
@@ -720,6 +727,7 @@ export function buildKnockoutMatrix(params: {
           hit: isImpossible ? 'impossible' : ('pending' as KnockoutMatchHit),
           points: 0,
           pickedWinnerId,
+          pickedOpponentId,
           predictedHome,
           predictedAway,
           isExactScore,
@@ -741,6 +749,7 @@ export function buildKnockoutMatrix(params: {
           hit: 'hit' as KnockoutMatchHit,
           points: pts,
           pickedWinnerId,
+          pickedOpponentId,
           predictedHome,
           predictedAway,
           isExactScore,
@@ -753,6 +762,7 @@ export function buildKnockoutMatrix(params: {
           hit: 'no-pick' as KnockoutMatchHit,
           points: 0,
           pickedWinnerId: null,
+          pickedOpponentId,
           predictedHome,
           predictedAway,
           isExactScore,
@@ -764,6 +774,7 @@ export function buildKnockoutMatrix(params: {
         hit: 'miss' as KnockoutMatchHit,
         points: 0,
         pickedWinnerId,
+        pickedOpponentId,
         predictedHome,
         predictedAway,
         isExactScore,

@@ -587,7 +587,7 @@ function computeEntryRoundPredictionPcts(
  * For Final: both participants are SF winners — return the SF winner that is NOT the picked Final winner.
  * For Bronze: both participants are SF losers — for each SF, find the team the user did NOT pick to win.
  */
-function derivePredictedOpponent(
+export function derivePredictedOpponent(
   matchKey: string,
   bracket: Tournament['bracket'],
   pickMap: Map<string, string>,

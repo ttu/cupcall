@@ -55,6 +55,7 @@ function cell(overrides: Partial<KnockoutMatrixCell> = {}): KnockoutMatrixCell {
     hit: 'no-pick',
     points: 0,
     pickedWinnerId: null,
+    pickedOpponentId: null,
     predictedHome: null,
     predictedAway: null,
     isExactScore: false,
@@ -253,6 +254,8 @@ describe('buildKnockoutMatchDetail', () => {
         isCurrentUser: false,
         pickedTeamId: 'ARG',
         pickedTeamName: 'Argentina',
+        pickedOpponentId: null,
+        pickedOpponentName: null,
         predictedHome: null,
         predictedAway: null,
         hit: 'pending',
@@ -260,6 +263,27 @@ describe('buildKnockoutMatchDetail', () => {
         points: 0,
       },
     ]);
+  });
+
+  it('resolves pickedOpponentName from the match for Final/Bronze predictions', () => {
+    const m = match({
+      bracketMatchKey: 'final',
+      homeTeamId: 'ARG',
+      homeTeamName: 'Argentina',
+      awayTeamId: 'SEN',
+      awayTeamName: 'Senegal',
+    });
+    const entries = [
+      entry({
+        userId: 'u1',
+        cells: [cell({ bracketMatchKey: 'final', pickedWinnerId: 'ARG', pickedOpponentId: 'SEN' })],
+      }),
+    ];
+
+    const detail = buildKnockoutMatchDetail(m, entries);
+
+    expect(detail.predictions[0]!.pickedOpponentId).toBe('SEN');
+    expect(detail.predictions[0]!.pickedOpponentName).toBe('Senegal');
   });
 
   it('falls back to the raw team id when the name cannot be resolved from the match', () => {

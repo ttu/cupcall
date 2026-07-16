@@ -48,12 +48,16 @@ export function buildKnockoutMatchDetail(
   const predictions: KnockoutMatchDetailPrediction[] = knockoutMatrix.map((row) => {
     const c = row.cells.find((cell) => cell.bracketMatchKey === match.bracketMatchKey);
     const pickedTeamId = c?.pickedWinnerId ?? null;
+    const pickedOpponentId = c?.pickedOpponentId ?? null;
     return {
       userId: row.userId,
       displayName: row.displayName,
       isCurrentUser: row.isCurrentUser,
       pickedTeamId,
       pickedTeamName: pickedTeamId !== null ? resolveTeamName(match, pickedTeamId) : null,
+      pickedOpponentId,
+      pickedOpponentName:
+        pickedOpponentId !== null ? resolveTeamName(match, pickedOpponentId) : null,
       predictedHome: c?.predictedHome ?? null,
       predictedAway: c?.predictedAway ?? null,
       hit: c?.hit ?? 'no-pick',
