@@ -17,6 +17,7 @@ import type {
   PredictionId,
 } from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
+import { toPair } from '../domain/pair';
 
 export type CardExportData = {
   tournamentId: string;
@@ -103,7 +104,7 @@ export async function applyCardImport(deps: Deps): Promise<CardImportResult> {
     const derived = deriveCard(inputs, tournamentDef);
 
     if (exportData.finishScores.final) {
-      const pair = derived.finalists.length >= 2 ? (derived.finalists as [TeamId, TeamId]) : null;
+      const pair = toPair(derived.finalists);
       await upsertFinishScore(
         db,
         predictionId,
@@ -116,7 +117,7 @@ export async function applyCardImport(deps: Deps): Promise<CardImportResult> {
       imported++;
     }
     if (exportData.finishScores.bronze) {
-      const pair = derived.bronzePair.length >= 2 ? (derived.bronzePair as [TeamId, TeamId]) : null;
+      const pair = toPair(derived.bronzePair);
       await upsertFinishScore(
         db,
         predictionId,

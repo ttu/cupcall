@@ -548,6 +548,34 @@ Added `computeSemiFinalLoserTeams()` to `domain/knockout-match-winner.ts` and ap
 at both remaining sites, each verified red→green with its own regression test. 471 tests pass;
 typecheck/lint clean. Candidates 4 and 6 remain open.
 
+**Investigated — candidate 4: closed, not a bug.** Built the parity test the finding recommended
+(same fixture/picks/results, compare `buildKnockoutRoundBreakdown`'s summed `canStillGet` for a user
+against `buildPerUserKnockoutCanStillGet`'s value for that same user). It fails, but production code
+already treats these as intentionally different: `buildPointsRaceView` (`build-race-view.ts:128-129`)
+substitutes the "own path" value for the viewer's own row instead of the "other path" value — an
+already-shipped design distinction (own dashboard = optimistic/motivational ceiling; other pool
+members' leaderboard projection = conservative, counts only picks already committed to), not
+accidental duplication. A real but production-irrelevant gap surfaced along the way:
+`buildPerUserKnockoutCanStillGet`'s per-match hit-point ceiling never fires when the scored round
+coincides with the bracket's entry round (true of the `miniTournament` test fixture, not of WC2026's
+R32→R16→QF→SF→Final shape) — documented, not fixed; the correct fix needs group-stage prediction
+viability this function doesn't currently model. No production code changed; the parity test was
+deliberately not kept (see review doc for the full writeup).
+
+**Implemented (scoped down) — candidate 6: unsafe array→tuple casts.** The review's "structured named
+fields" proposal for `DerivedCard.finalists`/`bronzePair` wasn't implemented — those arrays are
+genuinely variable-length (0-2 elements) while SF picks are incomplete, a real partial-card state, so
+named optional fields wouldn't fit any better and would touch far more of the engine's public API.
+What was real: three call sites (`predictions/api/actions.ts`'s `deriveFinishPair`,
+`predictions/application/import-card.ts` ×2) used an unsafe `arr as [TeamId, TeamId]` cast to narrow
+the array — replaced with a small tested helper, `toPair<T>()` (new file
+`apps/web/src/features/predictions/domain/pair.ts`). 474 tests pass; typecheck/lint clean.
+
+**Review closed.** All 6 candidates in
+[`docs/reviews/2026-07-16-results-scoring-architecture-review.md`](./reviews/2026-07-16-results-scoring-architecture-review.md)
+worked through — 1/2/5 implemented as designed, 3/6 implemented in a smaller/safer scope than
+proposed, 4 investigated and closed as intentional (not a bug). No further work scheduled from it.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

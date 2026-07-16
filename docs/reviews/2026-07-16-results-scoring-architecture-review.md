@@ -201,9 +201,39 @@ implementation instead of a parallel one.
 
 ## 4. "Can still get" ceiling math: two untested-for-parity implementations
 
-**Strength:** Worth exploring
+**Strength:** Worth exploring · **Status: investigated (2026-07-16) — closed, not a bug**
 **Files:** `get-results-view.ts:258 buildKnockoutRoundBreakdown` (current user) ·
 `build-race-view.ts:269 buildPerUserKnockoutCanStillGet` (every other user)
+
+> **Investigation note:** built the parity test this finding recommends — same tournament fixture,
+> same picks, same actual results, comparing `buildKnockoutRoundBreakdown`'s summed `canStillGet` against
+> `buildPerUserKnockoutCanStillGet`'s value for that user. It fails, but not because of an accidental
+> drift bug. Two things surfaced:
+>
+> 1. **The two paths are already, deliberately, not the same number.** `build-race-view.ts:128-129`
+>    (`buildPointsRaceView`) explicitly substitutes `myTotalCanStillGet` (the "own path" value) for
+>    the _viewer's own_ row instead of `perUserKnockoutRemaining.get(userId)` (the "other path" value)
+>    — production code already treats these as two intentionally different numbers for the same
+>    person, not duplicate implementations of one invariant. Re-reading the two functions with that
+>    lens: "own path" is optimistic (shows the current user the max still achievable if they fill in
+>    perfect remaining picks, to motivate engagement on their own dashboard) — "other path" is
+>    conservative (shows a pool member's upside based only on picks they've _already committed to_,
+>    so the leaderboard projection doesn't inflate strangers' chances on hypothetical future picks).
+>    Forcing parity would remove a real, already-shipped product distinction, not fix a bug.
+> 2. **A genuine latent gap, found along the way, but out of scope for WC2026:**
+>    `buildPerUserKnockoutCanStillGet`'s per-match hit-point ceiling (the R16/QF-equivalent "reach
+>    this round" scoring) is wired via `bracket.progression` entries that feed _into_ the scored
+>    round — for WC2026's real bracket (R32→R16→QF→SF→Final) that's always a distinct upstream round,
+>    so it works. For a tournament shaped like the `miniTournament` test fixture, where the scored
+>    round (QF) _is_ the entry round itself (teams arrive via group qualification, not an earlier
+>    knockout tie), this wiring never fires — that category silently contributes 0 ceiling for every
+>    pool member, always. Doesn't affect production (WC2026's shape avoids it) — noted here in case a
+>    future smaller-format tournament hits it. Not fixed: the correct ceiling for that case depends on
+>    group-stage qualification-prediction viability, which this function doesn't model at all (it only
+>    sees `poolKnockoutPicks`, not `poolGroupScores`) — real, separately-scoped work.
+>
+> No code changed for this candidate. The recommended parity test was written, proven to fail for the
+> reasons above, and deliberately not kept — asserting a false invariant is worse than no test.
 
 ```mermaid
 flowchart TB
@@ -300,7 +330,7 @@ exhaustively checked.
 
 ## 6. Positional tuples for teams that aren't interchangeable
 
-**Strength:** Speculative
+**Strength:** Speculative · **Status: scoped down and implemented (2026-07-16)**
 **Files:** `packages/engine/src/types.ts:145-160` — `finalists`, `bronzePair`, `topFour: TeamId[]`
 
 **Problem:** `finalists`, `bronzePair`, and `topFour` are all plain `TeamId[]`. Ordering carries meaning
@@ -316,6 +346,23 @@ wherever order is semantic; keep the array only where the docs already say "orde
 > (`[finalWinner, finalLoser, bronzeWinner, bronzeLoser]`) and reworking the type is a wider,
 > cross-cutting change — worth revisiting only if candidates 1-5 don't fully close the bug class.
 
+> **Implementation note:** the "structured named fields" solution above was not implemented —
+> `finalists`/`bronzePair` are genuinely variable-length (0, 1, or 2 elements) while SF picks are
+> still incomplete, since a partial card is a real, representable state throughout this codebase.
+> Named optional fields (`finalWinnerSlot?: TeamId`) would trade one kind of ambiguity (array length)
+> for another (which optional fields are set) without fitting the domain any better, while touching
+> far more call sites than the array shape does — reworking `DerivedCard`'s public engine API is
+> exactly the "wider, cross-cutting change" this finding flagged as out of scope.
+>
+> What _was_ real and worth fixing, found while investigating: three call sites
+> (`predictions/api/actions.ts`'s `deriveFinishPair`, `predictions/application/import-card.ts` ×2)
+> used an unsafe cast — `arr.length >= 2 ? (arr as [TeamId, TeamId]) : null` — to narrow the
+> variable-length array into the 2-tuple they actually needed, violating this repo's "no unsafe
+> casts" rule (CLAUDE.md, Type safety). Added a small, tested, generic helper,
+> `toPair<T>(arr): [T, T] | null` (`predictions/domain/pair.ts`), and replaced all three casts with
+> it — same runtime behavior, proven instead of asserted. `roundOf4`/`topFour` untouched: the docs
+> already call them order-agnostic, so there's no positional-meaning risk to fix there.
+
 ---
 
 ## Top recommendation
@@ -328,3 +375,11 @@ that keeps producing this bug class: a discriminated `FinishScore` type (5) make
 positional read a compile error, and resolving `pickedGoals`/`opponentGoals` once in the application
 layer (2) is the concrete first step toward "BE sends fully-resolved data, FE just renders." Candidate 3
 is the deeper structural fix but is the highest-effort — worth a separate session once 1/2/5 are shipped.
+
+## Review status: closed (2026-07-16)
+
+All 6 candidates worked through. 1, 2, 5 implemented as designed; 3 and 6 implemented in a smaller,
+safer scope than originally proposed (documented in each section above); 4 investigated and closed as
+intentional product behavior, not a bug. One additional live bug (SF loser wrongly treated as
+eliminated for Bronze picks) was found and fixed along the way, surfaced by the candidate-3 extraction.
+No further work scheduled from this review.

@@ -44,6 +44,7 @@ import type {
 } from '@cup/engine';
 import { rescoreAfterEdit } from './rescore-helper';
 import { applyCardImport } from '../application/import-card';
+import { toPair } from '../domain/pair';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -160,9 +161,7 @@ async function deriveFinishPair(
 ): Promise<[TeamId, TeamId] | null> {
   const inputs = await getPredictionInputs(db, predictionId);
   const derived = deriveCard(inputs, tournamentDef);
-  const pair = match === 'final' ? derived.finalists : derived.bronzePair;
-  if (pair.length < 2) return null;
-  return pair as [TeamId, TeamId];
+  return toPair(match === 'final' ? derived.finalists : derived.bronzePair);
 }
 
 /**
