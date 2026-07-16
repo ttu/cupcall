@@ -678,8 +678,10 @@ export function buildKnockoutMatrix(params: {
       if (isFinalOrBronze) {
         const matchType = m.bracketMatchKey === finalMatchKey ? 'final' : 'bronze';
         const fs = finishScoreMap.get(e.userId)?.get(matchType);
-        pickedWinnerId = deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick);
-        if (pickedWinnerId === null && fs !== undefined && fs.home !== fs.away) {
+        if (fs !== undefined && fs.home !== fs.away) {
+          // Prefer deriving the winner from the user's own SF/QF pick chain — the score was
+          // entered relative to the user's own predicted finalists, not the real match's
+          // home/away teams, which can differ once real results diverge from the user's picks.
           pickedWinnerId = deriveImplicitFinaleWinner(
             m.bracketMatchKey,
             def.bracket,
@@ -687,6 +689,11 @@ export function buildKnockoutMatrix(params: {
             fs.home,
             fs.away,
           );
+          if (pickedWinnerId === null) {
+            pickedWinnerId = deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick);
+          }
+        } else {
+          pickedWinnerId = deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick);
         }
       }
 

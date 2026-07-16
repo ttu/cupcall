@@ -692,6 +692,35 @@ describe('buildKnockoutMatrix', () => {
       expect(cell.hit).toBe('pending');
       expect(cell.pickedWinnerId).toBe('B1'); // home side (SF1 loser) wins 3-1
     });
+
+    it('derives pickedWinnerId from the user own SF picks even when the real Final teams are already known and differ from those picks', () => {
+      // Real world: SF1 winner is A1 (matches the user's pick), but SF2's real winner is C2 —
+      // the user actually picked C1 to win SF2. So the real/derived Final is A1 vs C2, but the
+      // user's own predicted Final (per their SF picks) is A1 vs C1.
+      // The user's finish score (1-2, away wins) must be interpreted against their OWN Final
+      // (A1 home / C1 away), not the real one, so the derived winner should be C1, not C2.
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled', {
+        homeTeamId: 'A1',
+        awayTeamId: 'C2',
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [
+          makePick('u1', 'sf1', 'A1'), // matches reality → home side of Final
+          makePick('u1', 'sf2', 'C1'), // diverges from reality (real winner is C2)
+        ],
+        poolFinishScores: [makeFinishScore('u1', 'final', 1, 2)],
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.pickedWinnerId).toBe('C1');
+    });
   });
 
   describe('eliminated team picks', () => {
