@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import type { ReactElement } from 'react';
 import type {
   KnockoutMatchDetail,
@@ -200,16 +200,18 @@ function PredictionRow({
   isFinaleTie: boolean;
 }): ReactElement {
   const display = resolvePredictionHitDisplay(prediction, isFinaleTie);
+  const rowCellClass = cn(
+    'flex items-center py-[10px]',
+    index > 0 && 'border-t border-line-soft',
+    prediction.isCurrentUser && 'bg-green-050',
+  );
 
   return (
-    <div
-      data-testid={`match-summary-prediction-${prediction.userId}`}
-      className={cn(
-        'flex items-center justify-between gap-2 p-[10px_18px]',
-        prediction.isCurrentUser && 'bg-green-050',
-      )}
-    >
-      <div className="flex items-center gap-2.5 min-w-0">
+    <Fragment>
+      <div
+        data-testid={`match-summary-prediction-${prediction.userId}`}
+        className={cn('gap-2.5 min-w-0 pl-[18px] pr-2', rowCellClass)}
+      >
         <Avatar name={prediction.displayName} index={index} size={28} />
         <span className="text-[13px] font-bold text-ink truncate">
           {prediction.displayName}
@@ -218,9 +220,14 @@ function PredictionRow({
           )}
         </span>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div
+        className={cn(
+          'gap-1.5 px-2 text-[12px] font-semibold text-ink-soft whitespace-nowrap',
+          rowCellClass,
+        )}
+      >
         {prediction.pickedTeamId !== null && (
-          <span className="flex items-center gap-1.5 text-[12px] font-semibold text-ink-soft">
+          <>
             <TeamBadge teamId={prediction.pickedTeamId} size="sm" />
             {isFinaleTie &&
             prediction.predictedHome !== null &&
@@ -238,8 +245,10 @@ function PredictionRow({
             ) : (
               (prediction.pickedTeamName ?? prediction.pickedTeamId)
             )}
-          </span>
+          </>
         )}
+      </div>
+      <div className={cn('gap-2 justify-end pl-2 pr-[18px]', rowCellClass)}>
         {display.kind === 'matchHit' ? (
           <HitChip hit={display.hit} points={prediction.points} />
         ) : (
@@ -248,7 +257,7 @@ function PredictionRow({
           </span>
         )}
       </div>
-    </div>
+    </Fragment>
   );
 }
 
@@ -307,7 +316,10 @@ export function MatchSummarySheet({ match, matchKey, detail, onClose }: Props): 
           <span className="block px-[18px] pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] text-ink-muted uppercase">
             All predictions
           </span>
-          <div data-testid="match-summary-predictions" className="divide border-t border-line-soft">
+          <div
+            data-testid="match-summary-predictions"
+            className="grid grid-cols-[minmax(0,1fr)_auto_auto] border-t border-line-soft"
+          >
             {detail.predictions.map((prediction, index) => (
               <PredictionRow
                 key={prediction.userId}
