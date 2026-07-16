@@ -92,12 +92,16 @@ type FinalCardsProps = {
   paddingTop: number;
 };
 
-// Only renders the match cards — labels are in the sibling label row above.
 function FinalCards({ finalMatch, bronzeMatch, paddingTop }: FinalCardsProps): ReactElement | null {
   if (!finalMatch && !bronzeMatch) return null;
   return (
     <div className="min-w-55" style={{ paddingTop }}>
-      {finalMatch && <FinalResultCard match={finalMatch} matchKey="final" />}
+      {finalMatch && (
+        <>
+          <div className="eyebrow text-ink-muted mb-2 pl-0.5">Final</div>
+          <FinalResultCard match={finalMatch} matchKey="final" />
+        </>
+      )}
       {bronzeMatch && (
         <>
           <div className="eyebrow text-ink-muted mt-4 mb-2 pl-0.5">3rd Place</div>
@@ -153,11 +157,6 @@ export function KnockoutBracket({
               <div style={{ width: CONN_W, flexShrink: 0 }} />
             </Fragment>
           ))}
-          {(finalMatch || bronzeMatch) && (
-            <div className="min-w-55 eyebrow text-ink-muted pl-0.5">
-              {finalMatch ? 'Final' : '3rd Place'}
-            </div>
-          )}
         </div>
 
         {/* ── Bracket row (match cards + connector SVGs, no labels) ── */}
