@@ -301,6 +301,7 @@ export function buildBracketRounds(
         progressionByMatch,
         knockoutRoundPcts,
         bronzeMatchKey,
+        matchByKey,
       ),
       awayTeamPredictedPct: computeTeamRoundPct(
         key,
@@ -311,6 +312,7 @@ export function buildBracketRounds(
         progressionByMatch,
         knockoutRoundPcts,
         bronzeMatchKey,
+        matchByKey,
       ),
       ...predictedTeams,
       pickedHomeTeamId,
@@ -724,7 +726,14 @@ function computeKnockoutRoundPcts(
  * Returns the "% predicted this team in this round" for one slot (home=slotIndex 0, away=1).
  * - Entry round: derived from group-score qualification predictions.
  * - Bronze: always null (participants are SF losers; no direct pick exists for this).
- * - Other rounds: % of users who picked `teamId` to win their feeder match (prog.from[slotIndex]).
+ * - Other rounds: % of users who picked `teamId` to win their feeder match.
+ *
+ * The feeder match is resolved by checking which of the two candidate feeders `teamId`
+ * actually won — real match rows (as synced from an external results feed) assign home/away
+ * independently of which bracket slot (prog.from[0] vs [1]) the team progressed through, so
+ * home/away order cannot be trusted to match feeder order. Falls back to positional slot order
+ * only when neither feeder has a decided winner yet, which is safe because derived/projected
+ * participants (used before the real match row exists) are always built in prog.from order.
  *
  * A team that legitimately got zero pool picks for its feeder match must still show "0%",
  * not be hidden — only the absence of any prediction data at all yields null.
@@ -738,15 +747,34 @@ function computeTeamRoundPct(
   progressionByMatch: Map<string, { from: string[] }>,
   knockoutRoundPcts: Map<string, Map<string, number>>,
   bronzeMatchKey: string,
+  matchByKey: Map<string, MatchRow>,
 ): number | null {
   if (!teamId) return null;
   if (isEntryRound) return r32PredPcts === null ? null : (r32PredPcts.get(teamId) ?? 0);
   if (matchKey === bronzeMatchKey) return null;
   const prog = progressionByMatch.get(matchKey);
-  const feederKey = prog?.from[slotIndex];
+  if (!prog) return null;
+  const feederKey = resolveFeederKeyForTeam(prog, teamId, slotIndex, matchByKey);
   if (!feederKey) return null;
   const feederPcts = knockoutRoundPcts.get(feederKey);
   return feederPcts === undefined ? null : (feederPcts.get(teamId) ?? 0);
+}
+
+/**
+ * Finds which feeder match `teamId` actually won, so its pool-pick pct is read from the
+ * correct semifinal/quarterfinal — not from whichever feeder happens to share the same
+ * home/away slot index as the real match row.
+ */
+function resolveFeederKeyForTeam(
+  prog: { from: string[] },
+  teamId: string,
+  slotIndex: 0 | 1,
+  matchByKey: Map<string, MatchRow>,
+): string | undefined {
+  const [fk0, fk1] = prog.from;
+  if (fk0 && getMatchWinner(matchByKey.get(fk0) ?? null) === teamId) return fk0;
+  if (fk1 && getMatchWinner(matchByKey.get(fk1) ?? null) === teamId) return fk1;
+  return prog.from[slotIndex];
 }
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {

@@ -1018,6 +1018,91 @@ describe('buildBracketRounds — homeTeamPredictedPct / awayTeamPredictedPct', (
     // B1 got zero picks in the pool for sf2, but that's a known (not missing) round — must be 0, not null.
     expect(finalMatch.awayTeamPredictedPct).toBe(0);
   });
+
+  it('attributes pct by which SF the team actually won, not by home/away slot position', () => {
+    // Same bracket as above, but the real "final" match row (as synced from the external
+    // results feed) lists the sf2 winner (B1) as home and the sf1 winner (A1) as away —
+    // the opposite order from the sf1/sf2 progression. Real-world home/away designation
+    // (e.g. FIFA's official draw) is independent of which semifinal slot a team came from.
+    const qf1 = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: 'A1',
+      homeGoals: 2,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const qf2 = makeMatch('qf2', 'QF', {
+      homeTeamId: 'C1',
+      awayTeamId: 'D2',
+      winnerTeamId: 'C1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const qf3 = makeMatch('qf3', 'QF', {
+      homeTeamId: 'B1',
+      awayTeamId: 'A2',
+      winnerTeamId: 'B1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const qf4 = makeMatch('qf4', 'QF', {
+      homeTeamId: 'D1',
+      awayTeamId: 'C2',
+      winnerTeamId: 'D1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const sf1 = makeMatch('sf1', 'SF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'C1',
+      winnerTeamId: 'A1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const sf2 = makeMatch('sf2', 'SF', {
+      homeTeamId: 'B1',
+      awayTeamId: 'D1',
+      winnerTeamId: 'B1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    // Real Final row: home/away order reversed vs. sf1/sf2 progression order (B1 = sf2 winner
+    // is home; A1 = sf1 winner is away) — matches how an external feed reports home/away.
+    const finalRow = makeMatch('final', 'Final', {
+      homeTeamId: 'B1',
+      awayTeamId: 'A1',
+      status: 'scheduled',
+    });
+    // Almost everyone picked A1 to win sf1; almost nobody picked B1 to win sf2.
+    const picks: PoolKnockoutPick[] = [
+      { userId: userId('u1'), bracketMatchKey: bmk('sf1'), winnerTeamId: 'A1' },
+      { userId: userId('u1'), bracketMatchKey: bmk('sf2'), winnerTeamId: 'D1' },
+      { userId: userId('u2'), bracketMatchKey: bmk('sf1'), winnerTeamId: 'A1' },
+      { userId: userId('u2'), bracketMatchKey: bmk('sf2'), winnerTeamId: 'D1' },
+    ];
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1, qf2, qf3, qf4, sf1, sf2, finalRow],
+      null,
+      [],
+      picks,
+    );
+    const finalMatch = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+
+    expect(finalMatch.homeTeamId).toBe('B1');
+    expect(finalMatch.awayTeamId).toBe('A1');
+    // A1 (away slot) actually won sf1, where 100% of the pool picked it — must reflect that,
+    // not the 0% for whichever team is positionally associated with sf1's slot.
+    expect(finalMatch.awayTeamPredictedPct).toBe(100);
+    // B1 (home slot) actually won sf2, where 0% of the pool picked it.
+    expect(finalMatch.homeTeamPredictedPct).toBe(0);
+  });
 });
 
 describe('buildBracketRounds — feeder pick busted (team not in upcoming entry-round match)', () => {
