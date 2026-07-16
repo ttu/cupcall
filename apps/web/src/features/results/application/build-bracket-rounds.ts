@@ -175,20 +175,29 @@ export function buildBracketRounds(
     }
 
     // For Final/Bronze: if no explicit bracket pick was stored but the finish score is non-tied,
-    // derive the implied winner from the finalists/bronzePair so both teams appear in the pick row.
-    // This covers the case where the user saved the score before filling in SF picks, meaning
-    // the implicit winner was never written to the knockout_picks table at save time.
+    // derive the implied winner. Two cases:
+    //  - The score has a homeTeamId/awayTeamId snapshot (captured at save time): resolve the
+    //    winner from THAT identity. This also covers the case where the user has since changed
+    //    an SF pick — invalidatePicksAfterKnockoutPickChange deletes the stale explicit
+    //    Final/Bronze pick but never touches the finish-score row, so the live pickMap can no
+    //    longer be trusted to mean what it meant when the score was entered.
+    //  - No snapshot (legacy row, pre-migration): fall back to deriving from the live pickMap,
+    //    same as at save time (deriveFinishWinner in actions.ts), since no better source exists.
     let effectivePickedId = pickedId;
     if (isFinale && pickedId === null) {
       const score = key === finalMatchKey ? finishScores.final : finishScores.bronze;
       if (score && score.home !== score.away) {
-        effectivePickedId = deriveImplicitFinaleWinner(
-          key,
-          bracket,
-          pickMap,
-          score.home,
-          score.away,
-        );
+        if (score.homeTeamId != null && score.awayTeamId != null) {
+          effectivePickedId = score.home > score.away ? score.homeTeamId : score.awayTeamId;
+        } else {
+          effectivePickedId = deriveImplicitFinaleWinner(
+            key,
+            bracket,
+            pickMap,
+            score.home,
+            score.away,
+          );
+        }
       }
     }
 

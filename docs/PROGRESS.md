@@ -481,6 +481,25 @@ snippet is duplicated across 5 files (candidate for a small shared helper); the 
 the identical shape (worth unifying); `saveFinishScore` now runs `deriveCard` twice per save
 (acknowledged, low-frequency action, not optimized).
 
+## Architecture review: results/scoring durability (2026-07-16)
+
+Full review at
+[`docs/reviews/2026-07-16-results-scoring-architecture-review.md`](./reviews/2026-07-16-results-scoring-architecture-review.md) —
+6 candidates for making the prediction data model / results / scoring engine more durable against the
+"wrong team shown" bug class, ranked by strength. First candidate (live bug) fixed below; the rest are
+tracked in that doc, not yet scheduled.
+
+**Fixed — candidate 1: sibling recurrence of the Final/Bronze team-identity bug.**
+`build-bracket-rounds.ts`'s implicit-winner derivation (used when no explicit Final/Bronze knockout
+pick is stored) still resolved the winner from the **current** `pickMap` instead of preferring the
+`homeTeamId`/`awayTeamId` snapshot on the finish score — the exact bug class the 2026-07-16
+team-identity fix (above) closed everywhere else, missed in this one call site. Reachable whenever an
+SF pick changes after a Final/Bronze score was saved: `invalidatePicksAfterKnockoutPickChange` deletes
+the stale explicit pick but leaves the finish-score snapshot untouched, so the old bug resurfaces.
+Fix: prefer the snapshot when present, falling back to the live-pickMap derivation only for legacy rows
+without one (`build-bracket-rounds.ts`, `deriveImplicitFinaleWinner` call site). One new regression
+test in `build-bracket-rounds.test.ts`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

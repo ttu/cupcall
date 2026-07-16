@@ -832,6 +832,44 @@ describe('Final/Bronze: implicit pickedWinnerId from finish score when no explic
   });
 });
 
+describe('Final/Bronze: implicit winner must prefer the finish-score snapshot over the live pickMap', () => {
+  // Regression for the sibling bug to commit edaa4d0: when an SF pick changes AFTER the
+  // Final/Bronze score was saved, invalidatePicksAfterKnockoutPickChange deletes the stale
+  // explicit 'final'/'bronze' knockout pick but leaves the finish-score row (with its
+  // homeTeamId/awayTeamId snapshot from the OLD picks) untouched. The implicit-winner
+  // derivation must resolve from that snapshot, not from the CURRENT (changed) pickMap.
+  it('derives the winner from the finish-score snapshot, not from a since-changed SF pick', () => {
+    // Score was saved when sf1=A1 (home), sf2=B1 (away) — away side (B1) scored more.
+    // Snapshot: homeTeamId=A1, awayTeamId=B1, home=1, away=2 → correct winner is B1.
+    // The user has SINCE changed their sf2 pick from B1 to D1, and the explicit 'final'
+    // knockout pick was invalidated (deleted) as a result — exactly what
+    // invalidatePicksAfterKnockoutPickChange does in production.
+    const picksAfterSfChange = [
+      { bracketMatchKey: 'qf1', winner: 'A1' },
+      { bracketMatchKey: 'qf2', winner: 'C1' },
+      { bracketMatchKey: 'qf3', winner: 'B1' },
+      { bracketMatchKey: 'qf4', winner: 'D1' },
+      { bracketMatchKey: 'sf1', winner: 'A1' },
+      { bracketMatchKey: 'sf2', winner: 'D1' }, // changed from B1 to D1 after the score was saved
+      // no explicit 'final' pick — deleted by invalidation
+    ];
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [],
+      {
+        knockoutPicks: picksAfterSfChange,
+        finishScores: { final: { home: 1, away: 2, homeTeamId: 'A1', awayTeamId: 'B1' } },
+      },
+      [],
+      [],
+    );
+    const finalCard = bracketRounds.find((r) => r.label === 'Final')!.matches[0]!;
+    // Correct: the snapshot says B1 (away side at save time) scored more goals.
+    expect(finalCard.pickedWinnerId).toBe('B1');
+    expect(finalCard.pickedOpponentId).toBe('A1');
+  });
+});
+
 describe("buildBracketRounds — pickedHomeTeamId/pickedAwayTeamId keep showing the user's own SF picks after real results diverge", () => {
   // Regression: once both SFs are actually played, the real winners get substituted into
   // homeTeamId/awayTeamId (and into predictedHomeTeamId/predictedAwayTeamId's source,
