@@ -261,6 +261,34 @@ describe('buildKnockoutMatrix', () => {
     expect(cell.pickedWinnerId).toBe('ESP');
   });
 
+  it('shows the cross-slot team when the raw slot pick no longer matches the real fixture', () => {
+    // Hexa's group-order prediction routed Norway into what turned out, in reality, to be the
+    // France vs Sweden R32 slot. Hexa separately predicted France to win a different R32 slot.
+    // The match summary for the real France vs Sweden fixture should show France (the team Hexa
+    // actually picked to win this fixture), not the raw "NOR" stored against this slot.
+    const hexa = makeLeaderboardEntry('u1', 'Hexa');
+    const franceSweden = makeKnockoutMatch('ro32-3', 'R32', 'final', {
+      homeTeamId: 'FRA',
+      awayTeamId: 'SWE',
+      actualWinnerId: 'FRA',
+    });
+    const otherSlot = makeKnockoutMatch('ro32-7', 'R32', 'scheduled');
+
+    const { knockoutMatrix } = buildKnockoutMatrix({
+      leaderboard: [hexa],
+      userId: null,
+      bracketRounds: [makeRound('R32', [franceSweden, otherSlot])],
+      bronzeMatch: null,
+      poolKnockoutPicks: [makePick('u1', 'ro32-3', 'NOR'), makePick('u1', 'ro32-7', 'FRA')],
+      poolFinishScores: [],
+      def: miniTournament,
+    });
+
+    const cell = knockoutMatrix[0]!.cells.find((c) => c.bracketMatchKey === 'ro32-3')!;
+    expect(cell.pickedWinnerId).toBe('FRA');
+    expect(cell.hit).toBe('hit');
+  });
+
   it('includes bronze match and gives bronze.perTeam points for a hit', () => {
     const alice = makeLeaderboardEntry('u1', 'Alice');
     const bronze = makeKnockoutMatch('bronze', 'Bronze', 'final', { actualWinnerId: 'C1' });

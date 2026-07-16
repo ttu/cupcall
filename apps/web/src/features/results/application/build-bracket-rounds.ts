@@ -11,6 +11,7 @@ import {
   resolveActualWinner as getMatchWinner,
   computeKnockoutEliminatedTeams,
 } from '../domain/knockout-match-winner';
+import { resolveCrossSlotPick } from '../domain/cross-slot-pick';
 export { computeBracketHealth } from '../domain/bracket-health';
 export { derivePredictedOpponent, deriveImplicitFinaleWinner } from '../domain/finale-winner';
 
@@ -101,24 +102,10 @@ export function buildBracketRounds(
       const actualRow = matchByKey.get(slot.match);
       const home = derived?.[0] ?? actualRow?.homeTeamId ?? null;
       const away = derived?.[1] ?? actualRow?.awayTeamId ?? null;
-
-      if (home === null && away === null) {
-        effectiveEntryPickMap.set(slot.match, directPick);
-        continue;
-      }
-
-      const directValid = directPick !== null && (home === directPick || away === directPick);
-      if (directValid) {
-        effectiveEntryPickMap.set(slot.match, directPick);
-      } else {
-        const crossMatch =
-          home !== null && allEntryPickedTeams.has(home)
-            ? home
-            : away !== null && allEntryPickedTeams.has(away)
-              ? away
-              : null;
-        effectiveEntryPickMap.set(slot.match, crossMatch);
-      }
+      effectiveEntryPickMap.set(
+        slot.match,
+        resolveCrossSlotPick(directPick, home, away, allEntryPickedTeams),
+      );
     }
   }
 
@@ -763,18 +750,10 @@ function computeUserPredictedParticipants(
     // to any entry-round pick that is a participant in this slot (cross-slot matching).
     // Applies whether groups are ongoing (projected) or done (actual).
     const directPick = pickMap.get(slot.match) ?? null;
-    const directValid = directPick && (derived[0] === directPick || derived[1] === directPick);
-    if (directValid) {
-      entryWinner.set(slot.match, directPick);
-    } else {
-      const crossMatch =
-        derived[0] !== null && allEntryPickedTeams.has(derived[0])
-          ? derived[0]
-          : derived[1] !== null && allEntryPickedTeams.has(derived[1])
-            ? derived[1]
-            : null;
-      entryWinner.set(slot.match, crossMatch);
-    }
+    entryWinner.set(
+      slot.match,
+      resolveCrossSlotPick(directPick, derived[0], derived[1], allEntryPickedTeams),
+    );
   }
 
   const predicted = new Map<string, [string | null, string | null]>();
@@ -871,19 +850,10 @@ function computeUserPickedParticipants(
       continue;
     }
     const directPick = pickMap.get(slot.match) ?? null;
-    const directValid =
-      directPick !== null && (derived[0] === directPick || derived[1] === directPick);
-    if (directValid) {
-      entryPickWinner.set(slot.match, directPick);
-    } else {
-      const crossMatch =
-        derived[0] !== null && allEntryPickedTeams.has(derived[0])
-          ? derived[0]
-          : derived[1] !== null && allEntryPickedTeams.has(derived[1])
-            ? derived[1]
-            : null;
-      entryPickWinner.set(slot.match, crossMatch);
-    }
+    entryPickWinner.set(
+      slot.match,
+      resolveCrossSlotPick(directPick, derived[0], derived[1], allEntryPickedTeams),
+    );
   }
 
   const predicted = new Map<string, [string | null, string | null]>();

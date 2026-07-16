@@ -40,6 +40,7 @@ import {
   resolveActualWinner as resolveKnockoutWinner,
   computeKnockoutEliminatedTeams,
 } from '../domain/knockout-match-winner';
+import { resolveCrossSlotPick } from '../domain/cross-slot-pick';
 import {
   computeSpecialBetImpossibility,
   type SpecialBetImpossibility,
@@ -734,6 +735,20 @@ export function buildKnockoutMatrix(params: {
           (fs !== undefined
             ? deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick)
             : knockoutPick);
+      } else {
+        // The stored pick is keyed by bracket slot, but which teams actually play that slot
+        // depends on how earlier rounds/groups actually turned out — which can diverge from
+        // what this user predicted. Resolve to the team identity so the summary reflects what
+        // the user actually predicted for these two teams, not whichever pick landed in this
+        // slot. Fall back to the raw pick when no cross-slot match exists — that's a genuine
+        // miss/impossible pick, not a slot mismatch, and should still be shown as-is.
+        pickedWinnerId =
+          resolveCrossSlotPick(
+            knockoutPick,
+            m.homeTeamId,
+            m.awayTeamId,
+            userRoundPicks.get(m.round) ?? new Set(),
+          ) ?? knockoutPick;
       }
 
       // Final/Bronze only: the other finalist/bronze participant from this user's own SF/QF
