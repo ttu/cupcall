@@ -41,11 +41,15 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
 
   // pickedHomeTeamId/pickedAwayTeamId reflect the user's own SF/QF bracket picks, never
   // substituted with actual results, so "Your pick" keeps showing what the user predicted even
-  // after the real bracket resolves to different teams. Fall back to the actual/derived
-  // participants (and finally the generic predicted-slot fields) only when the user's own pick
-  // chain is unavailable.
-  const pickLeftId = match.pickedHomeTeamId ?? match.homeTeamId ?? match.predictedHomeTeamId;
-  const pickRightId = match.pickedAwayTeamId ?? match.awayTeamId ?? match.predictedAwayTeamId;
+  // after the real bracket resolves to different teams. That chain can come up empty for one
+  // side even though the user did pick a team there — e.g. an entry-round pick that collides
+  // with a different real bracket slot breaks the validated home/away walk. pickedWinnerId/
+  // pickedOpponentId are derived directly from the raw picks without that validation, so try
+  // them next. Only fall back to the actual/derived participants (and finally the generic
+  // predicted-slot fields) when no user-prediction signal exists for this match at all —
+  // falling back to them any earlier would silently replace "Your pick" with the real bracket.
+  const pickLeftId = match.pickedHomeTeamId;
+  const pickRightId = match.pickedAwayTeamId;
   // When the predicted participant chain is broken (e.g. the team was eliminated before
   // reaching this match), pickedWinnerId or pickedOpponentId carry the user's original picks.
   // Try pickedWinnerId first: when the implicit winner (derived from the finish score) is the
@@ -58,9 +62,16 @@ export function FinalResultCard({ match, matchKey }: Props): ReactElement {
       : null) ??
     (match.pickedOpponentId !== null && match.pickedOpponentId !== pickRightId
       ? match.pickedOpponentId
-      : null);
+      : null) ??
+    match.homeTeamId ??
+    match.predictedHomeTeamId;
   const pickRowRightId =
-    pickRightId ?? (match.pickedOpponentId !== pickRowLeftId ? match.pickedOpponentId : null);
+    pickRightId ??
+    (match.pickedOpponentId !== null && match.pickedOpponentId !== pickRowLeftId
+      ? match.pickedOpponentId
+      : null) ??
+    match.awayTeamId ??
+    match.predictedAwayTeamId;
   // Explicit winner pick takes priority; fall back to whichever team has more predicted goals
   const pickWinnerId: string | null =
     match.pickedWinnerId ??
