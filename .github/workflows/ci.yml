@@ -18,6 +18,8 @@ jobs:
         continue-on-error: true
       - run: pnpm knip
         continue-on-error: true
+      - run: pnpm depcruise
+        continue-on-error: true
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm -C apps/web build

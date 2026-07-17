@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react';
 import { redirect } from 'next/navigation';
-import { auth } from '../features/auth/auth';
-import { GuestLoginForm, EmailLoginForm } from '@/features/auth';
+import { auth, GuestLoginForm, EmailLoginForm } from '@/features/auth';
 import { Button, Logo, Chip, Avatar } from '@/shared/ui';
 
 function GuestFormCard(): ReactElement {

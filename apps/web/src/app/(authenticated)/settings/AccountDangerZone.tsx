@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { deleteAccountAction } from '@/features/auth/actions';
+import { deleteAccountAction } from '@/features/auth';
 import { DangerZoneCard } from '@/shared/ui';
 
 type Props = { ownedPoolCount: number };

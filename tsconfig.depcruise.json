@@ -1,0 +1,19 @@
+{
+  // A standalone config for dependency-cruiser only (see .dependency-cruiser.cjs).
+  // It doesn't extend tsconfig.base.json because dependency-cruiser's TS config
+  // loader doesn't resolve "extends" chains correctly across the monorepo boundary.
+  // @cup/* paths mirror scripts/tsconfig.json - scripts/ has no package.json of its
+  // own, so those workspace packages resolve via TS path mapping only, not node_modules.
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["apps/web/src/*"],
+      "@cup/engine": ["packages/engine/src/index.ts"],
+      "@cup/engine/testing": ["packages/engine/src/__fixtures__/mini-tournament.ts"],
+      "@cup/schemas": ["packages/schemas/src/index.ts"],
+      "@cup/db": ["packages/db/src/index.ts"],
+      "@cup/db/schema": ["packages/db/src/schema/index.ts"],
+      "@cup/db/testing": ["packages/db/src/testing/make-test-db.ts"]
+    }
+  }
+}
