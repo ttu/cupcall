@@ -136,7 +136,7 @@ describe('scoreFinal', () => {
   it('finishScores.final absent → teams still scored, exact 0', () => {
     // Both teams correct, no predicted score → 10 teams + 0 exact
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs(undefined); // no final score
+    const inputs = makeInputs(); // no final score
     const actual = makeActual({
       finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
@@ -145,7 +145,7 @@ describe('scoreFinal', () => {
 
   it('one predicted finalist confirmed via SF completion, final unplayed → perTeam banked early', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs(undefined);
+    const inputs = makeInputs();
     const actual = makeActual({ finalists: [A1] }); // A1's SF is decided, final not played
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(5); // 1 * perTeam
   });
@@ -159,7 +159,7 @@ describe('scoreFinal', () => {
 
   it('predicted finalist NOT in confirmed set → 0 for that team', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs(undefined);
+    const inputs = makeInputs();
     const actual = makeActual({ finalists: [B1] }); // neither A1 nor A2 confirmed
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(0);
   });

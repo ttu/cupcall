@@ -14,7 +14,7 @@ import {
   PoolBackupControls,
 } from '@/features/pools';
 import { StageBar, RaceChart } from '@/features/results';
-import { Chip, Icon } from '@/shared/ui';
+import { Icon } from '@/shared/ui';
 import { poolId as asPoolId } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string }> };

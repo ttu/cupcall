@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import Link from 'next/link';
 import type { PoolSummary } from '../domain/types';
-import { Chip, cn } from '@/shared/ui';
+import { Chip } from '@/shared/ui';
 
 const ACCENT_PALETTE = [
   'oklch(0.6 0.16 150)',

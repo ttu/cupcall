@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupId, matchId, teamId } from './brand.js';
+import { matchId, teamId } from './brand.js';
 import { miniTournament } from './__fixtures__/mini-tournament.js';
 import { deriveGroupOrders } from './standings.js';
 import { selectQualifiers } from './qualifiers.js';
@@ -172,7 +172,6 @@ describe('selectQualifiers', () => {
       cardMatchIndex: number | null,
       cardConduct: number,
     ): GroupScore[] {
-      const [t1, t2, t3, t4] = ids;
       // matches: m1=1v2, m2=1v3, m3=1v4, m4=2v3, m5=2v4, m6=3v4
       const base: GroupScore[] = [
         { matchId: matchId(`m${prefix}1`), home: 2, away: 0 },

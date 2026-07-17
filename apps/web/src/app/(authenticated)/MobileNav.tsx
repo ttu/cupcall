@@ -33,7 +33,7 @@ function isActive(tab: Tab, pathname: string): boolean {
 
 export function MobileNav(): ReactElement {
   const pathname = usePathname();
-  const poolId = pathname.match(/^\/pools\/([^/]+)/)?.[1];
+  const poolId = /^\/pools\/([^/]+)/.exec(pathname)?.[1];
   const tabs = poolId ? poolTabs(poolId) : TOP_LEVEL_TABS;
 
   return (

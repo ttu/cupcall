@@ -74,6 +74,7 @@ describe('resultsSchema', () => {
   });
 
   it('parses with optional bronzeMatch and finalMatch absent', () => {
+    // eslint-disable-next-line sonarjs/no-unused-vars -- rest-sibling destructure to omit fields
     const { bronzeMatch: _b, finalMatch: _f, ...withoutFinish } = validResultsJson;
     const result = resultsSchema.parse(withoutFinish);
     expect(result.bronzeMatch).toBeUndefined();

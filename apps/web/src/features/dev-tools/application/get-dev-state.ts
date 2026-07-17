@@ -36,7 +36,7 @@ export async function getDevState(db: Db<AppSchema>): Promise<DevState> {
   const finalGroupKickoffs = matches
     .filter((m) => m.stage === 'group' && m.status === 'final' && m.kickoff !== null)
     .map((m) => m.kickoff!.toISOString().slice(0, 10))
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
   const groupStageDay = finalGroupKickoffs.at(-1) ?? null;
 
   let checkpoint: SimulationCheckpoint;

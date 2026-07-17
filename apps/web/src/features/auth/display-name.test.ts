@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { deriveDisplayName } from './display-name';
 
+const FALLBACK_CASES = [
+  { label: 'an empty string', input: '' },
+  { label: 'no @', input: 'notanemail' },
+  { label: 'an empty local part', input: '@example.com' },
+];
+
 describe('deriveDisplayName', () => {
   it('returns the local part of a normal email', () => {
     expect(deriveDisplayName('alice@example.com')).toBe('alice');
@@ -18,18 +24,8 @@ describe('deriveDisplayName', () => {
     expect(deriveDisplayName('alice.smith@example.com')).toBe('alice.smith');
   });
 
-  it('returns a fallback for an empty string', () => {
-    const result = deriveDisplayName('');
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it('returns a fallback when there is no @', () => {
-    const result = deriveDisplayName('notanemail');
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it('returns a fallback when the local part is empty', () => {
-    const result = deriveDisplayName('@example.com');
+  it.each(FALLBACK_CASES)('returns a fallback for $label', ({ input }) => {
+    const result = deriveDisplayName(input);
     expect(result.length).toBeGreaterThan(0);
   });
 

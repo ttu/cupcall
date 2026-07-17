@@ -6,7 +6,6 @@
 
 import type {
   TeamId,
-  PlayerId,
   MatchId,
   BracketMatchKey,
   GroupId,

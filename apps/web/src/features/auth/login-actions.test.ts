@@ -26,7 +26,8 @@ const mockedHeaders = vi.mocked(headers);
 
 const prev: EmailSignInState = { error: null };
 
-function makeHeaderMap(ip: string | null = '1.2.3.4') {
+// 203.0.113.1 is RFC 5737 documentation range — safe placeholder, never a real host.
+function makeHeaderMap(ip: string | null = '203.0.113.1') {
   return { get: (name: string) => (name === 'x-forwarded-for' ? ip : null) } as unknown as Awaited<
     ReturnType<typeof headers>
   >;

@@ -26,7 +26,7 @@ export function CreatePoolForm({ tournaments }: Props): ReactElement {
     return <p className="text-sm text-ink-soft m-0">No tournament available yet.</p>;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     setError(null);
     startTransition(async () => {

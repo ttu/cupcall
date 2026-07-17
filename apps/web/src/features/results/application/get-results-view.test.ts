@@ -398,7 +398,7 @@ describe('getResultsView', () => {
       expect(rows[1]!.rank).toBe(2);
       expect(rows[1]!.qualifies).toBe(false);
       // Groups C and D 3rd-place teams have 0 played — still included in the table
-      expect(rows.length).toBe(4);
+      expect(rows).toHaveLength(4);
     });
 
     it('marks top bestThirdPlaced teams as qualifying', async () => {

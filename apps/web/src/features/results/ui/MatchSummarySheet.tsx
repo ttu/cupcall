@@ -309,6 +309,9 @@ export function MatchSummarySheet({ match, matchKey, detail, onClose }: Props): 
   }, [onClose]);
 
   function handleBackdropClick(event: React.MouseEvent<HTMLDialogElement>): void {
+    // event.target is the native click target; sonarjs can't see it narrows to the
+    // dialog element itself when the click lands on the backdrop (outside <dialog>'s content).
+    // eslint-disable-next-line sonarjs/different-types-comparison
     if (event.target === dialogRef.current) dialogRef.current?.close();
   }
 

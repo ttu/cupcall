@@ -31,6 +31,7 @@ export interface GroupMatchDef {
 }
 
 /** Slot reference tokens used by the bracket template: "1A", "2B", "3rd[0]". */
+// eslint-disable-next-line sonarjs/redundant-type-aliases -- named for domain readability, not structure
 export type SlotRef = string;
 export interface BracketSlot {
   match: BracketMatchKey;

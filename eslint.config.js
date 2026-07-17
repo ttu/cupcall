@@ -1,5 +1,6 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
+import sonarjs from 'eslint-plugin-sonarjs';
 
 export default [
   {
@@ -14,8 +15,13 @@ export default [
   {
     files: ['{packages,apps}/**/src/**/*.{ts,tsx}'],
     languageOptions: { parser: tsparser, parserOptions: { project: true } },
-    plugins: { '@typescript-eslint': tseslint },
+    plugins: { '@typescript-eslint': tseslint, sonarjs },
     rules: {
+      ...sonarjs.configs.recommended.rules,
+      // Would require a mechanical refactor of nearly every component/ternary in the
+      // codebase; off until we decide to take that on deliberately.
+      'sonarjs/prefer-read-only-props': 'off',
+      'sonarjs/no-nested-conditional': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/explicit-module-boundary-types': 'warn',
       'no-restricted-imports': [

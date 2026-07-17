@@ -84,13 +84,13 @@ describe('buildPoolExport', () => {
 
   it('includes all pool members', async () => {
     const backup = await buildPoolExport(db, poolId, 'Test Pool', tournamentId);
-    const memberIds = backup.members.map((m) => m.userId).sort();
-    expect(memberIds).toEqual([ownerId, memberId].sort());
+    const memberIds = backup.members.map((m) => m.userId).sort((a, b) => a.localeCompare(b));
+    expect(memberIds).toEqual([ownerId, memberId].sort((a, b) => a.localeCompare(b)));
   });
 
   it('includes member display names', async () => {
     const backup = await buildPoolExport(db, poolId, 'Test Pool', tournamentId);
-    const names = backup.members.map((m) => m.displayName).sort();
+    const names = backup.members.map((m) => m.displayName).sort((a, b) => a.localeCompare(b));
     expect(names).toContain('Owner');
     expect(names).toContain('Alice');
   });
@@ -354,8 +354,10 @@ describe('restorePoolFromBackup', () => {
       targetOwnerId,
     );
     expect(result.restoredPredictions).toHaveLength(2);
-    const userIds = result.restoredPredictions.map((r) => r.userId).sort();
-    expect(userIds).toEqual([user1, user2].sort());
+    const userIds = result.restoredPredictions
+      .map((r) => r.userId)
+      .sort((a, b) => a.localeCompare(b));
+    expect(userIds).toEqual([user1, user2].sort((a, b) => a.localeCompare(b)));
   });
 
   it('is idempotent: re-importing the same backup restores the same data', async () => {

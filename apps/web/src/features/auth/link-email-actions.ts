@@ -30,7 +30,10 @@ export async function requestEmailLinkAction(
   if (typeof raw !== 'string' || !raw.trim()) return { ok: false, error: 'Email is required.' };
   const email = raw.trim().toLowerCase();
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  // RFC 5321 caps addresses at 254 chars. The domain part excludes '.' from the
+  // repeated segment so there's no ambiguous split point for the regex engine to
+  // backtrack over (unlike `[^\s@]+\.[^\s@]+`, which does).
+  if (email.length > 254 || !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
     return { ok: false, error: 'Invalid email address.' };
   }
 

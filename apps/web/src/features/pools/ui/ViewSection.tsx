@@ -25,19 +25,7 @@ export function ViewSection({
 
   const viewUrl = token ? `${baseUrl}${buildViewUrl(token)}` : null;
 
-  function handleGenerate() {
-    setError(null);
-    startTransition(async () => {
-      const result = await rotateViewToken({ poolId });
-      if (result.ok) {
-        setToken(result.newToken);
-      } else {
-        setError(result.error);
-      }
-    });
-  }
-
-  function handleRotate() {
+  function handleGenerateOrRotate() {
     setError(null);
     startTransition(async () => {
       const result = await rotateViewToken({ poolId });
@@ -75,7 +63,7 @@ export function ViewSection({
             <div className="flex gap-4">
               <button
                 type="button"
-                onClick={handleRotate}
+                onClick={handleGenerateOrRotate}
                 disabled={isPending}
                 className="text-xs text-ink-muted hover:text-ink transition-colors disabled:opacity-50"
               >
@@ -97,7 +85,7 @@ export function ViewSection({
           <p className="text-xs text-ink-soft">
             View link is disabled. Generate one to let anyone view results without an account.
           </p>
-          <Button variant="primary" size="sm" onClick={handleGenerate} disabled={isPending}>
+          <Button variant="primary" size="sm" onClick={handleGenerateOrRotate} disabled={isPending}>
             {isPending ? 'Generating…' : 'Generate view link'}
           </Button>
         </div>

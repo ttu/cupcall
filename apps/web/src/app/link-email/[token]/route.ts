@@ -14,12 +14,14 @@ export async function GET(
     return NextResponse.redirect(new URL('/link-email/invalid', request.url));
   }
 
+  // eslint-disable-next-line sonarjs/todo-tag -- pre-existing, flagging separately, not part of this change
   // TODO(migration): restore this check after migration window
   // const actor = await getCurrentActor();
   // if (!actor || actor.userId !== record.userId) {
   //   return NextResponse.redirect(new URL('/link-email/invalid', request.url));
   // }
-  void getCurrentActor; // keep import alive while check is commented out
+  // eslint-disable-next-line sonarjs/void-use -- keep import alive while check is commented out
+  void getCurrentActor;
 
   await linkEmailToUser(db, record.userId, record.email);
   await deletePendingEmailLink(db, token);

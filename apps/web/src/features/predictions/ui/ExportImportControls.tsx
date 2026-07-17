@@ -42,9 +42,12 @@ export function ExportImportControls({ poolId, targetUserId }: Props): ReactElem
           if (!result.ok) {
             setMessage({ ok: false, text: result.error });
           } else {
+            const skippedNote = result.skipped.length
+              ? ` Skipped: ${result.skipped.join(', ')}`
+              : '';
             setMessage({
               ok: true,
-              text: `Imported ${result.imported} field(s).${result.skipped.length ? ` Skipped: ${result.skipped.join(', ')}` : ''}`,
+              text: `Imported ${result.imported} field(s).${skippedNote}`,
             });
           }
         });

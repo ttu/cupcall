@@ -10,7 +10,7 @@ import {
   listTournaments,
 } from './tournament';
 import { miniTournament } from '@cup/engine/testing';
-import type { ActualResults, GroupId, TeamId, TournamentId } from '@cup/engine';
+import type { ActualResults, GroupId, TeamId } from '@cup/engine';
 import { teamId, groupId, matchId, tournamentId as asTournamentId } from '@cup/engine';
 
 const firstKickoff = new Date('2026-06-11T18:00:00Z');

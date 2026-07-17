@@ -141,9 +141,7 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
                   <span className="text-[13px] font-bold text-ink">
                     {bet.value !== null ? String(bet.value) : '—'}
                   </span>
-                  {bet.points !== undefined && (
-                    <span className="display text-[13px] text-green-600">{bet.points}</span>
-                  )}
+                  <span className="display text-[13px] text-green-600">{bet.points}</span>
                 </div>
               ))}
             </div>

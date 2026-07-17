@@ -94,6 +94,7 @@ describe('tournamentSchema', () => {
     expect('knockoutRounds' in result).toBe(false);
 
     // Parsing also succeeds when the optional field is absent entirely.
+    // eslint-disable-next-line sonarjs/no-unused-vars -- rest-sibling destructure to omit a field
     const { knockoutRounds: _omit, ...withoutKnockoutRounds } = validTournamentJson;
     expect(() => tournamentSchema.parse(withoutKnockoutRounds)).not.toThrow();
   });
@@ -111,6 +112,7 @@ describe('tournamentSchema', () => {
   });
 
   it('throws when teams is missing', () => {
+    // eslint-disable-next-line sonarjs/no-unused-vars -- rest-sibling destructure to omit a field
     const { teams: _, ...withoutTeams } = validTournamentJson;
     expect(() => tournamentSchema.parse(withoutTeams)).toThrow();
   });

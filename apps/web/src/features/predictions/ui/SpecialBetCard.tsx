@@ -52,9 +52,7 @@ export function SpecialBetCard({
           >
             {bet.label}
           </label>
-          {bet.points !== undefined && (
-            <span className="display text-xs text-ink-muted">{bet.points} pts</span>
-          )}
+          <span className="display text-xs text-ink-muted">{bet.points} pts</span>
         </div>
       </div>
       <SpecialBetInput

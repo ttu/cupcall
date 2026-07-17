@@ -45,7 +45,10 @@ export async function devFillRandomGroupScores(
     });
 
     for (const match of tournamentDef.groupMatches) {
+      // Dev-only seed data (gated above); no security relevance to Math.random() here.
+      // eslint-disable-next-line sonarjs/pseudo-random
       const home = Math.floor(Math.random() * 5);
+      // eslint-disable-next-line sonarjs/pseudo-random
       const away = Math.floor(Math.random() * 5);
       await upsertGroupScore(db, prediction.id, match.id, home, away);
     }

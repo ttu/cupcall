@@ -14,7 +14,7 @@ import {
 } from './pools';
 import { createUser } from './users';
 import { addMember } from './members';
-import type { UserId, TournamentId, PoolId } from '@cup/engine';
+import type { UserId, TournamentId } from '@cup/engine';
 import { tournamentId as asTournamentId, poolId as asPoolId } from '@cup/engine';
 
 async function seedTournament(db: Db<typeof schema>, id = 'wc-test'): Promise<TournamentId> {

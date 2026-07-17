@@ -79,7 +79,7 @@ function formatFieldLabel(fieldPath: string, maps: ResolverMaps): string {
 
 function formatScore(v: unknown): string {
   if (v === null || v === undefined) return '—';
-  if (typeof v === 'object' && v !== null && 'home' in v && 'away' in v) {
+  if (typeof v === 'object' && 'home' in v && 'away' in v) {
     return `${(v as { home: number; away: number }).home}–${(v as { home: number; away: number }).away}`;
   }
   return JSON.stringify(v);

@@ -2,12 +2,10 @@
 
 import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { deletePool } from '../api/actions';
 import { Button, SectionLabel, Icon } from '@/shared/ui';
 
 export function DangerZone({ poolId }: { poolId: string }): ReactElement {
-  const router = useRouter();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isPendingDelete, startDeleteTransition] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
