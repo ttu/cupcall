@@ -3,7 +3,12 @@ import { eq, and } from 'drizzle-orm';
 import { makeTestDb } from '../testing/make-test-db';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
-import { upsertTournamentDef, upsertTournamentResults, listTournaments } from './tournament';
+import {
+  upsertTournamentDef,
+  upsertTournamentResults,
+  upsertKnockoutMatch,
+  listTournaments,
+} from './tournament';
 import { miniTournament } from '@cup/engine/testing';
 import type { ActualResults, GroupId, TeamId, TournamentId } from '@cup/engine';
 import { teamId, groupId, matchId, tournamentId as asTournamentId } from '@cup/engine';
@@ -114,6 +119,160 @@ describe('tournament repository', () => {
 
       const [row] = await db.select().from(schema.tournaments);
       expect(row?.name).toBe('Updated Name');
+    });
+
+    it('updates team name on re-run with different data', async () => {
+      // Regression: onConflictDoUpdate's set clause must reference the incoming row
+      // (`sql`excluded.name``), not the existing column (`schema.teams.name`) — the latter
+      // resolves to "set name = name", a no-op that silently freezes the row at its
+      // first-ever value forever, even as later syncs derive corrected data.
+      const kickoffs = makeMatchKickoffs();
+      await upsertTournamentDef(db, miniTournament, firstKickoff, kickoffs);
+
+      const renamed = {
+        ...miniTournament,
+        teams: miniTournament.teams.map((t) => (t.id === 'A1' ? { ...t, name: 'Renamed A1' } : t)),
+      };
+      await upsertTournamentDef(db, renamed, firstKickoff, kickoffs);
+
+      const [row] = await db
+        .select()
+        .from(schema.teams)
+        .where(and(eq(schema.teams.tournamentId, 'mini-2026'), eq(schema.teams.id, 'A1')));
+      expect(row?.name).toBe('Renamed A1');
+    });
+
+    it('updates player name and team on re-run with different data', async () => {
+      const kickoffs = makeMatchKickoffs();
+      await upsertTournamentDef(db, miniTournament, firstKickoff, kickoffs);
+
+      const corrected = {
+        ...miniTournament,
+        players: miniTournament.players.map((p) =>
+          p.id === 'A1-P' ? { ...p, name: 'Corrected Name', team: teamId('A2') } : p,
+        ),
+      };
+      await upsertTournamentDef(db, corrected, firstKickoff, kickoffs);
+
+      const [row] = await db
+        .select()
+        .from(schema.players)
+        .where(
+          and(eq(schema.players.tournamentId, 'mini-2026'), eq(schema.players.playerId, 'A1-P')),
+        );
+      expect(row?.name).toBe('Corrected Name');
+      expect(row?.teamId).toBe('A2');
+    });
+
+    it('updates group team seed order on re-run with different data', async () => {
+      const kickoffs = makeMatchKickoffs();
+      await upsertTournamentDef(db, miniTournament, firstKickoff, kickoffs);
+
+      const reseeded = {
+        ...miniTournament,
+        groups: miniTournament.groups.map((g) =>
+          g.id === 'A' ? { ...g, teams: [...g.teams].reverse() } : g,
+        ),
+      };
+      await upsertTournamentDef(db, reseeded, firstKickoff, kickoffs);
+
+      const rows = await db
+        .select()
+        .from(schema.stageGroupTeams)
+        .where(
+          and(
+            eq(schema.stageGroupTeams.tournamentId, 'mini-2026'),
+            eq(schema.stageGroupTeams.groupId, 'A'),
+            eq(schema.stageGroupTeams.teamId, 'A4'),
+          ),
+        );
+      expect(rows[0]?.seedOrder).toBe(0);
+    });
+
+    it('updates group match kickoff on re-run with a different time', async () => {
+      const kickoffs = makeMatchKickoffs();
+      await upsertTournamentDef(db, miniTournament, firstKickoff, kickoffs);
+
+      const updatedKickoff = new Date('2027-01-01T00:00:00Z');
+      const updatedKickoffs = new Map(kickoffs);
+      updatedKickoffs.set('mA1', updatedKickoff);
+      await upsertTournamentDef(db, miniTournament, firstKickoff, updatedKickoffs);
+
+      const [row] = await db
+        .select()
+        .from(schema.matches)
+        .where(and(eq(schema.matches.id, 'mA1'), eq(schema.matches.tournamentId, 'mini-2026')));
+      expect(row?.kickoff).toEqual(updatedKickoff);
+    });
+  });
+
+  describe('upsertKnockoutMatch', () => {
+    beforeEach(async () => {
+      await upsertTournamentDef(db, miniTournament, firstKickoff, makeMatchKickoffs());
+    });
+
+    it('inserts a knockout match with full result data', async () => {
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: asTournamentId('mini-2026'),
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 2,
+        awayGoals: 1,
+        winnerTeamId: 'A1',
+        decidedBy: 'regulation',
+        status: 'final',
+      });
+
+      const [row] = await db
+        .select()
+        .from(schema.matches)
+        .where(and(eq(schema.matches.id, 'qf1'), eq(schema.matches.tournamentId, 'mini-2026')));
+      expect(row?.homeGoals).toBe(2);
+      expect(row?.awayGoals).toBe(1);
+      expect(row?.winnerTeamId).toBe('A1');
+      expect(row?.decidedBy).toBe('regulation');
+    });
+
+    it('updates goals, winner, and decidedBy on re-run with corrected data', async () => {
+      // Regression for the ARG vs CPV production bug: a knockout match first synced as
+      // 1-1/extraTime (regulation-time score, entered before the final score was known)
+      // must be updated to the corrected final score (e.g. 3-2/extraTime) on the next sync.
+      // onConflictDoUpdate's set clause previously referenced the existing columns
+      // (`schema.matches.homeGoals`), a no-op that silently froze the row forever.
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: asTournamentId('mini-2026'),
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 1,
+        awayGoals: 1,
+        winnerTeamId: 'A1',
+        decidedBy: 'extraTime',
+        status: 'final',
+      });
+
+      await upsertKnockoutMatch(db, {
+        id: 'qf1',
+        tournamentId: asTournamentId('mini-2026'),
+        stage: 'QF',
+        homeTeamId: 'A1',
+        awayTeamId: 'B2',
+        homeGoals: 3,
+        awayGoals: 2,
+        winnerTeamId: 'A1',
+        decidedBy: 'extraTime',
+        status: 'final',
+      });
+
+      const [row] = await db
+        .select()
+        .from(schema.matches)
+        .where(and(eq(schema.matches.id, 'qf1'), eq(schema.matches.tournamentId, 'mini-2026')));
+      expect(row?.homeGoals).toBe(3);
+      expect(row?.awayGoals).toBe(2);
     });
   });
 

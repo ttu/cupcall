@@ -60,7 +60,7 @@ export async function upsertTournamentDef(
       )
       .onConflictDoUpdate({
         target: [schema.teams.tournamentId, schema.teams.id],
-        set: { name: schema.teams.name },
+        set: { name: sql`excluded.name` },
       });
   }
 
@@ -78,7 +78,7 @@ export async function upsertTournamentDef(
       )
       .onConflictDoUpdate({
         target: [schema.players.tournamentId, schema.players.playerId],
-        set: { name: schema.players.name, teamId: schema.players.teamId },
+        set: { name: sql`excluded.name`, teamId: sql`excluded.team_id` },
       });
   }
 
@@ -115,7 +115,7 @@ export async function upsertTournamentDef(
           schema.stageGroupTeams.groupId,
           schema.stageGroupTeams.teamId,
         ],
-        set: { seedOrder: schema.stageGroupTeams.seedOrder },
+        set: { seedOrder: sql`excluded.seed_order` },
       });
   }
 
@@ -137,10 +137,10 @@ export async function upsertTournamentDef(
       .onConflictDoUpdate({
         target: [schema.matches.tournamentId, schema.matches.id],
         set: {
-          homeTeamId: schema.matches.homeTeamId,
-          awayTeamId: schema.matches.awayTeamId,
-          kickoff: schema.matches.kickoff,
-          groupId: schema.matches.groupId,
+          homeTeamId: sql`excluded.home_team_id`,
+          awayTeamId: sql`excluded.away_team_id`,
+          kickoff: sql`excluded.kickoff`,
+          groupId: sql`excluded.group_id`,
         },
       });
   }
@@ -480,14 +480,14 @@ export async function upsertKnockoutMatch(
     .onConflictDoUpdate({
       target: [schema.matches.tournamentId, schema.matches.id],
       set: {
-        homeTeamId: schema.matches.homeTeamId,
-        awayTeamId: schema.matches.awayTeamId,
-        homeGoals: schema.matches.homeGoals,
-        awayGoals: schema.matches.awayGoals,
-        winnerTeamId: schema.matches.winnerTeamId,
-        decidedBy: schema.matches.decidedBy,
-        kickoff: schema.matches.kickoff,
-        status: schema.matches.status,
+        homeTeamId: sql`excluded.home_team_id`,
+        awayTeamId: sql`excluded.away_team_id`,
+        homeGoals: sql`excluded.home_goals`,
+        awayGoals: sql`excluded.away_goals`,
+        winnerTeamId: sql`excluded.winner_team_id`,
+        decidedBy: sql`excluded.decided_by`,
+        kickoff: sql`excluded.kickoff`,
+        status: sql`excluded.status`,
       },
     });
 }

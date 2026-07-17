@@ -43,6 +43,31 @@ const __dirname = dirname(__filename);
 const mini2026Dir = join(__dirname, '..', 'data', 'tournaments', 'mini-2026');
 // Path to the test-wc-2026 sample data (R32 bracket, full group results)
 const testWc2026Dir = join(__dirname, '..', 'data', 'tournaments', 'test-wc-2026');
+// Path to the real, evolving wc-2026 data set — the actual World Cup 2026 fixtures/results
+// this app runs on in production.
+const wc2026Dir = join(__dirname, '..', 'data', 'tournaments', 'wc-2026');
+
+const rawKnockoutMatchSchema = z.object({
+  round: z.string(),
+  matchId: z.string(),
+  home: z.string(),
+  away: z.string(),
+  homeGoals: z.number(),
+  awayGoals: z.number(),
+  winner: z.string(),
+  decidedBy: z.enum(['regulation', 'extraTime', 'penalties']).optional(),
+});
+const rawMatchResultSchema = z.object({
+  matchId: z.string(),
+  home: z.number(),
+  away: z.number(),
+});
+const wc2026ResultsFixtureSchema = z
+  .object({
+    matchResults: z.array(rawMatchResultSchema),
+    knockout: z.array(rawKnockoutMatchSchema).optional(),
+  })
+  .passthrough();
 
 describe('syncTournament integration', () => {
   let db: Db<typeof schema>;
@@ -825,6 +850,95 @@ describe('syncTournament integration', () => {
       });
     } finally {
       rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it('re-syncing a corrected knockout score overwrites a stale one (regression: ARG vs CPV frozen at 1-1)', async () => {
+    // Production incident: r32m86 (ARG vs CPV) was first recorded as 1-1/extraTime — the
+    // regulation-time score, entered before the match's full result (3-2 after extra time)
+    // was known. results.json was later corrected to 3-2, but upsertKnockoutMatch's
+    // onConflictDoUpdate referenced the existing DB columns instead of the incoming
+    // ("excluded") row, so the update was a silent no-op and the DB stayed frozen at 1-1
+    // forever — even though winner/decidedBy happened to already be correct. Reproduces the
+    // exact scenario with the real wc-2026 tournament + knockout schema.
+    const scratch = mkdtempSync(join(tmpdir(), 'sync-wc2026-resync-'));
+    try {
+      cpSync(wc2026Dir, scratch, { recursive: true });
+
+      const resultsPath = join(scratch, 'results.json');
+      const results = wc2026ResultsFixtureSchema.parse(
+        JSON.parse(readFileSync(resultsPath, 'utf-8')),
+      );
+      const r32m86 = results.knockout?.find((m) => m.matchId === 'r32m86');
+      if (!r32m86) throw new Error('wc-2026 results.json fixture invariant broken: r32m86 missing');
+      expect(r32m86.homeGoals).toBe(3); // sanity: current data already holds the corrected score
+      expect(r32m86.awayGoals).toBe(2);
+
+      // 1. Sync a stale snapshot — same match, regulation-time score only.
+      const staleResults = {
+        ...results,
+        knockout: results.knockout?.map((m) =>
+          m.matchId === 'r32m86' ? { ...m, homeGoals: 1, awayGoals: 1 } : m,
+        ),
+      };
+      writeFileSync(resultsPath, JSON.stringify(staleResults, null, 2));
+      await syncTournament(db, 'wc-2026', scratch);
+
+      const staleMatches = await db.select().from(schema.matches);
+      const staleRow = staleMatches.find((m) => m.id === 'r32m86' && m.tournamentId === 'wc-2026');
+      expect(staleRow?.homeGoals).toBe(1);
+      expect(staleRow?.awayGoals).toBe(1);
+
+      // 2. Sync the corrected snapshot (the real, current results.json contents).
+      writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+      await syncTournament(db, 'wc-2026', scratch);
+
+      const correctedMatches = await db.select().from(schema.matches);
+      const correctedRow = correctedMatches.find(
+        (m) => m.id === 'r32m86' && m.tournamentId === 'wc-2026',
+      );
+      expect(correctedRow?.homeGoals).toBe(3);
+      expect(correctedRow?.awayGoals).toBe(2);
+      expect(correctedRow?.winnerTeamId).toBe('ARG');
+      expect(correctedRow?.decidedBy).toBe('extraTime');
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it('every group and knockout result in the real wc-2026 data lands in the DB exactly as recorded', async () => {
+    // Broader fidelity net for the same class of bug: after syncing the real, currently
+    // committed wc-2026 fixtures, every group-stage and knockout-stage result recorded in
+    // results.json must match the matches table exactly (goals, winner, decidedBy). This
+    // grows automatically as new results (R16, QF, SF, bronze, Final) are added to
+    // results.json — it isn't hardcoded to any one match.
+    await syncTournament(db, 'wc-2026', wc2026Dir);
+
+    const results = wc2026ResultsFixtureSchema.parse(
+      JSON.parse(readFileSync(join(wc2026Dir, 'results.json'), 'utf-8')),
+    );
+
+    const allMatches = await db.select().from(schema.matches);
+    const matchById = new Map(
+      allMatches.filter((m) => m.tournamentId === 'wc-2026').map((m) => [m.id, m]),
+    );
+
+    for (const r of results.matchResults) {
+      const row = matchById.get(r.matchId);
+      expect(row, `group match ${r.matchId} missing from DB`).toBeDefined();
+      expect(row?.homeGoals, `${r.matchId} homeGoals`).toBe(r.home);
+      expect(row?.awayGoals, `${r.matchId} awayGoals`).toBe(r.away);
+    }
+
+    for (const km of results.knockout ?? []) {
+      const row = matchById.get(km.matchId);
+      expect(row, `knockout match ${km.matchId} missing from DB`).toBeDefined();
+      expect(row?.homeGoals, `${km.matchId} homeGoals`).toBe(km.homeGoals);
+      expect(row?.awayGoals, `${km.matchId} awayGoals`).toBe(km.awayGoals);
+      expect(row?.winnerTeamId, `${km.matchId} winnerTeamId`).toBe(km.winner);
+      if (km.decidedBy !== undefined) {
+        expect(row?.decidedBy, `${km.matchId} decidedBy`).toBe(km.decidedBy);
+      }
     }
   });
 });
