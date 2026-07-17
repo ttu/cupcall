@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/db-reset.ts", "scripts/validate-data.ts"],
+    },
+  },
+  "ignore": [
+    // Referenced only via playwright.config.ts's `globalSetup` option; knip's
+    // Playwright plugin resolves it as an entry but still flags it as unused.
+    "apps/web/e2e/global-setup.ts",
+  ],
+  "ignoreDependencies": [
+    // Referenced by string name in .storybook/main.ts's webpack loader/preset config,
+    // not via static import, so knip can't see the usage.
+    "babel-loader",
+    "@babel/core",
+    "@babel/preset-react",
+    "@babel/preset-typescript",
+    // Referenced by string name as a pino transport target, not via static import.
+    "pino-pretty",
+  ],
+}

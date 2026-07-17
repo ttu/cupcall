@@ -12,7 +12,6 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "^1.11.2",
     "@cup/engine": "workspace:*",
     "@electric-sql/pglite": "^0.2.0",
     "drizzle-orm": "^0.40.0",
