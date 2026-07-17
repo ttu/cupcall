@@ -29,3 +29,16 @@ export function resolvePredictionHitDisplay(
       };
   }
 }
+
+/**
+ * Final/Bronze scorelines can be a draw (regulation/ET tie); the picked team then represents
+ * a separate penalty-shootout winner call rather than the higher-scoring side. True when the
+ * predicted score is such a tie, so the UI can flag pickedTeamId as the shootout-winner pick.
+ */
+export function isPenaltyWinnerPick(prediction: KnockoutMatchDetailPrediction): boolean {
+  return (
+    prediction.predictedHome !== null &&
+    prediction.predictedAway !== null &&
+    prediction.predictedHome === prediction.predictedAway
+  );
+}

@@ -7,7 +7,7 @@ import type {
   KnockoutMatchDetailPrediction,
   KnockoutMatchView,
 } from '../domain/types';
-import { resolvePredictionHitDisplay } from './match-summary-utils';
+import { resolvePredictionHitDisplay, isPenaltyWinnerPick } from './match-summary-utils';
 import { HitChip } from './HitChip';
 import { Avatar, Icon, TeamBadge, cn } from '@/shared/ui';
 
@@ -109,6 +109,17 @@ function SheetHeader({
   );
 }
 
+function PenaltyWinnerBadge({ teamId, size }: { teamId: string | null; size: 'sm' }): ReactElement {
+  return (
+    <span className="relative inline-flex shrink-0" data-testid="penalty-winner-badge">
+      <TeamBadge teamId={teamId} size={size} />
+      <span className="absolute -top-1.5 -right-1.5 rounded-full bg-surface leading-none">
+        <Icon name="trophy" size={11} color="var(--gold)" />
+      </span>
+    </span>
+  );
+}
+
 function YourPickSection({
   yourPick,
   isFinaleTie,
@@ -117,6 +128,7 @@ function YourPickSection({
   isFinaleTie: boolean;
 }): ReactElement {
   const display = resolvePredictionHitDisplay(yourPick, isFinaleTie);
+  const isPenaltyPick = isFinaleTie && isPenaltyWinnerPick(yourPick);
 
   return (
     <div
@@ -128,7 +140,11 @@ function YourPickSection({
           Your pick
         </span>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <TeamBadge teamId={yourPick.pickedTeamId} size="sm" />
+          {isPenaltyPick ? (
+            <PenaltyWinnerBadge teamId={yourPick.pickedTeamId} size="sm" />
+          ) : (
+            <TeamBadge teamId={yourPick.pickedTeamId} size="sm" />
+          )}
           <span className="text-[13px] font-bold text-ink truncate">
             {yourPick.pickedTeamName ?? yourPick.pickedTeamId}
           </span>
@@ -212,6 +228,7 @@ function PredictionRow({
   isFinaleTie: boolean;
 }): ReactElement {
   const display = resolvePredictionHitDisplay(prediction, isFinaleTie);
+  const isPenaltyPick = isFinaleTie && isPenaltyWinnerPick(prediction);
   const rowCellClass = cn(
     'flex items-center py-[10px]',
     index > 0 && 'border-t border-line-soft',
@@ -240,7 +257,11 @@ function PredictionRow({
       >
         {prediction.pickedTeamId !== null && (
           <>
-            <TeamBadge teamId={prediction.pickedTeamId} size="sm" />
+            {isPenaltyPick ? (
+              <PenaltyWinnerBadge teamId={prediction.pickedTeamId} size="sm" />
+            ) : (
+              <TeamBadge teamId={prediction.pickedTeamId} size="sm" />
+            )}
             {isFinaleTie &&
             prediction.predictedHome !== null &&
             prediction.predictedAway !== null ? (

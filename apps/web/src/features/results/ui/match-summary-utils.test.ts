@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolvePredictionHitDisplay } from './match-summary-utils';
+import { resolvePredictionHitDisplay, isPenaltyWinnerPick } from './match-summary-utils';
 import type { KnockoutMatchDetailPrediction } from '../domain/types';
 
 function prediction(
@@ -73,5 +73,22 @@ describe('resolvePredictionHitDisplay', () => {
   it('maps impossible to a red custom chip', () => {
     const result = resolvePredictionHitDisplay(prediction({ hit: 'impossible' }), false);
     expect(result).toEqual({ kind: 'custom', label: 'Impossible', tone: 'red' });
+  });
+});
+
+describe('isPenaltyWinnerPick', () => {
+  it('is true when the predicted score is a tie', () => {
+    const result = isPenaltyWinnerPick(prediction({ predictedHome: 2, predictedAway: 2 }));
+    expect(result).toBe(true);
+  });
+
+  it('is false when the predicted score is not a tie', () => {
+    const result = isPenaltyWinnerPick(prediction({ predictedHome: 2, predictedAway: 1 }));
+    expect(result).toBe(false);
+  });
+
+  it('is false when no score was predicted (non-Final/Bronze rounds)', () => {
+    const result = isPenaltyWinnerPick(prediction({ predictedHome: null, predictedAway: null }));
+    expect(result).toBe(false);
   });
 });
