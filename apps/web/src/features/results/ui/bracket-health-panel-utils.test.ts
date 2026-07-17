@@ -26,6 +26,7 @@ function mkMatch(partial: Partial<KnockoutMatchView> = {}): KnockoutMatchView {
     predictedAway: null,
     predictedGoalsByTeam: null,
     hit: 'pending',
+    points: 0,
     projected: false,
     homeTeamConfirmed: false,
     awayTeamConfirmed: false,

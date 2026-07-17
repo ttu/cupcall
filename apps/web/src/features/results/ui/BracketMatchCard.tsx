@@ -21,8 +21,8 @@ function TeamRow({
   teamName,
   isPick,
   isQualifierPick,
-  isActualWinner,
-  predictedPct,
+  score,
+  wonOnPenalties,
   isSoft,
   isPredictedFill,
   isMissedFill,
@@ -33,8 +33,10 @@ function TeamRow({
   teamName: string | null;
   isPick: boolean;
   isQualifierPick: boolean;
-  isActualWinner: boolean;
-  predictedPct: number | null;
+  /** This team's final goal count. Null unless the match is final. */
+  score: number | null;
+  /** True when the score is level and this team won the resulting penalty shootout. */
+  wonOnPenalties: boolean;
   isSoft: boolean;
   isPredictedFill: boolean;
   /** True when this slot is showing a busted pick that is not visible in the actual/predicted chain. */
@@ -80,14 +82,22 @@ function TeamRow({
           (teamName ?? teamId ?? <span className="italic font-normal">TBD</span>)
         )}
       </span>
-      {predictedPct !== null && (
-        <span className="text-[10px] font-bold text-ink-muted tabular-nums shrink-0">
-          {predictedPct}%
+      {wonOnPenalties && (
+        <span
+          className="text-[9px] font-bold text-green-600 uppercase tracking-wide shrink-0"
+          aria-label="won on penalties"
+        >
+          pen
         </span>
       )}
-      {isActualWinner && (
-        <span className="text-[11px] font-bold text-green-600 ml-0.5" aria-label="winner">
-          ✓
+      {score !== null && (
+        <span
+          className={cn(
+            'text-sm font-extrabold tabular-nums shrink-0',
+            isPick ? 'text-green-700' : 'text-ink-muted',
+          )}
+        >
+          {score}
         </span>
       )}
     </div>
@@ -143,7 +153,6 @@ export function BracketMatchCard({ match, predictedQualifierIds, onSelect }: Pro
   const softCard = homeIsSoft || awayIsSoft;
 
   const hasScore = match.actualHome !== null && match.actualAway !== null;
-  const isFinal = match.status === 'final';
 
   // A tie is only worth opening once at least one side is a confirmed (non-TBD) team.
   const isTappable =
@@ -164,9 +173,7 @@ export function BracketMatchCard({ match, predictedQualifierIds, onSelect }: Pro
       {/* Header strip */}
       <div className="flex items-center justify-between gap-1.5 p-[2px_4px_4px]">
         {hasScore ? (
-          <span className="tnum text-[11px] font-bold text-ink-muted">
-            {match.actualHome}–{match.actualAway}
-          </span>
+          <span className="text-[11px] font-bold text-ink-muted">FT</span>
         ) : match.predictedHomeTeamId !== null || match.predictedAwayTeamId !== null ? (
           <span className="text-[11px] font-semibold text-ink-muted italic">Predicted</span>
         ) : match.kickoff ? (
@@ -179,7 +186,7 @@ export function BracketMatchCard({ match, predictedQualifierIds, onSelect }: Pro
         ) : (
           <span className="text-[11px] font-bold text-ink-muted">{match.round}</span>
         )}
-        {!softCard && <HitChip hit={match.hit} />}
+        {!softCard && <HitChip hit={match.hit} points={match.points} />}
       </div>
 
       {/* Team rows */}
@@ -194,8 +201,10 @@ export function BracketMatchCard({ match, predictedQualifierIds, onSelect }: Pro
               match.homeTeamUserPredictedParticipant)
           }
           isQualifierPick={effectiveHomeId !== null && predictedQualifierIds.has(effectiveHomeId)}
-          isActualWinner={isFinal && match.actualWinnerId === match.homeTeamId}
-          predictedPct={match.homeTeamPredictedPct}
+          score={hasScore ? match.actualHome : null}
+          wonOnPenalties={
+            match.decidedBy === 'penalties' && match.actualWinnerId === match.homeTeamId
+          }
           isSoft={homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
           isMissedFill={(isBustedPick && homeIsEmpty) || homeFeederMissed}
@@ -214,8 +223,10 @@ export function BracketMatchCard({ match, predictedQualifierIds, onSelect }: Pro
               match.awayTeamUserPredictedParticipant)
           }
           isQualifierPick={effectiveAwayId !== null && predictedQualifierIds.has(effectiveAwayId)}
-          isActualWinner={isFinal && match.actualWinnerId === match.awayTeamId}
-          predictedPct={match.awayTeamPredictedPct}
+          score={hasScore ? match.actualAway : null}
+          wonOnPenalties={
+            match.decidedBy === 'penalties' && match.actualWinnerId === match.awayTeamId
+          }
           isSoft={awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
           isMissedFill={(isBustedPick && awayIsEmpty) || awayFeederMissed}

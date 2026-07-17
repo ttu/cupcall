@@ -13,6 +13,7 @@ import {
   computeSemiFinalLoserTeams,
 } from '../domain/knockout-match-winner';
 import { resolveCrossSlotPick } from '../domain/cross-slot-pick';
+import { buildHitPointsMap } from '../domain/hit-points';
 export { computeBracketHealth } from '../domain/bracket-health';
 export { derivePredictedOpponent, deriveImplicitFinaleWinner } from '../domain/finale-winner';
 
@@ -72,6 +73,7 @@ export function buildBracketRounds(
   const finishScores = inputs?.finishScores ?? {};
   const finalMatchKey = def.bracket.finalMatch;
   const bronzeMatchKey = def.bracket.bronzeMatch;
+  const hitPoints = buildHitPointsMap(def);
 
   // For each stage, collect all teams the user picked to advance.
   // A card shows "correct" when the actual winner of that match appears in the user's stage picks,
@@ -287,6 +289,7 @@ export function buildBracketRounds(
       predictedAway,
       predictedGoalsByTeam,
       hit,
+      points: hit === 'outcome' || hit === 'exact' ? (hitPoints.get(key) ?? 0) : 0,
       projected: projectedKeys.has(key),
       // Entry-round: confirmed when the team's source group is fully finalised.
       // Later rounds: confirmed when the actual match row has the team ID (previous match done).

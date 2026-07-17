@@ -46,6 +46,7 @@ import {
   computeSpecialBetImpossibility,
   type SpecialBetImpossibility,
 } from '../domain/special-bet-impossibility';
+import { buildHitPointsMap } from '../domain/hit-points';
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
@@ -301,7 +302,8 @@ export function buildPerUserKnockoutCanStillGet(
   }
 
   // Per-round scored hit points (R32 → roundOf16PerTeam, R16 → roundOf8PerTeam).
-  // Mirrors buildHitPointsMap but restricted to the two per-match scored categories.
+  // Restricted to the two per-match scored categories — semiFinals/final/bronze are handled
+  // separately below via dedicated TopFour/Final/Bronze can-still-get logic.
   const hitPoints = new Map<string, number>();
   for (const prog of bracket.progression) {
     if ((bracket.roundOf16Matches as string[]).includes(prog.match as string)) {
@@ -544,29 +546,6 @@ export function buildProjectedEntries(
       canStillGet: e.canStillGet,
     };
   });
-}
-
-function buildHitPointsMap(def: Tournament): Map<string, number> {
-  const map = new Map<string, number>();
-  const { bracket, scoring } = def;
-  for (const prog of bracket.progression) {
-    if ((bracket.roundOf16Matches as string[]).includes(prog.match as string)) {
-      for (const fromKey of prog.from) map.set(fromKey as string, scoring.roundOf16PerTeam);
-    }
-    if ((bracket.roundOf8Matches as string[]).includes(prog.match as string)) {
-      for (const fromKey of prog.from) map.set(fromKey as string, scoring.roundOf8PerTeam);
-    }
-    if ((bracket.semiFinals as string[]).includes(prog.match as string)) {
-      for (const fromKey of prog.from) map.set(fromKey as string, scoring.roundOf4PerTeam);
-    }
-  }
-  const finalProg = bracket.progression.find((p) => p.match === bracket.finalMatch);
-  if (finalProg) {
-    for (const sfKey of finalProg.from) map.set(sfKey as string, scoring.final.perTeam);
-  }
-  map.set(bracket.finalMatch as string, scoring.final.perTeam);
-  map.set(bracket.bronzeMatch as string, scoring.bronze.perTeam);
-  return map;
 }
 
 export function buildKnockoutMatrix(params: {

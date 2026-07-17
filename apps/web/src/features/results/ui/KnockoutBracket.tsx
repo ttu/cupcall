@@ -79,10 +79,7 @@ function BracketInfoBanner(): ReactElement {
   return (
     <div className="flex items-start gap-2.5 p-[10px_14px] rounded-[10px] bg-green-050 border border-green-300 text-[13px] text-green-700">
       <span className="font-extrabold">⚡</span>
-      <span>
-        Results drop into your bracket as we enter them.{' '}
-        <strong>Green = your pick survived, red = it&apos;s out.</strong>
-      </span>
+      <span>Results drop into your bracket as we enter them.</span>
     </div>
   );
 }

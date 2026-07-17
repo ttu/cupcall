@@ -142,6 +142,8 @@ export type KnockoutMatchView = {
    *   - Final/Bronze: any of 'exact' | 'outcome' | 'missed' | 'pending'.
    */
   hit: MatchHit;
+  /** Points earned for correctly picking this match's winner. 0 when missed, pending, or no pick. */
+  points: number;
   /** True when participants are derived from live (partial) group standings during the group stage. */
   projected: boolean;
   /** True when homeTeamId comes from the actual confirmed match data, not projected from group standings. Only meaningful when projected=true. */

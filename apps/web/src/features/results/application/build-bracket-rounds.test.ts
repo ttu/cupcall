@@ -134,6 +134,52 @@ describe('buildBracketRounds — hit computation / cross-slot stage picks', () =
   });
 });
 
+describe('buildBracketRounds — points', () => {
+  it('credits the roundOf4PerTeam points on a correctly picked QF winner', () => {
+    const qf1 = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: 'A1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1],
+      { knockoutPicks: [{ bracketMatchKey: 'qf1', winner: 'A1' }], finishScores: {} },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Card.hit).toBe('outcome');
+    expect(qf1Card.points).toBe(miniTournament.scoring.roundOf4PerTeam);
+  });
+
+  it('awards no points on a missed QF pick', () => {
+    const qf1 = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: 'A1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1],
+      { knockoutPicks: [{ bracketMatchKey: 'qf1', winner: 'B2' }], finishScores: {} },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Card.hit).toBe('missed');
+    expect(qf1Card.points).toBe(0);
+  });
+});
+
 describe('buildBracketRounds — entry-round pickStatus with cross-slot adjustment', () => {
   // miniTournament entry-round layout:
   //   qf1: 1A vs 2B  (A1 vs B2)

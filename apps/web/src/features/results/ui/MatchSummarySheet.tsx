@@ -75,6 +75,14 @@ function SheetHeader({
             {match.awayTeamName ?? match.awayTeamId ?? 'TBD'}
           </span>
         </div>
+        {match.decidedBy === 'penalties' && (
+          <span
+            data-testid="match-summary-penalty-winner"
+            className="text-xs font-semibold text-ink-muted text-center"
+          >
+            {`${match.actualWinnerName ?? match.actualWinnerId} won on penalties`}
+          </span>
+        )}
         {(match.homeTeamPredictedPct !== null || match.awayTeamPredictedPct !== null) && (
           <div className="flex items-center justify-between gap-2">
             <span
@@ -334,6 +342,12 @@ export function MatchSummarySheet({ match, matchKey, detail, onClose }: Props): 
             ))}
           </div>
         </div>
+
+        {(match.homeTeamPredictedPct !== null || match.awayTeamPredictedPct !== null) && (
+          <span className="px-[18px] text-[10px] text-ink-muted text-center">
+            % of pool predicting each team reaches this round
+          </span>
+        )}
       </div>
     </dialog>
   );
