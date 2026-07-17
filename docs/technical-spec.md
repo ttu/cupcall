@@ -79,18 +79,34 @@ Guiding constraints (functional spec §13 + this session's direction):
 
 ## 3. High-level architecture
 
-```
-                       git push to data/**
-  maintainer ───────────────────────────────► GitHub Actions ──► sync script (Node)
-                                                                     │ Drizzle + @cup/engine
-                                                                     ▼
-  browser ──► Next.js server (Vercel)                          PostgreSQL (any provider)
-     ▲           │  RSC reads          │ Server Actions             ▲
-     │           └─────────┬───────────┘  (mutations)               │
-     │                     ▼                                         │
-     │            TS service / policy layer  ──── Drizzle ───────────┘
-     │             (authorization + audit)                │
-     └─────────────────────────────────────────  @cup/engine (pure TS: derive + score)
+```mermaid
+flowchart LR
+    subgraph Client
+        Browser["Browser"]
+    end
+
+    subgraph Vercel["Next.js server (Vercel)"]
+        RSC["RSC reads"]
+        SA["Server Actions\n(mutations)"]
+    end
+
+    subgraph App["App-layer TypeScript"]
+        Policy["TS service / policy layer\n(authorization + audit)"]
+        Engine["@cup/engine\n(pure TS: derive + score)"]
+    end
+
+    DB[("PostgreSQL\n(any provider)")]
+
+    Maintainer["Maintainer"] -- "git push to data/**" --> GHA["GitHub Actions"]
+    GHA --> Sync["sync script (Node)"]
+    Sync -- "Drizzle + @cup/engine" --> DB
+
+    Browser <--> RSC
+    Browser <--> SA
+    RSC --> Policy
+    SA --> Policy
+    Policy <-- "Drizzle" --> DB
+    Policy --> Engine
 ```
 
 - **The server is the only database client.** The browser never connects to Postgres directly; all
@@ -150,6 +166,43 @@ interface** (`index.ts`). Other features import **only** from that barrel — ne
 - `@cup/engine` is domain code shared by the web app _and_ the sync script (two real consumers, so the
   package is justified per the "shared only when multiple use cases" rule); it stays pure (no IO).
 
+```mermaid
+flowchart TB
+    subgraph Features["apps/web/src/features/*"]
+        direction LR
+        Predictions["predictions"]
+        Pools["pools"]
+        Results["results"]
+        Auth["auth"]
+        DevTools["dev-tools"]
+    end
+
+    Shared["shared/\n(ui · lib · db · observability · authz)"]
+    Engine["@cup/engine (pure)"]
+    Schemas["@cup/schemas (Zod)"]
+    Db["@cup/db (Drizzle)"]
+
+    Predictions -. "index.ts only" .-> Pools
+    Pools -. "index.ts only" .-> Predictions
+    Results -. "index.ts only" .-> Predictions
+
+    Predictions --> Shared
+    Pools --> Shared
+    Results --> Shared
+    Auth --> Shared
+
+    Predictions --> Engine
+    Predictions --> Db
+    Pools --> Db
+    Results --> Db
+
+    Db --> Schemas
+```
+
+Solid arrows are allowed dependencies; dotted arrows cross a feature boundary and are only permitted
+through the target feature's `index.ts` barrel. `shared/` and the `@cup/*` packages never import from
+`features/`, keeping the dependency graph acyclic.
+
 ---
 
 ## 5. The scoring & derivation engine (`@cup/engine`)
@@ -204,6 +257,31 @@ example as a test, and property tests for determinism (same input → same outpu
   sync job. Use a serverless-friendly pooler (PgBouncer / provider pooling) for Vercel functions.
 - **Re-scoring** lives in `@cup/engine` (TS), not Postgres functions; writes `scores.breakdown` (jsonb).
 
+A mutation (e.g. saving a group score) flows through the same policy gate every time:
+
+```mermaid
+sequenceDiagram
+    participant U as Browser
+    participant SA as Server Action
+    participant Z as Zod validation
+    participant P as Policy layer (authz)
+    participant D as Drizzle / Postgres
+    participant E as @cup/engine
+
+    U->>SA: submit form (saveGroupScore)
+    SA->>Z: parse payload
+    Z-->>SA: validated input
+    SA->>P: assertCanEditOwnCard(user, pool, item)
+    P->>D: getMember / lock time / audit checks
+    D-->>P: member + lock state
+    P-->>SA: allow (or throw)
+    SA->>D: write prediction row
+    SA->>E: deriveCard + scoreCard
+    E-->>SA: DerivedCard + ScoreBreakdown
+    SA->>D: write scores.breakdown
+    SA-->>U: revalidatePath (next load reflects new score)
+```
+
 ---
 
 ## 7. Auth (identity)
@@ -227,6 +305,15 @@ example as a test, and property tests for determinism (same input → same outpu
 3. `scripts/sync.ts`: **Zod-validates** the JSON → upserts tournament + results via Drizzle → calls
    `@cup/engine` to recompute every card in that tournament → updates `scores` + leaderboards. **Idempotent.**
 4. Zod validation failures fail the Action (and a PR check), so bad data never reaches the DB.
+
+```mermaid
+flowchart LR
+    A["tournament.json /\nresults.json"] --> B{"Zod validate\n(@cup/schemas)"}
+    B -- "invalid" --> C["fail Action / PR check\n(DB untouched)"]
+    B -- "valid" --> D["upsert via Drizzle\n(@cup/db)"]
+    D --> E["deriveCard + scoreCard\nfor every card\n(@cup/engine)"]
+    E --> F["write scores + leaderboards"]
+```
 
 `pnpm sync` also runs locally for setup/debugging against any `DATABASE_URL`.
 
