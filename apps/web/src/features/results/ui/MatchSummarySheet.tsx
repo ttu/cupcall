@@ -83,6 +83,14 @@ function SheetHeader({
             {`${match.actualWinnerName ?? match.actualWinnerId} won on penalties`}
           </span>
         )}
+        {match.decidedBy === 'extraTime' && (
+          <span
+            data-testid="match-summary-extra-time"
+            className="text-xs font-semibold text-ink-muted text-center"
+          >
+            Decided in extra time
+          </span>
+        )}
         {(match.homeTeamPredictedPct !== null || match.awayTeamPredictedPct !== null) && (
           <div className="flex items-center justify-between gap-2">
             <span
