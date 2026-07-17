@@ -300,7 +300,25 @@ function computePoolPositions(
   const groupMatchIds = new Set<string>(
     def.groupMatches.filter((gm) => gm.group === groupId).map((gm) => String(gm.id)),
   );
+  const byUser = groupScoresByUser(poolGroupScores, groupMatchIds);
 
+  const result = new Map<string, { position: number; pct: number }>();
+  if (byUser.size === 0) return result;
+
+  const positionCounts = countPositionsPerTeam(def, groupId, byUser);
+  const total = byUser.size;
+  for (const [tid, counts] of positionCounts) {
+    result.set(tid, pickModalPosition(counts, total));
+  }
+
+  return result;
+}
+
+/** Groups each pool member's predicted group scores, ignoring predictions for other groups. */
+function groupScoresByUser(
+  poolGroupScores: PoolGroupScore[],
+  groupMatchIds: Set<string>,
+): Map<string, GroupScore[]> {
   const byUser = new Map<string, GroupScore[]>();
   for (const s of poolGroupScores) {
     if (!groupMatchIds.has(s.matchId)) continue;
@@ -308,10 +326,15 @@ function computePoolPositions(
     existing.push({ matchId: matchId(s.matchId), home: s.home, away: s.away });
     byUser.set(s.userId, existing);
   }
+  return byUser;
+}
 
-  const result = new Map<string, { position: number; pct: number }>();
-  if (byUser.size === 0) return result;
-
+/** For each team, tallies how many pool members predicted each finishing position. */
+function countPositionsPerTeam(
+  def: Tournament,
+  groupId: GroupId,
+  byUser: Map<string, GroupScore[]>,
+): Map<string, Map<number, number>> {
   const positionCounts = new Map<string, Map<number, number>>();
   for (const scores of byUser.values()) {
     const order = computeStandings(def, groupId, scores);
@@ -323,21 +346,23 @@ function computePoolPositions(
       counts.set(i + 1, (counts.get(i + 1) ?? 0) + 1);
     }
   }
+  return positionCounts;
+}
 
-  const total = byUser.size;
-  for (const [tid, counts] of positionCounts) {
-    let modalPos = 0;
-    let maxCount = 0;
-    for (const [pos, count] of counts) {
-      if (count > maxCount) {
-        maxCount = count;
-        modalPos = pos;
-      }
+/** Picks the most-predicted position for a team and the share of pool members who chose it. */
+function pickModalPosition(
+  counts: Map<number, number>,
+  total: number,
+): { position: number; pct: number } {
+  let modalPos = 0;
+  let maxCount = 0;
+  for (const [pos, count] of counts) {
+    if (count > maxCount) {
+      maxCount = count;
+      modalPos = pos;
     }
-    result.set(tid, { position: modalPos, pct: Math.round((maxCount / total) * 100) });
   }
-
-  return result;
+  return { position: modalPos, pct: Math.round((maxCount / total) * 100) };
 }
 
 /**

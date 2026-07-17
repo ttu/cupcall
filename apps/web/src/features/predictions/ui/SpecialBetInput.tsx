@@ -8,12 +8,14 @@ import { teamFlag, cn } from '@/shared/ui';
 const SELECT_CLS =
   'w-full rounded-cup-sm border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui';
 
+type OnSaveSpecialBet = (key: string, value: string | number | boolean) => void;
+
 type Props = {
   bet: SpecialBetView;
   locked: boolean;
   teams: { id: string; name: string }[];
   players: { id: string; name: string; team: string }[];
-  onSave: (key: string, value: string | number | boolean) => void;
+  onSave: OnSaveSpecialBet;
 };
 
 export function SpecialBetInput({
@@ -26,97 +28,155 @@ export function SpecialBetInput({
   const id = `special-${bet.key}`;
 
   if (bet.kind === 'team') {
-    return (
-      <select
-        id={id}
-        disabled={locked}
-        defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
-        onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
-        className={cn(SELECT_CLS, locked && 'opacity-50')}
-      >
-        <option value="">Select team…</option>
-        {teams.map((t) => (
-          <option key={t.id} value={t.id}>
-            {teamFlag(t.id)} {t.name}
-          </option>
-        ))}
-      </select>
-    );
+    return <TeamBetSelect id={id} bet={bet} locked={locked} teams={teams} onSave={onSave} />;
   }
 
   if (bet.kind === 'player') {
-    if (bet.allowFreeText) {
-      return (
-        <PlayerFreeTextInput id={id} bet={bet} locked={locked} players={players} onSave={onSave} />
-      );
-    }
-    return (
-      <select
-        id={id}
-        disabled={locked}
-        defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
-        onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
-        className={cn(SELECT_CLS, locked && 'opacity-50')}
-      >
-        <option value="">Select player…</option>
-        {players.map((p) => (
-          <option key={p.id} value={p.id}>
-            {teamFlag(p.team)} {p.name}
-          </option>
-        ))}
-      </select>
-    );
+    return <PlayerBetInput id={id} bet={bet} locked={locked} players={players} onSave={onSave} />;
   }
 
   if (bet.kind === 'number') {
-    return (
-      <input
-        id={id}
-        type="number"
-        min="0"
-        disabled={locked}
-        defaultValue={typeof bet.value === 'number' ? bet.value : ''}
-        onBlur={(e) => {
-          const v = parseInt(e.target.value, 10);
-          if (!isNaN(v)) onSave(bet.key, v);
-        }}
-        className={cn(
-          'w-24 rounded-cup-sm border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui',
-          locked && 'opacity-50',
-        )}
-      />
-    );
+    return <NumberBetInput id={id} bet={bet} locked={locked} onSave={onSave} />;
   }
 
   if (bet.kind === 'bool') {
-    return (
-      <div className={cn('flex gap-2', locked && 'opacity-50')}>
-        {(['Yes', 'No'] as const).map((label) => {
-          const boolVal = label === 'Yes';
-          const active = bet.value === boolVal;
-          return (
-            <button
-              key={label}
-              type="button"
-              disabled={locked}
-              onClick={() => onSave(bet.key, boolVal)}
-              className={cn(
-                'py-1.5 px-4 rounded-cup-sm border-0 text-[13px] font-bold font-cup-ui transition-[background] duration-[120ms]',
-                locked ? 'cursor-default' : 'cursor-pointer',
-                active
-                  ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
-                  : 'bg-surface-2 text-ink shadow-[inset_0_0_0_1px_var(--line)]',
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-    );
+    return <BoolBetButtons bet={bet} locked={locked} onSave={onSave} />;
   }
 
   return null;
+}
+
+function TeamBetSelect({
+  id,
+  bet,
+  locked,
+  teams,
+  onSave,
+}: {
+  id: string;
+  bet: SpecialBetView;
+  locked: boolean;
+  teams: { id: string; name: string }[];
+  onSave: OnSaveSpecialBet;
+}): ReactElement {
+  return (
+    <select
+      id={id}
+      disabled={locked}
+      defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
+      onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
+      className={cn(SELECT_CLS, locked && 'opacity-50')}
+    >
+      <option value="">Select team…</option>
+      {teams.map((t) => (
+        <option key={t.id} value={t.id}>
+          {teamFlag(t.id)} {t.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function PlayerBetInput({
+  id,
+  bet,
+  locked,
+  players,
+  onSave,
+}: {
+  id: string;
+  bet: SpecialBetView;
+  locked: boolean;
+  players: { id: string; name: string; team: string }[];
+  onSave: OnSaveSpecialBet;
+}): ReactElement {
+  if (bet.allowFreeText) {
+    return (
+      <PlayerFreeTextInput id={id} bet={bet} locked={locked} players={players} onSave={onSave} />
+    );
+  }
+  return (
+    <select
+      id={id}
+      disabled={locked}
+      defaultValue={typeof bet.storedValue === 'string' ? bet.storedValue : ''}
+      onChange={(e) => e.target.value && onSave(bet.key, e.target.value)}
+      className={cn(SELECT_CLS, locked && 'opacity-50')}
+    >
+      <option value="">Select player…</option>
+      {players.map((p) => (
+        <option key={p.id} value={p.id}>
+          {teamFlag(p.team)} {p.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function NumberBetInput({
+  id,
+  bet,
+  locked,
+  onSave,
+}: {
+  id: string;
+  bet: SpecialBetView;
+  locked: boolean;
+  onSave: OnSaveSpecialBet;
+}): ReactElement {
+  return (
+    <input
+      id={id}
+      type="number"
+      min="0"
+      disabled={locked}
+      defaultValue={typeof bet.value === 'number' ? bet.value : ''}
+      onBlur={(e) => {
+        const v = parseInt(e.target.value, 10);
+        if (!isNaN(v)) onSave(bet.key, v);
+      }}
+      className={cn(
+        'w-24 rounded-cup-sm border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui',
+        locked && 'opacity-50',
+      )}
+    />
+  );
+}
+
+function BoolBetButtons({
+  bet,
+  locked,
+  onSave,
+}: {
+  bet: SpecialBetView;
+  locked: boolean;
+  onSave: OnSaveSpecialBet;
+}): ReactElement {
+  return (
+    <div className={cn('flex gap-2', locked && 'opacity-50')}>
+      {(['Yes', 'No'] as const).map((label) => {
+        const boolVal = label === 'Yes';
+        const active = bet.value === boolVal;
+        return (
+          <button
+            key={label}
+            type="button"
+            disabled={locked}
+            onClick={() => onSave(bet.key, boolVal)}
+            className={cn(
+              'py-1.5 px-4 rounded-cup-sm border-0 text-[13px] font-bold font-cup-ui transition-[background] duration-[120ms]',
+              locked ? 'cursor-default' : 'cursor-pointer',
+              active
+                ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
+                : 'bg-surface-2 text-ink shadow-[inset_0_0_0_1px_var(--line)]',
+            )}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function PlayerFreeTextInput({

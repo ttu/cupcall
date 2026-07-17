@@ -1,4 +1,4 @@
-import type { UserId, Tournament, GroupId, TeamId } from '@cup/engine';
+import type { UserId, Tournament, GroupId, TeamId, GroupScore } from '@cup/engine';
 import { deriveGroupOrders, matchId as makeMatchId } from '@cup/engine';
 import type { LeaderboardEntry, MatchRow, PoolGroupScore, PoolKnockoutPick } from '@cup/db';
 
@@ -127,7 +127,7 @@ export function buildRaceEventDates(allMatches: MatchRow[]): string[] {
   for (const m of allMatches) {
     if (m.status === 'final' && m.kickoff) dates.add(utcDateStr(m.kickoff));
   }
-  return [...dates].toSorted();
+  return [...dates].toSorted((a, b) => a.localeCompare(b));
 }
 
 export function computeHit(
@@ -195,6 +195,92 @@ function raceGroupOrderPts(
   return 0;
 }
 
+function computeActualGroupOrders(
+  allMatches: MatchRow[],
+  def: Tournament,
+): Record<GroupId, TeamId[]> {
+  const actualScores: GroupScore[] = allMatches
+    .filter((m) => m.stage === 'group' && m.status === 'final')
+    .map((m) => ({ matchId: makeMatchId(m.id), home: m.homeGoals!, away: m.awayGoals! }));
+  return deriveGroupOrders(def, actualScores);
+}
+
+function computeUserPredictedGroupOrders(
+  poolGroupScores: PoolGroupScore[],
+  leaderboard: LeaderboardEntry[],
+  def: Tournament,
+): Map<string, Record<GroupId, TeamId[]>> {
+  const userPredScores = new Map<string, GroupScore[]>();
+  for (const gs of poolGroupScores) {
+    if (!userPredScores.has(gs.userId)) userPredScores.set(gs.userId, []);
+    userPredScores
+      .get(gs.userId)!
+      .push({ matchId: makeMatchId(gs.matchId), home: gs.home, away: gs.away });
+  }
+
+  const userPredOrders = new Map<string, Record<GroupId, TeamId[]>>();
+  for (const entry of leaderboard) {
+    userPredOrders.set(
+      entry.userId,
+      deriveGroupOrders(def, userPredScores.get(entry.userId) ?? []),
+    );
+  }
+  return userPredOrders;
+}
+
+function buildGroupMatchIdsByGroup(def: Tournament): Map<string, Set<string>> {
+  const groupMatchIds = new Map<string, Set<string>>();
+  for (const gm of def.groupMatches) {
+    if (!groupMatchIds.has(gm.group)) groupMatchIds.set(gm.group, new Set());
+    groupMatchIds.get(gm.group)!.add(gm.id);
+  }
+  return groupMatchIds;
+}
+
+/** The date the group's last match kicked off, or null if the group isn't fully final yet. */
+function findGroupCompletionDate(groupMatches: MatchRow[]): string | null {
+  if (!groupMatches.every((m) => m.status === 'final')) return null;
+
+  const withKickoff = groupMatches.filter((m) => m.kickoff !== null);
+  if (withKickoff.length === 0) return null;
+
+  const lastMatch = withKickoff.reduce(
+    (a, b) => (b.kickoff!.getTime() > a.kickoff!.getTime() ? b : a),
+    withKickoff[0]!,
+  );
+  return utcDateStr(lastMatch.kickoff!);
+}
+
+function countMatchingPositions(userOrder: TeamId[], actualOrder: TeamId[]): number {
+  let positionsCorrect = 0;
+  for (let i = 0; i < Math.min(userOrder.length, actualOrder.length); i++) {
+    if (userOrder[i] === actualOrder[i]) positionsCorrect++;
+  }
+  return positionsCorrect;
+}
+
+function applyGroupOrderPointsForGroup(
+  groupId: GroupId,
+  actualOrder: TeamId[],
+  groupDate: string,
+  userPredOrders: Map<string, Record<GroupId, TeamId[]>>,
+  leaderboard: LeaderboardEntry[],
+  def: Tournament,
+  result: Map<string, Map<string, number>>,
+): void {
+  for (const entry of leaderboard) {
+    const userOrder = (userPredOrders.get(entry.userId) ?? {})[groupId];
+    if (!userOrder) continue;
+
+    const positionsCorrect = countMatchingPositions(userOrder, actualOrder);
+    const pts = raceGroupOrderPts(positionsCorrect, def.scoring.groupOrder);
+    if (pts === 0) continue;
+
+    if (!result.has(entry.userId)) result.set(entry.userId, new Map());
+    result.get(entry.userId)!.set(groupDate, (result.get(entry.userId)!.get(groupDate) ?? 0) + pts);
+  }
+}
+
 function buildGroupOrderDeltas(
   poolGroupScores: PoolGroupScore[],
   allMatches: MatchRow[],
@@ -203,68 +289,75 @@ function buildGroupOrderDeltas(
 ): Map<string, Map<string, number>> {
   const result = new Map<string, Map<string, number>>();
 
-  const actualScores = allMatches
-    .filter((m) => m.stage === 'group' && m.status === 'final')
-    .map((m) => ({ matchId: makeMatchId(m.id), home: m.homeGoals!, away: m.awayGoals! }));
-  const actualGroupOrders = deriveGroupOrders(def, actualScores);
-
-  const userPredScores = new Map<string, typeof actualScores>();
-  for (const gs of poolGroupScores) {
-    if (!userPredScores.has(gs.userId)) userPredScores.set(gs.userId, []);
-    userPredScores
-      .get(gs.userId)!
-      .push({ matchId: makeMatchId(gs.matchId), home: gs.home, away: gs.away });
-  }
-  const userPredOrders = new Map<string, Record<GroupId, TeamId[]>>();
-  for (const entry of leaderboard) {
-    userPredOrders.set(
-      entry.userId,
-      deriveGroupOrders(def, userPredScores.get(entry.userId) ?? []),
-    );
-  }
-
-  const groupMatchIds = new Map<string, Set<string>>();
-  for (const gm of def.groupMatches) {
-    if (!groupMatchIds.has(gm.group)) groupMatchIds.set(gm.group, new Set());
-    groupMatchIds.get(gm.group)!.add(gm.id);
-  }
+  const actualGroupOrders = computeActualGroupOrders(allMatches, def);
+  const userPredOrders = computeUserPredictedGroupOrders(poolGroupScores, leaderboard, def);
+  const groupMatchIds = buildGroupMatchIdsByGroup(def);
 
   for (const group of def.groups) {
     const matchIds = groupMatchIds.get(group.id) ?? new Set();
     const groupMatches = allMatches.filter((m) => matchIds.has(m.id));
-    if (!groupMatches.every((m) => m.status === 'final')) continue;
 
-    const withKickoff = groupMatches.filter((m) => m.kickoff !== null);
-    if (withKickoff.length === 0) continue;
-
-    const lastMatch = withKickoff.reduce((a, b) =>
-      b.kickoff!.getTime() > a.kickoff!.getTime() ? b : a,
-    );
-    const groupDate = utcDateStr(lastMatch.kickoff!);
+    const groupDate = findGroupCompletionDate(groupMatches);
+    if (!groupDate) continue;
 
     const actualOrder = actualGroupOrders[group.id];
     if (!actualOrder) continue;
 
-    for (const entry of leaderboard) {
-      const userOrder = (userPredOrders.get(entry.userId) ?? {})[group.id];
-      if (!userOrder) continue;
-
-      let positionsCorrect = 0;
-      for (let i = 0; i < Math.min(userOrder.length, actualOrder.length); i++) {
-        if (userOrder[i] === actualOrder[i]) positionsCorrect++;
-      }
-
-      const pts = raceGroupOrderPts(positionsCorrect, def.scoring.groupOrder);
-      if (pts === 0) continue;
-
-      if (!result.has(entry.userId)) result.set(entry.userId, new Map());
-      result
-        .get(entry.userId)!
-        .set(groupDate, (result.get(entry.userId)!.get(groupDate) ?? 0) + pts);
-    }
+    applyGroupOrderPointsForGroup(
+      group.id,
+      actualOrder,
+      groupDate,
+      userPredOrders,
+      leaderboard,
+      def,
+      result,
+    );
   }
 
   return result;
+}
+
+// Build set of predicted R16 teams per user — matches the engine's scoreRoundOf16 semantics,
+// which is set-based (intersection of predicted vs actual R16 teams). A cross-slot swap
+// (user correctly predicted both teams but swapped which slot each wins) earns full credit.
+function buildUserPredictedR16(
+  picks: PoolKnockoutPick[],
+  slotMatchIds: Set<string>,
+): Map<string, Set<string>> {
+  const userPredictedR16 = new Map<string, Set<string>>();
+  for (const pick of picks) {
+    if (!slotMatchIds.has(pick.bracketMatchKey)) continue;
+    if (!userPredictedR16.has(pick.userId)) userPredictedR16.set(pick.userId, new Set());
+    userPredictedR16.get(pick.userId)!.add(pick.winnerTeamId);
+  }
+  return userPredictedR16;
+}
+
+function isDecidedFinalMatch(
+  match: MatchRow | undefined,
+): match is MatchRow & { kickoff: Date; winnerTeamId: string } {
+  return (
+    Boolean(match) &&
+    match!.status === 'final' &&
+    Boolean(match!.kickoff) &&
+    Boolean(match!.winnerTeamId)
+  );
+}
+
+function creditSlotWinner(
+  userPredictedR16: Map<string, Set<string>>,
+  match: MatchRow & { kickoff: Date; winnerTeamId: string },
+  pointsPerTeam: number,
+  result: Map<string, Map<string, number>>,
+): void {
+  const date = utcDateStr(match.kickoff);
+  const winner = match.winnerTeamId;
+
+  for (const [uid, predictedSet] of userPredictedR16) {
+    if (!predictedSet.has(winner)) continue;
+    if (!result.has(uid)) result.set(uid, new Map());
+    result.get(uid)!.set(date, (result.get(uid)!.get(date) ?? 0) + pointsPerTeam);
+  }
 }
 
 function buildKnockoutSlotDeltas(
@@ -276,32 +369,16 @@ function buildKnockoutSlotDeltas(
   // In entry-round-as-QF brackets (mini-tournament), slots are scored via roundOf8 milestones.
   if (def.bracket.roundOf16Matches.length === 0) return new Map();
 
-  // Build set of predicted R16 teams per user — matches the engine's scoreRoundOf16 semantics,
-  // which is set-based (intersection of predicted vs actual R16 teams). A cross-slot swap
-  // (user correctly predicted both teams but swapped which slot each wins) earns full credit.
   const slotMatchIds = new Set(def.bracket.slots.map((s) => s.match));
-  const userPredictedR16 = new Map<string, Set<string>>();
-  for (const pick of picks) {
-    if (!slotMatchIds.has(pick.bracketMatchKey)) continue;
-    if (!userPredictedR16.has(pick.userId)) userPredictedR16.set(pick.userId, new Set());
-    userPredictedR16.get(pick.userId)!.add(pick.winnerTeamId);
-  }
+  const userPredictedR16 = buildUserPredictedR16(picks, slotMatchIds);
 
   const result = new Map<string, Map<string, number>>();
   const matchById = new Map(allMatches.map((m) => [m.id, m]));
 
   for (const slot of def.bracket.slots) {
     const match = matchById.get(slot.match);
-    if (!match || match.status !== 'final' || !match.kickoff || !match.winnerTeamId) continue;
-
-    const date = utcDateStr(match.kickoff);
-    const winner = match.winnerTeamId;
-
-    for (const [uid, predictedSet] of userPredictedR16) {
-      if (!predictedSet.has(winner)) continue;
-      if (!result.has(uid)) result.set(uid, new Map());
-      result.get(uid)!.set(date, (result.get(uid)!.get(date) ?? 0) + def.scoring.roundOf16PerTeam);
-    }
+    if (!isDecidedFinalMatch(match)) continue;
+    creditSlotWinner(userPredictedR16, match, def.scoring.roundOf16PerTeam, result);
   }
 
   return result;
@@ -370,7 +447,7 @@ function findLastCompleteMatchDay(allMatches: MatchRow[]): string | null {
     matchesByDate.get(date)!.push(m);
   }
   // Walk dates newest-first; return the first date where every match is final.
-  const sorted = [...matchesByDate.keys()].toSorted().reverse();
+  const sorted = [...matchesByDate.keys()].toSorted((a, b) => a.localeCompare(b)).reverse();
   for (const date of sorted) {
     if (matchesByDate.get(date)!.every((m) => m.status === 'final')) return date;
   }

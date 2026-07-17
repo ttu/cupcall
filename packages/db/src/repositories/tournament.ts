@@ -239,6 +239,106 @@ export async function getMatchesForTournament(
   }));
 }
 
+type AnswerEntry = { tournamentId: TournamentId; betKey: string; value: unknown };
+
+/** Optional answer keys stored as flat (betKey, value) rows in actualAnswers. */
+const OPTIONAL_ANSWER_KEYS = [
+  'roundOf16',
+  'roundOf8',
+  'roundOf4',
+  'finalists',
+  'groupTopScoringTeam',
+  'groupTopConcedingTeam',
+  'tournamentTopScoringTeam',
+  'tournamentTopConcedingTeam',
+  'highestMatchGoals',
+  'mostYellowCardsTeam',
+  'firstRedCardPlayer',
+  'penaltyShootoutCount',
+  'topScorerPlayer',
+] as const satisfies readonly (keyof ActualResults['answers'])[];
+
+/** Updates a single group match's score/conduct and marks it final. */
+async function updateGroupMatchResult(
+  db: Database,
+  tournamentId: TournamentId,
+  result: ActualResults['matchResults'][number],
+): Promise<void> {
+  await db
+    .update(schema.matches)
+    .set({
+      homeGoals: result.home,
+      awayGoals: result.away,
+      ...(result.homeConduct !== undefined && { homeConduct: result.homeConduct }),
+      ...(result.awayConduct !== undefined && { awayConduct: result.awayConduct }),
+      status: 'final',
+    })
+    .where(
+      and(eq(schema.matches.tournamentId, tournamentId), eq(schema.matches.id, result.matchId)),
+    );
+}
+
+/** Replaces the actualGroupOrder rows for this tournament with the given final order. */
+async function replaceActualGroupOrder(
+  db: Database,
+  tournamentId: TournamentId,
+  groupOrder: ActualResults['groupOrder'],
+): Promise<void> {
+  await db
+    .delete(schema.actualGroupOrder)
+    .where(eq(schema.actualGroupOrder.tournamentId, tournamentId));
+
+  const groupOrderRows = (Object.entries(groupOrder) as [GroupId, TeamId[]][]).flatMap(
+    ([groupId, teams]) =>
+      teams.map((teamId, index) => ({
+        tournamentId,
+        groupId,
+        position: index + 1,
+        teamId,
+      })),
+  );
+
+  if (groupOrderRows.length > 0) {
+    await db.insert(schema.actualGroupOrder).values(groupOrderRows);
+  }
+}
+
+/** Flattens the optional answers plus bronzeMatch/finalMatch into (betKey, value) rows. */
+function buildAnswerEntries(tournamentId: TournamentId, actual: ActualResults): AnswerEntry[] {
+  const entries: AnswerEntry[] = [];
+
+  for (const betKey of OPTIONAL_ANSWER_KEYS) {
+    const value = actual.answers[betKey];
+    if (value !== undefined) {
+      entries.push({ tournamentId, betKey, value });
+    }
+  }
+
+  // Store bronzeMatch and finalMatch as structured answer keys
+  if (actual.bronzeMatch !== undefined) {
+    entries.push({ tournamentId, betKey: 'bronzeMatch', value: actual.bronzeMatch });
+  }
+  if (actual.finalMatch !== undefined) {
+    entries.push({ tournamentId, betKey: 'finalMatch', value: actual.finalMatch });
+  }
+
+  return entries;
+}
+
+/** Upserts the flattened answer rows, replacing any existing value for the same key. */
+async function upsertAnswerEntries(db: Database, entries: AnswerEntry[]): Promise<void> {
+  if (entries.length === 0) return;
+  await db
+    .insert(schema.actualAnswers)
+    .values(entries)
+    .onConflictDoUpdate({
+      target: [schema.actualAnswers.tournamentId, schema.actualAnswers.betKey],
+      // `schema.actualAnswers.value` here would reference the existing row (a no-op:
+      // "set value = value"). `excluded.value` is the incoming row being inserted.
+      set: { value: sql`excluded.value` },
+    });
+}
+
 /**
  * Upserts actual results for a tournament:
  *  - Updates group match rows with goals + status='final'
@@ -252,141 +352,14 @@ export async function upsertTournamentResults(
   tournamentId: TournamentId,
   actual: ActualResults,
 ): Promise<void> {
-  // 1. Update group match results
   for (const result of actual.matchResults) {
-    await db
-      .update(schema.matches)
-      .set({
-        homeGoals: result.home,
-        awayGoals: result.away,
-        ...(result.homeConduct !== undefined && { homeConduct: result.homeConduct }),
-        ...(result.awayConduct !== undefined && { awayConduct: result.awayConduct }),
-        status: 'final',
-      })
-      .where(
-        and(eq(schema.matches.tournamentId, tournamentId), eq(schema.matches.id, result.matchId)),
-      );
+    await updateGroupMatchResult(db, tournamentId, result);
   }
 
-  // 2. Replace actual group order (delete + insert for full replacement)
-  await db
-    .delete(schema.actualGroupOrder)
-    .where(eq(schema.actualGroupOrder.tournamentId, tournamentId));
+  await replaceActualGroupOrder(db, tournamentId, actual.groupOrder);
 
-  const groupOrderRows = (Object.entries(actual.groupOrder) as [GroupId, TeamId[]][]).flatMap(
-    ([groupId, teams]) =>
-      teams.map((teamId, index) => ({
-        tournamentId,
-        groupId,
-        position: index + 1,
-        teamId,
-      })),
-  );
-
-  if (groupOrderRows.length > 0) {
-    await db.insert(schema.actualGroupOrder).values(groupOrderRows);
-  }
-
-  // 3. Upsert answers
-  const answerEntries: Array<{ tournamentId: TournamentId; betKey: string; value: unknown }> = [];
-
-  const { answers } = actual;
-
-  if (answers.roundOf16 !== undefined) {
-    answerEntries.push({ tournamentId, betKey: 'roundOf16', value: answers.roundOf16 });
-  }
-  if (answers.roundOf8 !== undefined) {
-    answerEntries.push({ tournamentId, betKey: 'roundOf8', value: answers.roundOf8 });
-  }
-  if (answers.roundOf4 !== undefined) {
-    answerEntries.push({ tournamentId, betKey: 'roundOf4', value: answers.roundOf4 });
-  }
-  if (answers.finalists !== undefined) {
-    answerEntries.push({ tournamentId, betKey: 'finalists', value: answers.finalists });
-  }
-  if (answers.groupTopScoringTeam !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'groupTopScoringTeam',
-      value: answers.groupTopScoringTeam,
-    });
-  }
-  if (answers.groupTopConcedingTeam !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'groupTopConcedingTeam',
-      value: answers.groupTopConcedingTeam,
-    });
-  }
-  if (answers.tournamentTopScoringTeam !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'tournamentTopScoringTeam',
-      value: answers.tournamentTopScoringTeam,
-    });
-  }
-  if (answers.tournamentTopConcedingTeam !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'tournamentTopConcedingTeam',
-      value: answers.tournamentTopConcedingTeam,
-    });
-  }
-  if (answers.highestMatchGoals !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'highestMatchGoals',
-      value: answers.highestMatchGoals,
-    });
-  }
-  if (answers.mostYellowCardsTeam !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'mostYellowCardsTeam',
-      value: answers.mostYellowCardsTeam,
-    });
-  }
-  if (answers.firstRedCardPlayer !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'firstRedCardPlayer',
-      value: answers.firstRedCardPlayer,
-    });
-  }
-  if (answers.penaltyShootoutCount !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'penaltyShootoutCount',
-      value: answers.penaltyShootoutCount,
-    });
-  }
-  if (answers.topScorerPlayer !== undefined) {
-    answerEntries.push({
-      tournamentId,
-      betKey: 'topScorerPlayer',
-      value: answers.topScorerPlayer,
-    });
-  }
-
-  // Store bronzeMatch and finalMatch as structured answer keys
-  if (actual.bronzeMatch !== undefined) {
-    answerEntries.push({ tournamentId, betKey: 'bronzeMatch', value: actual.bronzeMatch });
-  }
-  if (actual.finalMatch !== undefined) {
-    answerEntries.push({ tournamentId, betKey: 'finalMatch', value: actual.finalMatch });
-  }
-
-  if (answerEntries.length > 0) {
-    await db
-      .insert(schema.actualAnswers)
-      .values(answerEntries)
-      .onConflictDoUpdate({
-        target: [schema.actualAnswers.tournamentId, schema.actualAnswers.betKey],
-        // `schema.actualAnswers.value` here would reference the existing row (a no-op:
-        // "set value = value"). `excluded.value` is the incoming row being inserted.
-        set: { value: sql`excluded.value` },
-      });
-  }
+  const answerEntries = buildAnswerEntries(tournamentId, actual);
+  await upsertAnswerEntries(db, answerEntries);
 }
 
 /**

@@ -270,24 +270,82 @@ export function buildPerUserKnockoutCanStillGet(
 ): Map<string, number> {
   const { bracket, scoring } = def;
 
-  // Actual knockout match data keyed by bracketMatchKey (== m.id for non-group matches).
+  const matchByKey = buildKnockoutMatchByKey(allMatches);
+  const qfKeys = new Set<string>(bracket.roundOf8Matches as string[]);
+  const ctx: KnockoutCanStillGetContext = {
+    matchByKey,
+    // Teams eliminated from any played knockout match.
+    knockoutEliminatedTeams: computeKnockoutEliminatedTeams(allMatches),
+    // A semifinal loser advances to play Bronze — it is not out of the tournament, unlike a
+    // R32/R16/QF/SF loser elsewhere. The Bronze busted-pair check must not treat it as eliminated,
+    // even though knockoutEliminatedTeams (correctly) does for Final purposes.
+    semiFinalLoserTeams: computeSemiFinalLoserTeams(allMatches, bracket.semiFinals as string[]),
+    progressionParticipants: buildProgressionParticipants(bracket, matchByKey),
+    hitPoints: buildPerMatchHitPoints(bracket, scoring),
+    entryKeys: new Set<string>(bracket.slots.map((s) => s.match as string)),
+    r16Keys: new Set<string>(bracket.roundOf16Matches as string[]),
+    qfKeys,
+    sfKeys: bracket.semiFinals as string[],
+    bronzeKey: bracket.bronzeMatch as string,
+    sfQfFeeders: buildSfQfFeeders(bracket),
+    finalPlayed: actualResults.finalMatch !== undefined,
+    bronzePlayed: actualResults.bronzeMatch !== undefined,
+    topFourResolved: (actualResults.answers.roundOf4?.length ?? 0) >= qfKeys.size,
+    scoring,
+  };
+
+  const userPickMaps = buildUserPickMaps(poolKnockoutPicks);
+  const result = new Map<string, number>();
+  for (const userId of new Set(poolKnockoutPicks.map((p) => p.userId as string))) {
+    const picks = userPickMaps.get(userId) ?? new Map<string, string>();
+    result.set(userId, computeUserKnockoutCanStillGet(ctx, picks));
+  }
+  return result;
+}
+
+type KnockoutCanStillGetContext = {
+  matchByKey: Map<string, MatchRow>;
+  knockoutEliminatedTeams: Set<string>;
+  semiFinalLoserTeams: Set<string>;
+  progressionParticipants: Map<string, [string | null, string | null]>;
+  hitPoints: Map<string, number>;
+  entryKeys: Set<string>;
+  r16Keys: Set<string>;
+  qfKeys: Set<string>;
+  sfKeys: string[];
+  bronzeKey: string;
+  sfQfFeeders: Map<string, [string | null, string | null]>;
+  finalPlayed: boolean;
+  bronzePlayed: boolean;
+  topFourResolved: boolean;
+  scoring: Tournament['scoring'];
+};
+
+/** Per-user pick lookup plus the shared team state the viability predicates consult. */
+type KnockoutViabilityContext = {
+  picks: Map<string, string>;
+  matchByKey: Map<string, MatchRow>;
+  knockoutEliminatedTeams: Set<string>;
+  progressionParticipants: Map<string, [string | null, string | null]>;
+};
+
+/** Actual knockout match data keyed by bracketMatchKey (== m.id for non-group matches). */
+function buildKnockoutMatchByKey(allMatches: MatchRow[]): Map<string, MatchRow> {
   const matchByKey = new Map<string, MatchRow>();
   for (const m of allMatches) {
     if (m.stage !== 'group') matchByKey.set(m.id, m);
   }
+  return matchByKey;
+}
 
-  // Teams eliminated from any played knockout match.
-  const knockoutEliminatedTeams = computeKnockoutEliminatedTeams(allMatches);
-  // A semifinal loser advances to play Bronze — it is not out of the tournament, unlike a
-  // R32/R16/QF/SF loser elsewhere. The Bronze busted-pair check below must not treat it as
-  // eliminated, even though knockoutEliminatedTeams (correctly) does for Final purposes.
-  const semiFinalLoserTeams = computeSemiFinalLoserTeams(
-    allMatches,
-    bracket.semiFinals as string[],
-  );
-
-  // Confirmed participants for progression matches (R16, QF, SF, Final),
-  // derived from actual feeder match winners.
+/**
+ * Confirmed participants for progression matches (R16, QF, SF, Final),
+ * derived from actual feeder match winners.
+ */
+function buildProgressionParticipants(
+  bracket: Tournament['bracket'],
+  matchByKey: Map<string, MatchRow>,
+): Map<string, [string | null, string | null]> {
   const progressionParticipants = new Map<string, [string | null, string | null]>();
   for (const prog of bracket.progression) {
     const key = prog.match as string;
@@ -300,10 +358,18 @@ export function buildPerUserKnockoutCanStillGet(
       progressionParticipants.set(key, [w0, w1]);
     }
   }
+  return progressionParticipants;
+}
 
-  // Per-round scored hit points (R32 → roundOf16PerTeam, R16 → roundOf8PerTeam).
-  // Restricted to the two per-match scored categories — semiFinals/final/bronze are handled
-  // separately below via dedicated TopFour/Final/Bronze can-still-get logic.
+/**
+ * Per-round scored hit points (R32 → roundOf16PerTeam, R16 → roundOf8PerTeam).
+ * Restricted to the two per-match scored categories — semiFinals/final/bronze are handled
+ * separately via dedicated TopFour/Final/Bronze can-still-get logic.
+ */
+function buildPerMatchHitPoints(
+  bracket: Tournament['bracket'],
+  scoring: Tournament['scoring'],
+): Map<string, number> {
   const hitPoints = new Map<string, number>();
   for (const prog of bracket.progression) {
     if ((bracket.roundOf16Matches as string[]).includes(prog.match as string)) {
@@ -313,169 +379,230 @@ export function buildPerUserKnockoutCanStillGet(
       for (const fromKey of prog.from) hitPoints.set(fromKey as string, scoring.roundOf8PerTeam);
     }
   }
+  return hitPoints;
+}
 
-  const entryKeys = new Set<string>(bracket.slots.map((s) => s.match as string));
-  const r16Keys = new Set<string>(bracket.roundOf16Matches as string[]);
-  const qfKeys = new Set<string>(bracket.roundOf8Matches as string[]);
-  const sfKeys = bracket.semiFinals as string[];
-  const bronzeKey = bracket.bronzeMatch as string;
-
-  // Pre-build the QF feeder map for each SF: sfKey → [qfKey1, qfKey2].
+/** QF feeder map for each SF: sfKey → [qfKey1, qfKey2]. */
+function buildSfQfFeeders(
+  bracket: Tournament['bracket'],
+): Map<string, [string | null, string | null]> {
   const sfQfFeeders = new Map<string, [string | null, string | null]>();
-  for (const sfKey of sfKeys) {
+  for (const sfKey of bracket.semiFinals as string[]) {
     const sfProg = bracket.progression.find((p) => (p.match as string) === sfKey);
     sfQfFeeders.set(sfKey, [
       (sfProg?.from[0] as string | undefined) ?? null,
       (sfProg?.from[1] as string | undefined) ?? null,
     ]);
   }
+  return sfQfFeeders;
+}
 
-  const finalPlayed = actualResults.finalMatch !== undefined;
-  const bronzePlayed = actualResults.bronzeMatch !== undefined;
-  const topFourResolved = (actualResults.answers.roundOf4?.length ?? 0) >= qfKeys.size;
-
-  // Build per-user pick maps once.
+/** Per-user pick maps: userId → (bracketMatchKey → winnerTeamId). */
+function buildUserPickMaps(
+  poolKnockoutPicks: PoolKnockoutPick[],
+): Map<string, Map<string, string>> {
   const userPickMaps = new Map<string, Map<string, string>>();
   for (const pick of poolKnockoutPicks) {
     const uid = pick.userId as string;
     if (!userPickMaps.has(uid)) userPickMaps.set(uid, new Map());
     userPickMaps.get(uid)!.set(pick.bracketMatchKey as string, pick.winnerTeamId);
   }
+  return userPickMaps;
+}
 
-  const result = new Map<string, number>();
+/**
+ * True when `matchKey`'s pick is one of the confirmed participants, or when the participants
+ * aren't both known yet (in which case it can't be ruled out).
+ */
+function pickedIsParticipant(
+  vctx: KnockoutViabilityContext,
+  matchKey: string,
+  m: MatchRow | null,
+  pickedId: string,
+): boolean {
+  const pp = vctx.progressionParticipants.get(matchKey);
+  const home = pp?.[0] ?? m?.homeTeamId ?? null;
+  const away = pp?.[1] ?? m?.awayTeamId ?? null;
+  if (home !== null && away !== null) return pickedId === home || pickedId === away;
+  return true;
+}
 
-  for (const userId of new Set(poolKnockoutPicks.map((p) => p.userId as string))) {
-    const picks = userPickMaps.get(userId) ?? new Map<string, string>();
-    let canStillGet = 0;
+/**
+ * True when the user's pick for `matchKey` is still viable: the match is unresolved, the picked
+ * team is not eliminated, and (if both participants are confirmed) the pick is one of them.
+ */
+function pickIsViable(vctx: KnockoutViabilityContext, matchKey: string): boolean {
+  const pickedId = vctx.picks.get(matchKey) ?? null;
+  if (!pickedId) return false;
+  const m = vctx.matchByKey.get(matchKey) ?? null;
+  if (m?.status === 'final') return false;
+  if (vctx.knockoutEliminatedTeams.has(pickedId)) return false;
+  return pickedIsParticipant(vctx, matchKey, m, pickedId);
+}
 
-    // Returns true when the user's pick for `matchKey` is still viable:
-    // the match is unresolved, the picked team is not eliminated, and (if both
-    // participants are confirmed) the pick is one of them.
-    function isViable(matchKey: string): boolean {
-      const pickedId = picks.get(matchKey) ?? null;
-      if (!pickedId) return false;
-      const m = matchByKey.get(matchKey) ?? null;
-      if (m?.status === 'final') return false;
-      if (knockoutEliminatedTeams.has(pickedId)) return false;
-      const pp = progressionParticipants.get(matchKey);
-      const home = pp?.[0] ?? m?.homeTeamId ?? null;
-      const away = pp?.[1] ?? m?.awayTeamId ?? null;
-      if (home !== null && away !== null) return pickedId === home || pickedId === away;
-      return true;
-    }
+/**
+ * True when the user's pick for `matchKey` is not busted. For resolved matches only the actual
+ * winner is not busted; for unresolved matches the same check as pickIsViable applies.
+ */
+function pickIsNotBusted(vctx: KnockoutViabilityContext, matchKey: string): boolean {
+  const pickedId = vctx.picks.get(matchKey) ?? null;
+  if (!pickedId) return false;
+  const m = vctx.matchByKey.get(matchKey) ?? null;
+  if (m?.status === 'final') return resolveKnockoutWinner(m) === pickedId;
+  if (vctx.knockoutEliminatedTeams.has(pickedId)) return false;
+  return pickedIsParticipant(vctx, matchKey, m, pickedId);
+}
 
-    // Returns true when the user's pick for `matchKey` is not busted.
-    // For resolved matches: only the actual winner is not busted.
-    // For unresolved matches: same check as isViable.
-    function isNotBusted(matchKey: string): boolean {
-      const pickedId = picks.get(matchKey) ?? null;
-      if (!pickedId) return false;
-      const m = matchByKey.get(matchKey) ?? null;
-      if (m?.status === 'final') return resolveKnockoutWinner(m) === pickedId;
-      if (knockoutEliminatedTeams.has(pickedId)) return false;
-      const pp = progressionParticipants.get(matchKey);
-      const home = pp?.[0] ?? m?.homeTeamId ?? null;
-      const away = pp?.[1] ?? m?.awayTeamId ?? null;
-      if (home !== null && away !== null) return pickedId === home || pickedId === away;
-      return true;
-    }
+/**
+ * True only when `matchKey`'s match is final AND the user's pick was the winner — i.e. this pick's
+ * points are already banked in the user's leaderboard total.
+ */
+function pickIsConfirmedCorrect(vctx: KnockoutViabilityContext, matchKey: string): boolean {
+  const pickedId = vctx.picks.get(matchKey) ?? null;
+  if (!pickedId) return false;
+  const m = vctx.matchByKey.get(matchKey) ?? null;
+  return m?.status === 'final' && resolveKnockoutWinner(m) === pickedId;
+}
 
-    // Returns true only when `matchKey`'s match is final AND the user's pick was the winner —
-    // i.e. this pick's points are already banked in the user's leaderboard total.
-    function isConfirmedCorrect(matchKey: string): boolean {
-      const pickedId = picks.get(matchKey) ?? null;
-      if (!pickedId) return false;
-      const m = matchByKey.get(matchKey) ?? null;
-      return m?.status === 'final' && resolveKnockoutWinner(m) === pickedId;
-    }
-
-    // Per-match scored rounds: entry round (R32 in WC) and R16.
-    for (const key of entryKeys) {
-      const pts = hitPoints.get(key);
-      if (pts !== undefined && isViable(key)) canStillGet += pts;
-    }
-    for (const key of r16Keys) {
-      const pts = hitPoints.get(key);
-      if (pts !== undefined && isViable(key)) canStillGet += pts;
-    }
-
-    // TopFour: non-busted QF picks × roundOf4PerTeam is the ceiling (no-pick = not busted,
-    // consistent with buildKnockoutRoundBreakdown which uses totalPicks − bustedPicks). Subtract
-    // already-confirmed-correct picks so this doesn't double-count points already banked in the
-    // user's leaderboard total via scoreTopFour.
-    if (!topFourResolved) {
-      let nonBustedQf = qfKeys.size;
-      let confirmedQf = 0;
-      for (const key of qfKeys) {
-        const pickedId = picks.get(key) ?? null;
-        if (!pickedId) continue;
-        if (!isNotBusted(key)) {
-          nonBustedQf--;
-        } else if (isConfirmedCorrect(key)) {
-          confirmedQf++;
-        }
-      }
-      canStillGet += Math.max(0, (nonBustedQf - confirmedQf) * scoring.roundOf4PerTeam);
-    }
-
-    // Final: finalist perTeam × non-busted SF picks + exactScore.
-    if (!finalPlayed) {
-      let bustedSfPicks = 0;
-      for (const sfKey of sfKeys) {
-        if (picks.has(sfKey) && !isNotBusted(sfKey)) bustedSfPicks++;
-      }
-      canStillGet +=
-        Math.max(0, 2 - bustedSfPicks) * scoring.final.perTeam + scoring.final.exactScore;
-      // TopFour position bonus (1st/2nd place): reachable while the predicted finalist is
-      // still alive, independent of the Final team-points ceiling above.
-      canStillGet += Math.max(0, 2 - bustedSfPicks) * scoring.topFourPositionBonus;
-    }
-
-    // Bronze: bronzePair perTeam × non-busted implied SF-loser picks + exactScore.
-    // The bronze pair is derived from each SF's loser (the QF winner pick that the
-    // user did NOT pick to win the SF).
-    if (!bronzePlayed) {
-      let bustedBronzePairs = 0;
-      const bronzeMatchRow = matchByKey.get(bronzeKey) ?? null;
-      for (const sfKey of sfKeys) {
-        const sfWinner = picks.get(sfKey) ?? null;
-        if (!sfWinner) continue;
-        // If the SF winner pick itself is already busted, the whole predicted sub-bracket for
-        // this slot is unreliable — the "other" QF feeder pick below may look alive only because
-        // it never played a real knockout match (e.g. upstream R32/R16 picks already diverged
-        // from reality), not because it's a genuine live bronze contender. Treat this slot's
-        // bronze pair as busted too, mirroring the Final calculation above.
-        if (!isNotBusted(sfKey)) {
-          bustedBronzePairs++;
-          continue;
-        }
-        const [qfKey1, qfKey2] = sfQfFeeders.get(sfKey) ?? [null, null];
-        const qfW1 = qfKey1 ? (picks.get(qfKey1) ?? null) : null;
-        const qfW2 = qfKey2 ? (picks.get(qfKey2) ?? null) : null;
-        const bronzeTeam =
-          qfW1 && qfW1 !== sfWinner ? qfW1 : qfW2 && qfW2 !== sfWinner ? qfW2 : null;
-        if (!bronzeTeam) continue;
-        if (knockoutEliminatedTeams.has(bronzeTeam) && !semiFinalLoserTeams.has(bronzeTeam)) {
-          bustedBronzePairs++;
-        } else {
-          const bHome = bronzeMatchRow?.homeTeamId ?? null;
-          const bAway = bronzeMatchRow?.awayTeamId ?? null;
-          if (bHome !== null && bAway !== null && bronzeTeam !== bHome && bronzeTeam !== bAway) {
-            bustedBronzePairs++;
-          }
-        }
-      }
-      canStillGet +=
-        Math.max(0, 2 - bustedBronzePairs) * scoring.bronze.perTeam + scoring.bronze.exactScore;
-      // TopFour position bonus (3rd/4th place): reachable while the predicted bronze
-      // participant is still alive, independent of the Bronze team-points ceiling above.
-      canStillGet += Math.max(0, 2 - bustedBronzePairs) * scoring.topFourPositionBonus;
-    }
-
-    result.set(userId, canStillGet);
+/** Sum of hit points for every per-match key whose pick is still viable. */
+function sumViablePerMatchPoints(
+  vctx: KnockoutViabilityContext,
+  keys: Set<string>,
+  hitPoints: Map<string, number>,
+): number {
+  let sum = 0;
+  for (const key of keys) {
+    const pts = hitPoints.get(key);
+    if (pts !== undefined && pickIsViable(vctx, key)) sum += pts;
   }
+  return sum;
+}
 
-  return result;
+/**
+ * TopFour ceiling: non-busted QF picks × roundOf4PerTeam (no-pick = not busted, consistent with
+ * buildKnockoutRoundBreakdown which uses totalPicks − bustedPicks). Already-confirmed-correct picks
+ * are subtracted so this doesn't double-count points already banked via scoreTopFour.
+ */
+function topFourCanStillGet(
+  vctx: KnockoutViabilityContext,
+  ctx: KnockoutCanStillGetContext,
+): number {
+  if (ctx.topFourResolved) return 0;
+  let nonBustedQf = ctx.qfKeys.size;
+  let confirmedQf = 0;
+  for (const key of ctx.qfKeys) {
+    const pickedId = vctx.picks.get(key) ?? null;
+    if (!pickedId) continue;
+    if (!pickIsNotBusted(vctx, key)) {
+      nonBustedQf--;
+    } else if (pickIsConfirmedCorrect(vctx, key)) {
+      confirmedQf++;
+    }
+  }
+  return Math.max(0, (nonBustedQf - confirmedQf) * ctx.scoring.roundOf4PerTeam);
+}
+
+/**
+ * Final ceiling: finalist perTeam × non-busted SF picks + exactScore, plus the same non-busted
+ * count × topFourPositionBonus (1st/2nd place) — reachable while the predicted finalist is alive.
+ */
+function finalCanStillGet(vctx: KnockoutViabilityContext, ctx: KnockoutCanStillGetContext): number {
+  if (ctx.finalPlayed) return 0;
+  let bustedSfPicks = 0;
+  for (const sfKey of ctx.sfKeys) {
+    if (vctx.picks.has(sfKey) && !pickIsNotBusted(vctx, sfKey)) bustedSfPicks++;
+  }
+  const nonBusted = Math.max(0, 2 - bustedSfPicks);
+  return (
+    nonBusted * ctx.scoring.final.perTeam +
+    ctx.scoring.final.exactScore +
+    nonBusted * ctx.scoring.topFourPositionBonus
+  );
+}
+
+/**
+ * The implied bronze participant for one SF: the QF winner pick that the user did NOT pick to win
+ * the SF. Null when neither QF feeder pick differs from the SF winner pick.
+ */
+function deriveBronzeTeam(
+  picks: Map<string, string>,
+  feeders: [string | null, string | null] | undefined,
+  sfWinner: string,
+): string | null {
+  const [qfKey1, qfKey2] = feeders ?? [null, null];
+  const qfW1 = qfKey1 ? (picks.get(qfKey1) ?? null) : null;
+  const qfW2 = qfKey2 ? (picks.get(qfKey2) ?? null) : null;
+  if (qfW1 && qfW1 !== sfWinner) return qfW1;
+  if (qfW2 && qfW2 !== sfWinner) return qfW2;
+  return null;
+}
+
+/** Whether one SF's implied bronze pair is busted (counts toward Bronze ceiling reduction). */
+function isBronzePairBusted(
+  vctx: KnockoutViabilityContext,
+  ctx: KnockoutCanStillGetContext,
+  sfKey: string,
+  bronzeMatchRow: MatchRow | null,
+): boolean {
+  const sfWinner = vctx.picks.get(sfKey) ?? null;
+  if (!sfWinner) return false;
+  // If the SF winner pick itself is already busted, the whole predicted sub-bracket for this slot
+  // is unreliable — the "other" QF feeder pick may look alive only because it never played a real
+  // knockout match (upstream R32/R16 picks already diverged from reality), not because it's a
+  // genuine live bronze contender. Treat this slot's bronze pair as busted too, mirroring Final.
+  if (!pickIsNotBusted(vctx, sfKey)) return true;
+  const bronzeTeam = deriveBronzeTeam(vctx.picks, ctx.sfQfFeeders.get(sfKey), sfWinner);
+  if (!bronzeTeam) return false;
+  if (ctx.knockoutEliminatedTeams.has(bronzeTeam) && !ctx.semiFinalLoserTeams.has(bronzeTeam)) {
+    return true;
+  }
+  const bHome = bronzeMatchRow?.homeTeamId ?? null;
+  const bAway = bronzeMatchRow?.awayTeamId ?? null;
+  return bHome !== null && bAway !== null && bronzeTeam !== bHome && bronzeTeam !== bAway;
+}
+
+/**
+ * Bronze ceiling: bronzePair perTeam × non-busted implied SF-loser picks + exactScore, plus the
+ * same non-busted count × topFourPositionBonus (3rd/4th place). The bronze pair is derived from
+ * each SF's loser (the QF winner pick the user did NOT pick to win the SF).
+ */
+function bronzeCanStillGet(
+  vctx: KnockoutViabilityContext,
+  ctx: KnockoutCanStillGetContext,
+): number {
+  if (ctx.bronzePlayed) return 0;
+  const bronzeMatchRow = ctx.matchByKey.get(ctx.bronzeKey) ?? null;
+  let bustedBronzePairs = 0;
+  for (const sfKey of ctx.sfKeys) {
+    if (isBronzePairBusted(vctx, ctx, sfKey, bronzeMatchRow)) bustedBronzePairs++;
+  }
+  const nonBusted = Math.max(0, 2 - bustedBronzePairs);
+  return (
+    nonBusted * ctx.scoring.bronze.perTeam +
+    ctx.scoring.bronze.exactScore +
+    nonBusted * ctx.scoring.topFourPositionBonus
+  );
+}
+
+/** Maximum additional knockout points one user can still earn, given their pick map. */
+function computeUserKnockoutCanStillGet(
+  ctx: KnockoutCanStillGetContext,
+  picks: Map<string, string>,
+): number {
+  const vctx: KnockoutViabilityContext = {
+    picks,
+    matchByKey: ctx.matchByKey,
+    knockoutEliminatedTeams: ctx.knockoutEliminatedTeams,
+    progressionParticipants: ctx.progressionParticipants,
+  };
+  // Per-match scored rounds: entry round (R32 in WC) and R16.
+  return (
+    sumViablePerMatchPoints(vctx, ctx.entryKeys, ctx.hitPoints) +
+    sumViablePerMatchPoints(vctx, ctx.r16Keys, ctx.hitPoints) +
+    topFourCanStillGet(vctx, ctx) +
+    finalCanStillGet(vctx, ctx) +
+    bronzeCanStillGet(vctx, ctx)
+  );
 }
 
 /**
@@ -548,6 +675,332 @@ export function buildProjectedEntries(
   });
 }
 
+/** A user's saved Final/Bronze finish score, including the team-identity snapshot when present. */
+type KnockoutFinishScore = {
+  home: number;
+  away: number;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
+};
+
+/** Tournament-wide state shared by every knockout matrix cell, independent of the viewing user. */
+type KnockoutCellSharedContext = {
+  finalMatchKey: string;
+  bronzeMatchKey: string;
+  eliminatedTeams: Set<string>;
+  semiFinalLoserTeams: Set<string>;
+  hitPoints: Map<string, number>;
+  bracket: Tournament['bracket'];
+};
+
+/** One pool member's picks used to derive their knockout matrix cells. */
+type KnockoutCellUserContext = {
+  userId: string;
+  pickMap: Map<string, string>;
+  userRoundPicks: Map<string, Set<string>>;
+  userPickMap: Map<string, string>;
+  finishScores: Map<'final' | 'bronze', KnockoutFinishScore> | undefined;
+};
+
+/** The user's effective prediction for one knockout match, before hit classification. */
+type KnockoutCellPrediction = {
+  pickedWinnerId: string | null;
+  predictedHome: number | null;
+  predictedAway: number | null;
+  predictedScoreByTeam: { teamId: string; goals: number }[] | null;
+  isExactScore: boolean;
+};
+
+/**
+ * Records a losing team in the elimination sets. A semifinal loser is also tracked separately since
+ * it advances to play Bronze — so it must not be treated as eliminated for Bronze impossibility.
+ */
+function recordKnockoutLoser(
+  teamId: string | null,
+  winnerId: string,
+  isSemiFinal: boolean,
+  eliminatedTeams: Set<string>,
+  semiFinalLoserTeams: Set<string>,
+): void {
+  if (!teamId || teamId === winnerId) return;
+  eliminatedTeams.add(teamId);
+  if (isSemiFinal) semiFinalLoserTeams.add(teamId);
+}
+
+/**
+ * Teams eliminated by a played knockout match, plus the subset that lost specifically in a
+ * semifinal. A semifinal loser is not out of the tournament (it plays Bronze), so callers checking
+ * Bronze picks must exclude it from the eliminated set even though it counts as eliminated for the
+ * Final.
+ */
+function computeKnockoutEliminationSets(
+  matches: KnockoutMatchView[],
+  semiFinals: Set<string>,
+): { eliminatedTeams: Set<string>; semiFinalLoserTeams: Set<string> } {
+  const eliminatedTeams = new Set<string>();
+  const semiFinalLoserTeams = new Set<string>();
+  for (const m of matches) {
+    if (m.status !== 'final' || !m.actualWinnerId) continue;
+    const isSemiFinal = semiFinals.has(m.bracketMatchKey);
+    recordKnockoutLoser(
+      m.homeTeamId,
+      m.actualWinnerId,
+      isSemiFinal,
+      eliminatedTeams,
+      semiFinalLoserTeams,
+    );
+    recordKnockoutLoser(
+      m.awayTeamId,
+      m.actualWinnerId,
+      isSemiFinal,
+      eliminatedTeams,
+      semiFinalLoserTeams,
+    );
+  }
+  return { eliminatedTeams, semiFinalLoserTeams };
+}
+
+/** Orders knockout matches by kickoff, pushing matches with no kickoff to the end (stable). */
+function compareKnockoutByKickoff(a: KnockoutMatchView, b: KnockoutMatchView): number {
+  if (a.kickoff === null && b.kickoff === null) return 0;
+  if (a.kickoff === null) return 1;
+  if (b.kickoff === null) return -1;
+  return a.kickoff.localeCompare(b.kickoff);
+}
+
+/** Per-user, per-round set of every picked team ID (regardless of which slot it was picked in). */
+function buildUserRoundPicksMap(
+  poolKnockoutPicks: PoolKnockoutPick[],
+  matchRoundMap: Map<string, string>,
+): Map<string, Map<string, Set<string>>> {
+  const userRoundPicksMap = new Map<string, Map<string, Set<string>>>();
+  for (const pick of poolKnockoutPicks) {
+    const round = matchRoundMap.get(pick.bracketMatchKey);
+    if (!round) continue;
+    if (!userRoundPicksMap.has(pick.userId)) userRoundPicksMap.set(pick.userId, new Map());
+    const roundMap = userRoundPicksMap.get(pick.userId)!;
+    if (!roundMap.has(round)) roundMap.set(round, new Set());
+    roundMap.get(round)!.add(pick.winnerTeamId);
+  }
+  return userRoundPicksMap;
+}
+
+/** Per-user finish scores: userId → 'final'|'bronze' → saved score (with team-identity snapshot). */
+function buildFinishScoreMap(
+  poolFinishScores: PoolFinishScore[],
+): Map<string, Map<'final' | 'bronze', KnockoutFinishScore>> {
+  const finishScoreMap = new Map<string, Map<'final' | 'bronze', KnockoutFinishScore>>();
+  for (const fs of poolFinishScores) {
+    if (!finishScoreMap.has(fs.userId)) finishScoreMap.set(fs.userId, new Map());
+    finishScoreMap.get(fs.userId)!.set(fs.match, {
+      home: fs.home,
+      away: fs.away,
+      homeTeamId: fs.homeTeamId,
+      awayTeamId: fs.awayTeamId,
+    });
+  }
+  return finishScoreMap;
+}
+
+/** Whether a finish score's positional home/away figures exactly match the actual result. */
+function isPositionalExactScore(fs: { home: number; away: number }, m: KnockoutMatchView): boolean {
+  return (
+    m.actualHome !== null &&
+    m.actualAway !== null &&
+    fs.home === m.actualHome &&
+    fs.away === m.actualAway
+  );
+}
+
+/**
+ * Whether a team-identity finish score snapshot exactly matches the actual result. Correct
+ * regardless of how the real match's home/away assignment relates to the user's predicted
+ * orientation.
+ */
+function isTeamIdentityExactScore(
+  predictedScoreByTeam: { teamId: string; goals: number }[],
+  m: KnockoutMatchView,
+): boolean {
+  if (
+    m.actualHome === null ||
+    m.actualAway === null ||
+    m.homeTeamId === null ||
+    m.awayTeamId === null
+  ) {
+    return false;
+  }
+  const predictedByTeam = new Map(predictedScoreByTeam.map((s) => [s.teamId, s.goals]));
+  return (
+    predictedByTeam.get(m.homeTeamId) === m.actualHome &&
+    predictedByTeam.get(m.awayTeamId) === m.actualAway
+  );
+}
+
+/**
+ * Final/Bronze prediction derived from the user's finish score. The team-identity snapshot (when
+ * present) drives the exact-score check and the effective winner; the positional figures and the
+ * raw knockoutPick are the fallbacks for legacy rows that predate the snapshot.
+ */
+function resolveFinishScorePrediction(
+  m: KnockoutMatchView,
+  shared: KnockoutCellSharedContext,
+  user: KnockoutCellUserContext,
+  knockoutPick: string | null,
+): KnockoutCellPrediction {
+  const matchType = m.bracketMatchKey === shared.finalMatchKey ? 'final' : 'bronze';
+  const fs = user.finishScores?.get(matchType);
+
+  let predictedHome: number | null = null;
+  let predictedAway: number | null = null;
+  let predictedScoreByTeam: { teamId: string; goals: number }[] | null = null;
+  let isExactScore = false;
+
+  if (fs !== undefined) {
+    predictedHome = fs.home;
+    predictedAway = fs.away;
+    isExactScore = isPositionalExactScore(fs, m);
+    if (fs.homeTeamId != null && fs.awayTeamId != null) {
+      predictedScoreByTeam = [
+        { teamId: fs.homeTeamId, goals: fs.home },
+        { teamId: fs.awayTeamId, goals: fs.away },
+      ];
+      isExactScore = isTeamIdentityExactScore(predictedScoreByTeam, m);
+    }
+  }
+
+  // resolveFinaleWinner prefers the snapshot above when present (tied → null, so the fallback below
+  // applies the same "explicit penalty pick" rule as the no-snapshot path); deriveImplicitFinaleWinner
+  // only runs for legacy rows that predate the snapshot.
+  const derivedWinner = resolveFinaleWinner(fs, (home, away) =>
+    deriveImplicitFinaleWinner(m.bracketMatchKey, shared.bracket, user.userPickMap, home, away),
+  );
+  const pickedWinnerId =
+    derivedWinner ??
+    (fs !== undefined
+      ? deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick)
+      : knockoutPick);
+
+  return { pickedWinnerId, predictedHome, predictedAway, predictedScoreByTeam, isExactScore };
+}
+
+/**
+ * Progression-round (non Final/Bronze) prediction. The stored pick is keyed by bracket slot, but
+ * which teams actually play that slot depends on how earlier rounds actually turned out — resolve
+ * to the team identity so the summary reflects what the user predicted for these two teams, falling
+ * back to the raw pick when no cross-slot match exists (a genuine miss/impossible pick).
+ */
+function resolveProgressionPrediction(
+  m: KnockoutMatchView,
+  user: KnockoutCellUserContext,
+  knockoutPick: string | null,
+): KnockoutCellPrediction {
+  const pickedWinnerId =
+    resolveCrossSlotPick(
+      knockoutPick,
+      m.homeTeamId,
+      m.awayTeamId,
+      user.userRoundPicks.get(m.round) ?? new Set(),
+    ) ?? knockoutPick;
+  return {
+    pickedWinnerId,
+    predictedHome: null,
+    predictedAway: null,
+    predictedScoreByTeam: null,
+    isExactScore: false,
+  };
+}
+
+/** Hit status for a not-yet-played knockout match: 'impossible' when the pick can no longer win. */
+function pendingKnockoutHitStatus(
+  m: KnockoutMatchView,
+  shared: KnockoutCellSharedContext,
+  pickedWinnerId: string | null,
+): KnockoutMatchHit {
+  if (pickedWinnerId === null) return 'pending';
+  const isBronzeMatch = m.bracketMatchKey === shared.bronzeMatchKey;
+  const isEliminated =
+    shared.eliminatedTeams.has(pickedWinnerId) &&
+    !(isBronzeMatch && shared.semiFinalLoserTeams.has(pickedWinnerId));
+  const bothKnown = m.homeTeamId !== null && m.awayTeamId !== null;
+  const isImpossible =
+    isEliminated ||
+    (bothKnown && pickedWinnerId !== m.homeTeamId && pickedWinnerId !== m.awayTeamId);
+  return isImpossible ? 'impossible' : 'pending';
+}
+
+/** Classifies one played/pending knockout cell into its final hit status and points. */
+function classifyKnockoutCell(
+  m: KnockoutMatchView,
+  shared: KnockoutCellSharedContext,
+  user: KnockoutCellUserContext,
+  prediction: KnockoutCellPrediction,
+  pickedOpponentId: string | null,
+): KnockoutMatrixCell {
+  const { pickedWinnerId, predictedHome, predictedAway, predictedScoreByTeam, isExactScore } =
+    prediction;
+  const base = {
+    bracketMatchKey: m.bracketMatchKey,
+    pickedWinnerId,
+    pickedOpponentId,
+    predictedHome,
+    predictedAway,
+    predictedScoreByTeam,
+    isExactScore,
+  };
+
+  if (m.status !== 'final') {
+    return { ...base, hit: pendingKnockoutHitStatus(m, shared, pickedWinnerId), points: 0 };
+  }
+
+  // For final/bronze use the effective pick directly; for other rounds use the cross-slot
+  // round-pick set so swapped picks are still credited.
+  const isFinalOrBronze =
+    m.bracketMatchKey === shared.finalMatchKey || m.bracketMatchKey === shared.bronzeMatchKey;
+  const isHit = isFinalOrBronze
+    ? m.actualWinnerId !== null && pickedWinnerId === m.actualWinnerId
+    : m.actualWinnerId !== null &&
+      (user.userRoundPicks.get(m.round)?.has(m.actualWinnerId) ?? false);
+
+  if (isHit) {
+    const pts = shared.hitPoints.get(m.bracketMatchKey) ?? 0;
+    return { ...base, hit: 'hit', points: pts };
+  }
+  if (pickedWinnerId === null) {
+    return { ...base, hit: 'no-pick', points: 0 };
+  }
+  return { ...base, hit: 'miss', points: 0 };
+}
+
+/** Builds one knockout matrix cell: resolves the user's effective prediction, then classifies it. */
+function buildKnockoutMatrixCell(
+  m: KnockoutMatchView,
+  shared: KnockoutCellSharedContext,
+  user: KnockoutCellUserContext,
+): KnockoutMatrixCell {
+  const knockoutPick = user.pickMap.get(`${user.userId}::${m.bracketMatchKey}`) ?? null;
+
+  // For the final and bronze, derive the effective pick from the finish score so that stale
+  // auto-derived knockoutPicks from previous non-tied scores don't mislead the display or hit check.
+  const isFinalOrBronze =
+    m.bracketMatchKey === shared.finalMatchKey || m.bracketMatchKey === shared.bronzeMatchKey;
+  const prediction = isFinalOrBronze
+    ? resolveFinishScorePrediction(m, shared, user, knockoutPick)
+    : resolveProgressionPrediction(m, user, knockoutPick);
+
+  // Final/Bronze only: the other finalist/bronze participant from this user's own SF/QF pick chain,
+  // so the summary sheet can show their full prediction (both teams), not just the picked winner.
+  const pickedOpponentId = isFinalOrBronze
+    ? derivePredictedOpponent(
+        m.bracketMatchKey,
+        shared.bracket,
+        user.userPickMap,
+        prediction.pickedWinnerId,
+      )
+    : null;
+
+  return classifyKnockoutCell(m, shared, user, prediction, pickedOpponentId);
+}
+
 export function buildKnockoutMatrix(params: {
   leaderboard: LeaderboardEntry[];
   userId: string | null;
@@ -576,28 +1029,12 @@ export function buildKnockoutMatrix(params: {
   // So it must not count as "eliminated" when checking impossibility for a Bronze pick,
   // even though the same loss does eliminate it from Final contention.
   const semiFinals = new Set<string>(def.bracket.semiFinals as string[]);
-  const eliminatedTeams = new Set<string>();
-  const semiFinalLoserTeams = new Set<string>();
-  for (const m of allKnockoutMatches) {
-    if (m.status === 'final' && m.actualWinnerId) {
-      const isSemiFinal = semiFinals.has(m.bracketMatchKey);
-      if (m.homeTeamId && m.homeTeamId !== m.actualWinnerId) {
-        eliminatedTeams.add(m.homeTeamId);
-        if (isSemiFinal) semiFinalLoserTeams.add(m.homeTeamId);
-      }
-      if (m.awayTeamId && m.awayTeamId !== m.actualWinnerId) {
-        eliminatedTeams.add(m.awayTeamId);
-        if (isSemiFinal) semiFinalLoserTeams.add(m.awayTeamId);
-      }
-    }
-  }
+  const { eliminatedTeams, semiFinalLoserTeams } = computeKnockoutEliminationSets(
+    allKnockoutMatches,
+    semiFinals,
+  );
 
-  const sortedMatches = allKnockoutMatches.toSorted((a, b) => {
-    if (a.kickoff === null && b.kickoff === null) return 0;
-    if (a.kickoff === null) return 1;
-    if (b.kickoff === null) return -1;
-    return a.kickoff.localeCompare(b.kickoff);
-  });
+  const sortedMatches = allKnockoutMatches.toSorted(compareKnockoutByKickoff);
 
   const knockoutMatrixMatches: KnockoutMatrixMatch[] = sortedMatches.map((m) => ({
     bracketMatchKey: m.bracketMatchKey,
@@ -611,8 +1048,6 @@ export function buildKnockoutMatrix(params: {
     status: m.status,
   }));
 
-  const hitPoints = buildHitPointsMap(def);
-
   const pickMap = new Map<string, string>();
   for (const pick of poolKnockoutPicks) {
     pickMap.set(`${pick.userId}::${pick.bracketMatchKey}`, pick.winnerTeamId);
@@ -623,201 +1058,34 @@ export function buildKnockoutMatrix(params: {
     allKnockoutMatches.map((m) => [m.bracketMatchKey, m.round]),
   );
 
-  // Per-user, per-round set of all picked team IDs (regardless of which slot).
-  const userRoundPicksMap = new Map<string, Map<string, Set<string>>>();
-  for (const pick of poolKnockoutPicks) {
-    const round = matchRoundMap.get(pick.bracketMatchKey);
-    if (!round) continue;
-    if (!userRoundPicksMap.has(pick.userId)) userRoundPicksMap.set(pick.userId, new Map());
-    const roundMap = userRoundPicksMap.get(pick.userId)!;
-    if (!roundMap.has(round)) roundMap.set(round, new Set());
-    roundMap.get(round)!.add(pick.winnerTeamId);
-  }
+  const userRoundPicksMap = buildUserRoundPicksMap(poolKnockoutPicks, matchRoundMap);
+  const finishScoreMap = buildFinishScoreMap(poolFinishScores);
 
-  // Per-user finish scores: userId → 'final'|'bronze' → {home, away}
-  const finishScoreMap = new Map<
-    string,
-    Map<
-      'final' | 'bronze',
-      { home: number; away: number; homeTeamId: string | null; awayTeamId: string | null }
-    >
-  >();
-  for (const fs of poolFinishScores) {
-    if (!finishScoreMap.has(fs.userId)) finishScoreMap.set(fs.userId, new Map());
-    finishScoreMap.get(fs.userId)!.set(fs.match, {
-      home: fs.home,
-      away: fs.away,
-      homeTeamId: fs.homeTeamId,
-      awayTeamId: fs.awayTeamId,
-    });
-  }
-
-  const finalMatchKey = def.bracket.finalMatch as string;
-  const bronzeMatchKey = def.bracket.bronzeMatch as string;
+  const shared: KnockoutCellSharedContext = {
+    finalMatchKey: def.bracket.finalMatch as string,
+    bronzeMatchKey: def.bracket.bronzeMatch as string,
+    eliminatedTeams,
+    semiFinalLoserTeams,
+    hitPoints: buildHitPointsMap(def),
+    bracket: def.bracket,
+  };
 
   const knockoutMatrix: KnockoutMatrixEntry[] = leaderboard.map((e) => {
-    const userRoundPicks = userRoundPicksMap.get(e.userId) ?? new Map<string, Set<string>>();
-    const userPickMap = new Map<string, string>(
-      poolKnockoutPicks
-        .filter((p) => p.userId === e.userId)
-        .map((p) => [p.bracketMatchKey as string, p.winnerTeamId]),
+    const user: KnockoutCellUserContext = {
+      userId: e.userId,
+      pickMap,
+      userRoundPicks: userRoundPicksMap.get(e.userId) ?? new Map<string, Set<string>>(),
+      userPickMap: new Map<string, string>(
+        poolKnockoutPicks
+          .filter((p) => p.userId === e.userId)
+          .map((p) => [p.bracketMatchKey as string, p.winnerTeamId]),
+      ),
+      finishScores: finishScoreMap.get(e.userId),
+    };
+    const cells: KnockoutMatrixCell[] = sortedMatches.map((m) =>
+      buildKnockoutMatrixCell(m, shared, user),
     );
-    let totalPoints = 0;
-    const cells: KnockoutMatrixCell[] = sortedMatches.map((m) => {
-      const knockoutPick = pickMap.get(`${e.userId}::${m.bracketMatchKey}`) ?? null;
-
-      // For the final and bronze, derive the effective pick from the finish score so that
-      // stale auto-derived knockoutPicks from previous non-tied scores don't mislead the
-      // display or the hit check.
-      const isFinalOrBronze =
-        m.bracketMatchKey === finalMatchKey || m.bracketMatchKey === bronzeMatchKey;
-      let pickedWinnerId: string | null = knockoutPick;
-      let predictedHome: number | null = null;
-      let predictedAway: number | null = null;
-      let predictedScoreByTeam: { teamId: string; goals: number }[] | null = null;
-      let isExactScore = false;
-      if (isFinalOrBronze) {
-        const matchType = m.bracketMatchKey === finalMatchKey ? 'final' : 'bronze';
-        const fs = finishScoreMap.get(e.userId)?.get(matchType);
-        if (fs !== undefined) {
-          predictedHome = fs.home;
-          predictedAway = fs.away;
-          isExactScore =
-            m.actualHome !== null &&
-            m.actualAway !== null &&
-            fs.home === m.actualHome &&
-            fs.away === m.actualAway;
-        }
-
-        if (fs?.homeTeamId != null && fs.awayTeamId != null) {
-          // Team-identity path: the finish score has a snapshot of which real team each goal
-          // figure belongs to, captured at save time. Prefer this over the positional
-          // fallback below — it's correct regardless of how the real match's home/away
-          // assignment relates to the user's own predicted orientation.
-          predictedScoreByTeam = [
-            { teamId: fs.homeTeamId, goals: fs.home },
-            { teamId: fs.awayTeamId, goals: fs.away },
-          ];
-          if (
-            m.actualHome !== null &&
-            m.actualAway !== null &&
-            m.homeTeamId !== null &&
-            m.awayTeamId !== null
-          ) {
-            const predictedByTeam = new Map(predictedScoreByTeam.map((s) => [s.teamId, s.goals]));
-            isExactScore =
-              predictedByTeam.get(m.homeTeamId) === m.actualHome &&
-              predictedByTeam.get(m.awayTeamId) === m.actualAway;
-          }
-        }
-
-        // resolveFinaleWinner prefers the snapshot above when present (tied → null, so the
-        // fallback below applies the same "explicit penalty pick" rule as the no-snapshot path);
-        // deriveFromPicks only runs for legacy rows that predate the snapshot.
-        const derivedWinner = resolveFinaleWinner(fs, (home, away) =>
-          deriveImplicitFinaleWinner(m.bracketMatchKey, def.bracket, userPickMap, home, away),
-        );
-        pickedWinnerId =
-          derivedWinner ??
-          (fs !== undefined
-            ? deriveEffectivePick(fs, m.homeTeamId, m.awayTeamId, knockoutPick)
-            : knockoutPick);
-      } else {
-        // The stored pick is keyed by bracket slot, but which teams actually play that slot
-        // depends on how earlier rounds/groups actually turned out — which can diverge from
-        // what this user predicted. Resolve to the team identity so the summary reflects what
-        // the user actually predicted for these two teams, not whichever pick landed in this
-        // slot. Fall back to the raw pick when no cross-slot match exists — that's a genuine
-        // miss/impossible pick, not a slot mismatch, and should still be shown as-is.
-        pickedWinnerId =
-          resolveCrossSlotPick(
-            knockoutPick,
-            m.homeTeamId,
-            m.awayTeamId,
-            userRoundPicks.get(m.round) ?? new Set(),
-          ) ?? knockoutPick;
-      }
-
-      // Final/Bronze only: the other finalist/bronze participant from this user's own SF/QF
-      // pick chain, so the summary sheet can show their full prediction (both teams), not just
-      // the winner they picked.
-      const pickedOpponentId = isFinalOrBronze
-        ? derivePredictedOpponent(m.bracketMatchKey, def.bracket, userPickMap, pickedWinnerId)
-        : null;
-
-      if (m.status !== 'final') {
-        const bothKnown = m.homeTeamId !== null && m.awayTeamId !== null;
-        const isBronzeMatch = m.bracketMatchKey === bronzeMatchKey;
-        const isEliminated =
-          pickedWinnerId !== null &&
-          eliminatedTeams.has(pickedWinnerId) &&
-          !(isBronzeMatch && semiFinalLoserTeams.has(pickedWinnerId));
-        const isImpossible =
-          pickedWinnerId !== null &&
-          (isEliminated ||
-            (bothKnown && pickedWinnerId !== m.homeTeamId && pickedWinnerId !== m.awayTeamId));
-        return {
-          bracketMatchKey: m.bracketMatchKey,
-          hit: isImpossible ? 'impossible' : ('pending' as KnockoutMatchHit),
-          points: 0,
-          pickedWinnerId,
-          pickedOpponentId,
-          predictedHome,
-          predictedAway,
-          predictedScoreByTeam,
-          isExactScore,
-        };
-      }
-
-      // For final/bronze use the effective pick directly; for other rounds use the
-      // cross-slot round-pick set so swapped picks are still credited.
-      const isHit = isFinalOrBronze
-        ? m.actualWinnerId !== null && pickedWinnerId === m.actualWinnerId
-        : m.actualWinnerId !== null &&
-          (userRoundPicks.get(m.round)?.has(m.actualWinnerId) ?? false);
-
-      if (isHit) {
-        const pts = hitPoints.get(m.bracketMatchKey) ?? 0;
-        totalPoints += pts;
-        return {
-          bracketMatchKey: m.bracketMatchKey,
-          hit: 'hit' as KnockoutMatchHit,
-          points: pts,
-          pickedWinnerId,
-          pickedOpponentId,
-          predictedHome,
-          predictedAway,
-          predictedScoreByTeam,
-          isExactScore,
-        };
-      }
-
-      if (pickedWinnerId === null) {
-        return {
-          bracketMatchKey: m.bracketMatchKey,
-          hit: 'no-pick' as KnockoutMatchHit,
-          points: 0,
-          pickedWinnerId: null,
-          pickedOpponentId,
-          predictedHome,
-          predictedAway,
-          predictedScoreByTeam,
-          isExactScore,
-        };
-      }
-
-      return {
-        bracketMatchKey: m.bracketMatchKey,
-        hit: 'miss' as KnockoutMatchHit,
-        points: 0,
-        pickedWinnerId,
-        pickedOpponentId,
-        predictedHome,
-        predictedAway,
-        predictedScoreByTeam,
-        isExactScore,
-      };
-    });
+    const totalPoints = cells.reduce((sum, c) => sum + c.points, 0);
 
     return {
       userId: e.userId,
@@ -981,6 +1249,31 @@ function resolveActualForBet(
   };
 }
 
+/**
+ * Classifies one special-bet cell for a single user.
+ *
+ * - Unresolved bet: 'missed' when the user has a pick that's already mathematically impossible,
+ *   otherwise 'pending'.
+ * - Resolved bet: 'no-pick' when the user never picked; for array-answer bets a hit means the pick
+ *   is one of the accepted answers; for scalar bets a hit means the pick equals the actual answer.
+ */
+function classifySpecialsCellHit(
+  betKey: string,
+  raw: unknown,
+  hasPick: boolean,
+  actual: { isArray: boolean; scalar: unknown; array: unknown[] },
+  impossibility: SpecialBetImpossibility,
+): SpecialsMatrixCell['hit'] {
+  const { isArray, scalar, array } = actual;
+  const isResolved = isArray ? array.length > 0 : scalar !== undefined && scalar !== null;
+  if (!isResolved) {
+    return hasPick && impossibility.isImpossible(betKey, raw) ? 'missed' : 'pending';
+  }
+  if (!hasPick) return 'no-pick';
+  if (isArray) return array.includes(raw) ? 'hit' : 'missed';
+  return raw === scalar ? 'hit' : 'missed';
+}
+
 export function buildSpecialsMatrix(params: {
   leaderboard: LeaderboardEntry[];
   userId: string | null;
@@ -1025,19 +1318,8 @@ export function buildSpecialsMatrix(params: {
     const cells: SpecialsMatrixCell[] = defs.map((d) => {
       const raw = userPicks.get(d.key);
       const hasPick = raw !== null && raw !== undefined;
-      const { isArray, scalar, array } = resolveActualForBet(d.key, actualResults);
-      const isResolved = isArray ? array.length > 0 : scalar !== undefined && scalar !== null;
-
-      let hit: SpecialsMatrixCell['hit'];
-      if (!isResolved) {
-        hit = hasPick && impossibility.isImpossible(d.key, raw) ? 'missed' : 'pending';
-      } else if (!hasPick) {
-        hit = 'no-pick';
-      } else if (isArray) {
-        hit = array.includes(raw) ? 'hit' : 'missed';
-      } else {
-        hit = raw === scalar ? 'hit' : 'missed';
-      }
+      const actual = resolveActualForBet(d.key, actualResults);
+      const hit = classifySpecialsCellHit(d.key, raw, hasPick, actual, impossibility);
 
       const points = hit === 'hit' ? d.points : 0;
       totalPoints += points;

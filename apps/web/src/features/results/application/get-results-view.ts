@@ -15,7 +15,7 @@ import {
 } from '@cup/db';
 import type { MatchRow, LeaderboardEntry } from '@cup/db';
 import { computeRemainingMaxPoints, deriveGroupOrders, selectQualifiers } from '@cup/engine';
-import type { Tournament, ActualResults, ScoreBreakdown, PoolId } from '@cup/engine';
+import type { Tournament, ActualResults, ScoreBreakdown, PoolId, CardInputs } from '@cup/engine';
 import type {
   ResultsView,
   UserRankChip,
@@ -25,6 +25,8 @@ import type {
   BracketHealth,
   BracketRoundResultView,
   KnockoutMatchView,
+  GroupResultView,
+  Best3rdStandingRow,
 } from '../domain/types';
 import { buildStageProgress } from '@/shared/stage-progress';
 import type { StageProgress, StageKey } from '@/shared/stage-progress';
@@ -88,24 +90,13 @@ export async function getResultsView(params: Params): Promise<ResultsView | null
   // buildGroupResults only confirms them once every group is complete; this fills in the
   // coloring during the ongoing group stage using the same live ranking.
   if (best3rdStanding) {
-    const liveBestThirds = new Set(best3rdStanding.filter((r) => r.qualifies).map((r) => r.teamId));
-    for (const gr of groupResults) {
-      for (const row of gr.standing) {
-        if (row.qualifies === false && liveBestThirds.has(row.teamId)) {
-          row.qualifies = 'best-third';
-        }
-      }
-    }
+    markLiveBestThirdQualifiers(groupResults, best3rdStanding);
   }
 
-  let userPredictedQualifiers: string[] | null = null;
-  let userPredictedKnockoutTeamIds: string[] | null = null;
-  if (inputs) {
-    const groupOrders = deriveGroupOrders(def, inputs.groupScores);
-    userPredictedQualifiers = selectQualifiers(def, inputs.groupScores, groupOrders);
-    const knockoutWinners = inputs.knockoutPicks.map((p) => p.winner as string);
-    userPredictedKnockoutTeamIds = [...new Set([...userPredictedQualifiers, ...knockoutWinners])];
-  }
+  const { userPredictedQualifiers, userPredictedKnockoutTeamIds } = deriveUserPredictions(
+    def,
+    inputs,
+  );
 
   const { bracketRounds, bronzeMatch } = buildBracketRounds(
     def,
@@ -217,6 +208,41 @@ function deriveCurrentStage(progress: StageProgress[]): StageKey {
   if (active) return active.key;
   const first = progress[0];
   return first?.key ?? 'group';
+}
+
+/**
+ * Colors best-third qualifiers into each group's standing rows in place.
+ * buildGroupResults only confirms best-third qualification once every group is complete;
+ * this fills in the coloring during the ongoing group stage using the same live ranking.
+ */
+function markLiveBestThirdQualifiers(
+  groupResults: GroupResultView[],
+  best3rdStanding: Best3rdStandingRow[],
+): void {
+  const liveBestThirds = new Set(best3rdStanding.filter((r) => r.qualifies).map((r) => r.teamId));
+  for (const gr of groupResults) {
+    for (const row of gr.standing) {
+      if (row.qualifies === false && liveBestThirds.has(row.teamId)) {
+        row.qualifies = 'best-third';
+      }
+    }
+  }
+}
+
+/** Derives the user's predicted group qualifiers and full set of predicted knockout teams. */
+function deriveUserPredictions(
+  def: Tournament,
+  inputs: CardInputs | null,
+): { userPredictedQualifiers: string[] | null; userPredictedKnockoutTeamIds: string[] | null } {
+  if (!inputs) return { userPredictedQualifiers: null, userPredictedKnockoutTeamIds: null };
+
+  const groupOrders = deriveGroupOrders(def, inputs.groupScores);
+  const userPredictedQualifiers = selectQualifiers(def, inputs.groupScores, groupOrders);
+  const knockoutWinners = inputs.knockoutPicks.map((p) => p.winner as string);
+  const userPredictedKnockoutTeamIds = [
+    ...new Set([...userPredictedQualifiers, ...knockoutWinners]),
+  ];
+  return { userPredictedQualifiers, userPredictedKnockoutTeamIds };
 }
 
 // User points summary (earned / missed / canStillGet)

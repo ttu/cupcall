@@ -59,10 +59,51 @@ export async function applyCardImport(deps: Deps): Promise<CardImportResult> {
     ...tournamentDef.bracket.progression.map((p) => p.match),
   ]);
 
+  const groupScoresResult = await importGroupScores(
+    db,
+    predictionId,
+    editorUserId,
+    isOwnerEdit,
+    exportData.groupScores,
+    matchIds,
+  );
+  const knockoutPicksResult = await importKnockoutPicks(
+    db,
+    predictionId,
+    exportData.knockoutPicks,
+    bracketKeys,
+    teamIds,
+  );
+  const finishScoresImported = await importFinishScores(
+    db,
+    predictionId,
+    tournamentDef,
+    exportData.finishScores,
+  );
+  const specialsImported = await importSpecialBets(db, predictionId, exportData.specials);
+
+  return {
+    imported:
+      groupScoresResult.imported +
+      knockoutPicksResult.imported +
+      finishScoresImported +
+      specialsImported,
+    skipped: [...groupScoresResult.skipped, ...knockoutPicksResult.skipped],
+  };
+}
+
+async function importGroupScores(
+  db: Db<AppSchema>,
+  predictionId: PredictionId,
+  editorUserId: UserId,
+  isOwnerEdit: boolean,
+  groupScores: CardExportData['groupScores'],
+  matchIds: Set<MatchId>,
+): Promise<{ imported: number; skipped: string[] }> {
   let imported = 0;
   const skipped: string[] = [];
 
-  for (const gs of exportData.groupScores ?? []) {
+  for (const gs of groupScores ?? []) {
     if (!matchIds.has(gs.matchId as MatchId)) {
       skipped.push(`matchId:${gs.matchId}`);
       continue;
@@ -81,7 +122,20 @@ export async function applyCardImport(deps: Deps): Promise<CardImportResult> {
     imported++;
   }
 
-  for (const kp of exportData.knockoutPicks ?? []) {
+  return { imported, skipped };
+}
+
+async function importKnockoutPicks(
+  db: Db<AppSchema>,
+  predictionId: PredictionId,
+  knockoutPicks: CardExportData['knockoutPicks'],
+  bracketKeys: Set<BracketMatchKey>,
+  teamIds: Set<TeamId>,
+): Promise<{ imported: number; skipped: string[] }> {
+  let imported = 0;
+  const skipped: string[] = [];
+
+  for (const kp of knockoutPicks ?? []) {
     if (!bracketKeys.has(kp.bracketMatchKey as BracketMatchKey)) {
       skipped.push(`bracketMatchKey:${kp.bracketMatchKey}`);
       continue;
@@ -99,42 +153,63 @@ export async function applyCardImport(deps: Deps): Promise<CardImportResult> {
     imported++;
   }
 
-  if (exportData.finishScores?.final || exportData.finishScores?.bronze) {
-    const inputs = await getPredictionInputs(db, predictionId);
-    const derived = deriveCard(inputs, tournamentDef);
+  return { imported, skipped };
+}
 
-    if (exportData.finishScores.final) {
-      const pair = toPair(derived.finalists);
-      await upsertFinishScore(
-        db,
-        predictionId,
-        'final',
-        exportData.finishScores.final.home,
-        exportData.finishScores.final.away,
-        pair?.[0] ?? null,
-        pair?.[1] ?? null,
-      );
-      imported++;
-    }
-    if (exportData.finishScores.bronze) {
-      const pair = toPair(derived.bronzePair);
-      await upsertFinishScore(
-        db,
-        predictionId,
-        'bronze',
-        exportData.finishScores.bronze.home,
-        exportData.finishScores.bronze.away,
-        pair?.[0] ?? null,
-        pair?.[1] ?? null,
-      );
-      imported++;
-    }
+async function importFinishScores(
+  db: Db<AppSchema>,
+  predictionId: PredictionId,
+  tournamentDef: Tournament,
+  finishScores: CardExportData['finishScores'],
+): Promise<number> {
+  const { final, bronze } = finishScores ?? {};
+  if (!final && !bronze) return 0;
+
+  const inputs = await getPredictionInputs(db, predictionId);
+  const derived = deriveCard(inputs, tournamentDef);
+
+  let imported = 0;
+  if (final) {
+    const pair = toPair(derived.finalists);
+    await upsertFinishScore(
+      db,
+      predictionId,
+      'final',
+      final.home,
+      final.away,
+      pair?.[0] ?? null,
+      pair?.[1] ?? null,
+    );
+    imported++;
+  }
+  if (bronze) {
+    const pair = toPair(derived.bronzePair);
+    await upsertFinishScore(
+      db,
+      predictionId,
+      'bronze',
+      bronze.home,
+      bronze.away,
+      pair?.[0] ?? null,
+      pair?.[1] ?? null,
+    );
+    imported++;
   }
 
-  for (const [betKey, value] of Object.entries(exportData.specials ?? {})) {
+  return imported;
+}
+
+async function importSpecialBets(
+  db: Db<AppSchema>,
+  predictionId: PredictionId,
+  specials: CardExportData['specials'],
+): Promise<number> {
+  let imported = 0;
+
+  for (const [betKey, value] of Object.entries(specials ?? {})) {
     await upsertSpecialBet(db, predictionId, betKey, value);
     imported++;
   }
 
-  return { imported, skipped };
+  return imported;
 }

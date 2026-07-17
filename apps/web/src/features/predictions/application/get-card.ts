@@ -5,16 +5,19 @@
 import type { AppSchema } from '@/shared/db';
 import type { Db } from '@cup/db';
 import { getPrediction, getOrCreatePrediction, getPredictionInputs } from '@cup/db';
-import { deriveCard, deriveGroupOrders, matchId, userId as brandUserId } from '@cup/engine';
+import { deriveCard, matchId, userId as brandUserId } from '@cup/engine';
 import type {
   Tournament,
   GroupId,
   TeamId,
+  MatchId,
   PoolId,
   TournamentId,
   PredictionId,
   CardInputs,
   DerivedCard,
+  BracketMatchKey,
+  PlayerId,
 } from '@cup/engine';
 import type {
   CardView,
@@ -25,6 +28,7 @@ import type {
   BracketRoundView,
   FinishMatchView,
   SpecialBetView,
+  SpecialBetDef,
   PredictionStatus,
 } from '../domain/types';
 import { getSpecialBetDefs } from '../domain/special-bet-defs';
@@ -204,16 +208,114 @@ export function buildCardView(data: CardData): CardView {
     return answeredBetKeys.has(betKey);
   }
 
-  // Build team lookup map
   const teamMap = new Map<TeamId, string>(tournament.teams.map((t) => [t.id, t.name]));
-
-  // Build group score views
-  const groupScoreMap = new Map(augmentedGroupScores.map((gs) => [gs.matchId, gs]));
+  const groupScoreMap: GroupScoreMap = new Map(augmentedGroupScores.map((gs) => [gs.matchId, gs]));
 
   const autoQualify = tournament.qualification.autoQualifyPerGroup;
   const autoQualifiedCount = tournament.groups.length * autoQualify;
 
-  // Pre-compute which groups are fully predicted so best-third logic can be applied in one pass.
+  const { completeGroupIds, allGroupsComplete } = computeGroupCompleteness(
+    tournament,
+    groupScoreMap,
+  );
+
+  const groups = buildGroupViews({
+    tournament,
+    groupScoreMap,
+    teamMap,
+    derived,
+    autoQualify,
+    autoQualifiedCount,
+    completeGroupIds,
+    allGroupsComplete,
+    itemLocked,
+  });
+
+  const knockoutPickMap: KnockoutPickMap = new Map(
+    inputs.knockoutPicks.map((kp) => [kp.bracketMatchKey, kp.winner]),
+  );
+  const { bracket } = tournament;
+
+  const rounds = buildBracketRounds({
+    bracket,
+    derived,
+    knockoutPickMap,
+    completeGroupIds,
+    allGroupsComplete,
+    autoQualifiedCount,
+    teamMap,
+    itemLocked,
+  });
+
+  const { finalView, bronzeView } = buildFinalAndBronzeViews({
+    derived,
+    inputs,
+    knockoutPickMap,
+    bracket,
+    teamMap,
+    itemLocked,
+  });
+
+  const bracketView: BracketView = {
+    rounds,
+    final: finalView,
+    bronze: bronzeView,
+    roundOf8: derived.roundOf8.map((tid) => ({ teamId: tid, teamName: teamMap.get(tid) ?? tid })),
+    topFour: derived.topFour.map((tid, i) => ({
+      teamId: tid,
+      teamName: teamMap.get(tid) ?? tid,
+      position: i + 1,
+    })),
+  };
+
+  const defs = getSpecialBetDefs(tournament.scoring);
+  const playerMap = new Map<PlayerId, string>(tournament.players.map((p) => [p.id, p.name]));
+  const specials = buildSpecialViews({ defs, inputs, teamMap, playerMap, betLocked });
+
+  const finalFilled = isFinishFilled(
+    inputs.finishScores.final,
+    knockoutPickMap.get(bracket.finalMatch),
+  );
+  const bronzeFilled = isFinishFilled(
+    inputs.finishScores.bronze,
+    knockoutPickMap.get(bracket.bronzeMatch),
+  );
+
+  const completionPercent = computeCompletionPercent({
+    groups,
+    bracket,
+    specials,
+    augmentedGroupScores,
+    knockoutPicks: inputs.knockoutPicks,
+    answeredBetKeys,
+    finalFilled,
+    bronzeFilled,
+  });
+
+  return {
+    predictionId,
+    poolId,
+    tournamentId,
+    status,
+    completionPercent,
+    groups,
+    bracket: bracketView,
+    specials,
+    lateJoinerDeadline,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+type GroupScoreMap = Map<MatchId, CardInputs['groupScores'][number]>;
+type KnockoutPickMap = Map<BracketMatchKey, TeamId>;
+
+function computeGroupCompleteness(
+  tournament: Tournament,
+  groupScoreMap: GroupScoreMap,
+): { completeGroupIds: Set<GroupId>; allGroupsComplete: boolean } {
   const completeGroupIds = new Set<GroupId>(
     tournament.groups
       .filter((g) =>
@@ -223,11 +325,56 @@ export function buildCardView(data: CardData): CardView {
       )
       .map((g) => g.id as GroupId),
   );
-  const allGroupsComplete = completeGroupIds.size === tournament.groups.length;
+  return {
+    completeGroupIds,
+    allGroupsComplete: completeGroupIds.size === tournament.groups.length,
+  };
+}
+
+// Intentionally polymorphic: 'auto' | 'best-third' | false is the domain's qualification tri-state.
+// eslint-disable-next-line sonarjs/function-return-type
+function deriveGroupOrderQualification(params: {
+  complete: boolean;
+  positionIndex: number;
+  autoQualify: number;
+  allGroupsComplete: boolean;
+  teamId: TeamId;
+  bestThirdsSet: Set<TeamId>;
+}): 'auto' | 'best-third' | false {
+  const { complete, positionIndex, autoQualify, allGroupsComplete, teamId, bestThirdsSet } = params;
+  if (complete && positionIndex < autoQualify) return 'auto';
+  if (allGroupsComplete && positionIndex === autoQualify && bestThirdsSet.has(teamId)) {
+    return 'best-third';
+  }
+  return false;
+}
+
+function buildGroupViews(params: {
+  tournament: Tournament;
+  groupScoreMap: GroupScoreMap;
+  teamMap: Map<TeamId, string>;
+  derived: DerivedCard;
+  autoQualify: number;
+  autoQualifiedCount: number;
+  completeGroupIds: Set<GroupId>;
+  allGroupsComplete: boolean;
+  itemLocked: (matchIdOrKey: string) => boolean;
+}): GroupView[] {
+  const {
+    tournament,
+    groupScoreMap,
+    teamMap,
+    derived,
+    autoQualify,
+    autoQualifiedCount,
+    completeGroupIds,
+    allGroupsComplete,
+    itemLocked,
+  } = params;
   // Best-third qualifiers are appended after auto-qualifiers in derived.qualifiers.
   const bestThirdsSet = new Set(derived.qualifiers.slice(autoQualifiedCount));
 
-  const groups: GroupView[] = tournament.groups.map((group) => {
+  return tournament.groups.map((group) => {
     const matches: GroupMatchView[] = tournament.groupMatches
       .filter((m) => m.group === group.id)
       .map((m) => {
@@ -252,27 +399,67 @@ export function buildCardView(data: CardData): CardView {
     return {
       groupId: group.id as GroupId,
       matches,
-      derivedOrder: derivedGroupOrder.map((tid, i) => {
-        let qualifies: 'auto' | 'best-third' | false = false;
-        if (complete && i < autoQualify) {
-          qualifies = 'auto';
-        } else if (allGroupsComplete && i === autoQualify && bestThirdsSet.has(tid)) {
-          qualifies = 'best-third';
-        }
-        return { teamId: tid, teamName: teamMap.get(tid) ?? tid, qualifies };
-      }),
+      derivedOrder: derivedGroupOrder.map((tid, i) => ({
+        teamId: tid,
+        teamName: teamMap.get(tid) ?? tid,
+        qualifies: deriveGroupOrderQualification({
+          complete,
+          positionIndex: i,
+          autoQualify,
+          allGroupsComplete,
+          teamId: tid,
+          bestThirdsSet,
+        }),
+      })),
       complete,
     };
   });
+}
 
-  // Build bracket view
-  const knockoutPickMap = new Map(
-    inputs.knockoutPicks.map((kp) => [kp.bracketMatchKey, kp.winner]),
-  );
-  const { bracket } = tournament;
+function buildTieView(params: {
+  bracketMatchKey: BracketMatchKey;
+  homeId: TeamId | null;
+  awayId: TeamId | null;
+  pickedWinnerId: TeamId | null;
+  teamMap: Map<TeamId, string>;
+  locked: boolean;
+}): TieView {
+  const { bracketMatchKey, homeId, awayId, pickedWinnerId, teamMap, locked } = params;
+  return {
+    bracketMatchKey,
+    homeTeamId: homeId,
+    homeTeamName: homeId ? (teamMap.get(homeId) ?? homeId) : null,
+    awayTeamId: awayId,
+    awayTeamName: awayId ? (teamMap.get(awayId) ?? awayId) : null,
+    pickedWinnerId,
+    locked,
+  };
+}
 
-  // Build rounds: group ties by round (order: entry round → ... → SF), exclude Final/bronze
+function buildBracketRounds(params: {
+  bracket: Tournament['bracket'];
+  derived: DerivedCard;
+  knockoutPickMap: KnockoutPickMap;
+  completeGroupIds: Set<GroupId>;
+  allGroupsComplete: boolean;
+  autoQualifiedCount: number;
+  teamMap: Map<TeamId, string>;
+  itemLocked: (matchIdOrKey: string) => boolean;
+}): BracketRoundView[] {
+  const {
+    bracket,
+    derived,
+    knockoutPickMap,
+    completeGroupIds,
+    allGroupsComplete,
+    autoQualifiedCount,
+    teamMap,
+    itemLocked,
+  } = params;
+
+  // Group ties by round (order: entry round → ... → SF), exclude Final/bronze.
   const tiesByRound = new Map<string, TieView[]>();
+
   for (const slot of bracket.slots) {
     // The slot's match key prefix determines its round (e.g., "ro32-", "ro16-", "qf-", "sf-")
     const roundLabel = getRoundLabel(slot.match, bracket.rounds);
@@ -303,15 +490,16 @@ export function buildCardView(data: CardData): CardView {
     // or updated group results) is treated as absent so the UI shows "no pick".
     const picked = rawPick === homeId || rawPick === awayId ? rawPick : null;
 
-    tiesByRound.get(roundLabel)!.push({
-      bracketMatchKey: slot.match,
-      homeTeamId: homeId,
-      homeTeamName: homeId ? (teamMap.get(homeId) ?? homeId) : null,
-      awayTeamId: awayId,
-      awayTeamName: awayId ? (teamMap.get(awayId) ?? awayId) : null,
-      pickedWinnerId: picked,
-      locked: itemLocked(slot.match),
-    });
+    tiesByRound.get(roundLabel)!.push(
+      buildTieView({
+        bracketMatchKey: slot.match,
+        homeId,
+        awayId,
+        pickedWinnerId: picked,
+        teamMap,
+        locked: itemLocked(slot.match),
+      }),
+    );
   }
 
   // Also add progression ties (R16 onwards)
@@ -327,36 +515,44 @@ export function buildCardView(data: CardData): CardView {
     const awayId =
       prog.from[1] != null ? (getProgTeam(prog.from[1], knockoutPickMap) ?? null) : null;
 
-    tiesByRound.get(roundLabel)!.push({
-      bracketMatchKey: prog.match,
-      homeTeamId: homeId,
-      homeTeamName: homeId ? (teamMap.get(homeId) ?? homeId) : null,
-      awayTeamId: awayId,
-      awayTeamName: awayId ? (teamMap.get(awayId) ?? awayId) : null,
-      pickedWinnerId: picked,
-      locked: itemLocked(prog.match),
-    });
+    tiesByRound.get(roundLabel)!.push(
+      buildTieView({
+        bracketMatchKey: prog.match,
+        homeId,
+        awayId,
+        pickedWinnerId: picked,
+        teamMap,
+        locked: itemLocked(prog.match),
+      }),
+    );
   }
 
-  const rounds: BracketRoundView[] = bracket.rounds
+  return bracket.rounds
     .filter((r) => r !== 'Final' && r !== 'bronze' && tiesByRound.has(r))
     .map((r) => ({ label: r, ties: tiesByRound.get(r) ?? [] }));
+}
 
-  // Final + bronze match views
+function buildFinalAndBronzeViews(params: {
+  derived: DerivedCard;
+  inputs: CardInputs;
+  knockoutPickMap: KnockoutPickMap;
+  bracket: Tournament['bracket'];
+  teamMap: Map<TeamId, string>;
+  itemLocked: (matchIdOrKey: string) => boolean;
+}): { finalView: FinishMatchView; bronzeView: FinishMatchView } {
+  const { derived, inputs, knockoutPickMap, bracket, teamMap, itemLocked } = params;
+
   const [finalist1, finalist2] = derived.finalists;
-  const finalFinish = inputs.finishScores.final;
-
   const [bronze1, bronze2] = derived.bronzePair;
-  const bronzeFinish = inputs.finishScores.bronze;
 
   const finalView: FinishMatchView = {
     homeTeamId: finalist1 ?? null,
     homeTeamName: finalist1 ? (teamMap.get(finalist1) ?? finalist1) : null,
     awayTeamId: finalist2 ?? null,
     awayTeamName: finalist2 ? (teamMap.get(finalist2) ?? finalist2) : null,
-    predictedHome: finalFinish?.home ?? null,
-    predictedAway: finalFinish?.away ?? null,
-    pickedWinnerId: (knockoutPickMap.get(bracket.finalMatch) as TeamId | undefined) ?? null,
+    predictedHome: inputs.finishScores.final?.home ?? null,
+    predictedAway: inputs.finishScores.final?.away ?? null,
+    pickedWinnerId: knockoutPickMap.get(bracket.finalMatch) ?? null,
     locked: itemLocked(bracket.finalMatch),
   };
 
@@ -365,56 +561,72 @@ export function buildCardView(data: CardData): CardView {
     homeTeamName: bronze1 ? (teamMap.get(bronze1) ?? bronze1) : null,
     awayTeamId: bronze2 ?? null,
     awayTeamName: bronze2 ? (teamMap.get(bronze2) ?? bronze2) : null,
-    predictedHome: bronzeFinish?.home ?? null,
-    predictedAway: bronzeFinish?.away ?? null,
-    pickedWinnerId: (knockoutPickMap.get(bracket.bronzeMatch) as TeamId | undefined) ?? null,
+    predictedHome: inputs.finishScores.bronze?.home ?? null,
+    predictedAway: inputs.finishScores.bronze?.away ?? null,
+    pickedWinnerId: knockoutPickMap.get(bracket.bronzeMatch) ?? null,
     locked: itemLocked(bracket.bronzeMatch),
   };
 
-  const bracketView: BracketView = {
-    rounds,
-    final: finalView,
-    bronze: bronzeView,
-    roundOf8: derived.roundOf8.map((tid) => ({ teamId: tid, teamName: teamMap.get(tid) ?? tid })),
-    topFour: derived.topFour.map((tid, i) => ({
-      teamId: tid,
-      teamName: teamMap.get(tid) ?? tid,
-      position: i + 1,
-    })),
-  };
+  return { finalView, bronzeView };
+}
 
-  // Special bets
-  const defs = getSpecialBetDefs(tournament.scoring);
-  const playerMap = new Map(tournament.players.map((p) => [p.id, p.name]));
+function deriveSpecialBetValue(
+  kind: SpecialBetDef['kind'],
+  raw: unknown,
+  teamMap: Map<TeamId, string>,
+  playerMap: Map<PlayerId, string>,
+): {
+  displayValue: string | number | boolean | null;
+  storedValue: string | number | boolean | null;
+} {
+  if (raw === undefined || raw === null) return { displayValue: null, storedValue: null };
+  if (kind === 'player') {
+    return {
+      displayValue: playerMap.get(raw as PlayerId) ?? String(raw),
+      storedValue: String(raw),
+    };
+  }
+  if (kind === 'team') {
+    return { displayValue: teamMap.get(raw as TeamId) ?? String(raw), storedValue: String(raw) };
+  }
+  return { displayValue: raw as number | boolean, storedValue: raw as number | boolean };
+}
 
-  const specials: SpecialBetView[] = defs.map((def) => {
+function buildSpecialViews(params: {
+  defs: SpecialBetDef[];
+  inputs: CardInputs;
+  teamMap: Map<TeamId, string>;
+  playerMap: Map<PlayerId, string>;
+  betLocked: (betKey: string) => boolean;
+}): SpecialBetView[] {
+  const { defs, inputs, teamMap, playerMap, betLocked } = params;
+  return defs.map((def) => {
     const raw = (inputs.specials as Record<string, unknown>)[def.key];
-    let displayValue: string | number | boolean | null = null;
-    let storedValue: string | number | boolean | null = null;
-    if (raw !== undefined && raw !== null) {
-      if (def.kind === 'player') {
-        storedValue = String(raw);
-        displayValue = playerMap.get(raw as import('@cup/engine').PlayerId) ?? String(raw);
-      } else if (def.kind === 'team') {
-        storedValue = String(raw);
-        displayValue = teamMap.get(raw as TeamId) ?? String(raw);
-      } else {
-        storedValue = raw as number | boolean;
-        displayValue = raw as number | boolean;
-      }
-    }
+    const { displayValue, storedValue } = deriveSpecialBetValue(def.kind, raw, teamMap, playerMap);
     return { ...def, value: displayValue, storedValue, locked: betLocked(def.key) };
   });
+}
 
-  // Completion
-  const finalFilled = isFinishFilled(
-    inputs.finishScores.final,
-    knockoutPickMap.get(bracket.finalMatch),
-  );
-  const bronzeFilled = isFinishFilled(
-    inputs.finishScores.bronze,
-    knockoutPickMap.get(bracket.bronzeMatch),
-  );
+function computeCompletionPercent(params: {
+  groups: GroupView[];
+  bracket: Tournament['bracket'];
+  specials: SpecialBetView[];
+  augmentedGroupScores: CardInputs['groupScores'];
+  knockoutPicks: CardInputs['knockoutPicks'];
+  answeredBetKeys: Set<string>;
+  finalFilled: boolean;
+  bronzeFilled: boolean;
+}): number {
+  const {
+    groups,
+    bracket,
+    specials,
+    augmentedGroupScores,
+    knockoutPicks,
+    answeredBetKeys,
+    finalFilled,
+    bronzeFilled,
+  } = params;
 
   const totalFields =
     groups.reduce((acc, g) => acc + g.matches.length, 0) +
@@ -424,38 +636,25 @@ export function buildCardView(data: CardData): CardView {
     ).length +
     2 /* final + bronze scores */ +
     specials.length;
+
   // A special bet counts as filled if the user predicted it OR if the answer
   // is already known (answeredBetKeys), since the latter cannot be edited.
   const filledSpecialsCount = specials.filter(
     (s) => s.storedValue !== null || answeredBetKeys.has(s.key),
   ).length;
+
   const filledFields =
     augmentedGroupScores.length +
-    inputs.knockoutPicks.filter(
+    knockoutPicks.filter(
       (kp) =>
         kp.bracketMatchKey !== bracket.finalMatch && kp.bracketMatchKey !== bracket.bronzeMatch,
     ).length +
     (finalFilled ? 1 : 0) +
     (bronzeFilled ? 1 : 0) +
     filledSpecialsCount;
-  const completionPercent = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
-  return {
-    predictionId,
-    poolId,
-    tournamentId,
-    status,
-    completionPercent,
-    groups,
-    bracket: bracketView,
-    specials,
-    lateJoinerDeadline,
-  };
+  return totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function getRoundLabel(matchKey: string, rounds: string[]): string {
   // Match key prefixes: "ro32-", "ro16-", "qf-", "sf-" map to round labels
@@ -483,14 +682,14 @@ function resolveSlotTeam(
   completeGroupIds: Set<GroupId>,
   allGroupsComplete: boolean,
 ): TeamId | undefined {
-  const posGroupMatch = slotRef.match(/^(\d+)([A-Z]+)$/);
+  const posGroupMatch = /^(\d+)([A-Z]+)$/.exec(slotRef);
   if (posGroupMatch) {
     const pos = parseInt(posGroupMatch[1]!) - 1;
     const gId = posGroupMatch[2] as GroupId;
     if (!completeGroupIds.has(gId)) return undefined;
     return groupOrders[gId]?.[pos];
   }
-  const thirdMatch = slotRef.match(/^3rd\[(\d+)\]$/);
+  const thirdMatch = /^3rd\[(\d+)\]$/.exec(slotRef);
   if (thirdMatch) {
     // Thirds ranking is cross-group — need all groups complete
     if (!allGroupsComplete) return undefined;
@@ -502,8 +701,8 @@ function resolveSlotTeam(
 }
 
 function getProgTeam(
-  fromKey: import('@cup/engine').BracketMatchKey,
-  picks: Map<import('@cup/engine').BracketMatchKey, TeamId>,
+  fromKey: BracketMatchKey,
+  picks: Map<BracketMatchKey, TeamId>,
 ): TeamId | undefined {
   return picks.get(fromKey);
 }

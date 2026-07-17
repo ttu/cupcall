@@ -42,29 +42,52 @@ function computeGroupCompleteTeams(def: Tournament, groupMatches: MatchRow[]): S
   return done;
 }
 
+/** The teams knocked out by a single finished knockout-stage match (usually just the loser;
+ * empty if the match hasn't produced a winner, e.g. still scheduled). */
+function losingTeamIds(m: MatchRow): string[] {
+  if (m.status !== 'final') return [];
+  const winner = getMatchWinner(m);
+  if (winner === null) return [];
+  const losers: string[] = [];
+  if (m.homeTeamId && m.homeTeamId !== winner) losers.push(m.homeTeamId);
+  if (m.awayTeamId && m.awayTeamId !== winner) losers.push(m.awayTeamId);
+  return losers;
+}
+
+/** Teams eliminated by losing a completed knockout-stage match. */
+function collectKnockoutLosers(matches: MatchRow[]): Set<string> {
+  const done = new Set<string>();
+  for (const m of matches) {
+    if (m.stage === 'group') continue;
+    for (const teamId of losingTeamIds(m)) done.add(teamId);
+  }
+  return done;
+}
+
+function isGroupStageComplete(groupMatches: MatchRow[]): boolean {
+  return groupMatches.length > 0 && groupMatches.every((m) => m.status === 'final');
+}
+
+/** Teams that never qualified once the whole group stage has finished. */
+function collectNonQualifiedTeams(def: Tournament, groupMatches: MatchRow[]): Set<string> {
+  const scores = groupMatches.filter(hasScore).map(toGroupScore);
+  const groupOrders = deriveGroupOrders(def, scores);
+  const qualifiers = new Set(selectQualifiers(def, scores, groupOrders));
+  const done = new Set<string>();
+  for (const team of def.teams) {
+    if (!qualifiers.has(team.id)) done.add(team.id);
+  }
+  return done;
+}
+
 /** Teams that will never play again: lost a completed knockout match, or the whole group
  * stage is over and they never qualified for the knockout stage at all. */
 function computeTournamentDoneTeams(def: Tournament, matches: MatchRow[]): Set<string> {
   const groupMatches = matches.filter((m) => m.stage === 'group');
-  const done = new Set<string>();
+  const done = collectKnockoutLosers(matches);
 
-  for (const m of matches) {
-    if (m.stage === 'group' || m.status !== 'final') continue;
-    const winner = getMatchWinner(m);
-    if (winner === null) continue;
-    if (m.homeTeamId && m.homeTeamId !== winner) done.add(m.homeTeamId);
-    if (m.awayTeamId && m.awayTeamId !== winner) done.add(m.awayTeamId);
-  }
-
-  const groupStageComplete =
-    groupMatches.length > 0 && groupMatches.every((m) => m.status === 'final');
-  if (groupStageComplete) {
-    const scores = groupMatches.filter(hasScore).map(toGroupScore);
-    const groupOrders = deriveGroupOrders(def, scores);
-    const qualifiers = new Set(selectQualifiers(def, scores, groupOrders));
-    for (const team of def.teams) {
-      if (!qualifiers.has(team.id)) done.add(team.id);
-    }
+  if (isGroupStageComplete(groupMatches)) {
+    for (const teamId of collectNonQualifiedTeams(def, groupMatches)) done.add(teamId);
   }
 
   return done;

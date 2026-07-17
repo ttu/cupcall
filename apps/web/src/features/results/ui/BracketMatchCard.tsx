@@ -16,6 +16,148 @@ function borderClassForHit(hit: MatchHit, softCard: boolean): string {
   return 'border-line-soft';
 }
 
+type SlotFill = {
+  effectiveHomeId: string | null;
+  effectiveHomeName: string | null;
+  effectiveAwayId: string | null;
+  effectiveAwayName: string | null;
+  isBustedPick: boolean;
+  homeIsEmpty: boolean;
+  awayIsEmpty: boolean;
+  homeFeederMissed: boolean;
+  awayFeederMissed: boolean;
+};
+
+/**
+ * Merge actual teams with user-predicted teams for TBD slots.
+ * When a busted pick is not visible in any slot (e.g. team was eliminated two rounds earlier
+ * so neither the actual participants nor the predicted chain includes them), surface the pick
+ * in the first empty slot so the user can see what they missed.
+ */
+function deriveSlotFill(match: KnockoutMatchView): SlotFill {
+  const pickedIsVisible =
+    match.pickedWinnerId !== null &&
+    (match.pickedWinnerId === match.homeTeamId ||
+      match.pickedWinnerId === match.predictedHomeTeamId ||
+      match.pickedWinnerId === match.awayTeamId ||
+      match.pickedWinnerId === match.predictedAwayTeamId);
+  const showBustedPickAsFill =
+    match.pickedWinnerId !== null && match.pickStatus === 'busted' && !pickedIsVisible;
+
+  const homeIsEmpty = match.homeTeamId === null && match.predictedHomeTeamId === null;
+  const awayIsEmpty = match.awayTeamId === null && match.predictedAwayTeamId === null;
+  // Fill only the first empty slot with the busted pick badge so the flag is visible once.
+  const fillHome = showBustedPickAsFill && homeIsEmpty;
+  const fillAway = showBustedPickAsFill && !fillHome && awayIsEmpty;
+  // An empty slot whose feeder entry-round pick is already definitively wrong also shows "missed pick".
+  const homeFeederMissed = homeIsEmpty && match.homeSlotFeederPickedId !== null;
+  const awayFeederMissed = awayIsEmpty && match.awaySlotFeederPickedId !== null;
+
+  // For missed fill slots: provide the teamId so the badge (flag) shows, but no name —
+  // TeamRow renders "missed pick" label via isMissedFill instead of the team name.
+  // Any slot that is genuinely empty while the pick is busted also shows "missed pick" (not TBD).
+  const effectiveHomeId =
+    match.homeTeamId ??
+    match.predictedHomeTeamId ??
+    (fillHome ? match.pickedWinnerId : null) ??
+    match.homeSlotFeederPickedId;
+  const effectiveAwayId =
+    match.awayTeamId ??
+    match.predictedAwayTeamId ??
+    (fillAway ? match.pickedWinnerId : null) ??
+    match.awaySlotFeederPickedId;
+
+  return {
+    effectiveHomeId,
+    effectiveHomeName: match.homeTeamName ?? match.predictedHomeTeamName ?? null,
+    effectiveAwayId,
+    effectiveAwayName: match.awayTeamName ?? match.predictedAwayTeamName ?? null,
+    isBustedPick: showBustedPickAsFill,
+    homeIsEmpty,
+    awayIsEmpty,
+    homeFeederMissed,
+    awayFeederMissed,
+  };
+}
+
+type Softness = { homeIsSoft: boolean; awayIsSoft: boolean; softCard: boolean };
+
+/**
+ * Per-team softness: a team slot is "soft" when it's projected from live group standings
+ * (not yet confirmed in DB) or filled from the user's pick (TBD actual winner).
+ * Card uses soft styling (dashed border, no HitChip) whenever any slot is unconfirmed.
+ */
+function deriveSoftness(match: KnockoutMatchView): Softness {
+  const homeIsSoft = (match.projected && !match.homeTeamConfirmed) || match.homeTeamId === null;
+  const awayIsSoft = (match.projected && !match.awayTeamConfirmed) || match.awayTeamId === null;
+  return { homeIsSoft, awayIsSoft, softCard: homeIsSoft || awayIsSoft };
+}
+
+function isPickedTeam(
+  teamId: string | null,
+  match: KnockoutMatchView,
+  predictedQualifierIds: Set<string>,
+  userPredictedParticipant: boolean,
+): boolean {
+  return (
+    teamId !== null &&
+    (match.pickedWinnerId === teamId ||
+      predictedQualifierIds.has(teamId) ||
+      userPredictedParticipant)
+  );
+}
+
+function isQualifierPick(teamId: string | null, predictedQualifierIds: Set<string>): boolean {
+  return teamId !== null && predictedQualifierIds.has(teamId);
+}
+
+function isMissedFill(isBustedPick: boolean, isSlotEmpty: boolean, feederMissed: boolean): boolean {
+  return (isBustedPick && isSlotEmpty) || feederMissed;
+}
+
+function wonMatchOnPenalties(match: KnockoutMatchView, teamId: string | null): boolean {
+  return match.decidedBy === 'penalties' && match.actualWinnerId === teamId;
+}
+
+function showsConfirmedBadge(
+  match: KnockoutMatchView,
+  teamIsSoft: boolean,
+  teamId: string | null,
+  otherSideIsSoft: boolean,
+): boolean {
+  return match.isEntryRound && !teamIsSoft && teamId !== null && otherSideIsSoft;
+}
+
+function MatchHeaderStrip({
+  match,
+  hasScore,
+  softCard,
+}: {
+  match: KnockoutMatchView;
+  hasScore: boolean;
+  softCard: boolean;
+}): ReactElement {
+  return (
+    <div className="flex items-center justify-between gap-1.5 p-[2px_4px_4px]">
+      {hasScore ? (
+        <span className="text-[11px] font-bold text-ink-muted">FT</span>
+      ) : match.predictedHomeTeamId !== null || match.predictedAwayTeamId !== null ? (
+        <span className="text-[11px] font-semibold text-ink-muted italic">Predicted</span>
+      ) : match.kickoff ? (
+        <span className="text-[11px] font-bold text-ink-muted">
+          {new Date(match.kickoff).toLocaleDateString('en-GB', {
+            month: 'short',
+            day: 'numeric',
+          })}
+        </span>
+      ) : (
+        <span className="text-[11px] font-bold text-ink-muted">{match.round}</span>
+      )}
+      {!softCard && <HitChip hit={match.hit} points={match.points} />}
+    </div>
+  );
+}
+
 function TeamRow({
   teamId,
   teamName,
@@ -105,53 +247,8 @@ function TeamRow({
 }
 
 export function BracketMatchCard({ match, predictedQualifierIds, onSelect }: Props): ReactElement {
-  // Merge actual teams with user-predicted teams for TBD slots.
-  // When a busted pick is not visible in any slot (e.g. team was eliminated two rounds earlier
-  // so neither the actual participants nor the predicted chain includes them), surface the pick
-  // in the first empty slot so the user can see what they missed.
-  const pickedIsVisible =
-    match.pickedWinnerId !== null &&
-    (match.pickedWinnerId === match.homeTeamId ||
-      match.pickedWinnerId === match.predictedHomeTeamId ||
-      match.pickedWinnerId === match.awayTeamId ||
-      match.pickedWinnerId === match.predictedAwayTeamId);
-  const showBustedPickAsFill =
-    match.pickedWinnerId !== null && match.pickStatus === 'busted' && !pickedIsVisible;
-
-  const homeIsEmpty = match.homeTeamId === null && match.predictedHomeTeamId === null;
-  const awayIsEmpty = match.awayTeamId === null && match.predictedAwayTeamId === null;
-  // Fill only the first empty slot with the busted pick badge so the flag is visible once.
-  const fillHome = showBustedPickAsFill && homeIsEmpty;
-  const fillAway = showBustedPickAsFill && !fillHome && awayIsEmpty;
-  // An empty slot whose feeder entry-round pick is already definitively wrong also shows "missed pick".
-  const homeFeederMissed = homeIsEmpty && match.homeSlotFeederPickedId !== null;
-  const awayFeederMissed = awayIsEmpty && match.awaySlotFeederPickedId !== null;
-
-  // For missed fill slots: provide the teamId so the badge (flag) shows, but no name —
-  // TeamRow renders "missed pick" label via isMissedFill instead of the team name.
-  // Any slot that is genuinely empty while the pick is busted also shows "missed pick" (not TBD).
-  const effectiveHomeId =
-    match.homeTeamId ??
-    match.predictedHomeTeamId ??
-    (fillHome ? match.pickedWinnerId : null) ??
-    match.homeSlotFeederPickedId;
-  const effectiveHomeName = match.homeTeamName ?? match.predictedHomeTeamName ?? null;
-  const effectiveAwayId =
-    match.awayTeamId ??
-    match.predictedAwayTeamId ??
-    (fillAway ? match.pickedWinnerId : null) ??
-    match.awaySlotFeederPickedId;
-  const effectiveAwayName = match.awayTeamName ?? match.predictedAwayTeamName ?? null;
-  const isBustedPick = showBustedPickAsFill;
-
-  // Per-team softness: a team slot is "soft" when it's projected from live group standings
-  // (not yet confirmed in DB) or filled from the user's pick (TBD actual winner).
-  const homeIsSoft = (match.projected && !match.homeTeamConfirmed) || match.homeTeamId === null;
-  const awayIsSoft = (match.projected && !match.awayTeamConfirmed) || match.awayTeamId === null;
-
-  // Card uses soft styling (dashed border, no HitChip) whenever any slot is unconfirmed.
-  const softCard = homeIsSoft || awayIsSoft;
-
+  const slotFill = deriveSlotFill(match);
+  const softness = deriveSoftness(match);
   const hasScore = match.actualHome !== null && match.actualAway !== null;
 
   // A tie is only worth opening once at least one side is a confirmed (non-TBD) team.
@@ -167,73 +264,66 @@ export function BracketMatchCard({ match, predictedQualifierIds, onSelect }: Pro
       className={cn(
         'card overflow-hidden min-w-37.5 min-h-[114px] p-1 border text-left',
         isTappable && 'cursor-pointer',
-        borderClassForHit(match.hit, softCard),
+        borderClassForHit(match.hit, softness.softCard),
       )}
     >
-      {/* Header strip */}
-      <div className="flex items-center justify-between gap-1.5 p-[2px_4px_4px]">
-        {hasScore ? (
-          <span className="text-[11px] font-bold text-ink-muted">FT</span>
-        ) : match.predictedHomeTeamId !== null || match.predictedAwayTeamId !== null ? (
-          <span className="text-[11px] font-semibold text-ink-muted italic">Predicted</span>
-        ) : match.kickoff ? (
-          <span className="text-[11px] font-bold text-ink-muted">
-            {new Date(match.kickoff).toLocaleDateString('en-GB', {
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
-        ) : (
-          <span className="text-[11px] font-bold text-ink-muted">{match.round}</span>
-        )}
-        {!softCard && <HitChip hit={match.hit} points={match.points} />}
-      </div>
+      <MatchHeaderStrip match={match} hasScore={hasScore} softCard={softness.softCard} />
 
       {/* Team rows */}
       <div className="flex flex-col gap-0.5">
         <TeamRow
-          teamId={effectiveHomeId}
-          teamName={effectiveHomeName}
-          isPick={
-            effectiveHomeId !== null &&
-            (match.pickedWinnerId === effectiveHomeId ||
-              predictedQualifierIds.has(effectiveHomeId) ||
-              match.homeTeamUserPredictedParticipant)
-          }
-          isQualifierPick={effectiveHomeId !== null && predictedQualifierIds.has(effectiveHomeId)}
+          teamId={slotFill.effectiveHomeId}
+          teamName={slotFill.effectiveHomeName}
+          isPick={isPickedTeam(
+            slotFill.effectiveHomeId,
+            match,
+            predictedQualifierIds,
+            match.homeTeamUserPredictedParticipant,
+          )}
+          isQualifierPick={isQualifierPick(slotFill.effectiveHomeId, predictedQualifierIds)}
           score={hasScore ? match.actualHome : null}
-          wonOnPenalties={
-            match.decidedBy === 'penalties' && match.actualWinnerId === match.homeTeamId
-          }
-          isSoft={homeIsSoft}
+          wonOnPenalties={wonMatchOnPenalties(match, match.homeTeamId)}
+          isSoft={softness.homeIsSoft}
           isPredictedFill={match.homeTeamId === null}
-          isMissedFill={(isBustedPick && homeIsEmpty) || homeFeederMissed}
-          showProjectedBadge={homeIsSoft && match.homeTeamId !== null}
-          showConfirmedBadge={
-            match.isEntryRound && !homeIsSoft && match.homeTeamId !== null && awayIsSoft
-          }
+          isMissedFill={isMissedFill(
+            slotFill.isBustedPick,
+            slotFill.homeIsEmpty,
+            slotFill.homeFeederMissed,
+          )}
+          showProjectedBadge={softness.homeIsSoft && match.homeTeamId !== null}
+          showConfirmedBadge={showsConfirmedBadge(
+            match,
+            softness.homeIsSoft,
+            match.homeTeamId,
+            softness.awayIsSoft,
+          )}
         />
         <TeamRow
-          teamId={effectiveAwayId}
-          teamName={effectiveAwayName}
-          isPick={
-            effectiveAwayId !== null &&
-            (match.pickedWinnerId === effectiveAwayId ||
-              predictedQualifierIds.has(effectiveAwayId) ||
-              match.awayTeamUserPredictedParticipant)
-          }
-          isQualifierPick={effectiveAwayId !== null && predictedQualifierIds.has(effectiveAwayId)}
+          teamId={slotFill.effectiveAwayId}
+          teamName={slotFill.effectiveAwayName}
+          isPick={isPickedTeam(
+            slotFill.effectiveAwayId,
+            match,
+            predictedQualifierIds,
+            match.awayTeamUserPredictedParticipant,
+          )}
+          isQualifierPick={isQualifierPick(slotFill.effectiveAwayId, predictedQualifierIds)}
           score={hasScore ? match.actualAway : null}
-          wonOnPenalties={
-            match.decidedBy === 'penalties' && match.actualWinnerId === match.awayTeamId
-          }
-          isSoft={awayIsSoft}
+          wonOnPenalties={wonMatchOnPenalties(match, match.awayTeamId)}
+          isSoft={softness.awayIsSoft}
           isPredictedFill={match.awayTeamId === null}
-          isMissedFill={(isBustedPick && awayIsEmpty) || awayFeederMissed}
-          showProjectedBadge={awayIsSoft && match.awayTeamId !== null}
-          showConfirmedBadge={
-            match.isEntryRound && !awayIsSoft && match.awayTeamId !== null && homeIsSoft
-          }
+          isMissedFill={isMissedFill(
+            slotFill.isBustedPick,
+            slotFill.awayIsEmpty,
+            slotFill.awayFeederMissed,
+          )}
+          showProjectedBadge={softness.awayIsSoft && match.awayTeamId !== null}
+          showConfirmedBadge={showsConfirmedBadge(
+            match,
+            softness.awayIsSoft,
+            match.awayTeamId,
+            softness.homeIsSoft,
+          )}
         />
       </div>
     </Root>

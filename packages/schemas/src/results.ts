@@ -93,65 +93,83 @@ const rawResultsSchema = z
   })
   .passthrough();
 
+/** Build one match result, honouring exactOptionalPropertyTypes (only present fields are set). */
+function buildMatchResult(
+  r: z.output<typeof actualMatchResultSchema>,
+): ActualResults['matchResults'][number] {
+  return {
+    matchId: r.matchId,
+    home: r.home,
+    away: r.away,
+    ...(r.homeConduct !== undefined && { homeConduct: r.homeConduct }),
+    ...(r.awayConduct !== undefined && { awayConduct: r.awayConduct }),
+  };
+}
+
+/** Build the special-bet answers, honouring exactOptionalPropertyTypes. */
+function buildAnswers(answers: z.output<typeof answersSchema>): ActualResults['answers'] {
+  return {
+    ...(answers.roundOf16 !== undefined && { roundOf16: answers.roundOf16 }),
+    ...(answers.roundOf8 !== undefined && { roundOf8: answers.roundOf8 }),
+    ...(answers.roundOf4 !== undefined && { roundOf4: answers.roundOf4 }),
+    ...(answers.groupTopScoringTeam !== undefined && {
+      groupTopScoringTeam: answers.groupTopScoringTeam,
+    }),
+    ...(answers.groupTopConcedingTeam !== undefined && {
+      groupTopConcedingTeam: answers.groupTopConcedingTeam,
+    }),
+    ...(answers.tournamentTopScoringTeam !== undefined && {
+      tournamentTopScoringTeam: answers.tournamentTopScoringTeam,
+    }),
+    ...(answers.tournamentTopConcedingTeam !== undefined && {
+      tournamentTopConcedingTeam: answers.tournamentTopConcedingTeam,
+    }),
+    ...(answers.highestMatchGoals !== undefined && {
+      highestMatchGoals: answers.highestMatchGoals,
+    }),
+    ...(answers.mostYellowCardsTeam !== undefined && {
+      mostYellowCardsTeam: answers.mostYellowCardsTeam,
+    }),
+    ...(answers.firstRedCardPlayer !== undefined && {
+      firstRedCardPlayer: answers.firstRedCardPlayer,
+    }),
+    ...(answers.penaltyShootoutCount !== undefined && {
+      penaltyShootoutCount: answers.penaltyShootoutCount,
+    }),
+    ...(answers.topScorerPlayer !== undefined && {
+      topScorerPlayer: answers.topScorerPlayer,
+    }),
+  };
+}
+
+/** Build the final match, honouring exactOptionalPropertyTypes (only present fields are set). */
+function buildFinalMatch(
+  fm: z.output<typeof finalMatchSchema>,
+): NonNullable<ActualResults['finalMatch']> {
+  return {
+    home: fm.home,
+    away: fm.away,
+    homeGoals: fm.homeGoals,
+    awayGoals: fm.awayGoals,
+    winner: fm.winner,
+    ...(fm.decidedBy !== undefined && { decidedBy: fm.decidedBy }),
+    ...(fm.decisiveGoalPlayer !== undefined && { decisiveGoalPlayer: fm.decisiveGoalPlayer }),
+  };
+}
+
 export const resultsSchema: z.ZodType<ActualResults, z.ZodTypeDef, unknown> =
   rawResultsSchema.transform((v): ActualResults => {
     // Build with exactOptionalPropertyTypes compliance — only include properties that are present
     const base: ActualResults = {
-      matchResults: v.matchResults.map((r) => ({
-        matchId: r.matchId,
-        home: r.home,
-        away: r.away,
-        ...(r.homeConduct !== undefined && { homeConduct: r.homeConduct }),
-        ...(r.awayConduct !== undefined && { awayConduct: r.awayConduct }),
-      })),
+      matchResults: v.matchResults.map(buildMatchResult),
       groupOrder: v.groupOrder,
-      answers: {
-        ...(v.answers.roundOf16 !== undefined && { roundOf16: v.answers.roundOf16 }),
-        ...(v.answers.roundOf8 !== undefined && { roundOf8: v.answers.roundOf8 }),
-        ...(v.answers.roundOf4 !== undefined && { roundOf4: v.answers.roundOf4 }),
-        ...(v.answers.groupTopScoringTeam !== undefined && {
-          groupTopScoringTeam: v.answers.groupTopScoringTeam,
-        }),
-        ...(v.answers.groupTopConcedingTeam !== undefined && {
-          groupTopConcedingTeam: v.answers.groupTopConcedingTeam,
-        }),
-        ...(v.answers.tournamentTopScoringTeam !== undefined && {
-          tournamentTopScoringTeam: v.answers.tournamentTopScoringTeam,
-        }),
-        ...(v.answers.tournamentTopConcedingTeam !== undefined && {
-          tournamentTopConcedingTeam: v.answers.tournamentTopConcedingTeam,
-        }),
-        ...(v.answers.highestMatchGoals !== undefined && {
-          highestMatchGoals: v.answers.highestMatchGoals,
-        }),
-        ...(v.answers.mostYellowCardsTeam !== undefined && {
-          mostYellowCardsTeam: v.answers.mostYellowCardsTeam,
-        }),
-        ...(v.answers.firstRedCardPlayer !== undefined && {
-          firstRedCardPlayer: v.answers.firstRedCardPlayer,
-        }),
-        ...(v.answers.penaltyShootoutCount !== undefined && {
-          penaltyShootoutCount: v.answers.penaltyShootoutCount,
-        }),
-        ...(v.answers.topScorerPlayer !== undefined && {
-          topScorerPlayer: v.answers.topScorerPlayer,
-        }),
-      },
+      answers: buildAnswers(v.answers),
     };
     if (v.bronzeMatch !== undefined) {
       base.bronzeMatch = v.bronzeMatch;
     }
     if (v.finalMatch !== undefined) {
-      const fm = v.finalMatch;
-      base.finalMatch = {
-        home: fm.home,
-        away: fm.away,
-        homeGoals: fm.homeGoals,
-        awayGoals: fm.awayGoals,
-        winner: fm.winner,
-        ...(fm.decidedBy !== undefined && { decidedBy: fm.decidedBy }),
-        ...(fm.decisiveGoalPlayer !== undefined && { decisiveGoalPlayer: fm.decisiveGoalPlayer }),
-      };
+      base.finalMatch = buildFinalMatch(v.finalMatch);
     }
     return base;
   });

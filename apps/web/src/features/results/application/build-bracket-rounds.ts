@@ -81,40 +81,16 @@ export function buildBracketRounds(
   // Use all user picks to build stage-pick sets, not just picks for DB-matched games.
   // Unplayed matches have no DB row yet, so their picks would be silently dropped if
   // we only consulted matchByKey — causing cross-slot credit to fail mid-round.
-  const stagePicksMap = new Map<string, Set<string>>();
-  for (const [matchKey, pickedId] of pickMap.entries()) {
-    const stage = matchByKey.get(matchKey)?.stage ?? getRoundLabel(matchKey, def.bracket.rounds);
-    if (!stagePicksMap.has(stage)) stagePicksMap.set(stage, new Set());
-    stagePicksMap.get(stage)!.add(pickedId);
-  }
+  const stagePicksMap = buildStagePicksMap(pickMap, matchByKey, def.bracket.rounds);
 
   // For entry-round slots, resolve each pick to the slot where the predicted team actually plays.
   // A user's group-stage predictions may have been wrong, landing their team in a different bracket
   // slot than expected. The effective pick for each slot is the cross-slot adjusted team — matching
   // the logic in computeUserPredictedParticipants — so pickStatus and pickedWinnerId are consistent
   // with the predicted bracket chain.
-  const allEntryPickedTeams = new Set<string>();
-  if (inputs) {
-    for (const slot of def.bracket.slots) {
-      const pick = pickMap.get(slot.match);
-      if (pick) allEntryPickedTeams.add(pick);
-    }
-  }
-
-  const effectiveEntryPickMap = new Map<BracketMatchKey, string | null>();
-  if (inputs) {
-    for (const slot of def.bracket.slots) {
-      const directPick = pickMap.get(slot.match) ?? null;
-      const derived = derivedParticipants.get(slot.match);
-      const actualRow = matchByKey.get(slot.match);
-      const home = derived?.[0] ?? actualRow?.homeTeamId ?? null;
-      const away = derived?.[1] ?? actualRow?.awayTeamId ?? null;
-      effectiveEntryPickMap.set(
-        slot.match,
-        resolveCrossSlotPick(directPick, home, away, allEntryPickedTeams),
-      );
-    }
-  }
+  const effectiveEntryPickMap = inputs
+    ? buildEffectiveEntryPickMap(def, pickMap, derivedParticipants, matchByKey)
+    : new Map<BracketMatchKey, string | null>();
 
   const buildMatchView = (key: BracketMatchKey, round: string): KnockoutMatchView => {
     const actual = matchByKey.get(key) ?? null;
@@ -128,60 +104,32 @@ export function buildBracketRounds(
     const awayId = actual?.awayTeamId ?? derivedPair?.[1] ?? null;
     const winnerId = getMatchWinner(actual);
 
-    // Predicted score: only Final and Bronze have a finish score.
-    let predictedHome: number | null = null;
-    let predictedAway: number | null = null;
-    let predictedGoalsByTeam: { teamId: string; goals: number }[] | null = null;
-    const isFinale = key === finalMatchKey || key === bronzeMatchKey;
-    const finishScoreForKey =
-      key === finalMatchKey
-        ? finishScores.final
-        : key === bronzeMatchKey
-          ? finishScores.bronze
-          : undefined;
-    if (finishScoreForKey) {
-      predictedHome = finishScoreForKey.home;
-      predictedAway = finishScoreForKey.away;
-      if (finishScoreForKey.homeTeamId != null && finishScoreForKey.awayTeamId != null) {
-        predictedGoalsByTeam = [
-          { teamId: finishScoreForKey.homeTeamId, goals: finishScoreForKey.home },
-          { teamId: finishScoreForKey.awayTeamId, goals: finishScoreForKey.away },
-        ];
-      }
-    }
+    const {
+      isFinale,
+      isBronzeMatch,
+      predictedHome,
+      predictedAway,
+      predictedGoalsByTeam,
+      effectivePickedId,
+    } = resolveFinaleContext(
+      key,
+      finalMatchKey,
+      bronzeMatchKey,
+      finishScores,
+      pickedId,
+      bracket,
+      pickMap,
+    );
 
-    // For Final/Bronze: if no explicit bracket pick was stored but the finish score is non-tied,
-    // derive the implied winner via resolveFinaleWinner — snapshot-first (also covers the case
-    // where the user has since changed an SF pick: invalidatePicksAfterKnockoutPickChange
-    // deletes the stale explicit Final/Bronze pick but never touches the finish-score row, so the
-    // live pickMap can no longer be trusted to mean what it meant when the score was entered),
-    // falling back to a live pickMap derivation only for legacy rows without a snapshot.
-    let effectivePickedId = pickedId;
-    if (isFinale && pickedId === null) {
-      const score = key === finalMatchKey ? finishScores.final : finishScores.bronze;
-      effectivePickedId = resolveFinaleWinner(score, (home, away) =>
-        deriveImplicitFinaleWinner(key, bracket, pickMap, home, away),
-      );
-    }
-
-    const isBronzeMatch = key === bronzeMatchKey;
-
-    let pickStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
-    if (effectivePickedId) {
-      if (!winnerId) {
-        const matchTeamsKnown = homeId !== null && awayId !== null;
-        const pickedTeamAbsent = effectivePickedId !== homeId && effectivePickedId !== awayId;
-        const pickedTeamEliminated =
-          knockoutEliminatedTeams.has(effectivePickedId) &&
-          !(isBronzeMatch && semiFinalLoserTeams.has(effectivePickedId));
-        pickStatus =
-          (matchTeamsKnown && pickedTeamAbsent) || pickedTeamEliminated ? 'busted' : 'pending';
-      } else if (winnerId === effectivePickedId) {
-        pickStatus = 'alive';
-      } else {
-        pickStatus = 'busted';
-      }
-    }
+    const pickStatus = resolvePickStatus({
+      effectivePickedId,
+      winnerId,
+      homeId,
+      awayId,
+      isBronzeMatch,
+      knockoutEliminatedTeams,
+      semiFinalLoserTeams,
+    });
 
     const stagePicks = actual?.stage ? (stagePicksMap.get(actual.stage) ?? null) : null;
     const hit = computeKnockoutHit({
@@ -201,21 +149,15 @@ export function buildBracketRounds(
       ? derivePredictedOpponent(key, bracket, pickMap, effectivePickedId)
       : null;
 
-    let pickedOpponentStatus: KnockoutMatchView['pickStatus'] = 'no-pick';
-    if (pickedOpponentId !== null) {
-      if (!winnerId) {
-        const opponentEliminated =
-          knockoutEliminatedTeams.has(pickedOpponentId) &&
-          !(isBronzeMatch && semiFinalLoserTeams.has(pickedOpponentId));
-        const teamsKnown = homeId !== null && awayId !== null;
-        const opponentAbsent = pickedOpponentId !== homeId && pickedOpponentId !== awayId;
-        pickedOpponentStatus =
-          opponentEliminated || (teamsKnown && opponentAbsent) ? 'busted' : 'pending';
-      } else {
-        pickedOpponentStatus =
-          pickedOpponentId === homeId || pickedOpponentId === awayId ? 'alive' : 'busted';
-      }
-    }
+    const pickedOpponentStatus = resolveOpponentStatus({
+      pickedOpponentId,
+      winnerId,
+      homeId,
+      awayId,
+      isBronzeMatch,
+      knockoutEliminatedTeams,
+      semiFinalLoserTeams,
+    });
 
     const predictedTeams = resolvePredictedTeams(
       key,
@@ -232,64 +174,46 @@ export function buildBracketRounds(
     // For progression matches: when a feeder entry-round pick is already definitively wrong
     // (the picked team is not a participant in the upcoming match) and the slot is empty,
     // capture the picked teamId. This lets the UI render the country badge instead of ?.
-    let homeSlotFeederPickedId: string | null = null;
-    let awaySlotFeederPickedId: string | null = null;
-    if (!isEntryRound && inputs) {
-      const prog = progressionByMatch.get(key);
-      if (prog) {
-        const [fk0, fk1] = prog.from;
-        const homeSlotEmpty = homeId === null && predictedTeams.predictedHomeTeamId === null;
-        const awaySlotEmpty = awayId === null && predictedTeams.predictedAwayTeamId === null;
-        if (fk0 && homeSlotEmpty) {
-          homeSlotFeederPickedId = entryPickIfBusted(
-            fk0,
-            pickMap,
-            derivedParticipants,
-            matchByKey,
-            knockoutEliminatedTeams,
-          );
-        }
-        if (fk1 && awaySlotEmpty) {
-          awaySlotFeederPickedId = entryPickIfBusted(
-            fk1,
-            pickMap,
-            derivedParticipants,
-            matchByKey,
-            knockoutEliminatedTeams,
-          );
-        }
-      }
-    }
+    const { homeSlotFeederPickedId, awaySlotFeederPickedId } = resolveFeederPickedIds({
+      key,
+      isEntryRound,
+      hasInputs: inputs !== null,
+      homeId,
+      awayId,
+      predictedHomeTeamId: predictedTeams.predictedHomeTeamId,
+      predictedAwayTeamId: predictedTeams.predictedAwayTeamId,
+      progressionByMatch,
+      pickMap,
+      derivedParticipants,
+      matchByKey,
+      knockoutEliminatedTeams,
+    });
 
     return {
       bracketMatchKey: key,
       round,
       homeTeamId: homeId,
-      homeTeamName: homeId ? (teamMap.get(homeId) ?? homeId) : null,
+      homeTeamName: teamNameOf(teamMap, homeId),
       awayTeamId: awayId,
-      awayTeamName: awayId ? (teamMap.get(awayId) ?? awayId) : null,
+      awayTeamName: teamNameOf(teamMap, awayId),
       actualHome: actual?.homeGoals ?? null,
       actualAway: actual?.awayGoals ?? null,
       actualWinnerId: winnerId,
-      actualWinnerName: winnerId ? (teamMap.get(winnerId) ?? winnerId) : null,
+      actualWinnerName: teamNameOf(teamMap, winnerId),
       decidedBy: actual?.decidedBy ?? null,
       kickoff: actual?.kickoff?.toISOString() ?? null,
       status: actual?.status === 'final' ? 'final' : 'scheduled',
       pickedWinnerId: effectivePickedId,
-      pickedWinnerName: effectivePickedId
-        ? (teamMap.get(effectivePickedId) ?? effectivePickedId)
-        : null,
+      pickedWinnerName: teamNameOf(teamMap, effectivePickedId),
       pickedOpponentId,
-      pickedOpponentName: pickedOpponentId
-        ? (teamMap.get(pickedOpponentId) ?? pickedOpponentId)
-        : null,
+      pickedOpponentName: teamNameOf(teamMap, pickedOpponentId),
       pickStatus,
       pickedOpponentStatus,
       predictedHome,
       predictedAway,
       predictedGoalsByTeam,
       hit,
-      points: hit === 'outcome' || hit === 'exact' ? (hitPoints.get(key) ?? 0) : 0,
+      points: pointsForHit(hit, key, hitPoints),
       projected: projectedKeys.has(key),
       // Entry-round: confirmed when the team's source group is fully finalised.
       // Later rounds: confirmed when the actual match row has the team ID (previous match done).
@@ -320,25 +244,21 @@ export function buildBracketRounds(
       ),
       ...predictedTeams,
       pickedHomeTeamId,
-      pickedHomeTeamName: pickedHomeTeamId
-        ? (teamMap.get(pickedHomeTeamId) ?? pickedHomeTeamId)
-        : null,
+      pickedHomeTeamName: teamNameOf(teamMap, pickedHomeTeamId),
       pickedAwayTeamId,
-      pickedAwayTeamName: pickedAwayTeamId
-        ? (teamMap.get(pickedAwayTeamId) ?? pickedAwayTeamId)
-        : null,
-      homeTeamUserPredictedParticipant:
-        !isEntryRound && homeId !== null && userPickedParticipants.get(key)?.[0] === homeId,
-      awayTeamUserPredictedParticipant:
-        !isEntryRound && awayId !== null && userPickedParticipants.get(key)?.[1] === awayId,
-      poolPickHomePct:
-        homeId !== null && awayId !== null
-          ? (knockoutRoundPcts.get(key)?.get(homeId) ?? null)
-          : null,
-      poolPickAwayPct:
-        homeId !== null && awayId !== null
-          ? (knockoutRoundPcts.get(key)?.get(awayId) ?? null)
-          : null,
+      pickedAwayTeamName: teamNameOf(teamMap, pickedAwayTeamId),
+      homeTeamUserPredictedParticipant: isPredictedParticipantSlot(
+        isEntryRound,
+        homeId,
+        userPickedParticipants.get(key)?.[0],
+      ),
+      awayTeamUserPredictedParticipant: isPredictedParticipantSlot(
+        isEntryRound,
+        awayId,
+        userPickedParticipants.get(key)?.[1],
+      ),
+      poolPickHomePct: poolPickPct(homeId, awayId, homeId, knockoutRoundPcts.get(key)),
+      poolPickAwayPct: poolPickPct(homeId, awayId, awayId, knockoutRoundPcts.get(key)),
       homeSlotFeederPickedId,
       awaySlotFeederPickedId,
     };
@@ -347,20 +267,7 @@ export function buildBracketRounds(
   const { bracket } = def;
   const mainRounds = bracket.rounds.filter((r) => r !== 'Final' && r !== 'bronze');
 
-  const keysByRound = new Map<string, BracketMatchKey[]>();
-
-  for (const slot of bracket.slots) {
-    const round = getRoundLabel(slot.match, bracket.rounds);
-    if (!keysByRound.has(round)) keysByRound.set(round, []);
-    keysByRound.get(round)!.push(slot.match);
-  }
-
-  for (const prog of bracket.progression) {
-    if (prog.match === finalMatchKey || prog.match === bronzeMatchKey) continue;
-    const round = getRoundLabel(prog.match, bracket.rounds);
-    if (!keysByRound.has(round)) keysByRound.set(round, []);
-    keysByRound.get(round)!.push(prog.match);
-  }
+  const keysByRound = buildKeysByRound(bracket, finalMatchKey, bronzeMatchKey);
 
   const bracketRounds: BracketRoundResultView[] = mainRounds
     .filter((r) => keysByRound.has(r))
@@ -400,6 +307,299 @@ function entryPickIfBusted(
   if (!derived) return null;
   const [home, away] = derived;
   return home !== null && away !== null && pick !== home && pick !== away ? pick : null;
+}
+
+type FinishScore = {
+  home: number;
+  away: number;
+  homeTeamId?: string | null;
+  awayTeamId?: string | null;
+};
+
+/** Display name for a team ID, falling back to the raw ID; null when the slot is empty. */
+function teamNameOf(teamMap: Map<string, string>, teamId: string | null): string | null {
+  return teamId ? (teamMap.get(teamId) ?? teamId) : null;
+}
+
+/** Points awarded for a card: only outcome/exact hits earn this match's reward. */
+function pointsForHit(hit: MatchHit, key: BracketMatchKey, hitPoints: Map<string, number>): number {
+  return hit === 'outcome' || hit === 'exact' ? (hitPoints.get(key) ?? 0) : 0;
+}
+
+/** True when the user predicted `teamId` into this (non-entry) slot's actual participant. */
+function isPredictedParticipantSlot(
+  isEntryRound: boolean,
+  teamId: string | null,
+  predictedParticipant: string | null | undefined,
+): boolean {
+  return !isEntryRound && teamId !== null && predictedParticipant === teamId;
+}
+
+/** Pool pick-pct for a team, only once both of this match's participants are known. */
+function poolPickPct(
+  homeId: string | null,
+  awayId: string | null,
+  teamId: string | null,
+  pctByTeam: Map<string, number> | undefined,
+): number | null {
+  if (homeId === null || awayId === null || teamId === null) return null;
+  return pctByTeam?.get(teamId) ?? null;
+}
+
+/** Predicted (home, away) goals for Final/Bronze, plus the team-identity snapshot when present. */
+function resolvePredictedFinaleScore(finishScore: FinishScore | undefined): {
+  predictedHome: number | null;
+  predictedAway: number | null;
+  predictedGoalsByTeam: { teamId: string; goals: number }[] | null;
+} {
+  if (!finishScore) {
+    return { predictedHome: null, predictedAway: null, predictedGoalsByTeam: null };
+  }
+  const predictedGoalsByTeam =
+    finishScore.homeTeamId != null && finishScore.awayTeamId != null
+      ? [
+          { teamId: finishScore.homeTeamId, goals: finishScore.home },
+          { teamId: finishScore.awayTeamId, goals: finishScore.away },
+        ]
+      : null;
+  return {
+    predictedHome: finishScore.home,
+    predictedAway: finishScore.away,
+    predictedGoalsByTeam,
+  };
+}
+
+/**
+ * Final/Bronze context for a card: predicted score, and the effective picked winner — derived
+ * from the finish score (snapshot-first) when no explicit bracket pick was stored, also covering
+ * the case where a since-changed SF pick invalidated the stale explicit Final/Bronze pick.
+ */
+function resolveFinaleContext(
+  key: BracketMatchKey,
+  finalMatchKey: string,
+  bronzeMatchKey: string,
+  finishScores: { final?: FinishScore; bronze?: FinishScore },
+  pickedId: string | null,
+  bracket: Tournament['bracket'],
+  pickMap: Map<string, string>,
+): {
+  isFinale: boolean;
+  isBronzeMatch: boolean;
+  predictedHome: number | null;
+  predictedAway: number | null;
+  predictedGoalsByTeam: { teamId: string; goals: number }[] | null;
+  effectivePickedId: string | null;
+} {
+  const isFinale = key === finalMatchKey || key === bronzeMatchKey;
+  const isBronzeMatch = key === bronzeMatchKey;
+  const finishScoreForKey =
+    key === finalMatchKey
+      ? finishScores.final
+      : key === bronzeMatchKey
+        ? finishScores.bronze
+        : undefined;
+  const { predictedHome, predictedAway, predictedGoalsByTeam } =
+    resolvePredictedFinaleScore(finishScoreForKey);
+
+  let effectivePickedId = pickedId;
+  if (isFinale && pickedId === null) {
+    const score = key === finalMatchKey ? finishScores.final : finishScores.bronze;
+    effectivePickedId = resolveFinaleWinner(score, (home, away) =>
+      deriveImplicitFinaleWinner(key, bracket, pickMap, home, away),
+    );
+  }
+  return {
+    isFinale,
+    isBronzeMatch,
+    predictedHome,
+    predictedAway,
+    predictedGoalsByTeam,
+    effectivePickedId,
+  };
+}
+
+/** Card pick status: alive/busted/pending/no-pick for the user's picked winner. */
+function resolvePickStatus(args: {
+  effectivePickedId: string | null;
+  winnerId: string | null;
+  homeId: string | null;
+  awayId: string | null;
+  isBronzeMatch: boolean;
+  knockoutEliminatedTeams: Set<string>;
+  semiFinalLoserTeams: Set<string>;
+}): KnockoutMatchView['pickStatus'] {
+  const {
+    effectivePickedId,
+    winnerId,
+    homeId,
+    awayId,
+    isBronzeMatch,
+    knockoutEliminatedTeams,
+    semiFinalLoserTeams,
+  } = args;
+  if (!effectivePickedId) return 'no-pick';
+  if (winnerId) return winnerId === effectivePickedId ? 'alive' : 'busted';
+  const matchTeamsKnown = homeId !== null && awayId !== null;
+  const pickedTeamAbsent = effectivePickedId !== homeId && effectivePickedId !== awayId;
+  const pickedTeamEliminated =
+    knockoutEliminatedTeams.has(effectivePickedId) &&
+    !(isBronzeMatch && semiFinalLoserTeams.has(effectivePickedId));
+  return (matchTeamsKnown && pickedTeamAbsent) || pickedTeamEliminated ? 'busted' : 'pending';
+}
+
+/** Card status for the user's predicted opponent (Final/Bronze only). */
+function resolveOpponentStatus(args: {
+  pickedOpponentId: string | null;
+  winnerId: string | null;
+  homeId: string | null;
+  awayId: string | null;
+  isBronzeMatch: boolean;
+  knockoutEliminatedTeams: Set<string>;
+  semiFinalLoserTeams: Set<string>;
+}): KnockoutMatchView['pickStatus'] {
+  const {
+    pickedOpponentId,
+    winnerId,
+    homeId,
+    awayId,
+    isBronzeMatch,
+    knockoutEliminatedTeams,
+    semiFinalLoserTeams,
+  } = args;
+  if (pickedOpponentId === null) return 'no-pick';
+  if (winnerId) {
+    return pickedOpponentId === homeId || pickedOpponentId === awayId ? 'alive' : 'busted';
+  }
+  const opponentEliminated =
+    knockoutEliminatedTeams.has(pickedOpponentId) &&
+    !(isBronzeMatch && semiFinalLoserTeams.has(pickedOpponentId));
+  const teamsKnown = homeId !== null && awayId !== null;
+  const opponentAbsent = pickedOpponentId !== homeId && pickedOpponentId !== awayId;
+  return opponentEliminated || (teamsKnown && opponentAbsent) ? 'busted' : 'pending';
+}
+
+/**
+ * For a progression card with an empty slot: the feeder entry-round pick to render as a badge,
+ * but only when that pick is already definitively busted. Empty when entry-round, when there is
+ * no progression for this match, or when there are no inputs.
+ */
+function resolveFeederPickedIds(args: {
+  key: BracketMatchKey;
+  isEntryRound: boolean;
+  hasInputs: boolean;
+  homeId: string | null;
+  awayId: string | null;
+  predictedHomeTeamId: string | null;
+  predictedAwayTeamId: string | null;
+  progressionByMatch: Map<string, { from: string[] }>;
+  pickMap: Map<string, string>;
+  derivedParticipants: Map<string, [string | null, string | null]>;
+  matchByKey: Map<string, MatchRow>;
+  knockoutEliminatedTeams: Set<string>;
+}): { homeSlotFeederPickedId: string | null; awaySlotFeederPickedId: string | null } {
+  const {
+    key,
+    isEntryRound,
+    hasInputs,
+    homeId,
+    awayId,
+    predictedHomeTeamId,
+    predictedAwayTeamId,
+    progressionByMatch,
+    pickMap,
+    derivedParticipants,
+    matchByKey,
+    knockoutEliminatedTeams,
+  } = args;
+  const empty = { homeSlotFeederPickedId: null, awaySlotFeederPickedId: null };
+  if (isEntryRound || !hasInputs) return empty;
+  const prog = progressionByMatch.get(key);
+  if (!prog) return empty;
+  const [fk0, fk1] = prog.from;
+  const homeSlotEmpty = homeId === null && predictedHomeTeamId === null;
+  const awaySlotEmpty = awayId === null && predictedAwayTeamId === null;
+  return {
+    homeSlotFeederPickedId:
+      fk0 && homeSlotEmpty
+        ? entryPickIfBusted(fk0, pickMap, derivedParticipants, matchByKey, knockoutEliminatedTeams)
+        : null,
+    awaySlotFeederPickedId:
+      fk1 && awaySlotEmpty
+        ? entryPickIfBusted(fk1, pickMap, derivedParticipants, matchByKey, knockoutEliminatedTeams)
+        : null,
+  };
+}
+
+/** Every team the user picked across all entry-round bracket slots. */
+function collectEntryPickedTeams(
+  slots: Tournament['bracket']['slots'],
+  pickMap: Map<string, string>,
+): Set<string> {
+  const teams = new Set<string>();
+  for (const slot of slots) {
+    const pick = pickMap.get(slot.match);
+    if (pick) teams.add(pick);
+  }
+  return teams;
+}
+
+/**
+ * Per entry-round slot: the effective pick resolved to the slot where the predicted team
+ * actually plays (cross-slot adjustment against the slot's actual/projected participants).
+ */
+function buildEffectiveEntryPickMap(
+  def: Tournament,
+  pickMap: Map<string, string>,
+  derivedParticipants: Map<BracketMatchKey, [string | null, string | null]>,
+  matchByKey: Map<string, MatchRow>,
+): Map<BracketMatchKey, string | null> {
+  const allEntryPickedTeams = collectEntryPickedTeams(def.bracket.slots, pickMap);
+  const result = new Map<BracketMatchKey, string | null>();
+  for (const slot of def.bracket.slots) {
+    const directPick = pickMap.get(slot.match) ?? null;
+    const derived = derivedParticipants.get(slot.match);
+    const actualRow = matchByKey.get(slot.match);
+    const home = derived?.[0] ?? actualRow?.homeTeamId ?? null;
+    const away = derived?.[1] ?? actualRow?.awayTeamId ?? null;
+    result.set(slot.match, resolveCrossSlotPick(directPick, home, away, allEntryPickedTeams));
+  }
+  return result;
+}
+
+/** Maps each knockout stage to the set of teams the user picked to advance in that stage. */
+function buildStagePicksMap(
+  pickMap: Map<string, string>,
+  matchByKey: Map<string, MatchRow>,
+  rounds: string[],
+): Map<string, Set<string>> {
+  const stagePicksMap = new Map<string, Set<string>>();
+  for (const [matchKey, pickedId] of pickMap.entries()) {
+    const stage = matchByKey.get(matchKey)?.stage ?? getRoundLabel(matchKey, rounds);
+    if (!stagePicksMap.has(stage)) stagePicksMap.set(stage, new Set());
+    stagePicksMap.get(stage)!.add(pickedId);
+  }
+  return stagePicksMap;
+}
+
+/** Groups every non-finale bracket match key under its round label, in slot-then-progression order. */
+function buildKeysByRound(
+  bracket: Tournament['bracket'],
+  finalMatchKey: string,
+  bronzeMatchKey: string,
+): Map<string, BracketMatchKey[]> {
+  const keysByRound = new Map<string, BracketMatchKey[]>();
+  for (const slot of bracket.slots) {
+    const round = getRoundLabel(slot.match, bracket.rounds);
+    if (!keysByRound.has(round)) keysByRound.set(round, []);
+    keysByRound.get(round)!.push(slot.match);
+  }
+  for (const prog of bracket.progression) {
+    if (prog.match === finalMatchKey || prog.match === bronzeMatchKey) continue;
+    const round = getRoundLabel(prog.match, bracket.rounds);
+    if (!keysByRound.has(round)) keysByRound.set(round, []);
+    keysByRound.get(round)!.push(prog.match);
+  }
+  return keysByRound;
 }
 
 function computeKnockoutHit(args: {
@@ -460,6 +660,85 @@ function computeKnockoutHit(args: {
   return 'missed';
 }
 
+/** Group-stage finality: which group matches are final, whether every group is done, and per-group. */
+function computeGroupFinality(
+  def: Tournament,
+  allMatches: MatchRow[],
+): {
+  finalGroupMatchIds: Set<string>;
+  allGroupsFinal: boolean;
+  groupIsFinal: Map<string, boolean>;
+} {
+  const finalGroupMatchIds = new Set(
+    allMatches.filter((m) => m.stage === 'group' && m.status === 'final').map((m) => m.id),
+  );
+  const allGroupsFinal = def.groupMatches.every((gm) => finalGroupMatchIds.has(gm.id));
+
+  const matchIdsByGroup = new Map<string, string[]>();
+  for (const gm of def.groupMatches) {
+    const g = gm.group as string;
+    if (!matchIdsByGroup.has(g)) matchIdsByGroup.set(g, []);
+    matchIdsByGroup.get(g)!.push(gm.id);
+  }
+  const groupIsFinal = new Map<string, boolean>();
+  for (const [g, ids] of matchIdsByGroup.entries()) {
+    groupIsFinal.set(
+      g,
+      ids.every((id) => finalGroupMatchIds.has(id)),
+    );
+  }
+  return { finalGroupMatchIds, allGroupsFinal, groupIsFinal };
+}
+
+/**
+ * Progression (R16+) participants derived from actual feeder-match winners. Populated even when
+ * only one feeder is final, so a known team shows as confirmed rather than a predicted fill.
+ * Excludes the Bronze match (its participants are SF losers, derived separately).
+ */
+function deriveProgressionParticipants(
+  def: Tournament,
+  matchByKey: Map<string, MatchRow>,
+): Map<BracketMatchKey, [string | null, string | null]> {
+  const result = new Map<BracketMatchKey, [string | null, string | null]>();
+  for (const prog of def.bracket.progression) {
+    if (prog.match === def.bracket.bronzeMatch) continue;
+    if (prog.from.length !== 2) continue;
+    const [fk0, fk1] = prog.from;
+    const w0 = fk0 ? getMatchWinner(matchByKey.get(fk0) ?? null) : null;
+    const w1 = fk1 ? getMatchWinner(matchByKey.get(fk1) ?? null) : null;
+    if (w0 !== null || w1 !== null) {
+      const pair: [string | null, string | null] = [w0, w1];
+      result.set(prog.match, pair);
+    }
+  }
+  return result;
+}
+
+/**
+ * Bronze participants: the SF losers, once both semifinals are final. Each SF's participants may
+ * come from the actual match row or from the already-derived progression participants.
+ */
+function deriveBronzeParticipants(
+  def: Tournament,
+  matchByKey: Map<string, MatchRow>,
+  participantsByMatch: Map<BracketMatchKey, [string | null, string | null]>,
+): [string, string] | null {
+  const bronzeProg = def.bracket.progression.find((p) => p.match === def.bracket.bronzeMatch);
+  if (!bronzeProg) return null;
+  const losers = bronzeProg.from.map((sfKey) => {
+    const sfMatch = matchByKey.get(sfKey) ?? null;
+    const sfWinner = getMatchWinner(sfMatch);
+    if (!sfWinner) return null;
+    const sfParts = participantsByMatch.get(sfKey);
+    const sfHome = sfMatch?.homeTeamId ?? sfParts?.[0] ?? null;
+    const sfAway = sfMatch?.awayTeamId ?? sfParts?.[1] ?? null;
+    if (!sfHome || !sfAway) return null;
+    return sfWinner === sfHome ? sfAway : sfHome;
+  });
+  const [l0, l1] = losers;
+  return l0 && l1 ? [l0, l1] : null;
+}
+
 function computeDerivedParticipants(
   def: Tournament,
   allMatches: MatchRow[],
@@ -477,25 +756,10 @@ function computeDerivedParticipants(
   const confirmedAway = new Map<BracketMatchKey, boolean>();
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
 
-  const finalGroupMatchIds = new Set(
-    allMatches.filter((m) => m.stage === 'group' && m.status === 'final').map((m) => m.id),
+  const { finalGroupMatchIds, allGroupsFinal, groupIsFinal } = computeGroupFinality(
+    def,
+    allMatches,
   );
-  const allGroupsFinal = def.groupMatches.every((gm) => finalGroupMatchIds.has(gm.id));
-
-  // Per-group finality: a group is "done" when all its matches are final.
-  const matchIdsByGroup = new Map<string, string[]>();
-  for (const gm of def.groupMatches) {
-    const g = gm.group as string;
-    if (!matchIdsByGroup.has(g)) matchIdsByGroup.set(g, []);
-    matchIdsByGroup.get(g)!.push(gm.id);
-  }
-  const groupIsFinal = new Map<string, boolean>();
-  for (const [g, ids] of matchIdsByGroup.entries()) {
-    groupIsFinal.set(
-      g,
-      ids.every((id) => finalGroupMatchIds.has(id)),
-    );
-  }
 
   // A slot ref is confirmed when its source group is fully final.
   // "3rd[i]" needs ALL groups done (best-third ranking spans all groups).
@@ -531,36 +795,13 @@ function computeDerivedParticipants(
     }
   }
 
-  for (const prog of def.bracket.progression) {
-    if (prog.match === def.bracket.bronzeMatch) continue;
-    if (prog.from.length !== 2) continue;
-    const [fk0, fk1] = prog.from;
-    const w0 = fk0 ? getMatchWinner(matchByKey.get(fk0) ?? null) : null;
-    const w1 = fk1 ? getMatchWinner(matchByKey.get(fk1) ?? null) : null;
-    // Populate even when only one feeder match is final so the known team
-    // appears as confirmed in the next round instead of as a predicted fill.
-    if (w0 !== null || w1 !== null) {
-      participantsByMatch.set(prog.match, [w0, w1] as [string | null, string | null]);
-    }
+  for (const [key, pair] of deriveProgressionParticipants(def, matchByKey)) {
+    participantsByMatch.set(key, pair);
   }
 
-  // Bronze: SF losers (need both SFs final; participants of SF can be derived or from DB row)
-  const bronzeProg = def.bracket.progression.find((p) => p.match === def.bracket.bronzeMatch);
-  if (bronzeProg) {
-    const losers: (string | null)[] = bronzeProg.from.map((sfKey) => {
-      const sfMatch = matchByKey.get(sfKey) ?? null;
-      const sfWinner = getMatchWinner(sfMatch);
-      if (!sfWinner) return null;
-      const sfParts = participantsByMatch.get(sfKey);
-      const sfHome = sfMatch?.homeTeamId ?? sfParts?.[0] ?? null;
-      const sfAway = sfMatch?.awayTeamId ?? sfParts?.[1] ?? null;
-      if (!sfHome || !sfAway) return null;
-      return sfWinner === sfHome ? sfAway : sfHome;
-    });
-    const [l0, l1] = losers;
-    if (l0 && l1) {
-      participantsByMatch.set(def.bracket.bronzeMatch, [l0, l1]);
-    }
+  const bronzePair = deriveBronzeParticipants(def, matchByKey, participantsByMatch);
+  if (bronzePair) {
+    participantsByMatch.set(def.bracket.bronzeMatch, bronzePair);
   }
 
   return { participants: participantsByMatch, projectedKeys, confirmedHome, confirmedAway };
@@ -710,6 +951,47 @@ function getRoundLabel(matchKey: string, rounds: string[]): string {
   return matchKey;
 }
 
+/** The advancing team from a feeder key, or null when the feeder slot is empty. */
+function winnerOrNull(
+  fromKey: string | undefined,
+  getWinner: (key: string) => string | null,
+): string | null {
+  return fromKey ? getWinner(fromKey) : null;
+}
+
+/** Whether this progression match still needs filling for the round currently being processed. */
+function shouldFillProgForRound(
+  prog: { match: BracketMatchKey },
+  round: string,
+  bronzeKey: string,
+  predicted: Map<string, [string | null, string | null]>,
+  rounds: string[],
+): boolean {
+  if (prog.match === bronzeKey) return false;
+  if (predicted.has(prog.match)) return false;
+  return getRoundLabel(prog.match, rounds) === round;
+}
+
+/**
+ * Fills `predicted` for every non-bronze progression match in round order, so each match's
+ * predicted participants are available when a later round depends on them. `getWinner` resolves
+ * the advancing team for a feeder key.
+ */
+function fillProgressionParticipantsInRoundOrder(
+  def: Tournament,
+  predicted: Map<string, [string | null, string | null]>,
+  getWinner: (fromKey: string) => string | null,
+): void {
+  const bronzeKey = def.bracket.bronzeMatch;
+  for (const round of def.bracket.rounds) {
+    for (const prog of def.bracket.progression) {
+      if (!shouldFillProgForRound(prog, round, bronzeKey, predicted, def.bracket.rounds)) continue;
+      const [fk0, fk1] = prog.from;
+      predicted.set(prog.match, [winnerOrNull(fk0, getWinner), winnerOrNull(fk1, getWinner)]);
+    }
+  }
+}
+
 /**
  * Builds a map of user-predicted (home, away) team IDs for every bracket match,
  * walking the bracket in topological order.
@@ -740,11 +1022,7 @@ function computeUserPredictedParticipants(
 
   // Collect every team the user picked across all entry-round matches.
   // Used when groups are done to find picks by actual slot participants.
-  const allEntryPickedTeams = new Set<string>();
-  for (const slot of def.bracket.slots) {
-    const pick = pickMap.get(slot.match);
-    if (pick) allEntryPickedTeams.add(pick);
-  }
+  const allEntryPickedTeams = collectEntryPickedTeams(def.bracket.slots, pickMap);
 
   // Resolve the predicted advancing team for each entry-round slot.
   const entryWinner = new Map<BracketMatchKey, string | null>();
@@ -794,18 +1072,7 @@ function computeUserPredictedParticipants(
   // Progression matches (excluding bronze) — process in round order so each match's
   // predicted participants are available when a later round depends on them.
   const bronzeKey = def.bracket.bronzeMatch;
-  for (const round of def.bracket.rounds) {
-    for (const prog of def.bracket.progression) {
-      if (prog.match === bronzeKey) continue;
-      if (predicted.has(prog.match)) continue;
-      if (getRoundLabel(prog.match, def.bracket.rounds) !== round) continue;
-      const [fk0, fk1] = prog.from;
-      predicted.set(prog.match, [
-        fk0 ? getPredictedWinner(fk0) : null,
-        fk1 ? getPredictedWinner(fk1) : null,
-      ]);
-    }
-  }
+  fillProgressionParticipantsInRoundOrder(def, predicted, getPredictedWinner);
 
   // Bronze match: participants are the SF losers (the SF team the user did NOT pick to win)
   const bronzeProg = def.bracket.progression.find((p) => p.match === bronzeKey);
@@ -828,7 +1095,7 @@ function computeUserPredictedParticipants(
       return null;
     };
     const [sf1, sf2] = bronzeProg.from;
-    predicted.set(bronzeKey, [sf1 ? getSfLoser(sf1) : null, sf2 ? getSfLoser(sf2) : null]);
+    predicted.set(bronzeKey, [winnerOrNull(sf1, getSfLoser), winnerOrNull(sf2, getSfLoser)]);
   }
 
   return predicted;
@@ -849,11 +1116,7 @@ function computeUserPickedParticipants(
   pickMap: Map<string, string>,
   derivedParticipants: Map<BracketMatchKey, [string | null, string | null]>,
 ): Map<string, [string | null, string | null]> {
-  const allEntryPickedTeams = new Set<string>();
-  for (const slot of def.bracket.slots) {
-    const pick = pickMap.get(slot.match);
-    if (pick) allEntryPickedTeams.add(pick);
-  }
+  const allEntryPickedTeams = collectEntryPickedTeams(def.bracket.slots, pickMap);
 
   // Entry rounds: resolve user's pick (with cross-slot adjustment) — no actual substitution.
   const entryPickWinner = new Map<BracketMatchKey, string | null>();
@@ -886,18 +1149,7 @@ function computeUserPickedParticipants(
   };
 
   const bronzeKey = def.bracket.bronzeMatch;
-  for (const round of def.bracket.rounds) {
-    for (const prog of def.bracket.progression) {
-      if (prog.match === bronzeKey) continue;
-      if (predicted.has(prog.match)) continue;
-      if (getRoundLabel(prog.match, def.bracket.rounds) !== round) continue;
-      const [fk0, fk1] = prog.from;
-      predicted.set(prog.match, [
-        fk0 ? getUserPickedWinner(fk0) : null,
-        fk1 ? getUserPickedWinner(fk1) : null,
-      ]);
-    }
-  }
+  fillProgressionParticipantsInRoundOrder(def, predicted, getUserPickedWinner);
 
   // Bronze match: participants are the SF losers implied by the user's own SF winner picks
   // (never substituting actual results, unlike computeUserPredictedParticipants's bronze branch).
@@ -913,7 +1165,7 @@ function computeUserPickedParticipants(
       return null;
     };
     const [sf1, sf2] = bronzeProg.from;
-    predicted.set(bronzeKey, [sf1 ? getSfLoser(sf1) : null, sf2 ? getSfLoser(sf2) : null]);
+    predicted.set(bronzeKey, [winnerOrNull(sf1, getSfLoser), winnerOrNull(sf2, getSfLoser)]);
   }
 
   return predicted;

@@ -8,8 +8,6 @@ import type {
   FinishScore,
   TeamId,
   PlayerId,
-  MatchId,
-  BracketMatchKey,
 } from '@cup/engine';
 import { z } from 'zod';
 
@@ -182,23 +180,8 @@ function buildSpecials(s: z.output<typeof specialsSchema>): SpecialBets {
   };
 }
 
-/** Cross-reference errors with clear, actionable messages */
-function crossReference(parsed: CardIoOutput, tournament: Tournament): string[] {
-  const errors: string[] = [];
-
-  if (parsed.tournamentId !== tournament.id) {
-    errors.push(
-      `Tournament id mismatch: expected "${tournament.id}", got "${parsed.tournamentId}"`,
-    );
-    // Return early — cross-referencing ids against the wrong tournament is pointless
-    return errors;
-  }
-
-  const teamIds = new Set(tournament.teams.map((t) => t.id as string));
-  const playerIds = new Set(tournament.players.map((p) => p.id as string));
-  const groupMatchIds = new Set(tournament.groupMatches.map((m) => m.id as string));
-
-  // Collect all known bracket match keys from bracket definition
+/** Collect every bracket match key known to the tournament's bracket definition. */
+function collectBracketMatchKeys(tournament: Tournament): Set<string> {
   const bracketMatchKeys = new Set<string>();
   for (const slot of tournament.bracket.slots) {
     bracketMatchKeys.add(slot.match as string);
@@ -217,14 +200,28 @@ function crossReference(parsed: CardIoOutput, tournament: Tournament): string[] 
   for (const ro8 of tournament.bracket.roundOf8Matches) {
     bracketMatchKeys.add(ro8 as string);
   }
+  return bracketMatchKeys;
+}
 
-  for (const gs of parsed.groupScores) {
+/** Flag groupScores entries that reference a matchId not present in the tournament. */
+function validateGroupScores(groupScores: GroupScore[], groupMatchIds: Set<string>): string[] {
+  const errors: string[] = [];
+  for (const gs of groupScores) {
     if (!groupMatchIds.has(gs.matchId as string)) {
       errors.push(`Unknown match id "${gs.matchId}" in groupScores`);
     }
   }
+  return errors;
+}
 
-  for (const kp of parsed.knockoutPicks) {
+/** Flag knockoutPicks entries with an unknown bracketMatchKey or winner team id. */
+function validateKnockoutPicks(
+  knockoutPicks: KnockoutPick[],
+  bracketMatchKeys: Set<string>,
+  teamIds: Set<string>,
+): string[] {
+  const errors: string[] = [];
+  for (const kp of knockoutPicks) {
     if (!bracketMatchKeys.has(kp.bracketMatchKey as string)) {
       errors.push(`Unknown bracketMatchKey "${kp.bracketMatchKey}" in knockoutPicks`);
     }
@@ -234,9 +231,12 @@ function crossReference(parsed: CardIoOutput, tournament: Tournament): string[] 
       );
     }
   }
+  return errors;
+}
 
-  const { specials } = parsed;
-
+/** Flag special-bet player picks that reference a player id not in the tournament. */
+function validateSpecialPlayerIds(specials: SpecialBets, playerIds: Set<string>): string[] {
+  const errors: string[] = [];
   if (
     specials.topScorerPlayer !== undefined &&
     !playerIds.has(specials.topScorerPlayer as string)
@@ -259,7 +259,12 @@ function crossReference(parsed: CardIoOutput, tournament: Tournament): string[] 
       `Unknown player id "${specials.finalDecisiveGoalPlayer}" in specials.finalDecisiveGoalPlayer`,
     );
   }
+  return errors;
+}
 
+/** Flag special-bet team picks that reference a team id not in the tournament. */
+function validateSpecialTeamIds(specials: SpecialBets, teamIds: Set<string>): string[] {
+  const errors: string[] = [];
   const teamBets: Array<[string, TeamId | undefined]> = [
     ['specials.groupTopScoringTeam', specials.groupTopScoringTeam],
     ['specials.groupTopConcedingTeam', specials.groupTopConcedingTeam],
@@ -272,8 +277,28 @@ function crossReference(parsed: CardIoOutput, tournament: Tournament): string[] 
       errors.push(`Unknown team id "${val}" in ${field}`);
     }
   }
-
   return errors;
+}
+
+/** Cross-reference errors with clear, actionable messages */
+function crossReference(parsed: CardIoOutput, tournament: Tournament): string[] {
+  if (parsed.tournamentId !== tournament.id) {
+    // Cross-referencing ids against the wrong tournament is pointless — bail out early.
+    return [`Tournament id mismatch: expected "${tournament.id}", got "${parsed.tournamentId}"`];
+  }
+
+  const teamIds = new Set(tournament.teams.map((t) => t.id as string));
+  const playerIds = new Set(tournament.players.map((p) => p.id as string));
+  const groupMatchIds = new Set(tournament.groupMatches.map((m) => m.id as string));
+  const bracketMatchKeys = collectBracketMatchKeys(tournament);
+  const { specials } = parsed;
+
+  return [
+    ...validateGroupScores(parsed.groupScores, groupMatchIds),
+    ...validateKnockoutPicks(parsed.knockoutPicks, bracketMatchKeys, teamIds),
+    ...validateSpecialPlayerIds(specials, playerIds),
+    ...validateSpecialTeamIds(specials, teamIds),
+  ];
 }
 
 /** Build CardInputs from parsed, honouring exactOptionalPropertyTypes */
