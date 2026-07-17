@@ -106,6 +106,22 @@ async function getOrCreateGuestLoginToken(actor: Actor): Promise<string | null> 
   return loginToken;
 }
 
+function LoginHelpNotice() {
+  return (
+    <div className="rounded-[10px] bg-surface-2 border border-line p-[12px_14px] flex flex-col gap-2">
+      <p className="text-[13px] text-ink-soft leading-[1.6]">
+        <strong className="text-ink">Already joined on another device?</strong> Your personal login
+        link is on your My Pools page. Ask the pool creator to send it to you if you don&apos;t have
+        it saved.
+      </p>
+      <p className="text-[13px] text-ink-soft leading-[1.6]">
+        <strong className="text-ink">Haven&apos;t joined yet?</strong> The invite link may have been
+        reset or removed. Ask the pool creator to share a new one.
+      </p>
+    </div>
+  );
+}
+
 function InvalidInviteForGuest() {
   return (
     <main className="turf min-h-screen flex flex-col items-center justify-center px-4 py-6">
@@ -120,17 +136,7 @@ function InvalidInviteForGuest() {
           <Button asChild variant="dark" block>
             <Link href="/">Go home</Link>
           </Button>
-          <div className="rounded-[10px] bg-surface-2 border border-line p-[12px_14px] flex flex-col gap-2">
-            <p className="text-[13px] text-ink-soft leading-[1.6]">
-              <strong className="text-ink">Already joined on another device?</strong> Your personal
-              login link is on your My Pools page. Ask the pool creator to send it to you if you
-              don&apos;t have it saved.
-            </p>
-            <p className="text-[13px] text-ink-soft leading-[1.6]">
-              <strong className="text-ink">Haven&apos;t joined yet?</strong> The invite link may
-              have been reset or removed. Ask the pool creator to share a new one.
-            </p>
-          </div>
+          <LoginHelpNotice />
         </div>
       </div>
     </main>
@@ -158,11 +164,7 @@ function InvalidInviteForSignedInUser({
               This invite link is invalid or has been removed.
             </p>
           </div>
-          <div className="p-[20px_24px]">
-            <Button asChild variant="dark" block>
-              <Link href="/pools">Go to My Pools</Link>
-            </Button>
-          </div>
+          <GoToMyPoolsButton />
         </div>
 
         {pools.length > 0 && (
@@ -176,6 +178,16 @@ function InvalidInviteForSignedInUser({
         {myLoginToken && <MyLoginLink token={myLoginToken} baseUrl={baseUrl} />}
       </div>
     </main>
+  );
+}
+
+function GoToMyPoolsButton() {
+  return (
+    <div className="p-[20px_24px]">
+      <Button asChild variant="dark" block>
+        <Link href="/pools">Go to My Pools</Link>
+      </Button>
+    </div>
   );
 }
 

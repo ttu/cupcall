@@ -5,7 +5,7 @@ import { getPoolByViewToken } from '@cup/db';
 import { db } from '@/shared/db';
 import { getPoolDetail, Leaderboard } from '@/features/pools';
 import { StageBar, RaceChart } from '@/features/results';
-import { Icon } from '@/shared/ui';
+import { Icon, QuickActionLink } from '@/shared/ui';
 
 type Props = { params: Promise<{ token: string }> };
 
@@ -78,27 +78,14 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
         {/* Right rail */}
         <div className="flex flex-col gap-4">
           {/* Results shortcut */}
-          <Link
+          <QuickActionLink
             href={`/view/${token}/results`}
-            data-testid="view-results-link"
-            className="p-4.5 rounded-cup bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-3.5 no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
-          >
-            <span
-              aria-hidden
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(0,0,0,0.12)] shrink-0"
-            >
-              <Icon name="trophy" size={22} color="currentColor" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="font-extrabold text-base tracking-[-0.005em]">
-                Results &amp; standings
-              </div>
-              <div className="text-xs opacity-[0.78] mt-0.5 font-semibold">
-                Scores, groups &amp; knockout
-              </div>
-            </div>
-            <Icon name="arrow" size={18} color="currentColor" />
-          </Link>
+            testId="view-results-link"
+            variant="orange"
+            iconName="trophy"
+            title="Results & standings"
+            subtitle="Scores, groups & knockout"
+          />
 
           {/* Tournament timeline */}
           {detail.stageProgress.length > 0 && (

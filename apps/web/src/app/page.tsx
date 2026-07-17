@@ -4,6 +4,33 @@ import { auth } from '../features/auth/auth';
 import { GuestLoginForm, EmailLoginForm } from '@/features/auth';
 import { Button, Logo, Chip, Avatar } from '@/shared/ui';
 
+function GuestFormCard(): ReactElement {
+  return (
+    <div className="mb-6">
+      <div className="eyebrow text-on-dark-soft mb-2.5">No password. Just your name.</div>
+      <div
+        className="rounded-cup p-4.5"
+        style={{
+          background: 'rgba(255,255,255,0.06)',
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
+        }}
+      >
+        <GuestLoginForm />
+      </div>
+    </div>
+  );
+}
+
+function OrDivider(): ReactElement {
+  return (
+    <div className="flex items-center gap-3 mb-5 text-on-dark-muted text-xs font-bold uppercase tracking-[0.08em]">
+      <div className="flex-1 h-px bg-[rgba(255,255,255,0.1)]" />
+      or sign in with email
+      <div className="flex-1 h-px bg-[rgba(255,255,255,0.1)]" />
+    </div>
+  );
+}
+
 export default async function HomePage(): Promise<ReactElement> {
   const session = await auth();
 
@@ -67,26 +94,9 @@ export default async function HomePage(): Promise<ReactElement> {
             friends — one winner when the final whistle blows.
           </p>
 
-          {/* Guest form — primary CTA */}
-          <div className="mb-6">
-            <div className="eyebrow text-on-dark-soft mb-2.5">No password. Just your name.</div>
-            <div
-              className="rounded-cup p-4.5"
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
-              }}
-            >
-              <GuestLoginForm />
-            </div>
-          </div>
+          <GuestFormCard />
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-5 text-on-dark-muted text-xs font-bold uppercase tracking-[0.08em]">
-            <div className="flex-1 h-px bg-[rgba(255,255,255,0.1)]" />
-            or sign in with email
-            <div className="flex-1 h-px bg-[rgba(255,255,255,0.1)]" />
-          </div>
+          <OrDivider />
 
           <div
             className="rounded-cup p-4.5"

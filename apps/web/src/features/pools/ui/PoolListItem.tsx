@@ -26,6 +26,42 @@ function initials(name: string): string {
   return ((words[0]?.[0] ?? '') + (words[1]?.[0] ?? '')).toUpperCase();
 }
 
+function PoolIdentity({
+  pool,
+  accent,
+  isOwner,
+}: {
+  pool: PoolSummary;
+  accent: string;
+  isOwner: boolean;
+}): ReactElement {
+  return (
+    <div className="flex items-center gap-3.5 min-w-0">
+      {/* Initials square */}
+      <span
+        className="w-12 h-12 rounded-xl grid place-items-center font-cup-display text-[17px] tracking-[0.02em] text-on-dark shrink-0"
+        style={{ background: accent }}
+      >
+        {initials(pool.name)}
+      </span>
+
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-[17px] font-extrabold text-ink m-0">{pool.name}</h2>
+          {isOwner && (
+            <Chip variant="green" className="h-[22px] text-[10px]">
+              Owner
+            </Chip>
+          )}
+        </div>
+        <div className="text-xs text-ink-muted mt-[3px] font-semibold">
+          {pool.tournamentName} · {pool.memberCount} {pool.memberCount === 1 ? 'member' : 'members'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   pool: PoolSummary;
   isOwner: boolean;
@@ -43,31 +79,7 @@ export function PoolListItem({ pool, isOwner }: Props): ReactElement {
       <div className="w-1.5 shrink-0" style={{ background: accent }} />
 
       <div className="flex-1 py-4.5 px-5 flex items-center justify-between gap-3 min-w-0">
-        {/* Pool identity */}
-        <div className="flex items-center gap-3.5 min-w-0">
-          {/* Initials square */}
-          <span
-            className="w-12 h-12 rounded-xl grid place-items-center font-cup-display text-[17px] tracking-[0.02em] text-on-dark shrink-0"
-            style={{ background: accent }}
-          >
-            {initials(pool.name)}
-          </span>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-[17px] font-extrabold text-ink m-0">{pool.name}</h2>
-              {isOwner && (
-                <Chip variant="green" className="h-[22px] text-[10px]">
-                  Owner
-                </Chip>
-              )}
-            </div>
-            <div className="text-xs text-ink-muted mt-[3px] font-semibold">
-              {pool.tournamentName} · {pool.memberCount}{' '}
-              {pool.memberCount === 1 ? 'member' : 'members'}
-            </div>
-          </div>
-        </div>
+        <PoolIdentity pool={pool} accent={accent} isOwner={isOwner} />
 
         {/* Score + chevron */}
         <div className="flex items-center gap-5 shrink-0">

@@ -14,7 +14,7 @@ import {
   PoolBackupControls,
 } from '@/features/pools';
 import { StageBar, RaceChart } from '@/features/results';
-import { Icon } from '@/shared/ui';
+import { Icon, QuickActionLink } from '@/shared/ui';
 import { poolId as asPoolId } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string }> };
@@ -146,50 +146,24 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           )}
 
           {/* Results shortcut — bold accent (top action during tournament) */}
-          <Link
+          <QuickActionLink
             href={`/pools/${poolId}/results`}
-            data-testid="pool-results-link"
-            className="p-4.5 rounded-cup bg-orange-500 text-[oklch(0.22_0.03_50)] flex items-center gap-3.5 no-underline shadow-[0_10px_30px_-16px_var(--orange-500)]"
-          >
-            <span
-              aria-hidden
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(0,0,0,0.12)] shrink-0"
-            >
-              <Icon name="trophy" size={22} color="currentColor" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="font-extrabold text-base tracking-[-0.005em]">
-                Results &amp; standings
-              </div>
-              <div className="text-xs opacity-[0.78] mt-0.5 font-semibold">
-                Scores, groups &amp; knockout
-              </div>
-            </div>
-            <Icon name="arrow" size={18} color="currentColor" />
-          </Link>
+            testId="pool-results-link"
+            variant="orange"
+            iconName="trophy"
+            title="Results & standings"
+            subtitle="Scores, groups & knockout"
+          />
 
           {/* My card / predictions — bold primary (top action pre-lock) */}
-          <Link
+          <QuickActionLink
             href={`/pools/${poolId}/predict`}
-            data-testid="pool-predict-link"
-            className="p-4.5 rounded-cup bg-green-500 text-[oklch(0.18_0.02_160)] flex items-center gap-3.5 no-underline shadow-[0_10px_30px_-16px_var(--green-500)]"
-          >
-            <span
-              aria-hidden
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(0,0,0,0.12)] shrink-0"
-            >
-              <Icon name="card" size={22} color="currentColor" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="font-extrabold text-base tracking-[-0.005em]">
-                {locked ? 'View my card' : 'My predictions'}
-              </div>
-              <div className="text-xs opacity-[0.78] mt-0.5 font-semibold">
-                {locked ? 'See your locked picks' : 'Fill in your picks'}
-              </div>
-            </div>
-            <Icon name="arrow" size={18} color="currentColor" />
-          </Link>
+            testId="pool-predict-link"
+            variant="green"
+            iconName="card"
+            title={locked ? 'View my card' : 'My predictions'}
+            subtitle={locked ? 'See your locked picks' : 'Fill in your picks'}
+          />
 
           {/* Tournament timeline */}
           {detail.stageProgress.length > 0 && (

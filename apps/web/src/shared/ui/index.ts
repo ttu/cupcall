@@ -12,3 +12,5 @@ export { PageSpinner } from './PageSpinner';
 export { TeamBadge } from './TeamBadge';
 export { teamFlag } from './teamFlag';
 export { AppFooter } from './AppFooter';
+export { QuickActionLink } from './QuickActionLink';
+export type { QuickActionVariant } from './QuickActionLink';
