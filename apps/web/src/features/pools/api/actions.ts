@@ -8,8 +8,10 @@ import { db } from '@/shared/db';
 import { getActorOrThrow } from '@/features/auth';
 import { checkBetaCode } from '@/features/auth/beta-code';
 import { assertIsOwner } from '@/shared/authz';
+import type { Actor } from '@/shared/authz';
 import { userId, poolId as asPoolId, tournamentId as asTournamentId } from '@cup/engine';
-import type { PoolId } from '@cup/engine';
+import type { PoolId, UserId } from '@cup/engine';
+import type { PoolRow } from '@cup/db';
 import {
   getPoolById,
   getPoolByInviteTokenHash,
@@ -54,6 +56,36 @@ async function getPoolOrThrow(poolId: PoolId) {
   const pool = await getPoolById(db, poolId);
   if (!pool) throw new Error(`Pool ${poolId} not found`);
   return pool;
+}
+
+/**
+ * Loads the actor and pool, runs `action`, and converts any thrown error
+ * (e.g. from an `assertIs*` guard) into an `{ ok: false, error }` result.
+ */
+async function withPool<T extends { ok: boolean }>(
+  poolId: PoolId,
+  action: (pool: PoolRow, actor: Actor) => Promise<T>,
+): Promise<T | { ok: false; error: string }> {
+  try {
+    const actor = await getActorOrThrow();
+    const pool = await getPoolOrThrow(poolId);
+    return await action(pool, actor);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+/** Asserts the actor owns the pool and isn't targeting the owner themself. */
+function assertOwnerNotTargetingSelf(
+  pool: PoolRow,
+  actor: Actor,
+  targetUserId: UserId,
+  errorMessage: string,
+): void {
+  assertIsOwner(pool, actor.userId);
+  if (targetUserId === pool.ownerId) {
+    throw new Error(errorMessage);
+  }
 }
 
 // Create pool
@@ -153,14 +185,8 @@ export async function kickMember(
   const poolId = asPoolId(rawPoolId);
   const targetUserId = userId(rawTargetUserId);
 
-  try {
-    const actor = await getActorOrThrow();
-    const pool = await getPoolOrThrow(poolId);
-    assertIsOwner(pool, actor.userId);
-
-    if (targetUserId === pool.ownerId) {
-      return { ok: false, error: 'The pool owner cannot be kicked.' };
-    }
+  return withPool(poolId, async (pool, actor) => {
+    assertOwnerNotTargetingSelf(pool, actor, targetUserId, 'The pool owner cannot be kicked.');
 
     await deletePrediction(db, poolId, targetUserId);
     await deleteScore(db, poolId, targetUserId);
@@ -169,9 +195,7 @@ export async function kickMember(
 
     revalidatePath(`/pools/${poolId}`);
     return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
-  }
+  });
 }
 
 // Leave pool (member self-removal)
@@ -186,10 +210,7 @@ export async function leavePool(
   const { poolId: rawPoolId } = parsed.data;
   const poolId = asPoolId(rawPoolId);
 
-  try {
-    const actor = await getActorOrThrow();
-    const pool = await getPoolOrThrow(poolId);
-
+  const result = await withPool(poolId, async (pool, actor) => {
     if (actor.userId === pool.ownerId) {
       return { ok: false, error: 'Pool owners cannot leave. Delete the pool instead.' };
     }
@@ -200,9 +221,9 @@ export async function leavePool(
     await removeMember(db, poolId, actor.userId);
 
     revalidatePath('/pools');
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
-  }
+    return { ok: true } as const;
+  });
+  if (!result.ok) return result;
 
   redirect('/pools');
 }
@@ -219,17 +240,13 @@ export async function clearInviteLink(
   const { poolId: rawPoolId } = parsed.data;
   const poolId = asPoolId(rawPoolId);
 
-  try {
-    const actor = await getActorOrThrow();
-    const pool = await getPoolOrThrow(poolId);
+  return withPool(poolId, async (pool, actor) => {
     assertIsOwner(pool, actor.userId);
 
     await clearInviteToken(db, poolId);
     revalidatePath(`/pools/${poolId}`);
     return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
-  }
+  });
 }
 
 // Rotate token
@@ -244,9 +261,7 @@ export async function rotateToken(
   const { poolId: rawPoolId } = parsed.data;
   const poolId = asPoolId(rawPoolId);
 
-  try {
-    const actor = await getActorOrThrow();
-    const pool = await getPoolOrThrow(poolId);
+  return withPool(poolId, async (pool, actor) => {
     assertIsOwner(pool, actor.userId);
 
     const newToken = generateInviteToken();
@@ -254,9 +269,7 @@ export async function rotateToken(
 
     revalidatePath(`/pools/${poolId}`);
     return { ok: true, newToken };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
-  }
+  });
 }
 
 // Rotate view token
@@ -271,9 +284,7 @@ export async function rotateViewToken(
   const { poolId: rawPoolId } = parsed.data;
   const poolId = asPoolId(rawPoolId);
 
-  try {
-    const actor = await getActorOrThrow();
-    const pool = await getPoolOrThrow(poolId);
+  return withPool(poolId, async (pool, actor) => {
     assertIsOwner(pool, actor.userId);
 
     const newToken = generateViewToken();
@@ -281,9 +292,7 @@ export async function rotateViewToken(
 
     revalidatePath(`/pools/${poolId}`);
     return { ok: true, newToken };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
-  }
+  });
 }
 
 // Clear view link
@@ -298,17 +307,13 @@ export async function clearViewLink(
   const { poolId: rawPoolId } = parsed.data;
   const poolId = asPoolId(rawPoolId);
 
-  try {
-    const actor = await getActorOrThrow();
-    const pool = await getPoolOrThrow(poolId);
+  return withPool(poolId, async (pool, actor) => {
     assertIsOwner(pool, actor.userId);
 
     await dbClearViewToken(db, poolId);
     revalidatePath(`/pools/${poolId}`);
     return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
-  }
+  });
 }
 
 // Delete pool
@@ -323,16 +328,14 @@ export async function deletePool(
   const { poolId: rawPoolId } = parsed.data;
   const poolId = asPoolId(rawPoolId);
 
-  try {
-    const actor = await getActorOrThrow();
-    const pool = await getPoolOrThrow(poolId);
+  const result = await withPool(poolId, async (pool, actor) => {
     assertIsOwner(pool, actor.userId);
 
     await dbDeletePool(db, poolId);
     revalidatePath('/pools');
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
-  }
+    return { ok: true } as const;
+  });
+  if (!result.ok) return result;
 
   redirect('/pools');
 }
@@ -411,14 +414,13 @@ export async function generateMemberLoginLink(
   const poolId = asPoolId(rawPoolId);
   const targetUserId = userId(rawTargetUserId);
 
-  try {
-    const actor = await getActorOrThrow();
-    const pool = await getPoolOrThrow(poolId);
-    assertIsOwner(pool, actor.userId);
-
-    if (targetUserId === pool.ownerId) {
-      return { ok: false, error: 'Cannot generate a login link for the pool owner.' };
-    }
+  return withPool(poolId, async (pool, actor) => {
+    assertOwnerNotTargetingSelf(
+      pool,
+      actor,
+      targetUserId,
+      'Cannot generate a login link for the pool owner.',
+    );
 
     const inPool = await isMember(db, poolId, targetUserId);
     if (!inPool) return { ok: false, error: 'User is not a member of this pool.' };
@@ -427,9 +429,7 @@ export async function generateMemberLoginLink(
     await upsertLoginToken(db, targetUserId, token);
 
     return { ok: true, url: buildLoginUrl(token) };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
-  }
+  });
 }
 
 // Rotate own login token (guest users only)

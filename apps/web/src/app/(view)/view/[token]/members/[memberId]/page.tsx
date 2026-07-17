@@ -3,8 +3,7 @@ import { notFound } from 'next/navigation';
 import { getPoolByViewToken, getTournamentById, getUserById } from '@cup/db';
 import { db } from '@/shared/db';
 import { userId } from '@cup/engine';
-import { getCardView, ReadOnlyCard } from '@/features/predictions';
-import type { MatchScore } from '@/features/predictions';
+import { getCardView, ReadOnlyCard, buildMatchScores } from '@/features/predictions';
 import { getResultsView } from '@/features/results';
 import { BackLink } from '@/shared/ui';
 
@@ -39,11 +38,7 @@ export default async function ViewMemberCardPage({ params }: Props): Promise<Rea
     getResultsView({ db, poolId: pool.id, userId: memberUid, now }),
   ]);
   const memberName = memberUser?.displayName ?? memberUser?.email ?? memberId;
-  const matchScores = new Map<string, MatchScore>(
-    resultsView?.groupResults.flatMap((g) =>
-      g.completedMatches.map((m) => [m.matchId, { hit: m.hit, points: m.pointsAwarded }]),
-    ) ?? [],
-  );
+  const matchScores = buildMatchScores(resultsView?.groupResults ?? []);
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">

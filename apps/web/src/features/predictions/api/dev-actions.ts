@@ -4,22 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { db } from '@/shared/db';
 import { getActorOrThrow } from '@/features/auth';
-import { getPoolById, getTournamentById, getOrCreatePrediction, upsertGroupScore } from '@cup/db';
+import { getOrCreatePrediction, upsertGroupScore } from '@cup/db';
 import { poolId as asPoolId } from '@cup/engine';
-import type { PoolId } from '@cup/engine';
 import { rescoreAfterEdit } from './rescore-helper';
-
-async function loadPoolAndTournament(poolId: PoolId) {
-  const pool = await getPoolById(db, poolId);
-  if (!pool) throw new Error(`Pool ${poolId} not found`);
-  const tournament = await getTournamentById(db, pool.tournamentId);
-  if (!tournament) throw new Error(`Tournament ${pool.tournamentId} not found`);
-  if (!tournament.definition)
-    throw new Error(
-      `Tournament definition not loaded for ${pool.tournamentId}. Run pnpm sync first.`,
-    );
-  return { pool, tournament };
-}
+import { loadPoolAndTournament } from './actions';
 
 const DevFillSchema = z.object({ poolId: z.string() });
 

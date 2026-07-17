@@ -5,7 +5,7 @@ import { getPoolById, getTournamentById, listEditsForPool } from '@cup/db';
 import { db } from '@/shared/db';
 import { getCurrentActor } from '@/features/auth';
 import { poolId as asPoolId } from '@cup/engine';
-import { AuditLog } from '@/features/predictions';
+import { AuditLog, toAuditEntry } from '@/features/predictions';
 import type { AuditEntry } from '@/features/predictions';
 import { BackLink } from '@/shared/ui';
 
@@ -35,16 +35,7 @@ export default async function PoolAuditPage({ params }: Props): Promise<ReactEle
     if (!byTarget.has(uid)) {
       byTarget.set(uid, { name: e.targetName, entries: [] });
     }
-    byTarget.get(uid)!.entries.push({
-      id: e.id,
-      editorName: e.editorName,
-      fieldPath: e.fieldPath,
-      oldValue: e.oldValue,
-      newValue: e.newValue,
-      ...(e.reason !== null ? { reason: e.reason } : {}),
-      source: e.source,
-      editedAt: e.editedAt,
-    });
+    byTarget.get(uid)!.entries.push(toAuditEntry(e));
   }
 
   return (

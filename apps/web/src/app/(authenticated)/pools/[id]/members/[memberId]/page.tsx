@@ -18,8 +18,10 @@ import {
   OwnerEditBanner,
   AuditLog,
   ExportImportControls,
+  toAuditEntry,
+  buildMatchScores,
 } from '@/features/predictions';
-import type { AuditEntry, MatchScore } from '@/features/predictions';
+import type { AuditEntry } from '@/features/predictions';
 import { getResultsView } from '@/features/results';
 import { userId, poolId as asPoolId } from '@cup/engine';
 import { BackLink } from '@/shared/ui';
@@ -82,25 +84,12 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
   let auditEntries: AuditEntry[] = [];
   if (prediction) {
     const edits = await listEditsForPrediction(db, prediction.id);
-    auditEntries = edits.map((e) => ({
-      id: e.id,
-      editorName: e.editorName,
-      fieldPath: e.fieldPath,
-      oldValue: e.oldValue,
-      newValue: e.newValue,
-      ...(e.reason !== null ? { reason: e.reason } : {}),
-      source: e.source,
-      editedAt: e.editedAt,
-    }));
+    auditEntries = edits.map(toAuditEntry);
   }
 
   const teams = tournamentDef.teams.map((t) => ({ id: t.id, name: t.name }));
   const players = tournamentDef.players.map((p) => ({ id: p.id, name: p.name, team: p.team }));
-  const matchScores = new Map<string, MatchScore>(
-    resultsView?.groupResults.flatMap((g) =>
-      g.completedMatches.map((m) => [m.matchId, { hit: m.hit, points: m.pointsAwarded }]),
-    ) ?? [],
-  );
+  const matchScores = buildMatchScores(resultsView?.groupResults ?? []);
 
   return (
     <main className="max-w-215 mx-auto p-[28px_20px] flex flex-col gap-5">

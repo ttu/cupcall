@@ -42,6 +42,7 @@ import type {
   PredictionId,
   UserId,
 } from '@cup/engine';
+import type { PoolRow, TournamentRow } from '@cup/db';
 import { rescoreAfterEdit } from './rescore-helper';
 import { applyCardImport } from '../application/import-card';
 import { toPair } from '../domain/pair';
@@ -51,7 +52,9 @@ import { toPair } from '../domain/pair';
 // ---------------------------------------------------------------------------
 
 /** Load pool, tournament, and assert pool/tournament exist. */
-async function loadPoolAndTournament(poolId: PoolId) {
+export async function loadPoolAndTournament(
+  poolId: PoolId,
+): Promise<{ pool: PoolRow; tournament: TournamentRow }> {
   const pool = await getPoolById(db, poolId);
   if (!pool) throw new Error(`Pool ${poolId} not found`);
 
@@ -186,6 +189,51 @@ async function deriveFinishWinner(
 
   const [homeSide, awaySide] = pair;
   return home > away ? homeSide : awaySide;
+}
+
+/** Saves a knockout pick and cascades invalidation of picks it may have broken. */
+async function applyKnockoutPick(
+  predictionId: PredictionId,
+  key: string,
+  winner: string,
+  tournamentDef: Tournament,
+  actual: ActualResults,
+): Promise<CardInputs> {
+  await upsertKnockoutPick(db, predictionId, bmk(key) as BracketMatchKey, winner);
+  const updatedInputs = await getPredictionInputs(db, predictionId);
+  await invalidatePicksAfterKnockoutPickChange(
+    predictionId,
+    updatedInputs,
+    tournamentDef,
+    actualGroupScoresMap(actual),
+  );
+  return updatedInputs;
+}
+
+/** Saves a final/bronze scoreline and, when it resolves a winner, records the implicit knockout pick. */
+async function applyFinishScore(
+  predictionId: PredictionId,
+  match: 'final' | 'bronze',
+  home: number,
+  away: number,
+  tournamentDef: Tournament,
+): Promise<void> {
+  const pair = await deriveFinishPair(predictionId, match, tournamentDef);
+  await upsertFinishScore(
+    db,
+    predictionId,
+    match,
+    home,
+    away,
+    pair?.[0] ?? null,
+    pair?.[1] ?? null,
+  );
+  const implicitWinner = await deriveFinishWinner(predictionId, match, home, away, tournamentDef);
+  if (implicitWinner !== undefined) {
+    const bracketKey =
+      match === 'final' ? tournamentDef.bracket.finalMatch : tournamentDef.bracket.bronzeMatch;
+    await upsertKnockoutPick(db, predictionId, bracketKey, implicitWinner);
+  }
 }
 
 async function invalidatePicksAfterGroupScoreChange(
@@ -452,14 +500,7 @@ export async function saveKnockoutPick(
     // bracketMatchKey IS the match id in the matches table (e.g. "qf-1", "final")
     (pool) => matchHasResult(db, pool.tournamentId, key),
     async ({ tournamentDef, actual, prediction }) => {
-      await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
-      const updatedInputs = await getPredictionInputs(db, prediction.id);
-      await invalidatePicksAfterKnockoutPickChange(
-        prediction.id,
-        updatedInputs,
-        tournamentDef,
-        actualGroupScoresMap(actual),
-      );
+      await applyKnockoutPick(prediction.id, key, winner, tournamentDef, actual);
       // Don't return the pre-cascade inputs: the cascade may have deleted picks that
       // would cause buildBracket's validation to throw on the stale snapshot.
       // rescoreAfterEdit re-fetches from DB when inputs are omitted.
@@ -494,13 +535,12 @@ export async function ownerSaveKnockoutPick(
     userId(rawTargetUserId),
     reason,
     async ({ tournamentDef, actual, prediction }) => {
-      await upsertKnockoutPick(db, prediction.id, bmk(key) as BracketMatchKey, winner);
-      const updatedInputs = await getPredictionInputs(db, prediction.id);
-      await invalidatePicksAfterKnockoutPickChange(
+      const updatedInputs = await applyKnockoutPick(
         prediction.id,
-        updatedInputs,
+        key,
+        winner,
         tournamentDef,
-        actualGroupScoresMap(actual),
+        actual,
       );
       return {
         audit: { fieldPath: `knockoutPicks.${key}`, oldValue: null, newValue: winner },
@@ -535,28 +575,7 @@ export async function saveFinishScore(
       return matchHasResult(db, pool.tournamentId, matchKey);
     },
     async ({ tournamentDef, prediction }) => {
-      const pair = await deriveFinishPair(prediction.id, match, tournamentDef);
-      await upsertFinishScore(
-        db,
-        prediction.id,
-        match,
-        home,
-        away,
-        pair?.[0] ?? null,
-        pair?.[1] ?? null,
-      );
-      const implicitWinner = await deriveFinishWinner(
-        prediction.id,
-        match,
-        home,
-        away,
-        tournamentDef,
-      );
-      if (implicitWinner !== undefined) {
-        const bracketKey =
-          match === 'final' ? tournamentDef.bracket.finalMatch : tournamentDef.bracket.bronzeMatch;
-        await upsertKnockoutPick(db, prediction.id, bracketKey, implicitWinner);
-      }
+      await applyFinishScore(prediction.id, match, home, away, tournamentDef);
       return {};
     },
   );
@@ -590,28 +609,7 @@ export async function ownerSaveFinishScore(
     userId(rawTargetUserId),
     reason,
     async ({ tournamentDef, prediction }) => {
-      const pair = await deriveFinishPair(prediction.id, match, tournamentDef);
-      await upsertFinishScore(
-        db,
-        prediction.id,
-        match,
-        home,
-        away,
-        pair?.[0] ?? null,
-        pair?.[1] ?? null,
-      );
-      const implicitWinner = await deriveFinishWinner(
-        prediction.id,
-        match,
-        home,
-        away,
-        tournamentDef,
-      );
-      if (implicitWinner !== undefined) {
-        const bracketKey =
-          match === 'final' ? tournamentDef.bracket.finalMatch : tournamentDef.bracket.bronzeMatch;
-        await upsertKnockoutPick(db, prediction.id, bracketKey, implicitWinner);
-      }
+      await applyFinishScore(prediction.id, match, home, away, tournamentDef);
       return {
         audit: { fieldPath: `finishScores.${match}`, oldValue: null, newValue: { home, away } },
       };

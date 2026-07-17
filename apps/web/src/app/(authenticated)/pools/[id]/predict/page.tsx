@@ -19,6 +19,7 @@ import {
   ExportImportControls,
   AuditLog,
   CompletionBar,
+  toAuditEntry,
 } from '@/features/predictions';
 import type { AuditEntry } from '@/features/predictions';
 import { Chip, Icon, BackLink } from '@/shared/ui';
@@ -79,16 +80,7 @@ export default async function PredictPage({ params }: Props): Promise<ReactEleme
   let auditEntries: AuditEntry[] = [];
   if (prediction) {
     const edits = await listEditsForPrediction(db, prediction.id);
-    auditEntries = edits.map((e) => ({
-      id: e.id,
-      editorName: e.editorName,
-      fieldPath: e.fieldPath,
-      oldValue: e.oldValue,
-      newValue: e.newValue,
-      ...(e.reason !== null ? { reason: e.reason } : {}),
-      source: e.source,
-      editedAt: e.editedAt,
-    }));
+    auditEntries = edits.map(toAuditEntry);
   }
 
   const isOwner = actor.userId === pool.ownerId;

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import Link from 'next/link';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
@@ -66,6 +66,22 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
 
   // ── Guest path — no account required ────────────────────────────────────
   return (
+    <InvitePoolCard poolName={pool.name}>
+      <GuestJoinForm token={token} poolName={pool.name} error={error} isLateJoin={isLateJoin} />
+    </InvitePoolCard>
+  );
+}
+
+// ── Invited-pool card shell (green banner + pool name) ─────────────────────
+
+function InvitePoolCard({
+  poolName,
+  children,
+}: {
+  poolName: string;
+  children: ReactNode;
+}): ReactElement {
+  return (
     <main className="turf min-h-screen grid place-items-center p-[24px_16px]">
       <div className="card w-[min(460px,100%)] overflow-hidden">
         <div className="bg-green-500 p-[26px_30px_22px] text-[oklch(0.2_0.02_160)]">
@@ -73,11 +89,9 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
             <Icon name="users" size={13} />
             You&apos;re invited to a pool
           </div>
-          <h2 className="display text-[38px]">{pool.name}</h2>
+          <h2 className="display text-[38px]">{poolName}</h2>
         </div>
-        <div className="p-7.5">
-          <GuestJoinForm token={token} poolName={pool.name} error={error} isLateJoin={isLateJoin} />
-        </div>
+        <div className="p-7.5 flex flex-col gap-4">{children}</div>
       </div>
     </main>
   );
@@ -248,21 +262,10 @@ async function renderSignedInInvite(
 
   // Signed-in, not yet a member — show join button.
   return (
-    <main className="turf min-h-screen grid place-items-center p-[24px_16px]">
-      <div className="card w-[min(460px,100%)] overflow-hidden">
-        <div className="bg-green-500 p-[26px_30px_22px] text-[oklch(0.2_0.02_160)]">
-          <div className="eyebrow mb-2.5 flex items-center gap-2">
-            <Icon name="users" size={13} />
-            You&apos;re invited to a pool
-          </div>
-          <h2 className="display text-[38px]">{pool.name}</h2>
-        </div>
-        <div className="p-7.5 flex flex-col gap-4">
-          <JoinWarning isLateJoin={isLateJoin} />
-          <SignedInJoinForm token={token} error={error} />
-        </div>
-      </div>
-    </main>
+    <InvitePoolCard poolName={pool.name}>
+      <JoinWarning isLateJoin={isLateJoin} />
+      <SignedInJoinForm token={token} error={error} />
+    </InvitePoolCard>
   );
 }
 

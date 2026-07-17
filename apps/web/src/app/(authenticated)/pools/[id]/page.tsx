@@ -12,9 +12,11 @@ import {
   OwnerControls,
   MemberControls,
   PoolBackupControls,
+  PoolHeader,
+  RaceChartPreview,
 } from '@/features/pools';
-import { StageBar, RaceChart } from '@/features/results';
-import { Icon, QuickActionLink } from '@/shared/ui';
+import { StageBar } from '@/features/results';
+import { QuickActionLink } from '@/shared/ui';
 import { poolId as asPoolId } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string }> };
@@ -45,26 +47,19 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   return (
     <div className="max-w-275 mx-auto p-[28px_20px]">
       {/* Page header */}
-      <div className="mb-6">
-        <div className="eyebrow text-ink-muted mb-2.5">
-          <Link href="/pools" className="text-inherit no-underline">
-            Pools
-          </Link>{' '}
-          · Leaderboard
-        </div>
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="display text-[34px] m-0">{detail.name}</h1>
-            <div className="eyebrow text-ink-muted mt-1">{detail.tournamentName}</div>
-          </div>
-          {locked && (
-            <span className="pill-lock">
-              <Icon name="lock" size={14} />
-              Locked
-            </span>
-          )}
-        </div>
-      </div>
+      <PoolHeader
+        eyebrow={
+          <>
+            <Link href="/pools" className="text-inherit no-underline">
+              Pools
+            </Link>{' '}
+            · Leaderboard
+          </>
+        }
+        name={detail.name}
+        tournamentName={detail.tournamentName}
+        locked={locked}
+      />
 
       {/* Your standing — mobile only (above grid) */}
       {myEntry && myRank && (
@@ -101,23 +96,11 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
             lastDayPoints={detail.lastDayPoints}
           />
           {raceChart && (
-            <Link
+            <RaceChartPreview
               href={`/pools/${poolId}/results?tab=race`}
-              data-testid="pool-race-preview"
-              className="block no-underline text-inherit"
-            >
-              <div className="card p-[14px_18px_12px] cursor-pointer">
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="section-label">Points Race</span>
-                  <span className="text-xs font-bold text-ink-muted">View full →</span>
-                </div>
-                <RaceChart
-                  stages={raceChart.chartStages}
-                  nowIndex={raceChart.chartNowIndex}
-                  players={raceChart.chartPlayers}
-                />
-              </div>
-            </Link>
+              testId="pool-race-preview"
+              raceChart={raceChart}
+            />
           )}
         </div>
 
