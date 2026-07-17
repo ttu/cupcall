@@ -58,22 +58,22 @@ function SheetHeader({
         </button>
       </div>
       <div className="flex flex-col gap-2 min-w-0 w-fit mx-auto">
-        <div className="flex items-center gap-2 flex-wrap justify-center">
-          <TeamBadge teamId={match.homeTeamId} size="sm" />
+        <div className="flex items-center gap-2.5 flex-wrap justify-center">
           <span className="text-[14px] font-bold text-ink truncate">
             {match.homeTeamName ?? match.homeTeamId ?? 'TBD'}
           </span>
+          <TeamBadge teamId={match.homeTeamId} size="md" />
           {hasScore ? (
-            <span className="display tnum text-lg text-ink shrink-0">
+            <span className="display tnum text-[32px] leading-none text-ink shrink-0">
               {match.actualHome}–{match.actualAway}
             </span>
           ) : (
             <span className="text-xs font-bold text-ink-muted shrink-0">vs</span>
           )}
+          <TeamBadge teamId={match.awayTeamId} size="md" />
           <span className="text-[14px] font-bold text-ink truncate">
             {match.awayTeamName ?? match.awayTeamId ?? 'TBD'}
           </span>
-          <TeamBadge teamId={match.awayTeamId} size="sm" />
         </div>
         {(match.homeTeamPredictedPct !== null || match.awayTeamPredictedPct !== null) && (
           <div className="flex items-center justify-between gap-2">
