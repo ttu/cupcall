@@ -22,6 +22,8 @@ export type {
   MatrixMatch,
   LeaderboardEntry,
   SpecialBetResultRow,
+  ScoreBreakdown,
+  Scoring,
 } from './domain/types';
 
 export { getResultsView } from './application/get-results-view';
@@ -33,3 +35,4 @@ export { UserScoreChip } from './ui/UserScoreChip';
 export { ResultsPageClient } from './ui/ResultsPageClient';
 export { HitChip } from './ui/HitChip';
 export { RaceChart } from './ui/RaceChart';
+export { ScoreBreakdownCard } from './ui/ScoreBreakdownCard';

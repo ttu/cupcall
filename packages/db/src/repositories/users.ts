@@ -187,6 +187,10 @@ export async function deletePendingEmailLink(db: Database, token: string): Promi
 }
 
 export async function deleteUser(db: Database, id: UserId): Promise<void> {
+  await db
+    .update(schema.poolArchiveEntries)
+    .set({ displayName: 'Deleted user' })
+    .where(eq(schema.poolArchiveEntries.userId, id));
   await db.delete(schema.users).where(eq(schema.users.id, id));
 }
 

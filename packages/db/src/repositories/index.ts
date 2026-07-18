@@ -8,3 +8,4 @@ export * from './tournament';
 export * from './predictions';
 export * from './edits';
 export * from './actual-results';
+export * from './pool-archive';

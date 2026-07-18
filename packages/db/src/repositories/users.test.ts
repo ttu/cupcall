@@ -15,6 +15,12 @@ import {
   linkEmailToUser,
   clearUserEmail,
 } from './users';
+import { createPool } from './pools';
+import { upsertTournamentDef } from './tournament';
+import { upsertPoolArchive, getPoolArchiveWithEntries } from './pool-archive';
+import { miniTournament } from '@cup/engine/testing';
+import { tournamentId as asTournamentId, points } from '@cup/engine';
+import type { ScoreBreakdown } from '@cup/engine';
 
 describe('users repository', () => {
   let db: Db<typeof schema>;
@@ -140,6 +146,60 @@ describe('users repository', () => {
     it('is a no-op for a non-existent id', async () => {
       const { userId } = await import('@cup/engine');
       await expect(deleteUser(db, userId('ghost-id'))).resolves.toBeUndefined();
+    });
+
+    it("anonymizes a non-owner member's pool archive entry but keeps rank/points/breakdown", async () => {
+      // Not the pool owner: pools.ownerId cascades from users.id (pre-existing), and
+      // pool_archives.poolId cascades from pools.id (Task 1) — deleting the owner would cascade
+      // away the whole pool and archive, leaving nothing to anonymize. That's an accepted
+      // limitation, not this test's concern; anonymization is only observable for non-owner
+      // members, whose deletion only removes their own pool_members row, not the pool.
+      const FUTURE_KICKOFF = new Date('2099-06-11T18:00:00Z');
+      await upsertTournamentDef(db, miniTournament, FUTURE_KICKOFF, new Map());
+      const tournamentId = asTournamentId(miniTournament.id);
+
+      const owner = await createUser(db, { email: 'owner@x.com', displayName: 'Owner' });
+      const pool = await createPool(db, { tournamentId, ownerId: owner.id, name: 'Archived Pool' });
+      const member = await createUser(db, { email: 'member@x.com', displayName: 'Member' });
+
+      const breakdown: ScoreBreakdown = {
+        groupMatches: points(42),
+        groupOrder: points(0),
+        bronze: points(0),
+        final: points(0),
+        roundOf16: points(0),
+        roundOf8: points(0),
+        topFour: points(0),
+        topFourTeams: points(0),
+        topFourPosition: points(0),
+        specials: points(0),
+        total: points(42),
+      };
+
+      await upsertPoolArchive(db, {
+        poolId: pool.id,
+        poolName: pool.name,
+        tournamentId,
+        tournamentName: miniTournament.name,
+        archivedBy: owner.id,
+        entries: [
+          { userId: owner.id, displayName: 'Owner', rank: 1, pointsTotal: points(50), breakdown },
+          { userId: member.id, displayName: 'Member', rank: 2, pointsTotal: points(42), breakdown },
+        ],
+      });
+
+      await deleteUser(db, member.id);
+
+      const fetched = await getPoolArchiveWithEntries(db, pool.id);
+      expect(fetched?.entries).toHaveLength(2);
+      const memberEntry = fetched?.entries.find((e) => e.rank === 2);
+      expect(memberEntry?.displayName).toBe('Deleted user');
+      expect(memberEntry?.userId).toBeNull();
+      const ownerEntry = fetched?.entries.find((e) => e.rank === 1);
+      expect(ownerEntry?.displayName).toBe('Owner'); // untouched
+      expect(memberEntry?.rank).toBe(2);
+      expect(memberEntry?.pointsTotal).toBe(42);
+      expect(memberEntry?.breakdown.total).toBe(42);
     });
   });
 

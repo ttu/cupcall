@@ -64,6 +64,13 @@
       "when": 1782100000000,
       "tag": "0008_finish_score_team_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784377698824,
+      "tag": "0009_pool_archives",
+      "breakpoints": true
     }
   ]
 }

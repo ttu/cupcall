@@ -576,6 +576,44 @@ the array — replaced with a small tested helper, `toPair<T>()` (new file
 worked through — 1/2/5 implemented as designed, 3/6 implemented in a smaller/safer scope than
 proposed, 4 investigated and closed as intentional (not a bug). No further work scheduled from it.
 
+## Pool result archive (2026-07-18)
+
+Pool owners can now freeze a permanent snapshot of a pool's final standings and per-member score
+breakdown ("archive"), decoupled from live `pools`/`users` data so it survives a member's later
+display-name change or account deletion — except that account deletion also scrubs the deleted
+member's name from any archive to `"Deleted user"` (rank/points/breakdown stay). Design:
+[`docs/features/pool-archive.md`](./features/pool-archive.md).
+
+- **`packages/db`** — two new tables (`packages/db/migrations/0009_pool_archives.sql`):
+  `pool_archives` (one per pool, unique on `pool_id`, frozen `pool_name`/`tournament_name`) and
+  `pool_archive_entries` (`user_id` nullable — `onDelete: 'set null'` — `display_name`, `rank`,
+  `points_total`, `breakdown: ScoreBreakdown`). New repository `pool-archive.ts`:
+  `upsertPoolArchive` (delete+reinsert entries on re-archive — one archive per pool, not a historical
+  log) and `getPoolArchiveWithEntries`.
+- **`deleteUser`** (`packages/db/src/repositories/users.ts`) now anonymizes matching
+  `pool_archive_entries.display_name` to `"Deleted user"` before deleting the user row (sequential
+  awaits, no `.transaction()` — this codebase has none).
+- **Accepted limitation** (discovered mid-implementation, confirmed with the user): anonymization only
+  has an observable effect for **non-owner** members. `pools.ownerId` cascades from `users.id`
+  (pre-existing) and `pool_archives.poolId` cascades from `pools.id` — so deleting an archived pool's
+  _owner_ cascades away the whole pool and archive, same as any pool deletion. Closing this fully
+  would mean decoupling `pool_archives.poolId` from `pools.id` (the way `tournamentId` already is);
+  the user chose to keep the simpler FK-cascade schema and accept the gap instead.
+- **`apps/web/src/features/pool-archive/`** — new vertical slice: `archivePool` (snapshots
+  `getLeaderboard` into the archive tables, `rank = index + 1`, defaults members with no `scores` row
+  to 0/zeroed breakdown), `getPoolArchiveView` (read side), `archivePoolAction` (owner-only server
+  action), `ArchivePoolCard` (archive/re-archive button + "View archive" link), `ArchiveMemberRow`
+  (rank/name/points + embedded `ScoreBreakdownCard`, now exported from `@/features/results`'s public
+  barrel).
+- **`app/(authenticated)/pools/[id]/archive/page.tsx`** — new route, member-gated, empty state until
+  archived. Pool detail page (`/pools/[id]`) gained the `ArchivePoolCard` in the owner-controls
+  section.
+- **Verification gap:** no docker/local Postgres was reachable in the implementing sandbox (only a
+  read-only connection to the production Neon DB, never used for this) — the new page/route was
+  verified via typecheck, lint, the existing test suite, and specific code-path tracing, but **not**
+  browser-tested live. Recommend a quick manual pass (archive → re-archive → view as owner and as a
+  non-owner member) before relying on it in production.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

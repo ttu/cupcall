@@ -16,6 +16,7 @@ import {
   RaceChartPreview,
 } from '@/features/pools';
 import { StageBar } from '@/features/results';
+import { ArchivePoolCard, getPoolArchiveView } from '@/features/pool-archive';
 import { QuickActionLink } from '@/shared/ui';
 import { poolId as asPoolId } from '@cup/engine';
 
@@ -36,7 +37,10 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   if (!memberResult) notFound();
 
   const isOwner = actor.userId === detail.ownerId;
-  const hasEdits = isOwner ? await hasEditsForPool(db, poolId) : false;
+  const [hasEdits, archive] = await Promise.all([
+    isOwner ? hasEditsForPool(db, poolId) : Promise.resolve(false),
+    getPoolArchiveView(db, poolId),
+  ]);
   const now = new Date();
   const locked = now >= detail.lockTime;
   const myIndex = detail.leaderboard.findIndex((e) => e.userId === actor.userId);
@@ -186,6 +190,11 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           />
         )}
         <PoolBackupControls poolId={poolId} isOwner={isOwner} />
+        <ArchivePoolCard
+          poolId={poolId}
+          isOwner={isOwner}
+          archivedAt={archive?.archivedAt ?? null}
+        />
         {hasEdits && (
           <div className="rounded-cup border border-line bg-white shadow-[var(--shadow-sm)] overflow-hidden">
             <div className="px-4 py-2.5 turf">
