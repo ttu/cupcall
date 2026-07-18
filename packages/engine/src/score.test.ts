@@ -172,7 +172,7 @@ const inputs77: CardInputs = {
   ],
   knockoutPicks: [],
   finishScores: {
-    final: { home: 3, away: 2 }, // predicted 3-2 (side-agnostic exact)
+    final: { home: 3, away: 2, homeTeamId: ARG, awayTeamId: FRA }, // predicted 3-2 (side-agnostic exact)
   },
   specials: {
     topScorerPlayer: FRA9,

@@ -58,7 +58,7 @@ describe('scoreFinal', () => {
   it('both teams correct + exact score → 15 (10 teams + 5 exact)', () => {
     // Derived finalists: A1, A2. Actual final: A1 vs A2 3-2. Predicted 3-2.
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs({ home: 3, away: 2 });
+    const inputs = makeInputs({ home: 3, away: 2, homeTeamId: A1, awayTeamId: A2 });
     const actual = makeActual({
       finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
@@ -67,21 +67,22 @@ describe('scoreFinal', () => {
 
   it('both teams correct, wrong score → 10', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs({ home: 1, away: 0 });
+    const inputs = makeInputs({ home: 1, away: 0, homeTeamId: A1, awayTeamId: A2 });
     const actual = makeActual({
       finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10);
   });
 
-  it('one team correct + exact score → 5 + 5 = 10', () => {
-    // A1 correct, A2 wrong (actual has B1). Exact score matches.
+  it('one team correct, score positionally matches but not by team identity → 5 (team only, no exact)', () => {
+    // A1 correct, A2 wrong (actual has B1). Goals line up positionally (3-2 vs 3-2), but since
+    // A2 never played, its predicted goals can't be matched against a real opponent → no exact.
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs({ home: 3, away: 2 });
+    const inputs = makeInputs({ home: 3, away: 2, homeTeamId: A1, awayTeamId: A2 });
     const actual = makeActual({
       finalMatch: { home: A1, away: B1, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
-    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10);
+    expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(5);
   });
 
   it('predicted A1=3/A2=2 with team-id snapshot, actual reports the same score with sides swapped → exact points awarded', () => {
@@ -97,13 +98,14 @@ describe('scoreFinal', () => {
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(15); // 10 teams + 5 exact
   });
 
-  it('predicted 3-2 without a team-id snapshot, actual 2-3 (sides swapped) → falls back to positional comparison, no exact points', () => {
-    // Legacy/unbackfilled row: no snapshot present, so the fallback positional comparison
-    // applies — this preserves today's (imprecise but previously-shipped) behavior.
+  it('no team-id snapshot → 0 exact points even when goals positionally match the actual match', () => {
+    // Predicted finalists/bronze pair weren't resolved when the score was saved, so there's no
+    // team-id snapshot. Even though the raw home/away numbers happen to match the actual match
+    // positionally, we can't verify which team they belong to, so no exact-score credit.
     const derived = makeDerived([A1, A2], [B1, B2]);
     const inputs = makeInputs({ home: 3, away: 2 }); // no homeTeamId/awayTeamId
     const actual = makeActual({
-      finalMatch: { home: A2, away: A1, homeGoals: 2, awayGoals: 3, winner: A1 },
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
     });
     expect(scoreFinal(inputs, derived, actual, miniScoring)).toBe(10); // 10 teams + 0 exact
   });
@@ -166,7 +168,7 @@ describe('scoreFinal', () => {
 
   it('finalists confirmed pre-final, then final played with matching exact score → team + exact', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs({ home: 3, away: 2 });
+    const inputs = makeInputs({ home: 3, away: 2, homeTeamId: A1, awayTeamId: A2 });
     const actual = makeActual({
       finalists: [A1, A2],
       finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
@@ -178,7 +180,7 @@ describe('scoreFinal', () => {
 describe('scoreBronze', () => {
   it('both teams correct + exact score → 15', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs(undefined, { home: 1, away: 0 });
+    const inputs = makeInputs(undefined, { home: 1, away: 0, homeTeamId: B1, awayTeamId: B2 });
     const actual = makeActual({
       bronzeMatch: { home: B1, away: B2, homeGoals: 1, awayGoals: 0, winner: B1 },
     });
@@ -187,7 +189,7 @@ describe('scoreBronze', () => {
 
   it('actual bronzeMatch absent → 0', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs(undefined, { home: 1, away: 0 });
+    const inputs = makeInputs(undefined, { home: 1, away: 0, homeTeamId: B1, awayTeamId: B2 });
     const actual = makeActual({}); // no bronzeMatch
     expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(0);
   });
@@ -197,7 +199,7 @@ describe('scoreBronze', () => {
     // actual bronze: B1 vs B2 → both in bronzePair → 10 teams
     // actual final: A1 vs A2 → but we call scoreBronze, not scoreFinal
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs(undefined, { home: 2, away: 1 });
+    const inputs = makeInputs(undefined, { home: 2, away: 1, homeTeamId: B1, awayTeamId: B2 });
     const actual = makeActual({
       bronzeMatch: { home: B1, away: B2, homeGoals: 2, awayGoals: 1, winner: B1 },
     });
@@ -213,11 +215,11 @@ describe('scoreBronze', () => {
     expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(15); // 10 teams + 5 exact
   });
 
-  it('predicted 3-0 without a team-id snapshot, actual 0-3 (sides swapped) → falls back to positional comparison, no exact points', () => {
+  it('no team-id snapshot → 0 exact points even when goals positionally match the actual match', () => {
     const derived = makeDerived([A1, A2], [B1, B2]);
-    const inputs = makeInputs(undefined, { home: 3, away: 0 }); // no team-id snapshot
+    const inputs = makeInputs(undefined, { home: 1, away: 0 }); // no team-id snapshot
     const actual = makeActual({
-      bronzeMatch: { home: B2, away: B1, homeGoals: 0, awayGoals: 3, winner: B1 },
+      bronzeMatch: { home: B1, away: B2, homeGoals: 1, awayGoals: 0, winner: B1 },
     });
     expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(10); // 10 teams + 0 exact
   });

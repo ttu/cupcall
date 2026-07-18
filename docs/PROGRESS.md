@@ -614,6 +614,31 @@ member's name from any archive to `"Deleted user"` (rank/points/breakdown stay).
   browser-tested live. Recommend a quick manual pass (archive → re-archive → view as owner and as a
   non-owner member) before relying on it in production.
 
+## Final/bronze exact-score: removed pre-migration positional fallback (2026-07-18)
+
+Follow-up cleanup to the [team-identity fix](#finalbronze-predicted-score-team-identity-fix-2026-07-16):
+`exactScorePoints` (`packages/engine/src/scoring/finish-matches.ts`) had a fallback that compared
+predicted vs. actual goals **positionally** (`home === home`, `away === away`, ignoring team
+identity) for any `prediction_finish_scores` row without a `homeTeamId`/`awayTeamId` snapshot —
+originally kept for legacy rows saved before migration `0008` until the one-time backfill ran.
+Confirmed (by the user) that `pnpm backfill-finish-score-team-ids -- wc-2026` has been run against
+production, so all real rows now carry the snapshot. Removed:
+
+- The positional-fallback branch in `exactScorePoints` — a missing snapshot now always yields 0
+  exact-score points (team points are unaffected; they're always derived live from
+  `derived.finalists`/`derived.bronzePair`, never from the snapshot).
+- `scripts/backfill-finish-score-team-ids.ts` (+ its test) and the `backfill-finish-score-team-ids`
+  package.json script — one-time, already served its purpose.
+- The now-unused `getFinishScoresMissingTeamIds`/`setFinishScoreTeamIds` repository functions
+  (`packages/db/src/repositories/predictions.ts`), only ever called by that script.
+
+**Note:** a missing snapshot isn't purely a legacy condition — it also occurs today when a player
+saves a final/bronze score before their semifinal picks resolve the finalist/bronze pair
+(`FinishScore.homeTeamId`/`awayTeamId` stay `null` until they next resave that score, which
+re-derives the pair). Post-cleanup, such a row scores 0 exact-score points until resaved — arguably
+more correct than the old positional guess, since there's no way to know which predicted goal
+figure belongs to which real team without the snapshot.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

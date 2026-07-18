@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client';
 import * as schema from '../schema/index';
 import {
@@ -324,58 +324,6 @@ export async function getFinishScoresByPool(
     homeTeamId: r.homeTeamId,
     awayTeamId: r.awayTeamId,
   }));
-}
-
-export type FinishScoreMissingTeamIds = {
-  predictionId: PredictionId;
-  match: 'final' | 'bronze';
-};
-
-/**
- * Finds every final/bronze finish-score row for a tournament that has no team-id snapshot yet
- * (saved before that column existed). Used by the one-time backfill script.
- */
-export async function getFinishScoresMissingTeamIds(
-  db: Database,
-  tid: TournamentId,
-): Promise<FinishScoreMissingTeamIds[]> {
-  const rows = await db
-    .select({
-      predictionId: schema.predictionFinishScores.predictionId,
-      match: schema.predictionFinishScores.match,
-    })
-    .from(schema.predictionFinishScores)
-    .innerJoin(
-      schema.predictions,
-      eq(schema.predictions.id, schema.predictionFinishScores.predictionId),
-    )
-    .where(
-      and(
-        eq(schema.predictions.tournamentId, tid),
-        isNull(schema.predictionFinishScores.homeTeamId),
-      ),
-    );
-
-  return rows.map((r) => ({ predictionId: asPredictionId(r.predictionId), match: r.match }));
-}
-
-/** Sets the team-id snapshot on an existing finish-score row (does not touch the goal counts). */
-export async function setFinishScoreTeamIds(
-  db: Database,
-  predictionId: PredictionId,
-  match: 'final' | 'bronze',
-  homeTeamId: string,
-  awayTeamId: string,
-): Promise<void> {
-  await db
-    .update(schema.predictionFinishScores)
-    .set({ homeTeamId, awayTeamId })
-    .where(
-      and(
-        eq(schema.predictionFinishScores.predictionId, predictionId),
-        eq(schema.predictionFinishScores.match, match),
-      ),
-    );
 }
 
 /**

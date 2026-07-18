@@ -9,29 +9,32 @@ import type {
 import type { Points, TeamId } from '../brand.js';
 import { points } from '../brand.js';
 
-/** Award exactScore iff finishScore is present AND home/away goals match the actual match exactly. */
+/**
+ * Award exactScore iff finishScore has a team-id snapshot AND each team's predicted goals match
+ * its actual goals. Without a snapshot (predicted finalists/bronze pair not yet resolved when
+ * the score was saved) there's no way to know which team each goal count belongs to, so no
+ * exact-score points are awarded.
+ */
 function exactScorePoints(
   finishScore: FinishScore | undefined,
   actualMatch: ActualFinishMatch | undefined,
   exactScore: number,
 ): number {
-  if (finishScore === undefined || actualMatch === undefined) {
+  if (
+    finishScore === undefined ||
+    actualMatch === undefined ||
+    finishScore.homeTeamId == null ||
+    finishScore.awayTeamId == null
+  ) {
     return 0;
   }
 
-  if (finishScore.homeTeamId != null && finishScore.awayTeamId != null) {
-    const predictedByTeam = new Map<TeamId, number>([
-      [finishScore.homeTeamId, finishScore.home],
-      [finishScore.awayTeamId, finishScore.away],
-    ]);
-    return predictedByTeam.get(actualMatch.home) === actualMatch.homeGoals &&
-      predictedByTeam.get(actualMatch.away) === actualMatch.awayGoals
-      ? exactScore
-      : 0;
-  }
-
-  // Fallback for rows without a team-id snapshot (pre-migration, not yet backfilled).
-  return finishScore.home === actualMatch.homeGoals && finishScore.away === actualMatch.awayGoals
+  const predictedByTeam = new Map<TeamId, number>([
+    [finishScore.homeTeamId, finishScore.home],
+    [finishScore.awayTeamId, finishScore.away],
+  ]);
+  return predictedByTeam.get(actualMatch.home) === actualMatch.homeGoals &&
+    predictedByTeam.get(actualMatch.away) === actualMatch.awayGoals
     ? exactScore
     : 0;
 }

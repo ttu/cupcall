@@ -19,7 +19,6 @@
     "test:coverage": "vitest run --coverage",
     "prepare": "husky",
     "sync": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/sync.ts",
-    "backfill-finish-score-team-ids": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/backfill-finish-score-team-ids.ts",
     "seed": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed.ts",
     "seed:fresh": "bash scripts/db-reset.sh && TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed.ts",
     "seed:ongoing": "TSX_TSCONFIG_PATH=scripts/tsconfig.json tsx scripts/seed-ongoing.ts",

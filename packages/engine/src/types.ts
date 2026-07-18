@@ -112,7 +112,8 @@ export interface FinishScore {
   away: number;
   /**
    * Snapshot of which real team each goal figure belongs to, captured at save time. Optional —
-   * absent for legacy rows saved before this field existed (until backfilled) and for the
+   * absent when the predicted finalists/bronze pair weren't yet resolved at save time (e.g. the
+   * player entered a final score before completing their semifinal picks), and for the
    * predict-page's own live-editing flow, which doesn't need it (see design doc, "Out of scope").
    */
   homeTeamId?: TeamId | null;
