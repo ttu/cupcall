@@ -72,6 +72,14 @@ export default defineConfig({
         '**/index.ts',
         '**/*.stories.{ts,tsx}',
       ],
+      // Floor set just under the coverage measured at introduction time (2026-07-18: 64.97%
+      // statements/lines, 86.58% branches, 83.61% functions) — a regression gate, not a target.
+      thresholds: {
+        statements: 64,
+        branches: 86,
+        functions: 83,
+        lines: 64,
+      },
     },
   },
 });
