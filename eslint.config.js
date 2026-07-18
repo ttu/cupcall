@@ -2,6 +2,7 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import sonarjs from 'eslint-plugin-sonarjs';
 import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   {
@@ -40,10 +41,12 @@ export default [
   },
   {
     files: ['{packages,apps}/**/src/**/*.tsx'],
-    plugins: { react },
+    plugins: { react, 'react-hooks': reactHooks },
     rules: {
       // Matches the "nesting 4+ levels deep" extraction signal in CLAUDE.md's UI guidance.
       'react/jsx-max-depth': ['error', { max: 4 }],
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
 ];
