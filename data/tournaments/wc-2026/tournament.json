@@ -165,6 +165,7 @@
     { "id": "esp-yamal", "name": "Lamine Yamal", "team": "ESP" },
     { "id": "esp-pedri", "name": "Pedri", "team": "ESP" },
     { "id": "esp-morata", "name": "Álvaro Morata", "team": "ESP" },
+    { "id": "esp-torres", "name": "Ferran Torres", "team": "ESP" },
     { "id": "cpv-martins", "name": "Gelson Martins", "team": "CPV" },
     { "id": "cpv-mendes", "name": "Ryan Mendes", "team": "CPV" },
     { "id": "cpv-rocha", "name": "Kenny Rocha Santos", "team": "CPV" },
