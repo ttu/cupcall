@@ -8,6 +8,7 @@ import type {
 } from '@cup/db';
 import { computeRemainingMaxPoints, getSpecialBetDefs } from '@cup/engine';
 import type { Tournament, ActualResults } from '@cup/engine';
+import { resolveActualForBet, isBetResolved } from '../domain/special-bet-resolution';
 import type {
   PointsRaceView,
   RaceChartPlayer,
@@ -48,6 +49,7 @@ import {
 } from '../domain/special-bet-impossibility';
 import { buildHitPointsMap } from '../domain/hit-points';
 import { buildVariantCellKey } from '../domain/knockout-cell-key';
+import { buildFinalScenarioView } from '../domain/final-scenario';
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
@@ -230,6 +232,18 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     matches: allMatches,
   });
 
+  const finalScenario = buildFinalScenarioView({
+    leaderboard,
+    allMatches,
+    def,
+    bracketRounds,
+    bronzeMatch,
+    poolKnockoutPicks,
+    poolFinishScores,
+    poolSpecialBets,
+    actualResults,
+  });
+
   return {
     chartStages: stages,
     chartNowIndex: nowIndex,
@@ -245,6 +259,7 @@ export function buildPointsRaceView(params: RaceParams): PointsRaceView {
     knockoutMatrixMatches,
     specialsMatrix,
     specialsMatrixBets,
+    finalScenario,
   };
 }
 
@@ -619,12 +634,7 @@ export function buildPerUserSpecialsRemaining(
   impossibility: SpecialBetImpossibility,
 ): Map<string, number> {
   const unresolvedKeys = new Set(
-    defs
-      .filter((d) => {
-        const { isArray, scalar, array } = resolveActualForBet(d.key, actualResults);
-        return isArray ? array.length === 0 : scalar === undefined || scalar === null;
-      })
-      .map((d) => d.key),
+    defs.filter((d) => !isBetResolved(resolveActualForBet(d.key, actualResults))).map((d) => d.key),
   );
 
   const betPoints = new Map(defs.map((d) => [d.key, d.points]));
@@ -1303,15 +1313,6 @@ function buildMatchMatrix(
 // Specials matrix
 // ---------------------------------------------------------------------------
 
-const ARRAY_ANSWER_BETS = new Set([
-  'groupTopScoringTeam',
-  'groupTopConcedingTeam',
-  'tournamentTopScoringTeam',
-  'tournamentTopConcedingTeam',
-  'mostYellowCardsTeam',
-  'topScorerPlayer',
-]);
-
 function makePickLabel(
   raw: unknown,
   kind: 'player' | 'team' | 'number' | 'bool',
@@ -1326,31 +1327,6 @@ function makePickLabel(
   const parts = name.trim().split(/\s+/);
   const last = parts[parts.length - 1] ?? name;
   return last.slice(0, 6).toUpperCase();
-}
-
-function resolveActualForBet(
-  betKey: string,
-  actualResults: ActualResults,
-): { isArray: boolean; scalar: unknown; array: unknown[] } {
-  if (betKey === 'finalDecidedByPenalties') {
-    const val =
-      actualResults.finalMatch !== undefined
-        ? actualResults.finalMatch.decidedBy === 'penalties'
-        : undefined;
-    return { isArray: false, scalar: val, array: [] };
-  }
-  if (betKey === 'finalDecisiveGoalPlayer') {
-    return { isArray: false, scalar: actualResults.finalMatch?.decisiveGoalPlayer, array: [] };
-  }
-  if (ARRAY_ANSWER_BETS.has(betKey)) {
-    const arr = ((actualResults.answers as Record<string, unknown[]>)[betKey] ?? []) as unknown[];
-    return { isArray: true, scalar: undefined, array: arr };
-  }
-  return {
-    isArray: false,
-    scalar: (actualResults.answers as Record<string, unknown>)[betKey],
-    array: [],
-  };
 }
 
 /**
@@ -1369,7 +1345,7 @@ function classifySpecialsCellHit(
   impossibility: SpecialBetImpossibility,
 ): SpecialsMatrixCell['hit'] {
   const { isArray, scalar, array } = actual;
-  const isResolved = isArray ? array.length > 0 : scalar !== undefined && scalar !== null;
+  const isResolved = isBetResolved(actual);
   if (!isResolved) {
     return hasPick && impossibility.isImpossible(betKey, raw) ? 'missed' : 'pending';
   }

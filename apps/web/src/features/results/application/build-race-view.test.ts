@@ -4,6 +4,7 @@ import {
   buildSpecialsMatrix,
   buildProjectedEntries,
   buildPerUserSpecialsRemaining,
+  buildPointsRaceView,
 } from './build-race-view';
 import { computeSpecialBetImpossibility } from '../domain/special-bet-impossibility';
 import { miniTournament } from '@cup/engine/testing';
@@ -1799,5 +1800,63 @@ describe('buildProjectedEntries', () => {
     expect(e2.projectedPoints).toBeGreaterThan(e1.projectedPoints);
     expect(e2.projectedRank).toBe(1);
     expect(e1.projectedRank).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildPointsRaceView — finalScenario wiring
+// ---------------------------------------------------------------------------
+
+describe('buildPointsRaceView — finalScenario', () => {
+  it('is null when the tournament has not reached the only-Final-left state', () => {
+    const leaderboard = [makeLeaderboardEntry('u1', 'Alice', 10)];
+    const { finalScenario } = buildPointsRaceView({
+      leaderboard,
+      userId: null,
+      allMatches: [],
+      poolGroupScores: [],
+      def: miniTournament,
+      myTotalCanStillGet: 0,
+      bracketRounds: [],
+      bronzeMatch: null,
+      poolKnockoutPicks: [],
+      poolFinishScores: [],
+      poolSpecialBets: [],
+      actualResults: emptyActualResults,
+    });
+    expect(finalScenario).toBeNull();
+  });
+
+  it('is populated once only the Final remains', () => {
+    const finalMatch = makeKnockoutMatch('final', 'Final', 'scheduled', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+    });
+    const bronzeMatch = makeKnockoutMatch('bronze', 'Bronze', 'final', {
+      homeTeamId: 'C1',
+      awayTeamId: 'D1',
+    });
+    const leaderboard = [
+      makeLeaderboardEntry('u1', 'Alice', 60),
+      makeLeaderboardEntry('u2', 'Bob', 40),
+    ];
+    const { finalScenario } = buildPointsRaceView({
+      leaderboard,
+      userId: null,
+      allMatches: [],
+      poolGroupScores: [],
+      def: miniTournament,
+      myTotalCanStillGet: 0,
+      bracketRounds: [makeRound('Final', [finalMatch])],
+      bronzeMatch,
+      poolKnockoutPicks: [],
+      poolFinishScores: [],
+      poolSpecialBets: [],
+      actualResults: emptyActualResults,
+    });
+    expect(finalScenario).not.toBeNull();
+    expect(finalScenario!.homeTeamId).toBe('A1');
+    expect(finalScenario!.home.projectedWinnerDisplayName).toBe('Alice');
+    expect(finalScenario!.away.projectedWinnerDisplayName).toBe('Alice');
   });
 });

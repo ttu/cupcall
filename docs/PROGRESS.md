@@ -639,6 +639,36 @@ re-derives the pair). Post-cleanup, such a row scores 0 exact-score points until
 more correct than the old positional guess, since there's no way to know which predicted goal
 figure belongs to which real team without the snapshot.
 
+## Final scenario summary (2026-07-19)
+
+Once the Final is the sole remaining match, the Points Race tab auto-shows who wins the pool for
+each possible Final outcome and which of their own still-open special bets need to hit to hold it.
+
+- **`apps/web/src/features/results/domain/final-scenario.ts`** — `buildFinalScenarioView(...)`, a
+  pure function. Trigger: the Final's `KnockoutMatchView` (from `bracketRounds`) has both finalists
+  confirmed and is not yet played, and Bronze is played — checked this way (not via a raw
+  `allMatches` scan) because knockout matches without a result are never inserted into the `matches`
+  table. Per scenario (home/away winner), computes each user's `lockedScore` (banked `pointsTotal` +
+  `topFourPositionBonus` from their own Final winner/opponent pick, independently per side — not a
+  binary 2×/0×, since a busted bracket pick chain can match on only one side) and `pendingItems`
+  (their own still-open special bets, plus the Final exact-score bonus when their saved prediction's
+  implied winner is compatible with that scenario, or unconditionally when it's a draw). A greedy
+  algorithm then classifies each scenario as `'clinched'` (leader wins even worst-case), `'checklist'`
+  (leader needs a minimal prefix of their own highest-value pending items), or `'too-close'` (even
+  everything they have falls short — also depends on a rival's own bets).
+- **`apps/web/src/features/results/domain/special-bet-resolution.ts`** (new) — `resolveActualForBet`
+  / `isBetResolved` extracted out of `build-race-view.ts` so both the specials matrix and the new
+  module share one source of truth for "is this bet still open" instead of diverging.
+- **`PointsRaceView.finalScenario: FinalScenarioView`** (`domain/types.ts`), populated in
+  `buildPointsRaceView` (`build-race-view.ts`).
+- **`ui/FinalScenarioCard.tsx`** — renders at the top of `RaceView.tsx`, in both viewer mode and
+  member mode (pool-wide result, not tied to "my" points). Renders `null` when `finalScenario` is
+  null — for a normal in-progress tournament this is always the case, so the card is invisible until
+  the Final is genuinely the only match left.
+- No E2E test yet — no existing seeded fixture reaches the only-Final-left state; deferred.
+- **Design/plan:** `docs/superpowers/specs/2026-07-19-final-scenario-summary-design.md` /
+  `docs/superpowers/plans/2026-07-19-final-scenario-summary.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

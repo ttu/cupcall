@@ -17,6 +17,7 @@ import { StatCard } from './StatCard';
 import { ProjectedStandings, projectedSubLabel } from './ProjectedStandings';
 import { SwingCard } from './SwingCard';
 import { ScoreBreakdownCard } from './ScoreBreakdownCard';
+import { FinalScenarioCard } from './FinalScenarioCard';
 import { sliceToWindow, visibleZoomOptions, type ZoomDays } from './race-view-utils';
 
 const ZOOM_LABELS: Record<string, string> = {
@@ -64,6 +65,7 @@ export function RaceView({
   return (
     <div className="grid gap-0 md:grid-cols-[1fr_322px]">
       <div className="pb-6">
+        <FinalScenarioCard scenario={race.finalScenario} />
         <div className="card p-[18px_20px_8px] mb-4">
           <div className="flex items-center justify-between mb-2.5 gap-3.5 flex-wrap">
             <RaceLegend players={race.chartPlayers} />

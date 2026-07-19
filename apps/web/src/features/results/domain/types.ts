@@ -227,7 +227,13 @@ export type BracketHealth = {
 import type { StageKey, StageProgress } from '@/shared/stage-progress';
 import type { LeaderboardEntry } from '@cup/db';
 import type { ScoreBreakdown, Scoring } from '@cup/engine';
+import type { FinalScenarioView } from './final-scenario';
 export type { StageKey, StageProgress, LeaderboardEntry, ScoreBreakdown, Scoring };
+export type {
+  FinalScenarioView,
+  FinalScenarioOutcome,
+  FinalScenarioPendingItem,
+} from './final-scenario';
 
 export type UserRankChip = {
   rank: number;
@@ -446,6 +452,8 @@ export type PointsRaceView = {
   specialsMatrix: SpecialsMatrixEntry[];
   /** Special bet column definitions, filtered to bets with points > 0. */
   specialsMatrixBets: SpecialsMatrixBet[];
+  /** Non-null only when the Final is the sole remaining match — see domain/final-scenario.ts. */
+  finalScenario: FinalScenarioView;
 };
 
 /**
