@@ -73,7 +73,7 @@ export function KnockoutMatrix({
       )}
       extraColumn={{
         header: 'Standings',
-        width: 56,
+        width: 80,
         renderCell: (row) => row.standingsPoints,
       }}
       leaderNote={(top) =>
