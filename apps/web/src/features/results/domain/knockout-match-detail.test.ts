@@ -73,6 +73,7 @@ function entry(overrides: Partial<KnockoutMatrixEntry> = {}): KnockoutMatrixEntr
     displayName: 'Alice',
     isCurrentUser: false,
     cells: [cell()],
+    standingsPoints: 0,
     totalPoints: 0,
     ...overrides,
   };

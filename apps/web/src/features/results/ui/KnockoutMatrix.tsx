@@ -1,5 +1,10 @@
 import type { ReactElement } from 'react';
-import type { KnockoutMatrixEntry, KnockoutMatrixMatch, KnockoutMatchHit } from '../domain/types';
+import type {
+  KnockoutMatrixEntry,
+  KnockoutMatrixMatch,
+  KnockoutMatrixCell,
+  KnockoutMatchHit,
+} from '../domain/types';
 import { cn } from '@/shared/ui';
 import { MatrixTable } from './MatrixTable';
 
@@ -21,6 +26,11 @@ function TeamLabel({ id, winnerId }: { id: string; winnerId: string | null }): R
   return <>{id}</>;
 }
 
+const VARIANT_LABEL: Record<'teams' | 'score', string> = {
+  teams: 'Teams',
+  score: 'Score',
+};
+
 export function KnockoutMatrix({
   entries,
   matches,
@@ -29,7 +39,7 @@ export function KnockoutMatrix({
   matches: KnockoutMatrixMatch[];
 }): ReactElement {
   return (
-    <MatrixTable
+    <MatrixTable<KnockoutMatrixMatch, KnockoutMatrixCell, { standingsPoints: number }>
       columns={matches}
       entries={entries}
       colWidth={COL_W}
@@ -41,7 +51,11 @@ export function KnockoutMatrix({
           className="flex flex-col items-center gap-0.5 text-[11px] py-3"
         >
           <span className="font-extrabold text-ink font-cup-display text-[10px]">{m.round}</span>
-          {m.homeTeamId && m.awayTeamId ? (
+          {m.variant ? (
+            <span className="text-[9.5px] font-bold text-ink-muted">
+              {VARIANT_LABEL[m.variant]}
+            </span>
+          ) : m.homeTeamId && m.awayTeamId ? (
             <span className="text-[9.5px] font-bold text-ink-muted">
               <TeamLabel id={m.homeTeamId} winnerId={m.actualWinnerId} />
               {'·'}
@@ -57,6 +71,11 @@ export function KnockoutMatrix({
       renderCell={(cell) => (
         <KnockoutCell hit={cell.hit} points={cell.points} pickedWinnerId={cell.pickedWinnerId} />
       )}
+      extraColumn={{
+        header: 'Standings',
+        width: 56,
+        renderCell: (row) => row.standingsPoints,
+      }}
       leaderNote={(top) =>
         top.isCurrentUser ? (
           <>

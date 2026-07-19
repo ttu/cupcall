@@ -3041,7 +3041,9 @@ describe('getResultsView', () => {
       });
     }
     const view = await getResultsView({ db, poolId, userId, now: NOW });
-    expect(view!.pointsRaceView.knockoutMatrixMatches).toHaveLength(koMatchKeys.length);
+    // Bronze renders as two columns (Teams + Score); Final renders as one (Score only, since
+    // Teams is already covered by the two SF columns) — net +1 vs. one column per match key.
+    expect(view!.pointsRaceView.knockoutMatrixMatches).toHaveLength(koMatchKeys.length + 1);
   });
 
   it('hit cell appears when pool member picks the correct knockout winner', async () => {

@@ -691,6 +691,7 @@ type KnockoutCellSharedContext = {
   semiFinalLoserTeams: Set<string>;
   hitPoints: Map<string, number>;
   bracket: Tournament['bracket'];
+  scoring: Tournament['scoring'];
 };
 
 /** One pool member's picks used to derive their knockout matrix cells. */
@@ -928,20 +929,19 @@ function pendingKnockoutHitStatus(
   return isImpossible ? 'impossible' : 'pending';
 }
 
-/** Classifies one played/pending knockout cell into its final hit status and points. */
+/** Classifies one played/pending progression-round (non-Final/Bronze) cell. */
 function classifyKnockoutCell(
   m: KnockoutMatchView,
   shared: KnockoutCellSharedContext,
   user: KnockoutCellUserContext,
   prediction: KnockoutCellPrediction,
-  pickedOpponentId: string | null,
 ): KnockoutMatrixCell {
   const { pickedWinnerId, predictedHome, predictedAway, predictedScoreByTeam, isExactScore } =
     prediction;
   const base = {
     bracketMatchKey: m.bracketMatchKey,
     pickedWinnerId,
-    pickedOpponentId,
+    pickedOpponentId: null,
     predictedHome,
     predictedAway,
     predictedScoreByTeam,
@@ -952,14 +952,8 @@ function classifyKnockoutCell(
     return { ...base, hit: pendingKnockoutHitStatus(m, shared, pickedWinnerId), points: 0 };
   }
 
-  // For final/bronze use the effective pick directly; for other rounds use the cross-slot
-  // round-pick set so swapped picks are still credited.
-  const isFinalOrBronze =
-    m.bracketMatchKey === shared.finalMatchKey || m.bracketMatchKey === shared.bronzeMatchKey;
-  const isHit = isFinalOrBronze
-    ? m.actualWinnerId !== null && pickedWinnerId === m.actualWinnerId
-    : m.actualWinnerId !== null &&
-      (user.userRoundPicks.get(m.round)?.has(m.actualWinnerId) ?? false);
+  const isHit =
+    m.actualWinnerId !== null && (user.userRoundPicks.get(m.round)?.has(m.actualWinnerId) ?? false);
 
   if (isHit) {
     const pts = shared.hitPoints.get(m.bracketMatchKey) ?? 0;
@@ -971,34 +965,110 @@ function classifyKnockoutCell(
   return { ...base, hit: 'miss', points: 0 };
 }
 
-/** Builds one knockout matrix cell: resolves the user's effective prediction, then classifies it. */
+/** Builds one knockout matrix cell for a progression round: resolves the pick, then classifies it. */
 function buildKnockoutMatrixCell(
   m: KnockoutMatchView,
   shared: KnockoutCellSharedContext,
   user: KnockoutCellUserContext,
 ): KnockoutMatrixCell {
   const knockoutPick = user.pickMap.get(`${user.userId}::${m.bracketMatchKey}`) ?? null;
+  const prediction = resolveProgressionPrediction(m, user, knockoutPick);
+  return classifyKnockoutCell(m, shared, user, prediction);
+}
 
-  // For the final and bronze, derive the effective pick from the finish score so that stale
-  // auto-derived knockoutPicks from previous non-tied scores don't mislead the display or hit check.
-  const isFinalOrBronze =
-    m.bracketMatchKey === shared.finalMatchKey || m.bracketMatchKey === shared.bronzeMatchKey;
-  const prediction = isFinalOrBronze
-    ? resolveFinishScorePrediction(m, shared, user, knockoutPick)
-    : resolveProgressionPrediction(m, user, knockoutPick);
+/** 'teams'|'score' columns to render for a Final/Bronze match; null for a normal progression match. */
+function finishColumnVariants(
+  m: KnockoutMatchView,
+  shared: KnockoutCellSharedContext,
+): ('teams' | 'score')[] | null {
+  if (m.bracketMatchKey === shared.finalMatchKey) return ['score'];
+  if (m.bracketMatchKey === shared.bronzeMatchKey) return ['teams', 'score'];
+  return null;
+}
 
-  // Final/Bronze only: the other finalist/bronze participant from this user's own SF/QF pick chain,
-  // so the summary sheet can show their full prediction (both teams), not just the picked winner.
-  const pickedOpponentId = isFinalOrBronze
-    ? derivePredictedOpponent(
-        m.bracketMatchKey,
-        shared.bracket,
-        user.userPickMap,
-        prediction.pickedWinnerId,
-      )
-    : null;
+/**
+ * 0/1/2 of the user's two predicted teams (winner + derived opponent) that actually played this
+ * match, times perTeam. Side-agnostic and independent of who won — mirrors scoreFinishMatch in
+ * packages/engine/src/scoring/finish-matches.ts.
+ */
+function finishTeamPoints(
+  m: KnockoutMatchView,
+  pickedWinnerId: string | null,
+  pickedOpponentId: string | null,
+  perTeam: number,
+): number {
+  if (m.status !== 'final') return 0;
+  const actualTeams = new Set([m.homeTeamId, m.awayTeamId]);
+  const count = [pickedWinnerId, pickedOpponentId].filter(
+    (id): id is string => id !== null && actualTeams.has(id),
+  ).length;
+  return count * perTeam;
+}
 
-  return classifyKnockoutCell(m, shared, user, prediction, pickedOpponentId);
+/** Exact-score bonus, independent of team correctness. */
+function finishScorePoints(
+  m: KnockoutMatchView,
+  isExactScore: boolean,
+  exactScore: number,
+): number {
+  return m.status === 'final' && isExactScore ? exactScore : 0;
+}
+
+/** Classifies one Final/Bronze 'teams' or 'score' cell given its already-computed points. */
+function classifyFinishCell(
+  m: KnockoutMatchView,
+  shared: KnockoutCellSharedContext,
+  prediction: KnockoutCellPrediction,
+  pickedOpponentId: string | null,
+  points: number,
+): Omit<KnockoutMatrixCell, 'bracketMatchKey'> {
+  const { pickedWinnerId, predictedHome, predictedAway, predictedScoreByTeam, isExactScore } =
+    prediction;
+  const base = {
+    pickedWinnerId,
+    pickedOpponentId,
+    predictedHome,
+    predictedAway,
+    predictedScoreByTeam,
+    isExactScore,
+  };
+
+  if (m.status !== 'final') {
+    return { ...base, hit: pendingKnockoutHitStatus(m, shared, pickedWinnerId), points: 0 };
+  }
+  if (points > 0) return { ...base, hit: 'hit', points };
+  if (pickedWinnerId === null) return { ...base, hit: 'no-pick', points: 0 };
+  return { ...base, hit: 'miss', points: 0 };
+}
+
+/** Builds the 'teams'/'score' matrix cells for a Final or Bronze match (see finishColumnVariants). */
+function buildFinishMatrixCells(
+  m: KnockoutMatchView,
+  variants: ('teams' | 'score')[],
+  shared: KnockoutCellSharedContext,
+  user: KnockoutCellUserContext,
+): KnockoutMatrixCell[] {
+  const knockoutPick = user.pickMap.get(`${user.userId}::${m.bracketMatchKey}`) ?? null;
+  const prediction = resolveFinishScorePrediction(m, shared, user, knockoutPick);
+  const pickedOpponentId = derivePredictedOpponent(
+    m.bracketMatchKey,
+    shared.bracket,
+    user.userPickMap,
+    prediction.pickedWinnerId,
+  );
+  const isFinal = m.bracketMatchKey === shared.finalMatchKey;
+  const finishScoring = isFinal ? shared.scoring.final : shared.scoring.bronze;
+
+  return variants.map((variant) => {
+    const points =
+      variant === 'teams'
+        ? finishTeamPoints(m, prediction.pickedWinnerId, pickedOpponentId, finishScoring.perTeam)
+        : finishScorePoints(m, prediction.isExactScore, finishScoring.exactScore);
+    return {
+      ...classifyFinishCell(m, shared, prediction, pickedOpponentId, points),
+      bracketMatchKey: `${m.bracketMatchKey}:${variant}`,
+    };
+  });
 }
 
 export function buildKnockoutMatrix(params: {
@@ -1036,17 +1106,35 @@ export function buildKnockoutMatrix(params: {
 
   const sortedMatches = allKnockoutMatches.toSorted(compareKnockoutByKickoff);
 
-  const knockoutMatrixMatches: KnockoutMatrixMatch[] = sortedMatches.map((m) => ({
-    bracketMatchKey: m.bracketMatchKey,
-    round: m.round,
-    homeTeamId: m.homeTeamId,
-    homeTeamName: m.homeTeamName,
-    awayTeamId: m.awayTeamId,
-    awayTeamName: m.awayTeamName,
-    actualWinnerId: m.actualWinnerId,
-    kickoff: m.kickoff,
-    status: m.status,
-  }));
+  const shared: KnockoutCellSharedContext = {
+    finalMatchKey: def.bracket.finalMatch as string,
+    bronzeMatchKey: def.bracket.bronzeMatch as string,
+    eliminatedTeams,
+    semiFinalLoserTeams,
+    hitPoints: buildHitPointsMap(def),
+    bracket: def.bracket,
+    scoring: def.scoring,
+  };
+
+  const knockoutMatrixMatches: KnockoutMatrixMatch[] = sortedMatches.flatMap((m) => {
+    const variants = finishColumnVariants(m, shared);
+    const base = {
+      round: m.round,
+      homeTeamId: m.homeTeamId,
+      homeTeamName: m.homeTeamName,
+      awayTeamId: m.awayTeamId,
+      awayTeamName: m.awayTeamName,
+      actualWinnerId: m.actualWinnerId,
+      kickoff: m.kickoff,
+      status: m.status,
+    };
+    if (!variants) return [{ ...base, bracketMatchKey: m.bracketMatchKey }];
+    return variants.map((variant) => ({
+      ...base,
+      bracketMatchKey: `${m.bracketMatchKey}:${variant}`,
+      variant,
+    }));
+  });
 
   const pickMap = new Map<string, string>();
   for (const pick of poolKnockoutPicks) {
@@ -1061,15 +1149,6 @@ export function buildKnockoutMatrix(params: {
   const userRoundPicksMap = buildUserRoundPicksMap(poolKnockoutPicks, matchRoundMap);
   const finishScoreMap = buildFinishScoreMap(poolFinishScores);
 
-  const shared: KnockoutCellSharedContext = {
-    finalMatchKey: def.bracket.finalMatch as string,
-    bronzeMatchKey: def.bracket.bronzeMatch as string,
-    eliminatedTeams,
-    semiFinalLoserTeams,
-    hitPoints: buildHitPointsMap(def),
-    bracket: def.bracket,
-  };
-
   const knockoutMatrix: KnockoutMatrixEntry[] = leaderboard.map((e) => {
     const user: KnockoutCellUserContext = {
       userId: e.userId,
@@ -1082,16 +1161,21 @@ export function buildKnockoutMatrix(params: {
       ),
       finishScores: finishScoreMap.get(e.userId),
     };
-    const cells: KnockoutMatrixCell[] = sortedMatches.map((m) =>
-      buildKnockoutMatrixCell(m, shared, user),
-    );
-    const totalPoints = cells.reduce((sum, c) => sum + c.points, 0);
+    const cells: KnockoutMatrixCell[] = sortedMatches.flatMap((m) => {
+      const variants = finishColumnVariants(m, shared);
+      return variants
+        ? buildFinishMatrixCells(m, variants, shared, user)
+        : [buildKnockoutMatrixCell(m, shared, user)];
+    });
+    const standingsPoints = e.breakdown?.topFourPosition ?? 0;
+    const totalPoints = cells.reduce((sum, c) => sum + c.points, 0) + standingsPoints;
 
     return {
       userId: e.userId,
       displayName: e.displayName,
       isCurrentUser: userId !== null && e.userId === userId,
       cells,
+      standingsPoints,
       totalPoints,
     };
   });

@@ -302,12 +302,19 @@ export type KnockoutMatrixEntry = {
   displayName: string;
   isCurrentUser: boolean;
   cells: KnockoutMatrixCell[];
+  /** topFourPosition bonus (see ScoreBreakdown), shown in the trailing "Standings" column. */
+  standingsPoints: number;
   totalPoints: number;
 };
 
 export type KnockoutMatrixMatch = {
   bracketMatchKey: string;
   round: string;
+  /**
+   * Distinguishes a split Final/Bronze column ('teams' = team-presence points, 'score' =
+   * exact-score bonus) from a normal one-column-per-match progression round. Absent otherwise.
+   */
+  variant?: 'teams' | 'score';
   homeTeamId: string | null;
   homeTeamName: string | null;
   awayTeamId: string | null;
