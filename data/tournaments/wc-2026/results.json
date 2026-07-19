@@ -788,6 +788,17 @@
       "winner": "ARG",
       "decidedBy": "regulation",
       "kickoff": "2026-07-15T19:00:00Z"
+    },
+    {
+      "round": "bronze",
+      "matchId": "bronze",
+      "home": "FRA",
+      "away": "ENG",
+      "homeGoals": 4,
+      "awayGoals": 6,
+      "winner": "ENG",
+      "decidedBy": "regulation",
+      "kickoff": "2026-07-18T21:00:00Z"
     }
   ],
   "groupOrder": {
