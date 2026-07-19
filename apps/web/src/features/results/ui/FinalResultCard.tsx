@@ -25,7 +25,7 @@ function CardHeader({
   match: KnockoutMatchView;
 }): ReactElement {
   const hasActualScore = match.actualHome !== null && match.actualAway !== null;
-  const title = matchKey === 'final' ? 'THE FINAL' : '3RD-PLACE PLAYOFF';
+  const title = matchKey === 'final' ? 'THE FINAL' : '3RD PLACE';
   const subtitle = hasActualScore
     ? match.kickoff !== null
       ? `FT · ${formatDate(match.kickoff)}`
@@ -52,11 +52,13 @@ function CardHeader({
 function TeamRow({
   teamId,
   teamName,
+  goals,
   isWinner,
   nameTestId,
 }: {
   teamId: string | null;
   teamName: string | null;
+  goals: number | null;
   isWinner: boolean;
   nameTestId: string;
 }): ReactElement {
@@ -77,24 +79,25 @@ function TeamRow({
       >
         {teamLabel(teamName, teamId)}
       </span>
-      {isWinner && <Icon name="check" size={13} color="var(--green-500)" />}
+      {goals !== null && (
+        <span
+          className={cn(
+            'tnum text-[13px] font-extrabold',
+            isWinner ? 'text-on-dark' : 'text-on-dark-soft',
+          )}
+        >
+          {goals}
+        </span>
+      )}
     </div>
   );
 }
 
-function ScoreLine({ match }: { match: KnockoutMatchView }): ReactElement | null {
-  if (match.actualHome === null || match.actualAway === null) return null;
+function PenaltyNote({ match }: { match: KnockoutMatchView }): ReactElement | null {
+  if (match.decidedBy !== 'penalties') return null;
   return (
     <div className="text-center pt-2">
-      <span className="tnum text-[15px] font-extrabold text-on-dark">
-        {match.actualHome}–{match.actualAway}
-      </span>
-      {match.decidedBy === 'penalties' && (
-        <span className="text-[11px] font-semibold text-on-dark-soft">
-          {' '}
-          &middot; Decided on penalties
-        </span>
-      )}
+      <span className="text-[11px] font-semibold text-on-dark-soft">Decided on penalties</span>
     </div>
   );
 }
@@ -224,17 +227,19 @@ export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElem
           <TeamRow
             teamId={match.homeTeamId}
             teamName={match.homeTeamName}
+            goals={match.actualHome}
             isWinner={match.actualWinnerId !== null && match.actualWinnerId === match.homeTeamId}
             nameTestId="home-team-name"
           />
           <TeamRow
             teamId={match.awayTeamId}
             teamName={match.awayTeamName}
+            goals={match.actualAway}
             isWinner={match.actualWinnerId !== null && match.actualWinnerId === match.awayTeamId}
             nameTestId="away-team-name"
           />
         </div>
-        <ScoreLine match={match} />
+        <PenaltyNote match={match} />
       </Root>
       {pickLeftGoals !== null && pickRightGoals !== null && (
         <PickPill
