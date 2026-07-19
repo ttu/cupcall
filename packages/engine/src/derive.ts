@@ -21,6 +21,7 @@ export function deriveCard(input: CardInputs, t: Tournament): DerivedCard {
     groupOrders,
     qualifiers,
     input.knockoutPicks,
+    input.finishScores,
   );
   return { groupOrders, qualifiers, roundOf16, roundOf8, finalists, bronzePair, topFour, roundOf4 };
 }

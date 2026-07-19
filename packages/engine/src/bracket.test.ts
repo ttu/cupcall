@@ -144,6 +144,77 @@ describe('buildBracket', () => {
     expect(result.topFour[3]).toBe(teamId('D1')); // bronzeLoser (the other of bronzePair)
   });
 
+  it('recovers topFour from the finish-score snapshot when the explicit Final/Bronze pick is missing', () => {
+    const groupOrders = deriveGroupOrders(miniTournament, allDrawScores);
+    const qualifiers = selectQualifiers(miniTournament, allDrawScores, groupOrders);
+
+    // Same QF/SF picks as the "derives topFour" test above, but NO explicit 'final'/'bronze'
+    // picks — reproduces the production bug where the invalidation cascade deleted them.
+    const picks: KnockoutPick[] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+      { bracketMatchKey: bracketMatchKey('qf3'), winner: teamId('B1') },
+      { bracketMatchKey: bracketMatchKey('qf4'), winner: teamId('D1') },
+      { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('sf2'), winner: teamId('B1') },
+      // no 'final' or 'bronze' pick
+    ];
+
+    const result = buildBracket(miniTournament, groupOrders, qualifiers, picks, {
+      final: { home: 2, away: 1, homeTeamId: teamId('A1'), awayTeamId: teamId('B1') },
+      bronze: { home: 0, away: 3, homeTeamId: teamId('C1'), awayTeamId: teamId('D1') },
+    });
+
+    // Same expected result as the explicit-pick test — proves the snapshot fallback recovers
+    // the identical topFour without needing the deleted pick.
+    expect(result.topFour).toEqual([teamId('A1'), teamId('B1'), teamId('D1'), teamId('C1')]);
+  });
+
+  it('does not recover topFour from a tied finish score (needs an explicit tie-break pick)', () => {
+    const groupOrders = deriveGroupOrders(miniTournament, allDrawScores);
+    const qualifiers = selectQualifiers(miniTournament, allDrawScores, groupOrders);
+
+    const picks: KnockoutPick[] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+      { bracketMatchKey: bracketMatchKey('qf3'), winner: teamId('B1') },
+      { bracketMatchKey: bracketMatchKey('qf4'), winner: teamId('D1') },
+      { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('sf2'), winner: teamId('B1') },
+    ];
+
+    const result = buildBracket(miniTournament, groupOrders, qualifiers, picks, {
+      final: { home: 1, away: 1, homeTeamId: teamId('A1'), awayTeamId: teamId('B1') },
+    });
+
+    expect(result.topFour).toHaveLength(0);
+  });
+
+  it('prefers the explicit pick over a disagreeing finish-score snapshot', () => {
+    const groupOrders = deriveGroupOrders(miniTournament, allDrawScores);
+    const qualifiers = selectQualifiers(miniTournament, allDrawScores, groupOrders);
+
+    // Explicit pick says A1 wins the final; the snapshot (e.g. a stale one) disagrees and says B1.
+    // The explicit pick must win — this is also the only way a tied scoreline can register a
+    // winner (a penalty-shootout tie-break pick), so explicit-pick precedence must never regress.
+    const picks: KnockoutPick[] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+      { bracketMatchKey: bracketMatchKey('qf3'), winner: teamId('B1') },
+      { bracketMatchKey: bracketMatchKey('qf4'), winner: teamId('D1') },
+      { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('sf2'), winner: teamId('B1') },
+      { bracketMatchKey: bracketMatchKey('final'), winner: teamId('A1') },
+    ];
+
+    const result = buildBracket(miniTournament, groupOrders, qualifiers, picks, {
+      final: { home: 1, away: 1, homeTeamId: teamId('B1'), awayTeamId: teamId('A1') },
+    });
+
+    expect(result.topFour[0]).toBe(teamId('A1'));
+    expect(result.topFour[1]).toBe(teamId('B1'));
+  });
+
   it('derives roundOf4 from QF-winner picks alone, with no SF/Final/Bronze picks at all', () => {
     const groupOrders = deriveGroupOrders(miniTournament, allDrawScores);
     const qualifiers = selectQualifiers(miniTournament, allDrawScores, groupOrders);

@@ -334,3 +334,53 @@ describe('scoreCard — integration sanity', () => {
     expect(breakdown.topFourTeams + breakdown.topFourPosition).toBe(breakdown.topFour);
   });
 });
+
+describe('scoreCard — SF position bonus survives a deleted explicit Final pick', () => {
+  it('awards the position bonus from the finish-score snapshot when the explicit Final/Bronze pick is missing', () => {
+    // Reproduces the production bug: the user picked A1/B1 to reach the final via their SF picks
+    // and saved a Final score (A1 2-1 B1), but a later pick edit's invalidation cascade deleted
+    // the explicit 'final' knockout pick — only the QF/SF picks and the finish-score snapshot
+    // survive, exactly like fullKnockoutPicks minus its 'final'/'bronze' entries.
+    const picksWithoutFinalBronze: CardInputs['knockoutPicks'] = fullKnockoutPicks.filter(
+      (p) =>
+        p.bracketMatchKey !== bracketMatchKey('final') &&
+        p.bracketMatchKey !== bracketMatchKey('bronze'),
+    );
+
+    const cardInput: CardInputs = {
+      groupScores: allDrawGroupScores,
+      knockoutPicks: picksWithoutFinalBronze,
+      finishScores: {
+        final: { home: 2, away: 1, homeTeamId: teamId('A1'), awayTeamId: teamId('B1') },
+        bronze: { home: 0, away: 3, homeTeamId: teamId('C1'), awayTeamId: teamId('D1') },
+      },
+      specials: {},
+    };
+    const actual: ActualResults = {
+      matchResults: [],
+      groupOrder: {},
+      answers: { roundOf4: [teamId('A1'), teamId('B1'), teamId('C1'), teamId('D1')] },
+      finalMatch: {
+        home: teamId('A1'),
+        away: teamId('B1'),
+        homeGoals: 2,
+        awayGoals: 1,
+        winner: teamId('A1'),
+      },
+      bronzeMatch: {
+        home: teamId('C1'),
+        away: teamId('D1'),
+        homeGoals: 0,
+        awayGoals: 3,
+        winner: teamId('D1'),
+      },
+    };
+
+    const derived = deriveCard(cardInput, miniTournament);
+    const breakdown = scoreCard(derived, cardInput, actual, miniScoring);
+
+    // 4 correct semifinalists (membership) + all 4 correct positions (bonus).
+    expect(breakdown.topFourPosition).toBeGreaterThan(0);
+    expect(breakdown.topFourPosition).toBe(4 * miniScoring.topFourPositionBonus);
+  });
+});

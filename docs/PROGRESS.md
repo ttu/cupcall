@@ -714,6 +714,38 @@ each possible Final outcome and which of their own still-open special bets need 
 - **Design/plan:** `docs/superpowers/specs/2026-07-19-final-scenario-summary-design.md` /
   `docs/superpowers/plans/2026-07-19-final-scenario-summary.md`.
 
+## SF Position bonus: finish-score snapshot fallback (2026-07-19)
+
+Fixed a production bug found via a user report: the Top Four position bonus (`topFourPosition`,
+shipped 2026-07-15) was effectively non-functional — 0 of 11 scored predictions in production had
+any `topFourPosition` > 0, despite users having correctly predicted the Final winner.
+
+**Root cause:** `deriveTopFour()` (`packages/engine/src/bracket.ts`) only resolved the Final/Bronze
+winner from an explicit `prediction_knockout_picks` row. That row is written implicitly when a user
+saves their Final/Bronze score (`applyFinishScore` in
+`apps/web/src/features/predictions/api/actions.ts`), but gets deleted by the pick-invalidation
+cascade whenever an upstream SF/QF pick changes afterward, and is never regenerated unless the score
+is re-saved. The `prediction_finish_scores` snapshot (`home_team_id`/`away_team_id`, from migration
+`0008_finish_score_team_ids.sql`) survives untouched and is what the results-page UI already uses to
+recover (`resolveFinaleWinner` / `deriveImplicitFinaleWinner` in
+`apps/web/src/features/results/domain/finale-winner.ts`) — the scoring engine had no equivalent
+fallback.
+
+- **`deriveTopFour()`** now tries the explicit pick first (unchanged — also the only way a tied
+  scoreline can register a winner, via an explicit tie-break pick), then falls back to the
+  finish-score snapshot when no pick exists and the scoreline isn't tied.
+- **`buildBracket()`** gained an optional `finishScores` parameter (defaults to `{}`, so existing
+  callers are unaffected); **`deriveCard()`** now threads `input.finishScores` through. No DB/schema/
+  web changes — `CardInputs['finishScores']` already carried the needed snapshot.
+- **Rollout:** the code fix only affects _future_ rescoring — production's existing
+  `scores.breakdown` rows still needed a fresh `pnpm sync -- wc-2026` run (against prod
+  `DATABASE_URL`) to actually recompute everyone's `topFourPosition`. Verified via direct prod DB
+  query (`postgres` MCP) that all 11 current `prediction_finish_scores` rows already had the
+  snapshot populated, so one rescore fully resolves the backlog — no separate backfill script.
+- **Design/plan:**
+  `docs/superpowers/specs/2026-07-19-sf-position-finish-score-fallback-design.md`,
+  `docs/superpowers/plans/2026-07-19-sf-position-finish-score-fallback.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

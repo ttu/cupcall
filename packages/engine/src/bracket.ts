@@ -1,6 +1,6 @@
 import { groupId } from './brand.js';
 import type { BracketMatchKey, GroupId, TeamId } from './brand.js';
-import type { KnockoutPick, Progression, Tournament } from './types.js';
+import type { FinishScore, KnockoutPick, Progression, Tournament } from './types.js';
 
 export interface BracketResult {
   /** The 16 teams placed into the R16 slots, in slot order. Empty when bracket has no R16. */
@@ -69,6 +69,7 @@ export function buildBracket(
   groupOrders: Record<GroupId, TeamId[]>,
   qualifiers: TeamId[],
   picks: KnockoutPick[],
+  finishScores: { final?: FinishScore; bronze?: FinishScore } = {},
 ): BracketResult {
   const { bracket, groups, qualification } = t;
 
@@ -96,7 +97,7 @@ export function buildBracket(
     roundOf8: teamsInMatches(participantsByMatch, bracket.roundOf8Matches),
     finalists: pickedWinnersOf(pickByKey, bracket.semiFinals),
     bronzePair: sfLosers(bracket, participantsByMatch, pickByKey),
-    topFour: deriveTopFour(bracket, participantsByMatch, pickByKey),
+    topFour: deriveTopFour(bracket, participantsByMatch, pickByKey, finishScores),
     roundOf4: pickedWinnersOf(pickByKey, bracket.roundOf8Matches),
   };
 }
@@ -243,26 +244,87 @@ function sfLosers(
 }
 
 /**
+ * Resolves the winner of a Final/Bronze match: the explicit pick if present (this is also the
+ * only way a tied scoreline can register a winner — see the finish-score fallback below), else
+ * the finish-score snapshot when it unambiguously implies one (both team ids known, goals not
+ * tied). Mirrors the precedence of the web layer's `resolveFinaleWinner`
+ * (apps/web/src/features/results/domain/finale-winner.ts) — kept in sync deliberately, since both
+ * must treat "no explicit pick" the same way for the UI and scoring engine to agree.
+ */
+function resolveFinaleWinner(
+  pickByKey: Map<BracketMatchKey, TeamId>,
+  finishScore: FinishScore | undefined,
+  matchKey: BracketMatchKey,
+): TeamId | null {
+  const picked = pickByKey.get(matchKey);
+  if (picked) return picked;
+  if (
+    finishScore?.homeTeamId != null &&
+    finishScore.awayTeamId != null &&
+    finishScore.home !== finishScore.away
+  ) {
+    return finishScore.home > finishScore.away ? finishScore.homeTeamId : finishScore.awayTeamId;
+  }
+  return null;
+}
+
+/**
+ * Resolves the loser given a known winner: prefers the resolved bracket participants (existing
+ * behavior — requires the winner to actually be one of the two participants), else falls back to
+ * "the other finish-score snapshot team" when the winner came from the snapshot itself.
+ */
+function resolveFinaleLoser(
+  participantsByMatch: Map<BracketMatchKey, [TeamId, TeamId]>,
+  finishScore: FinishScore | undefined,
+  matchKey: BracketMatchKey,
+  winner: TeamId,
+): TeamId | null {
+  const pair = participantsByMatch.get(matchKey);
+  if (pair) {
+    const [home, away] = pair;
+    if (winner === home) return away;
+    if (winner === away) return home;
+  }
+  if (finishScore?.homeTeamId != null && finishScore.awayTeamId != null) {
+    if (winner === finishScore.homeTeamId) return finishScore.awayTeamId;
+    if (winner === finishScore.awayTeamId) return finishScore.homeTeamId;
+  }
+  return null;
+}
+
+/**
  * topFour = [finalWinner, finalLoser, bronzeWinner, bronzeLoser].
  * Only includes positions that are fully resolved; may be shorter than 4 for partial cards.
- * Used for the Predict page's ordered "predicted final standings" display — not scoring.
+ * Used for the Predict page's ordered "predicted final standings" display, and for scoring the
+ * Top Four position bonus.
  */
 function deriveTopFour(
   bracket: Tournament['bracket'],
   participantsByMatch: Map<BracketMatchKey, [TeamId, TeamId]>,
   pickByKey: Map<BracketMatchKey, TeamId>,
+  finishScores: { final?: FinishScore; bronze?: FinishScore },
 ): TeamId[] {
   const topFour: TeamId[] = [];
-  const finalWinner = pickByKey.get(bracket.finalMatch);
+  const finalWinner = resolveFinaleWinner(pickByKey, finishScores.final, bracket.finalMatch);
   if (finalWinner) {
     topFour.push(finalWinner);
-    const finalLoser = loserOf(participantsByMatch, pickByKey, bracket.finalMatch);
+    const finalLoser = resolveFinaleLoser(
+      participantsByMatch,
+      finishScores.final,
+      bracket.finalMatch,
+      finalWinner,
+    );
     if (finalLoser) topFour.push(finalLoser);
   }
-  const bronzeWinner = pickByKey.get(bracket.bronzeMatch);
+  const bronzeWinner = resolveFinaleWinner(pickByKey, finishScores.bronze, bracket.bronzeMatch);
   if (bronzeWinner) {
     topFour.push(bronzeWinner);
-    const bronzeLoser = loserOf(participantsByMatch, pickByKey, bracket.bronzeMatch);
+    const bronzeLoser = resolveFinaleLoser(
+      participantsByMatch,
+      finishScores.bronze,
+      bracket.bronzeMatch,
+      bronzeWinner,
+    );
     if (bronzeLoser) topFour.push(bronzeLoser);
   }
   return topFour;
