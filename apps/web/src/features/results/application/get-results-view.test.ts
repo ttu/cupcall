@@ -1161,6 +1161,103 @@ describe('getResultsView', () => {
     expect(matchMatrix[1]!.userId).toBe(userId);
   });
 
+  it('matchMatrix rows include groupOrderPoints and fold it into totalPoints', async () => {
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await finalizeMatch(db, miniTId, matchId, 2, 0);
+
+    const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+    await upsertGroupScore(db, pred.id, matchId, 2, 0); // exact → 6 match pts
+
+    const groupOrderPts = points(3);
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(6 + groupOrderPts),
+      breakdown: {
+        groupMatches: points(6),
+        groupOrder: groupOrderPts,
+        roundOf16: points(0),
+        roundOf8: points(0),
+        topFour: points(0),
+        topFourTeams: points(0),
+        topFourPosition: points(0),
+        bronze: points(0),
+        final: points(0),
+        specials: points(0),
+        total: points(6 + groupOrderPts),
+      },
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const myRow = view!.pointsRaceView.matchMatrix.find((r) => r.userId === userId)!;
+
+    expect(myRow.groupOrderPoints).toBe(groupOrderPts);
+    expect(myRow.totalPoints).toBe(6 + groupOrderPts);
+  });
+
+  it('sorts matchMatrix by grand total (match points + group order points) descending', async () => {
+    const matchId = miniTournament.groupMatches.find((m) => m.group === groupId('A'))!.id;
+    await finalizeMatch(db, miniTId, matchId, 2, 0);
+
+    // Owner leads on match points alone (outcome hit, no group order).
+    const ownerPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId: ownerId,
+      tournamentId: miniTId,
+    });
+    await upsertGroupScore(db, ownerPred.id, matchId, 1, 0); // outcome → 3 match pts
+    await upsertScore(db, {
+      poolId,
+      userId: ownerId,
+      pointsTotal: points(3),
+      breakdown: {
+        groupMatches: points(3),
+        groupOrder: points(0),
+        roundOf16: points(0),
+        roundOf8: points(0),
+        topFour: points(0),
+        topFourTeams: points(0),
+        topFourPosition: points(0),
+        bronze: points(0),
+        final: points(0),
+        specials: points(0),
+        total: points(3),
+      },
+    });
+
+    // User misses the match entirely but leads once group order points are counted.
+    const userPred = await getOrCreatePrediction(db, {
+      poolId,
+      userId,
+      tournamentId: miniTId,
+    });
+    await upsertGroupScore(db, userPred.id, matchId, 0, 2); // missed → 0 match pts
+    await upsertScore(db, {
+      poolId,
+      userId,
+      pointsTotal: points(6),
+      breakdown: {
+        groupMatches: points(0),
+        groupOrder: points(6),
+        roundOf16: points(0),
+        roundOf8: points(0),
+        topFour: points(0),
+        topFourTeams: points(0),
+        topFourPosition: points(0),
+        bronze: points(0),
+        final: points(0),
+        specials: points(0),
+        total: points(6),
+      },
+    });
+
+    const view = await getResultsView({ db, poolId, userId, now: NOW });
+    const { matchMatrix } = view!.pointsRaceView;
+
+    expect(matchMatrix[0]!.userId).toBe(userId);
+    expect(matchMatrix[1]!.userId).toBe(ownerId);
+  });
+
   // ---------------------------------------------------------------------------
   // Hit-rate projection
   //

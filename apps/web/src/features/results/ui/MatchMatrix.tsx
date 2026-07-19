@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import type { MatchMatrixEntry, MatrixMatch, MatchHit } from '../domain/types';
+import type { MatchMatrixEntry, MatchMatrixCell, MatrixMatch, MatchHit } from '../domain/types';
 import { cn } from '@/shared/ui';
 import { MatrixTable } from './MatrixTable';
 
@@ -22,7 +22,7 @@ export function MatchMatrix({
   matches: MatrixMatch[];
 }): ReactElement {
   return (
-    <MatrixTable
+    <MatrixTable<MatrixMatch, MatchMatrixCell, { groupOrderPoints: number }>
       columns={matches}
       entries={entries}
       colWidth={MATCH_COL_W}
@@ -47,6 +47,11 @@ export function MatchMatrix({
       renderCell={(cell) => (
         <MatrixCell hit={cell.hit} points={cell.points} predictedOutcome={cell.predictedOutcome} />
       )}
+      extraColumn={{
+        header: 'Standings',
+        width: 56,
+        renderCell: (row) => row.groupOrderPoints,
+      }}
       leaderNote={(top) =>
         top.isCurrentUser ? (
           <>

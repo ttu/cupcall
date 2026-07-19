@@ -1161,7 +1161,7 @@ function buildMatchMatrix(
   }
 
   const matchMatrix: MatchMatrixEntry[] = leaderboard.map((e) => {
-    let totalPoints = 0;
+    let matchPoints = 0;
     const cells: MatchMatrixCell[] = allGroupMatches.map((m) => {
       const pred = predMap.get(`${e.userId}::${m.id}`) ?? null;
       const predictedOutcome = toPredictedOutcome(pred?.home ?? null, pred?.away ?? null);
@@ -1177,15 +1177,17 @@ function buildMatchMatrix(
         pred?.away ?? null,
         scoring,
       );
-      totalPoints += hit.points;
+      matchPoints += hit.points;
       return { matchId: m.id, hit: hit.hit, points: hit.points, predictedOutcome };
     });
+    const groupOrderPoints = e.breakdown?.groupOrder ?? 0;
     return {
       userId: e.userId,
       displayName: e.displayName,
       isCurrentUser: userId !== null && e.userId === userId,
       cells,
-      totalPoints,
+      groupOrderPoints,
+      totalPoints: matchPoints + groupOrderPoints,
     };
   });
 

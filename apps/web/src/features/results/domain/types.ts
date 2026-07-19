@@ -252,6 +252,8 @@ export type MatchMatrixEntry = {
   displayName: string;
   isCurrentUser: boolean;
   cells: MatchMatrixCell[];
+  /** Group-order (standings) points, shown in the "Standings" column ahead of Total. */
+  groupOrderPoints: number;
   totalPoints: number;
 };
 

@@ -9,12 +9,22 @@ export type MatrixTableEntry<Cell> = {
   cells: Cell[];
 };
 
+export type MatrixExtraColumn<Cell, Extra> = {
+  header: ReactNode;
+  width: number;
+  renderCell: (row: MatrixTableEntry<Cell> & Extra) => ReactNode;
+};
+
 /**
  * Shared player-by-column scoring grid used by the knockout, group-stage, and
  * specials matrices. Callers supply the column headers and per-cell rendering;
  * this owns the sticky-avatar layout, row striping, and "who's leading" note.
+ *
+ * `Extra` lets a caller's `extraColumn` see fields beyond the base row shape
+ * (e.g. `MatchMatrix` reading `groupOrderPoints`) — it defaults to `unknown`,
+ * which leaves `entries`' element type unchanged for callers without one.
  */
-export function MatrixTable<Col, Cell>({
+export function MatrixTable<Col, Cell, Extra = unknown>({
   columns,
   entries,
   colWidth,
@@ -24,16 +34,19 @@ export function MatrixTable<Col, Cell>({
   getCellKey,
   emptyMessage,
   leaderNote,
+  extraColumn,
 }: {
   columns: Col[];
-  entries: MatrixTableEntry<Cell>[];
+  entries: (MatrixTableEntry<Cell> & Extra)[];
   colWidth: number;
   headerAlign?: 'center' | 'end';
   renderColumnHeader: (col: Col) => ReactElement;
   renderCell: (cell: Cell) => ReactElement;
   getCellKey: (cell: Cell) => string;
   emptyMessage: string;
-  leaderNote?: (topPlayer: MatrixTableEntry<Cell>) => ReactNode;
+  leaderNote?: (topPlayer: MatrixTableEntry<Cell> & Extra) => ReactNode;
+  /** Optional fixed column rendered between the match columns and Total (e.g. group-order points). */
+  extraColumn?: MatrixExtraColumn<Cell, Extra>;
 }): ReactElement {
   if (columns.length === 0) {
     return (
@@ -44,7 +57,9 @@ export function MatrixTable<Col, Cell>({
   }
 
   const topPlayer = entries[0];
-  const colTemplate = `50px 150px repeat(${columns.length}, ${colWidth}px) 64px`;
+  const colTemplate = `50px 150px repeat(${columns.length}, ${colWidth}px) ${
+    extraColumn ? `${extraColumn.width}px ` : ''
+  }64px`;
 
   return (
     <div>
@@ -60,6 +75,11 @@ export function MatrixTable<Col, Cell>({
             <div className="sticky left-0 z-10 bg-surface-2 self-stretch" />
             <span className="eyebrow text-ink-muted text-[10px] py-3">Player</span>
             {columns.map(renderColumnHeader)}
+            {extraColumn && (
+              <span className="eyebrow text-ink-muted text-[10px] text-center py-3">
+                {extraColumn.header}
+              </span>
+            )}
             <span className="eyebrow text-ink-muted text-[10px] text-right py-3 pr-4">Total</span>
           </div>
 
@@ -72,6 +92,7 @@ export function MatrixTable<Col, Cell>({
                 colTemplate={colTemplate}
                 getCellKey={getCellKey}
                 renderCell={renderCell}
+                extraColumn={extraColumn}
               />
             ))}
           </div>
@@ -88,18 +109,20 @@ export function MatrixTable<Col, Cell>({
   );
 }
 
-function MatrixTableRow<Cell>({
+function MatrixTableRow<Cell, Extra>({
   row,
   avatarIndex,
   colTemplate,
   getCellKey,
   renderCell,
+  extraColumn,
 }: {
-  row: MatrixTableEntry<Cell>;
+  row: MatrixTableEntry<Cell> & Extra;
   avatarIndex: number;
   colTemplate: string;
   getCellKey: (cell: Cell) => string;
   renderCell: (cell: Cell) => ReactElement;
+  extraColumn: MatrixExtraColumn<Cell, Extra> | undefined;
 }): ReactElement {
   const stickyBg = row.isCurrentUser ? 'bg-green-050' : 'bg-surface';
 
@@ -139,6 +162,12 @@ function MatrixTableRow<Cell>({
           {renderCell(cell)}
         </span>
       ))}
+
+      {extraColumn && (
+        <span className="display tnum text-center text-[15px] py-[9px] text-ink-muted">
+          {extraColumn.renderCell(row)}
+        </span>
+      )}
 
       <span
         className={cn(
