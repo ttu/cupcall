@@ -47,6 +47,7 @@ import {
   type SpecialBetImpossibility,
 } from '../domain/special-bet-impossibility';
 import { buildHitPointsMap } from '../domain/hit-points';
+import { buildVariantCellKey } from '../domain/knockout-cell-key';
 
 type RaceParams = {
   leaderboard: LeaderboardEntry[];
@@ -1066,7 +1067,7 @@ function buildFinishMatrixCells(
         : finishScorePoints(m, prediction.isExactScore, finishScoring.exactScore);
     return {
       ...classifyFinishCell(m, shared, prediction, pickedOpponentId, points),
-      bracketMatchKey: `${m.bracketMatchKey}:${variant}`,
+      bracketMatchKey: buildVariantCellKey(m.bracketMatchKey, variant),
     };
   });
 }
@@ -1131,7 +1132,7 @@ export function buildKnockoutMatrix(params: {
     if (!variants) return [{ ...base, bracketMatchKey: m.bracketMatchKey }];
     return variants.map((variant) => ({
       ...base,
-      bracketMatchKey: `${m.bracketMatchKey}:${variant}`,
+      bracketMatchKey: buildVariantCellKey(m.bracketMatchKey, variant),
       variant,
     }));
   });

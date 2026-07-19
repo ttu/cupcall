@@ -1,10 +1,43 @@
 import type {
   KnockoutMatchDetail,
   KnockoutMatchDetailPrediction,
+  KnockoutMatchHit,
   KnockoutMatchView,
+  KnockoutMatrixCell,
   KnockoutMatrixEntry,
 } from './types';
 import { resolveGoalsByTeamId } from './predicted-goals';
+import { cellBelongsToMatch } from './knockout-cell-key';
+
+/**
+ * Final/Bronze matches are split into 'teams'/'score' matrix columns (see buildKnockoutMatrix), so
+ * a match's cells can no longer be found by exact bracketMatchKey equality. Find every cell for
+ * this match — one for a normal round, one or two for Final/Bronze — so the summary sheet can show
+ * a single combined pick.
+ */
+function findMatchCells(row: KnockoutMatrixEntry, bracketMatchKey: string): KnockoutMatrixCell[] {
+  return row.cells.filter((cell) => cellBelongsToMatch(cell.bracketMatchKey, bracketMatchKey));
+}
+
+/** Combines a match's (possibly split) cells into the single hit/points the summary sheet shows. */
+function combineMatchCells(cells: KnockoutMatrixCell[]): {
+  cell: Omit<KnockoutMatrixCell, 'bracketMatchKey'> | null;
+  hit: KnockoutMatchHit;
+  points: number;
+} {
+  if (cells.length === 0) return { cell: null, hit: 'no-pick', points: 0 };
+
+  const points = cells.reduce((sum, c) => sum + c.points, 0);
+  const primary = cells[0]!;
+
+  let hit: KnockoutMatchHit;
+  if (primary.pickedWinnerId === null) hit = 'no-pick';
+  else if (cells.some((c) => c.hit === 'impossible')) hit = 'impossible';
+  else if (cells.some((c) => c.hit === 'pending')) hit = 'pending';
+  else hit = points > 0 ? 'hit' : 'miss';
+
+  return { cell: primary, hit, points };
+}
 
 function resolveTeamName(match: KnockoutMatchView, teamId: string): string | null {
   if (teamId === match.homeTeamId) return match.homeTeamName;
@@ -47,7 +80,7 @@ export function buildKnockoutMatchDetail(
   knockoutMatrix: KnockoutMatrixEntry[],
 ): KnockoutMatchDetail {
   const predictions: KnockoutMatchDetailPrediction[] = knockoutMatrix.map((row) => {
-    const c = row.cells.find((cell) => cell.bracketMatchKey === match.bracketMatchKey);
+    const { cell: c, hit, points } = combineMatchCells(findMatchCells(row, match.bracketMatchKey));
     const pickedTeamId = c?.pickedWinnerId ?? null;
     const pickedOpponentId = c?.pickedOpponentId ?? null;
 
@@ -72,9 +105,9 @@ export function buildKnockoutMatchDetail(
         pickedOpponentId !== null ? resolveTeamName(match, pickedOpponentId) : null,
       predictedHome,
       predictedAway,
-      hit: c?.hit ?? 'no-pick',
+      hit,
       isExactScore: c?.isExactScore ?? false,
-      points: c?.points ?? 0,
+      points,
     };
   });
 

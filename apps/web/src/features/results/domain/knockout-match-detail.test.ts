@@ -430,3 +430,98 @@ describe('buildKnockoutMatchDetail — predicted score resolved by team identity
     expect(prediction.predictedAway).toBe(1);
   });
 });
+
+describe('buildKnockoutMatchDetail — split Final/Bronze matrix cells', () => {
+  it('regression: finds the Final pick under its ":score"-suffixed matrix cell', () => {
+    // buildKnockoutMatrix splits Final into a single "final:score" cell (see build-race-view.ts).
+    // Looking the pick up by exact bracketMatchKey equality (the pre-split lookup) always misses,
+    // showing "No pick" for every user even though picks exist.
+    const m = match({ bracketMatchKey: 'final', homeTeamId: 'ESP', awayTeamId: 'ENG' });
+    const entries = [
+      entry({
+        userId: 'u1',
+        cells: [
+          cell({
+            bracketMatchKey: 'final:score',
+            pickedWinnerId: 'ENG',
+            pickedOpponentId: 'ESP',
+            predictedHome: 2,
+            predictedAway: 1,
+            isExactScore: true,
+            hit: 'hit',
+            points: 5,
+          }),
+        ],
+      }),
+    ];
+
+    const detail = buildKnockoutMatchDetail(m, entries);
+    const prediction = detail.predictions[0]!;
+
+    expect(prediction.pickedTeamId).toBe('ENG');
+    expect(prediction.hit).toBe('hit');
+    expect(prediction.points).toBe(5);
+  });
+
+  it('regression: sums points across Bronze\'s ":teams" and ":score" cells into one prediction', () => {
+    const m = match({ bracketMatchKey: 'bronze', homeTeamId: 'FRA', awayTeamId: 'POR' });
+    const entries = [
+      entry({
+        userId: 'u1',
+        cells: [
+          cell({
+            bracketMatchKey: 'bronze:teams',
+            pickedWinnerId: 'FRA',
+            pickedOpponentId: 'POR',
+            hit: 'hit',
+            points: 6,
+          }),
+          cell({
+            bracketMatchKey: 'bronze:score',
+            pickedWinnerId: 'FRA',
+            pickedOpponentId: 'POR',
+            predictedHome: 2,
+            predictedAway: 1,
+            isExactScore: false,
+            hit: 'miss',
+            points: 0,
+          }),
+        ],
+      }),
+    ];
+
+    const detail = buildKnockoutMatchDetail(m, entries);
+    const prediction = detail.predictions[0]!;
+
+    expect(prediction.pickedTeamId).toBe('FRA');
+    expect(prediction.points).toBe(6);
+    expect(prediction.hit).toBe('hit');
+  });
+
+  it('regression: reports "no-pick" (not "miss") when Bronze cells exist but nobody picked', () => {
+    const m = match({ bracketMatchKey: 'bronze', homeTeamId: 'FRA', awayTeamId: 'POR' });
+    const entries = [
+      entry({
+        userId: 'u1',
+        cells: [
+          cell({
+            bracketMatchKey: 'bronze:teams',
+            pickedWinnerId: null,
+            hit: 'no-pick',
+            points: 0,
+          }),
+          cell({
+            bracketMatchKey: 'bronze:score',
+            pickedWinnerId: null,
+            hit: 'no-pick',
+            points: 0,
+          }),
+        ],
+      }),
+    ];
+
+    const detail = buildKnockoutMatchDetail(m, entries);
+    expect(detail.predictions[0]!.hit).toBe('no-pick');
+    expect(detail.predictions[0]!.pickedTeamId).toBeNull();
+  });
+});
