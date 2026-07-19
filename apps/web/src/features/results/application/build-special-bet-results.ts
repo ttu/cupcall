@@ -190,17 +190,21 @@ function buildSpecialBetResultRow(
     display,
   );
 
-  let { hit, pointsAwarded } = isArrayAnswerBet
+  const outcome = isArrayAnswerBet
     ? computeArrayBetHit(userRaw, actualArray, d.points)
     : computeScalarBetHit(userRaw, actualRaw, d.points);
+  let { hit, pointsAwarded } = outcome;
+
+  // Compute from the real (pre-impossibility) resolution state: an impossible pick still
+  // renders `missed`, but the underlying stat isn't officially answered yet, so the current
+  // leader remains useful context for "why" — see special-bet-impossibility-design.md.
+  const currentLeader: CurrentLeader | null =
+    outcome.hit === 'pending' ? computeCurrentLeaderFor(d.key, def, matches) : null;
 
   if (isPendingPickAlreadyImpossible(hit, userRaw, d.key, impossibility)) {
     hit = 'missed';
     pointsAwarded = 0;
   }
-
-  const currentLeader: CurrentLeader | null =
-    hit === 'pending' ? computeCurrentLeaderFor(d.key, def, matches) : null;
 
   const poolStats = computeSpecialBetPoolStats(
     d.key,

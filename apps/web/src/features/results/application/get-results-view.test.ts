@@ -2053,6 +2053,26 @@ describe('getResultsView', () => {
       expect(bet.pointsAwarded).toBe(0);
     });
 
+    it('keeps currentLeader populated when a pick is marked missed via early impossibility', async () => {
+      // Same setup as above: A2's pick is impossible (group over, A1 leads), but the real
+      // answer isn't in results.json yet — the leader is still useful context for "why".
+      await finalizeMatch(db, miniTId, 'mA1', 3, 0); // A1 beats A2
+      await finalizeMatch(db, miniTId, 'mA2', 3, 0); // A1 beats A3
+      await finalizeMatch(db, miniTId, 'mA3', 3, 0); // A1 beats A4
+      await finalizeMatch(db, miniTId, 'mA4', 3, 0); // A2 beats A3
+      await finalizeMatch(db, miniTId, 'mA5', 3, 0); // A2 beats A4
+      await finalizeMatch(db, miniTId, 'mA6', 1, 1); // A3 draws A4
+
+      const pred = await getOrCreatePrediction(db, { poolId, userId, tournamentId: miniTId });
+      await upsertSpecialBet(db, pred.id, 'groupTopScoringTeam', 'A2');
+
+      const view = await getResultsView({ db, poolId, userId, now: NOW });
+      const bet = view!.specialBets.find((b) => b.key === 'groupTopScoringTeam')!;
+      expect(bet.hit).toBe('missed');
+      expect(bet.currentLeader).not.toBeNull();
+      expect(bet.currentLeader!.teamIds).toContain('A1');
+    });
+
     it('marks a number-bet pick as missed once the running max already exceeds it', async () => {
       await finalizeMatch(db, miniTId, 'mA1', 4, 2); // 6 goals in this match
 

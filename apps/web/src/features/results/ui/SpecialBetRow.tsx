@@ -59,7 +59,7 @@ export function SpecialBetRow({
             </>
           )}
         </div>
-        {isPending && bet.currentLeader !== null && (
+        {bet.currentLeader !== null && (
           <CurrentLeaderLine betKey={bet.key} leader={bet.currentLeader} />
         )}
         {bet.poolStats && <PoolPicksRow stats={bet.poolStats} />}
