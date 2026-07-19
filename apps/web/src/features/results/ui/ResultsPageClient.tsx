@@ -18,7 +18,9 @@ import { PointsRaceTab } from './PointsRaceTab';
 import { SpecialBetsPanel } from './SpecialBetsPanel';
 import { PointsSummaryPanel } from './PointsSummaryPanel';
 import { MatchSummarySheet } from './MatchSummarySheet';
+import { GroupMatchSummarySheet } from './GroupMatchSummarySheet';
 import { buildKnockoutMatchDetail } from '../domain/knockout-match-detail';
+import { buildGroupMatchDetail } from '../domain/group-match-detail';
 
 type Tab = 'group' | 'knockout' | 'race' | 'specials';
 
@@ -91,6 +93,7 @@ export function ResultsPageClient({
 }: Props): ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [openMatchKey, setOpenMatchKey] = useState<string | null>(null);
+  const [openGroupMatchId, setOpenGroupMatchId] = useState<string | null>(null);
 
   const finalRound = view.bracketRounds.find((r) => r.label === 'Final');
   const finalMatch = finalRound?.matches[0] ?? null;
@@ -109,6 +112,9 @@ export function ResultsPageClient({
           ? 'bronze'
           : null;
 
+  const openGroupMatch =
+    view.pointsRaceView.matrixMatches.find((m) => m.matchId === openGroupMatchId) ?? null;
+
   function jumpToGroup(groupId: string) {
     document
       .getElementById(`results-group-${groupId}`)
@@ -122,7 +128,7 @@ export function ResultsPageClient({
       {activeTab === 'group' && (
         <section aria-label="Group stage results" className="flex flex-col gap-6">
           {view.userGroupSummary && <PointsSummaryPanel summary={view.userGroupSummary} />}
-          <TodayMatchesFeed groups={view.groupResults} />
+          <TodayMatchesFeed groups={view.groupResults} onOpenMatch={setOpenGroupMatchId} />
 
           <GroupJumpNav groupIds={view.groupResults.map((g) => g.groupId)} onJump={jumpToGroup} />
 
@@ -132,7 +138,7 @@ export function ResultsPageClient({
               id={`results-group-${group.groupId}`}
               className="grid gap-3 items-start md:grid-cols-[minmax(0,1fr)_326px]"
             >
-              <GroupMatchFeed group={group} />
+              <GroupMatchFeed group={group} onOpenMatch={setOpenGroupMatchId} />
               <GroupTable standing={group.standing} groupPoints={group.groupPoints} />
             </div>
           ))}
@@ -237,6 +243,14 @@ export function ResultsPageClient({
           matchKey={openMatchType}
           detail={buildKnockoutMatchDetail(openMatch, view.pointsRaceView.knockoutMatrix)}
           onClose={() => setOpenMatchKey(null)}
+        />
+      )}
+
+      {openGroupMatch && (
+        <GroupMatchSummarySheet
+          match={openGroupMatch}
+          detail={buildGroupMatchDetail(openGroupMatch, view.pointsRaceView.matchMatrix)}
+          onClose={() => setOpenGroupMatchId(null)}
         />
       )}
     </div>

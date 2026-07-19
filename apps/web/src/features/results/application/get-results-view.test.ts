@@ -1114,6 +1114,13 @@ describe('getResultsView', () => {
     const myUnplayedCell = myRow?.cells.find((c) => c.matchId !== matchId);
     expect(myUnplayedCell?.hit).toBe('pending');
     expect(myUnplayedCell?.predictedOutcome).toBeNull();
+
+    expect(myCell?.predictedHome).toBe(2);
+    expect(myCell?.predictedAway).toBe(0);
+    expect(myUnplayedCell?.predictedHome).toBeNull();
+    expect(myUnplayedCell?.predictedAway).toBeNull();
+
+    expect(finalizedMatch.groupId).toBe(groupId('A'));
   });
 
   it('shows predictedOutcome for upcoming matches when user has a prediction', async () => {
@@ -1133,6 +1140,8 @@ describe('getResultsView', () => {
     const cell = myRow?.cells.find((c) => c.matchId === upcomingMatchId);
     expect(cell?.hit).toBe('pending');
     expect(cell?.predictedOutcome).toBe('2');
+    expect(cell?.predictedHome).toBe(0);
+    expect(cell?.predictedAway).toBe(2);
   });
 
   it('sorts matchMatrix by totalPoints descending (completed matches only)', async () => {

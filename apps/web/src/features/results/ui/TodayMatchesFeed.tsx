@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import type { GroupResultView, GroupUpcomingMatchRow, MatchPredictionStats } from '../domain/types';
 import { TeamBadge, cn } from '@/shared/ui';
 
-type Props = { groups: GroupResultView[] };
+type Props = { groups: GroupResultView[]; onOpenMatch: (matchId: string) => void };
 
 export function PredictionStatsBar({ stats }: { stats: MatchPredictionStats }): ReactElement {
   return (
@@ -96,7 +96,7 @@ function TodayMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactElemen
   );
 }
 
-export function TodayMatchesFeed({ groups }: Props): ReactElement | null {
+export function TodayMatchesFeed({ groups, onOpenMatch }: Props): ReactElement | null {
   const allToday = groups
     .flatMap((g) => g.todayMatches)
     .toSorted((a, b) => {
@@ -114,7 +114,15 @@ export function TodayMatchesFeed({ groups }: Props): ReactElement | null {
       </div>
       <div className="divide">
         {allToday.map((m) => (
-          <TodayMatchRow key={m.matchId} match={m} />
+          <button
+            key={m.matchId}
+            type="button"
+            onClick={() => onOpenMatch(m.matchId)}
+            data-testid="today-match-row"
+            className="w-full block text-left cursor-pointer bg-transparent border-0 p-0"
+          >
+            <TodayMatchRow match={m} />
+          </button>
         ))}
       </div>
     </div>

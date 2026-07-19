@@ -1230,6 +1230,7 @@ function buildMatchMatrix(
 
   const matrixMatches: MatrixMatch[] = allGroupMatches.map((m) => ({
     matchId: m.id,
+    groupId: m.groupId ?? '',
     homeTeamId: m.homeTeamId ?? '',
     homeTeamName: teamMap.get(m.homeTeamId ?? '') ?? m.homeTeamId ?? '',
     awayTeamId: m.awayTeamId ?? '',
@@ -1250,9 +1251,18 @@ function buildMatchMatrix(
     const cells: MatchMatrixCell[] = allGroupMatches.map((m) => {
       const pred = predMap.get(`${e.userId}::${m.id}`) ?? null;
       const predictedOutcome = toPredictedOutcome(pred?.home ?? null, pred?.away ?? null);
+      const predictedHome = pred?.home ?? null;
+      const predictedAway = pred?.away ?? null;
 
       if (m.status !== 'final') {
-        return { matchId: m.id, hit: 'pending', points: 0, predictedOutcome };
+        return {
+          matchId: m.id,
+          hit: 'pending',
+          points: 0,
+          predictedOutcome,
+          predictedHome,
+          predictedAway,
+        };
       }
 
       const hit = computeHit(
@@ -1263,7 +1273,14 @@ function buildMatchMatrix(
         scoring,
       );
       matchPoints += hit.points;
-      return { matchId: m.id, hit: hit.hit, points: hit.points, predictedOutcome };
+      return {
+        matchId: m.id,
+        hit: hit.hit,
+        points: hit.points,
+        predictedOutcome,
+        predictedHome,
+        predictedAway,
+      };
     });
     const groupOrderPoints = e.breakdown?.groupOrder ?? 0;
     return {

@@ -245,6 +245,9 @@ export type MatchMatrixCell = {
   points: number;
   /** The user's predicted outcome derived from their predicted score. Null when no prediction was made. */
   predictedOutcome: '1' | 'X' | '2' | null;
+  /** The user's predicted score for this match. Null when they made no prediction. */
+  predictedHome: number | null;
+  predictedAway: number | null;
 };
 
 export type MatchMatrixEntry = {
@@ -259,6 +262,8 @@ export type MatchMatrixEntry = {
 
 export type MatrixMatch = {
   matchId: string;
+  /** The group this match belongs to, e.g. 'A'. */
+  groupId: string;
   homeTeamId: string;
   homeTeamName: string;
   awayTeamId: string;
@@ -270,6 +275,26 @@ export type MatrixMatch = {
   actualHome: number | null;
   /** Null for unplayed matches. */
   actualAway: number | null;
+};
+
+export type GroupMatchDetailPrediction = {
+  userId: string;
+  displayName: string;
+  isCurrentUser: boolean;
+  predictedHome: number | null;
+  predictedAway: number | null;
+  hit: MatchHit;
+  points: number;
+};
+
+export type GroupMatchDetail = {
+  totalPredictions: number;
+  /** Null when totalPredictions is 0. */
+  poolStats: MatchPredictionStats | null;
+  /** Null when totalPredictions is 0. */
+  insight: string | null;
+  /** Sorted: current user first (if present), then by points DESC, then displayName ASC. */
+  predictions: GroupMatchDetailPrediction[];
 };
 
 export type KnockoutMatchHit = 'hit' | 'miss' | 'no-pick' | 'pending' | 'impossible';

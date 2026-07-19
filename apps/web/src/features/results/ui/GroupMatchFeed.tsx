@@ -9,7 +9,7 @@ import { HitChip } from './HitChip';
 import { PredictionStatsBar } from './TodayMatchesFeed';
 import { TeamBadge, cn } from '@/shared/ui';
 
-type Props = { group: GroupResultView };
+type Props = { group: GroupResultView; onOpenMatch: (matchId: string) => void };
 
 type ScoreRowProps = {
   homeTeamId: string;
@@ -168,7 +168,7 @@ function UpcomingMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactEle
   );
 }
 
-export function GroupMatchFeed({ group }: Props): ReactElement {
+export function GroupMatchFeed({ group, onOpenMatch }: Props): ReactElement {
   const hasCompleted = group.completedMatches.length > 0;
   const allUpcoming = [...group.todayMatches, ...group.upcomingMatches].toSorted((a, b) => {
     if (!a.kickoff) return 1;
@@ -190,7 +190,13 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
       {hasCompleted && (
         <div className="divide">
           {group.completedMatches.map((m) => (
-            <div key={m.matchId}>
+            <button
+              key={m.matchId}
+              type="button"
+              onClick={() => onOpenMatch(m.matchId)}
+              data-testid="group-match-row"
+              className="w-full block text-left cursor-pointer bg-transparent border-0 p-0"
+            >
               <MatchScoreRow
                 homeTeamId={m.homeTeamId}
                 homeTeamName={m.homeTeamName}
@@ -206,7 +212,7 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
                 pointsAwarded={m.pointsAwarded}
                 poolMatchStats={m.poolMatchStats}
               />
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -214,7 +220,15 @@ export function GroupMatchFeed({ group }: Props): ReactElement {
       {hasUpcoming && (
         <div className={cn('divide', hasCompleted && 'border-t border-line-soft')}>
           {allUpcoming.map((m) => (
-            <UpcomingMatchRow key={m.matchId} match={m} />
+            <button
+              key={m.matchId}
+              type="button"
+              onClick={() => onOpenMatch(m.matchId)}
+              data-testid="group-match-row"
+              className="w-full block text-left cursor-pointer bg-transparent border-0 p-0"
+            >
+              <UpcomingMatchRow match={m} />
+            </button>
           ))}
         </div>
       )}
