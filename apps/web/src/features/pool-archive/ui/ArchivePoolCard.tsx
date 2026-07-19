@@ -27,7 +27,9 @@ export function ArchivePoolCard({ poolId, isOwner, archivedAt }: Props): ReactEl
       <div className="px-4 py-4 space-y-3">
         <p className="text-xs text-ink-muted">
           {archivedAt
-            ? `Archived on ${archivedAt.toLocaleDateString()}. This snapshot survives future name changes or account deletions.`
+            ? isOwner
+              ? `Archived on ${archivedAt.toLocaleDateString()}. Survives members' future name changes or account deletions — not your own; deleting your account removes the whole pool.`
+              : `Archived on ${archivedAt.toLocaleDateString()}. This snapshot survives future name changes or account deletions.`
             : 'Freeze a permanent snapshot of the final standings once the cup is finished.'}
         </p>
         <div className="flex flex-wrap items-center gap-2">

@@ -1,8 +1,16 @@
 import type { Db } from '@cup/db';
 import { getLeaderboard, upsertPoolArchive } from '@cup/db';
 import { points } from '@cup/engine';
-import type { PoolId, TournamentId, UserId, ScoreBreakdown } from '@cup/engine';
+import type {
+  PoolId,
+  TournamentId,
+  UserId,
+  ScoreBreakdown,
+  Tournament,
+  Scoring,
+} from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
+import { buildPoolArchiveRecap } from './build-recap';
 
 function emptyBreakdown(): ScoreBreakdown {
   return {
@@ -21,8 +29,9 @@ function emptyBreakdown(): ScoreBreakdown {
 }
 
 /**
- * Snapshots a pool's current leaderboard into the archive tables. Re-running for the
- * same pool replaces the previous snapshot (see `upsertPoolArchive`).
+ * Snapshots a pool's current leaderboard, plus a computed recap (race chart,
+ * highlights, per-member stage history), into the archive tables. Re-running
+ * for the same pool replaces the previous snapshot (see `upsertPoolArchive`).
  */
 export async function archivePool(
   db: Db<AppSchema>,
@@ -32,17 +41,31 @@ export async function archivePool(
     tournamentId: TournamentId;
     tournamentName: string;
     archivedBy: UserId;
+    def: Tournament;
+    scoring: Scoring;
   },
 ): Promise<void> {
   const leaderboard = await getLeaderboard(db, input.poolId);
 
-  const entries = leaderboard.map((entry, index) => ({
-    userId: entry.userId,
-    displayName: entry.displayName,
-    rank: index + 1,
-    pointsTotal: entry.pointsTotal,
-    breakdown: entry.breakdown ?? emptyBreakdown(),
-  }));
+  const { recap, entryExtras } = await buildPoolArchiveRecap(db, {
+    poolId: input.poolId,
+    tournamentId: input.tournamentId,
+    def: input.def,
+    scoring: input.scoring,
+  });
+
+  const entries = leaderboard.map((entry, index) => {
+    const extras = entryExtras.get(entry.userId);
+    return {
+      userId: entry.userId,
+      displayName: entry.displayName,
+      rank: index + 1,
+      pointsTotal: entry.pointsTotal,
+      breakdown: entry.breakdown ?? emptyBreakdown(),
+      pointsHistory: extras?.pointsHistory ?? null,
+      stageReasons: extras?.stageReasons ?? null,
+    };
+  });
 
   await upsertPoolArchive(db, {
     poolId: input.poolId,
@@ -50,6 +73,7 @@ export async function archivePool(
     tournamentId: input.tournamentId,
     tournamentName: input.tournamentName,
     archivedBy: input.archivedBy,
+    recap,
     entries,
   });
 }

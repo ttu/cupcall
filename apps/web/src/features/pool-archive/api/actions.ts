@@ -26,6 +26,8 @@ export async function archivePoolAction(
 
     const tournament = await getTournamentById(db, pool.tournamentId);
     if (!tournament) throw new Error(`Tournament ${pool.tournamentId} not found`);
+    if (!tournament.definition)
+      throw new Error(`Tournament ${pool.tournamentId} has no definition`);
 
     await archivePool(db, {
       poolId,
@@ -33,6 +35,8 @@ export async function archivePoolAction(
       tournamentId: pool.tournamentId,
       tournamentName: tournament.name,
       archivedBy: actor.userId,
+      def: tournament.definition,
+      scoring: tournament.scoringConfig,
     });
 
     revalidatePath(`/pools/${poolId}`);

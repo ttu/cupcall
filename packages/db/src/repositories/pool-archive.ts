@@ -12,6 +12,14 @@ import {
   type Points,
   type ScoreBreakdown,
 } from '@cup/engine';
+import type { PoolArchiveRecap } from '../schema/pool-archive';
+
+export type {
+  PoolArchiveRecap,
+  ChampionPickHighlight,
+  BestSingleMatchHighlight,
+  BiggestUpsetHighlight,
+} from '../schema/pool-archive';
 
 type Database = Db<typeof schema>;
 
@@ -23,6 +31,7 @@ export type PoolArchiveRow = {
   tournamentName: string;
   archivedAt: Date;
   archivedBy: UserId | null;
+  recap: PoolArchiveRecap | null;
 };
 
 export type PoolArchiveEntryRow = {
@@ -33,6 +42,8 @@ export type PoolArchiveEntryRow = {
   rank: number;
   pointsTotal: Points;
   breakdown: ScoreBreakdown;
+  pointsHistory: number[] | null;
+  stageReasons: (string | null)[] | null;
 };
 
 export type PoolArchiveEntryInput = {
@@ -41,6 +52,8 @@ export type PoolArchiveEntryInput = {
   rank: number;
   pointsTotal: Points;
   breakdown: ScoreBreakdown;
+  pointsHistory: number[] | null;
+  stageReasons: (string | null)[] | null;
 };
 
 function toPoolArchiveRow(raw: typeof schema.poolArchives.$inferSelect): PoolArchiveRow {
@@ -49,6 +62,7 @@ function toPoolArchiveRow(raw: typeof schema.poolArchives.$inferSelect): PoolArc
     poolId: asPoolId(raw.poolId),
     tournamentId: asTournamentId(raw.tournamentId),
     archivedBy: raw.archivedBy ? asUserId(raw.archivedBy) : null,
+    recap: raw.recap ?? null,
   };
 }
 
@@ -59,6 +73,8 @@ function toPoolArchiveEntryRow(
     ...raw,
     userId: raw.userId ? asUserId(raw.userId) : null,
     pointsTotal: points(raw.pointsTotal),
+    pointsHistory: raw.pointsHistory ?? null,
+    stageReasons: raw.stageReasons ?? null,
   };
 }
 
@@ -75,6 +91,7 @@ export async function upsertPoolArchive(
     tournamentId: TournamentId;
     tournamentName: string;
     archivedBy: UserId;
+    recap: PoolArchiveRecap | null;
     entries: PoolArchiveEntryInput[];
   },
 ): Promise<PoolArchiveRow> {
@@ -86,6 +103,7 @@ export async function upsertPoolArchive(
       tournamentId: input.tournamentId,
       tournamentName: input.tournamentName,
       archivedBy: input.archivedBy,
+      recap: input.recap,
     })
     .onConflictDoUpdate({
       target: schema.poolArchives.poolId,
@@ -95,6 +113,7 @@ export async function upsertPoolArchive(
         tournamentName: input.tournamentName,
         archivedBy: input.archivedBy,
         archivedAt: sql`now()`,
+        recap: input.recap,
       },
     })
     .returning();
@@ -113,6 +132,8 @@ export async function upsertPoolArchive(
         rank: e.rank,
         pointsTotal: e.pointsTotal,
         breakdown: e.breakdown,
+        pointsHistory: e.pointsHistory,
+        stageReasons: e.stageReasons,
       })),
     );
   }

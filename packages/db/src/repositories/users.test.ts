@@ -182,9 +182,26 @@ describe('users repository', () => {
         tournamentId,
         tournamentName: miniTournament.name,
         archivedBy: owner.id,
+        recap: null,
         entries: [
-          { userId: owner.id, displayName: 'Owner', rank: 1, pointsTotal: points(50), breakdown },
-          { userId: member.id, displayName: 'Member', rank: 2, pointsTotal: points(42), breakdown },
+          {
+            userId: owner.id,
+            displayName: 'Owner',
+            rank: 1,
+            pointsTotal: points(50),
+            breakdown,
+            pointsHistory: null,
+            stageReasons: null,
+          },
+          {
+            userId: member.id,
+            displayName: 'Member',
+            rank: 2,
+            pointsTotal: points(42),
+            breakdown,
+            pointsHistory: null,
+            stageReasons: null,
+          },
         ],
       });
 

@@ -6,8 +6,9 @@ import { createUser } from './users';
 import { createPool } from './pools';
 import { upsertTournamentDef } from './tournament';
 import { upsertPoolArchive, getPoolArchiveWithEntries } from './pool-archive';
+import type { PoolArchiveRecap } from './pool-archive';
 import { miniTournament } from '@cup/engine/testing';
-import { tournamentId as asTournamentId, points } from '@cup/engine';
+import { tournamentId as asTournamentId, points, teamId, matchId } from '@cup/engine';
 import type { ScoreBreakdown } from '@cup/engine';
 
 const FUTURE_KICKOFF = new Date('2099-06-11T18:00:00Z');
@@ -49,6 +50,7 @@ describe('pool-archive repository', () => {
       tournamentId,
       tournamentName: miniTournament.name,
       archivedBy: owner.id,
+      recap: null,
       entries: [
         {
           userId: owner.id,
@@ -56,6 +58,8 @@ describe('pool-archive repository', () => {
           rank: 1,
           pointsTotal: points(50),
           breakdown: fakeBreakdown(50),
+          pointsHistory: null,
+          stageReasons: null,
         },
         {
           userId: member.id,
@@ -63,6 +67,8 @@ describe('pool-archive repository', () => {
           rank: 2,
           pointsTotal: points(30),
           breakdown: fakeBreakdown(30),
+          pointsHistory: null,
+          stageReasons: null,
         },
       ],
     });
@@ -101,6 +107,7 @@ describe('pool-archive repository', () => {
       tournamentId,
       tournamentName: miniTournament.name,
       archivedBy: owner.id,
+      recap: null,
       entries: [
         {
           userId: owner.id,
@@ -108,6 +115,8 @@ describe('pool-archive repository', () => {
           rank: 1,
           pointsTotal: points(10),
           breakdown: fakeBreakdown(10),
+          pointsHistory: null,
+          stageReasons: null,
         },
       ],
     });
@@ -118,6 +127,7 @@ describe('pool-archive repository', () => {
       tournamentId,
       tournamentName: miniTournament.name,
       archivedBy: owner.id,
+      recap: null,
       entries: [
         {
           userId: owner.id,
@@ -125,6 +135,8 @@ describe('pool-archive repository', () => {
           rank: 1,
           pointsTotal: points(99),
           breakdown: fakeBreakdown(99),
+          pointsHistory: null,
+          stageReasons: null,
         },
       ],
     });
@@ -132,5 +144,98 @@ describe('pool-archive repository', () => {
     const fetched = await getPoolArchiveWithEntries(db, pool.id);
     expect(fetched?.entries).toHaveLength(1);
     expect(fetched?.entries[0]?.pointsTotal).toBe(99);
+  });
+
+  it('stores and retrieves recap and per-entry points history / stage reasons', async () => {
+    await upsertTournamentDef(db, miniTournament, FUTURE_KICKOFF, EMPTY_KICKOFFS);
+    const tournamentId = asTournamentId(miniTournament.id);
+    const owner = await createUser(db, { email: 'recap-owner@x.com', displayName: 'Owner' });
+    const pool = await createPool(db, { tournamentId, ownerId: owner.id, name: 'Recap Pool' });
+
+    const recap: PoolArchiveRecap = {
+      stages: ['Start', 'Jul 15', 'Jul 19'],
+      championPick: { teamId: teamId('ARG'), teamName: 'Argentina', count: 6, total: 10 },
+      bestSingleMatch: {
+        matchId: matchId('m1'),
+        description: 'ARG 3-0 SEN',
+        homeTeam: 'Argentina',
+        awayTeam: 'Senegal',
+        homeGoals: 3,
+        awayGoals: 0,
+        exactCount: 9,
+        total: 10,
+      },
+      biggestUpset: {
+        matchId: matchId('r16-3'),
+        round: 'Round of 16',
+        winnerTeam: 'Croatia',
+        loserTeam: 'Spain',
+        pickCount: 2,
+        total: 10,
+      },
+      predictionsMade: 1456,
+      exactScoreRatePercent: 18,
+    };
+
+    await upsertPoolArchive(db, {
+      poolId: pool.id,
+      poolName: pool.name,
+      tournamentId,
+      tournamentName: miniTournament.name,
+      archivedBy: owner.id,
+      recap,
+      entries: [
+        {
+          userId: owner.id,
+          displayName: 'Owner',
+          rank: 1,
+          pointsTotal: points(50),
+          breakdown: fakeBreakdown(50),
+          pointsHistory: [0, 20, 50],
+          stageReasons: [null, '5 exact scores', 'Champion pick correct'],
+        },
+      ],
+    });
+
+    const fetched = await getPoolArchiveWithEntries(db, pool.id);
+    expect(fetched?.archive.recap).toEqual(recap);
+    expect(fetched?.entries[0]?.pointsHistory).toEqual([0, 20, 50]);
+    expect(fetched?.entries[0]?.stageReasons).toEqual([
+      null,
+      '5 exact scores',
+      'Champion pick correct',
+    ]);
+  });
+
+  it('leaves recap and points history/stage reasons null when not provided (pre-recap-feature archives)', async () => {
+    await upsertTournamentDef(db, miniTournament, FUTURE_KICKOFF, EMPTY_KICKOFFS);
+    const tournamentId = asTournamentId(miniTournament.id);
+    const owner = await createUser(db, { email: 'no-recap@x.com', displayName: 'Owner' });
+    const pool = await createPool(db, { tournamentId, ownerId: owner.id, name: 'No Recap Pool' });
+
+    await upsertPoolArchive(db, {
+      poolId: pool.id,
+      poolName: pool.name,
+      tournamentId,
+      tournamentName: miniTournament.name,
+      archivedBy: owner.id,
+      recap: null,
+      entries: [
+        {
+          userId: owner.id,
+          displayName: 'Owner',
+          rank: 1,
+          pointsTotal: points(10),
+          breakdown: fakeBreakdown(10),
+          pointsHistory: null,
+          stageReasons: null,
+        },
+      ],
+    });
+
+    const fetched = await getPoolArchiveWithEntries(db, pool.id);
+    expect(fetched?.archive.recap).toBeNull();
+    expect(fetched?.entries[0]?.pointsHistory).toBeNull();
+    expect(fetched?.entries[0]?.stageReasons).toBeNull();
   });
 });

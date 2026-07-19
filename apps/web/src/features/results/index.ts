@@ -27,8 +27,10 @@ export type {
 } from './domain/types';
 
 export { getResultsView } from './application/get-results-view';
-export { buildRaceChartData } from './domain/race-chart';
+export { buildRaceChartData, computeHit } from './domain/race-chart';
 export type { RaceChartData } from './domain/race-chart';
+export { resolveActualWinner } from './domain/knockout-match-winner';
+export { buildRaceEventDates, RACE_COLORS, utcDateStr } from './domain/race-chart';
 
 export { StageBar } from './ui/StageBar';
 export { UserScoreChip } from './ui/UserScoreChip';

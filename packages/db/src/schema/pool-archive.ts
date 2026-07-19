@@ -2,6 +2,43 @@ import { integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-o
 import { pools } from './pools';
 import { users } from './auth';
 import type { ScoreBreakdown } from '@cup/engine';
+import type { TeamId, MatchId } from '@cup/engine';
+
+export type ChampionPickHighlight = {
+  teamId: TeamId;
+  teamName: string;
+  count: number;
+  total: number;
+};
+
+export type BestSingleMatchHighlight = {
+  matchId: MatchId;
+  description: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeGoals: number;
+  awayGoals: number;
+  exactCount: number;
+  total: number;
+};
+
+export type BiggestUpsetHighlight = {
+  matchId: MatchId;
+  round: string;
+  winnerTeam: string;
+  loserTeam: string;
+  pickCount: number;
+  total: number;
+};
+
+export type PoolArchiveRecap = {
+  stages: string[];
+  championPick: ChampionPickHighlight | null;
+  bestSingleMatch: BestSingleMatchHighlight | null;
+  biggestUpset: BiggestUpsetHighlight | null;
+  predictionsMade: number;
+  exactScoreRatePercent: number;
+};
 
 export const poolArchives = pgTable(
   'pool_archives',
@@ -17,6 +54,7 @@ export const poolArchives = pgTable(
     tournamentName: text('tournament_name').notNull(),
     archivedAt: timestamp('archived_at', { withTimezone: true }).notNull().defaultNow(),
     archivedBy: text('archived_by').references(() => users.id, { onDelete: 'set null' }),
+    recap: jsonb('recap').$type<PoolArchiveRecap>(),
   },
   (t) => [uniqueIndex('pool_archives_pool_id_uniq').on(t.poolId)],
 );
@@ -33,4 +71,6 @@ export const poolArchiveEntries = pgTable('pool_archive_entries', {
   rank: integer('rank').notNull(),
   pointsTotal: integer('points_total').notNull(),
   breakdown: jsonb('breakdown').notNull().$type<ScoreBreakdown>(),
+  pointsHistory: jsonb('points_history').$type<number[]>(),
+  stageReasons: jsonb('stage_reasons').$type<(string | null)[]>(),
 });

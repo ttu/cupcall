@@ -57,6 +57,8 @@ describe('archivePool', () => {
       tournamentId,
       tournamentName: miniTournament.name,
       archivedBy: ownerId,
+      def: miniTournament,
+      scoring: miniTournament.scoring,
     });
 
     const fetched = await getPoolArchiveWithEntries(db, poolId);
@@ -84,6 +86,8 @@ describe('archivePool', () => {
       tournamentId,
       tournamentName: miniTournament.name,
       archivedBy: ownerId,
+      def: miniTournament,
+      scoring: miniTournament.scoring,
     });
 
     const fetched = await getPoolArchiveWithEntries(db, poolId);
@@ -107,6 +111,8 @@ describe('archivePool', () => {
       tournamentId,
       tournamentName: miniTournament.name,
       archivedBy: ownerId,
+      def: miniTournament,
+      scoring: miniTournament.scoring,
     });
     let fetched = await getPoolArchiveWithEntries(db, poolId);
     expect(fetched?.entries[0]?.pointsTotal).toBe(0);
@@ -124,6 +130,8 @@ describe('archivePool', () => {
       tournamentId,
       tournamentName: miniTournament.name,
       archivedBy: ownerId,
+      def: miniTournament,
+      scoring: miniTournament.scoring,
     });
     fetched = await getPoolArchiveWithEntries(db, poolId);
     expect(fetched?.entries).toHaveLength(1);

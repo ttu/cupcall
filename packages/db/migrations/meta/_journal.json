@@ -71,6 +71,13 @@
       "when": 1784377698824,
       "tag": "0009_pool_archives",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784447587987,
+      "tag": "0010_pool_archive_recap",
+      "breakpoints": true
     }
   ]
 }

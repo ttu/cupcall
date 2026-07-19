@@ -614,6 +614,51 @@ member's name from any archive to `"Deleted user"` (rank/points/breakdown stay).
   browser-tested live. Recommend a quick manual pass (archive → re-archive → view as owner and as a
   non-owner member) before relying on it in production.
 
+## Pool archive recap (2026-07-19)
+
+Upgraded the plain archive standings page into a recap: a champion hero card, four highlight stats,
+a points-race chart, and a lead-changes timeline — all computed once at archive time from that pool's
+predictions so they survive a member's later account deletion, same guarantee as the base archive
+feature. Champion/final-score/matches-played are read **live** from tournament results instead
+(never user-deletable, so no permanence risk there). Design:
+[`docs/features/pool-archive.md`](./features/pool-archive.md) (updated), spec at
+`docs/superpowers/specs/2026-07-18-pool-archive-recap-design.md`.
+
+- **`packages/db`** — two new nullable jsonb columns (migration `0010_pool_archive_recap.sql`):
+  `pool_archives.recap` (`{ stages, championPick, bestSingleMatch, biggestUpset, predictionsMade,
+exactScoreRatePercent }`) and per-entry `pool_archive_entries.points_history`/`stage_reasons`.
+  Nullable and not backfilled — a pool archived before this feature (or re-archived without race
+  data) just shows "no recap yet" until re-archived.
+- **Archive-time computation** (`apps/web/src/features/pool-archive/application/build-recap.ts`,
+  `build-highlights.ts`) reuses existing pool-wide query helpers
+  (`getGroupScoresByPool`/`getKnockoutPicksByPool`/etc.) and the existing `buildRaceChartData` —
+  no new DB queries were needed. Computes: champion pick (most-picked final winner), best single
+  match (highest group-stage exact-score agreement — knockout rounds before the Final only ever
+  capture winner-picks, never score guesses, so they're excluded), biggest upset called (least
+  popular correct knockout pick, via the existing `resolveActualWinner` helper — `winnerTeamId` is
+  only populated for penalty shootouts), predictions made, and pool-wide exact-score rate. Per-member
+  per-stage "reason" strings are template-filled (exact-hit counts, correctly-picked-advancing team
+  codes, champion-pick correctness) — not free-text generated.
+- **Read-time derivation** (`apps/web/src/features/pool-archive/domain/race-history.ts`, pure,
+  no DB) — "biggest riser" and "lead changes" are derived from the frozen `points_history` at view
+  time, not stored again; both use `displayName`-ascending tiebreaks for equal points, matching
+  `getLeaderboard`'s existing convention.
+- **UI** — `ArchiveHeroCard`, `ArchiveHighlightsPanel`, `ArchiveLeadChangesPanel`, `ArchiveStatTiles`,
+  plus a `toRaceChartData` adapter reusing the existing `RaceChart` component. All degrade gracefully
+  when `recap` is `null` (pre-recap-feature archives). `ArchivePoolCard`'s owner-facing copy was
+  corrected to not claim the snapshot survives the _owner's own_ account deletion (it doesn't — that
+  cascades away the whole pool, per the base feature's accepted limitation).
+- **Simplifications** (deliberate, documented in the design spec): race-chart stage labels are dates
+  ("Jul 19"), not named milestones ("R16"/"QF") — reuses the existing, already-tested
+  `buildRaceChartData` rather than building a second variant; no "Download recap" in this pass.
+- **Verification note:** unlike every prior task in this feature (base + recap), Task 9's
+  implementer had a live, reachable dev Postgres (this repo's own devcontainer `db` service) and
+  performed genuine end-to-end manual verification — archived a real seeded pool via the actual UI,
+  confirmed the hero card/race chart/stat tiles/highlights/lead-changes/standings all render
+  correctly with real data, plus the non-member 404 and never-archived empty-state paths. First
+  real browser confirmation this feature works end-to-end; still worth a spot-check in your own
+  environment before relying on it in production.
+
 ## Final/bronze exact-score: removed pre-migration positional fallback (2026-07-18)
 
 Follow-up cleanup to the [team-identity fix](#finalbronze-predicted-score-team-identity-fix-2026-07-16):

@@ -1,4 +1,14 @@
 import type { PoolId, TournamentId, UserId, Points, ScoreBreakdown } from '@cup/engine';
+import type { PoolArchiveRecap } from '@cup/db';
+import type { LeadChangeEvent, BiggestRiserEvent } from './race-history';
+
+export type {
+  PoolArchiveRecap,
+  ChampionPickHighlight,
+  BestSingleMatchHighlight,
+  BiggestUpsetHighlight,
+} from '@cup/db';
+export type { LeadChangeEvent, BiggestRiserEvent } from './race-history';
 
 export type PoolArchiveEntryView = {
   userId: UserId | null;
@@ -6,6 +16,8 @@ export type PoolArchiveEntryView = {
   rank: number;
   pointsTotal: Points;
   breakdown: ScoreBreakdown;
+  pointsHistory: number[] | null;
+  stageReasons: (string | null)[] | null;
 };
 
 export type PoolArchiveView = {
@@ -15,4 +27,7 @@ export type PoolArchiveView = {
   tournamentName: string;
   archivedAt: Date;
   entries: PoolArchiveEntryView[];
+  recap: PoolArchiveRecap | null;
+  leadChanges: LeadChangeEvent[];
+  biggestRiser: BiggestRiserEvent;
 };
