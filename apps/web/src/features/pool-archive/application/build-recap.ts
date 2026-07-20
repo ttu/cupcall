@@ -7,7 +7,13 @@ import {
   getSpecialBetsByPool,
   getLeaderboard,
 } from '@cup/db';
-import type { MatchRow, PoolGroupScore, PoolKnockoutPick, PoolArchiveRecap } from '@cup/db';
+import type {
+  MatchRow,
+  PoolGroupScore,
+  PoolKnockoutPick,
+  PoolFinishScore,
+  PoolArchiveRecap,
+} from '@cup/db';
 import {
   buildRaceChartData,
   buildRaceEventDates,
@@ -23,6 +29,7 @@ import {
   computeBiggestUpset,
   computePredictionsMade,
   computeExactScoreRatePercent,
+  resolveEffectiveFinalePick,
 } from './build-highlights';
 
 export type EntryRecapExtras = {
@@ -34,6 +41,7 @@ type StageReasonCtx = {
   allMatches: MatchRow[];
   groupScores: PoolGroupScore[];
   knockoutPicks: PoolKnockoutPick[];
+  finishScores: PoolFinishScore[];
   def: Tournament;
   scoring: Scoring;
 };
@@ -60,20 +68,49 @@ function countExactGroupScores(
   return exactCount;
 }
 
+/**
+ * Resolves a user's effective pick for a single knockout match. Final/Bronze picks are rarely
+ * explicit — most players only submit a finish-score prediction — so those two matches fall back
+ * to the score-derived winner via {@link resolveEffectiveFinalePick}.
+ */
+function resolveEffectivePickForMatch(
+  matchId: string,
+  def: Tournament,
+  pickMap: Map<string, string>,
+  finishScoreByMatch: Map<PoolFinishScore['match'], PoolFinishScore>,
+): string | null {
+  const { finalMatch, bronzeMatch } = def.bracket;
+  if (matchId !== finalMatch && matchId !== bronzeMatch) return pickMap.get(matchId) ?? null;
+
+  const finishScore = finishScoreByMatch.get(matchId === finalMatch ? 'final' : 'bronze');
+  return resolveEffectiveFinalePick(matchId, def, pickMap, finishScore);
+}
+
 function describeKnockoutOutcome(
   userId: UserId,
   knockoutMatchesToday: MatchRow[],
-  knockoutPicks: PoolKnockoutPick[],
-  finalKey: string,
+  ctx: Pick<StageReasonCtx, 'knockoutPicks' | 'finishScores' | 'def'>,
 ): string | null {
+  const { knockoutPicks, finishScores, def } = ctx;
+  const finalKey = def.bracket.finalMatch;
+
+  const pickMap = new Map<string, string>();
+  for (const p of knockoutPicks) {
+    if (p.userId === userId) pickMap.set(p.bracketMatchKey, p.winnerTeamId);
+  }
+  const finishScoreByMatch = new Map(
+    finishScores.filter((fs) => fs.userId === userId).map((fs) => [fs.match, fs]),
+  );
+
   const correctTeams: string[] = [];
   let championPickCorrect = false;
 
   for (const m of knockoutMatchesToday) {
     const winner = resolveActualWinner(m);
     if (!winner) continue;
-    const pick = knockoutPicks.find((p) => p.userId === userId && p.bracketMatchKey === m.id);
-    if (pick?.winnerTeamId !== winner) continue;
+
+    const effectivePick = resolveEffectivePickForMatch(m.id, def, pickMap, finishScoreByMatch);
+    if (effectivePick !== winner) continue;
     if (m.id === finalKey) championPickCorrect = true;
     else correctTeams.push(winner);
   }
@@ -93,12 +130,7 @@ function describeStageReason(
   if (exactCount > 0) return `${exactCount} exact score${exactCount > 1 ? 's' : ''}`;
 
   const knockoutMatchesToday = matchesThisDate.filter((m) => m.stage !== 'group');
-  return describeKnockoutOutcome(
-    userId,
-    knockoutMatchesToday,
-    ctx.knockoutPicks,
-    ctx.def.bracket.finalMatch,
-  );
+  return describeKnockoutOutcome(userId, knockoutMatchesToday, ctx);
 }
 
 function buildStageReasons(
@@ -158,6 +190,7 @@ export async function buildPoolArchiveRecap(
         allMatches,
         groupScores,
         knockoutPicks,
+        finishScores,
         def,
         scoring,
       }),
@@ -166,7 +199,7 @@ export async function buildPoolArchiveRecap(
 
   const recap: PoolArchiveRecap = {
     stages: raceChart.chartStages,
-    championPick: computeChampionPick(knockoutPicks, def, totalMembers),
+    championPick: computeChampionPick(knockoutPicks, finishScores, def, totalMembers),
     bestSingleMatch: computeBestSingleMatch(
       groupScores,
       allMatches,

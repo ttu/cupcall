@@ -1,12 +1,17 @@
-import type { MatchRow, PoolGroupScore, PoolKnockoutPick } from '@cup/db';
+import type { MatchRow, PoolGroupScore, PoolKnockoutPick, PoolFinishScore } from '@cup/db';
 import type {
   ChampionPickHighlight,
   BestSingleMatchHighlight,
   BiggestUpsetHighlight,
 } from '@cup/db';
-import type { Tournament, TeamId } from '@cup/engine';
+import type { Tournament, TeamId, UserId } from '@cup/engine';
 import { matchId as asMatchId } from '@cup/engine';
-import { resolveActualWinner, computeHit } from '@/features/results';
+import {
+  resolveActualWinner,
+  computeHit,
+  resolveFinaleWinner,
+  deriveImplicitFinaleWinner,
+} from '@/features/results';
 
 const STAGE_LABELS: Record<string, string> = {
   R32: 'Round of 32',
@@ -21,17 +26,52 @@ function teamName(def: Tournament, id: string): string {
   return def.teams.find((t) => t.id === id)?.name ?? id;
 }
 
+/**
+ * Resolves a user's effective Final/Bronze winner pick: an explicit bracket pick wins if
+ * present, otherwise it's derived from their finish-score prediction. Most players only ever
+ * submit a Final/Bronze scoreline (no explicit bracketMatchKey pick for those two matches), so
+ * skipping this fallback silently drops the majority of predictions from any stat that counts
+ * Final/Bronze picks.
+ */
+export function resolveEffectiveFinalePick(
+  matchKey: string,
+  def: Tournament,
+  pickMap: Map<string, string>,
+  finishScore: PoolFinishScore | undefined,
+): string | null {
+  return (
+    pickMap.get(matchKey) ??
+    resolveFinaleWinner(finishScore, (home, away) =>
+      deriveImplicitFinaleWinner(matchKey, def.bracket, pickMap, home, away),
+    )
+  );
+}
+
 export function computeChampionPick(
   knockoutPicks: PoolKnockoutPick[],
+  finishScores: PoolFinishScore[],
   def: Tournament,
   totalMembers: number,
 ): ChampionPickHighlight | null {
   const finalKey = def.bracket.finalMatch;
-  const picks = knockoutPicks.filter((p) => p.bracketMatchKey === finalKey);
-  if (picks.length === 0) return null;
 
+  const pickMapByUser = new Map<UserId, Map<string, string>>();
+  for (const pick of knockoutPicks) {
+    const map = pickMapByUser.get(pick.userId) ?? new Map<string, string>();
+    map.set(pick.bracketMatchKey, pick.winnerTeamId);
+    pickMapByUser.set(pick.userId, map);
+  }
+  const finishScoreByUser = new Map(
+    finishScores.filter((fs) => fs.match === 'final').map((fs) => [fs.userId, fs]),
+  );
+
+  const userIds = new Set<UserId>([...pickMapByUser.keys(), ...finishScoreByUser.keys()]);
   const counts = new Map<string, number>();
-  for (const p of picks) counts.set(p.winnerTeamId, (counts.get(p.winnerTeamId) ?? 0) + 1);
+  for (const uid of userIds) {
+    const pickMap = pickMapByUser.get(uid) ?? new Map<string, string>();
+    const winner = resolveEffectiveFinalePick(finalKey, def, pickMap, finishScoreByUser.get(uid));
+    if (winner) counts.set(winner, (counts.get(winner) ?? 0) + 1);
+  }
 
   let bestTeamId: TeamId | null = null;
   let bestCount = 0;

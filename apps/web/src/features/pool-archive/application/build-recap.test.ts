@@ -6,6 +6,8 @@ import {
   upsertTournamentDef,
   addMember,
   upsertKnockoutPick,
+  upsertFinishScore,
+  upsertKnockoutMatch,
   getOrCreatePrediction,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
@@ -65,5 +67,47 @@ describe('buildPoolArchiveRecap', () => {
     });
 
     expect(recap.championPick).toEqual({ teamId: 'A1', teamName: 'Team A1', count: 1, total: 1 });
+  });
+
+  it('derives championPick from a finish score when no explicit final pick exists', async () => {
+    // Most players never fill in an explicit bracket pick for the final match — they only
+    // submit a predicted scoreline. That must still count towards the champion pick highlight.
+    const prediction = await getOrCreatePrediction(db, { poolId, userId: ownerId, tournamentId });
+    await upsertFinishScore(db, prediction.id, 'final', 2, 1, 'A1', 'B1');
+
+    const { recap } = await buildPoolArchiveRecap(db, {
+      poolId,
+      tournamentId,
+      def: miniTournament,
+      scoring: miniTournament.scoring,
+    });
+
+    expect(recap.championPick).toEqual({ teamId: 'A1', teamName: 'Team A1', count: 1, total: 1 });
+  });
+
+  it('credits a correct champion pick derived from a finish score in the stage-reason narrative', async () => {
+    const finalKickoff = new Date('2026-07-19T18:00:00Z');
+    await upsertKnockoutMatch(db, {
+      id: miniTournament.bracket.finalMatch,
+      tournamentId,
+      stage: 'Final',
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+      homeGoals: 2,
+      awayGoals: 1,
+      kickoff: finalKickoff,
+      status: 'final',
+    });
+    const prediction = await getOrCreatePrediction(db, { poolId, userId: ownerId, tournamentId });
+    await upsertFinishScore(db, prediction.id, 'final', 2, 1, 'A1', 'B1');
+
+    const { entryExtras } = await buildPoolArchiveRecap(db, {
+      poolId,
+      tournamentId,
+      def: miniTournament,
+      scoring: miniTournament.scoring,
+    });
+
+    expect(entryExtras.get(ownerId)?.stageReasons).toContain('Champion pick correct');
   });
 });

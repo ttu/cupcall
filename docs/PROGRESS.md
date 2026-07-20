@@ -771,6 +771,33 @@ without reading application code or hand-deriving state from SQL.
 - **Design/plan:** `docs/superpowers/specs/2026-07-18-admin-raw-data-view-design.md`,
   `docs/superpowers/plans/2026-07-18-admin-raw-data-view.md`.
 
+## Pool archive champion pick: finish-score fallback (2026-07-20)
+
+Fixed a production bug found via a user report: the "Champion pick" archive highlight showed
+"1 of 11 players backed Brazil" when the real most-backed Final winner (derived from finish-score
+predictions) was a 3-way tie between Spain and England. Same failure mode as the SF Position bonus
+bug above — a stats/narrative function reading raw `prediction_knockout_picks` rows without the
+finish-score fallback that most players' data actually depends on.
+
+**Root cause:** `computeChampionPick` (`apps/web/src/features/pool-archive/application/
+build-highlights.ts`) and `describeKnockoutOutcome` (`build-recap.ts`, drives the "Champion pick
+correct" per-member stage-reason narrative) both filtered `PoolKnockoutPick` rows by
+`bracketMatchKey === 'final'` directly. Only 2 of 11 predictions in the prod WC2026 pool have an
+explicit pick for that key — the other 9 only submitted a `finishScores.final` scoreline, so their
+implied Final winner was silently excluded from both the highlight and the narrative.
+
+- **`resolveEffectiveFinalePick(matchKey, def, pickMap, finishScore)`** (new, exported from
+  `build-highlights.ts`) — explicit pick wins if present, else derives the winner from the
+  finish-score snapshot via `resolveFinaleWinner`/`deriveImplicitFinaleWinner` (now exported from
+  `@/features/results`). Mirrors the same pick-then-finish-score precedence already used by the
+  engine's scoring path and the results-page bracket rendering.
+  `computeChampionPick` and `describeKnockoutOutcome` now both use it (for Final **and** Bronze).
+- **Rollout:** the prod WC2026 pool archive needs re-archiving to pick up the corrected
+  `championPick` and stage reasons — the existing frozen `pool_archives.recap` row still has the
+  stale "Brazil, 1 of 11" data until that happens.
+- **Design/plan:** none written — small, well-scoped bugfix following an established pattern
+  (see the SF Position bonus fix above), done directly via TDD.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

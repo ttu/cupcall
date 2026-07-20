@@ -30,6 +30,7 @@ export { getResultsView } from './application/get-results-view';
 export { buildRaceChartData, computeHit } from './domain/race-chart';
 export type { RaceChartData } from './domain/race-chart';
 export { resolveActualWinner } from './domain/knockout-match-winner';
+export { resolveFinaleWinner, deriveImplicitFinaleWinner } from './domain/finale-winner';
 export { buildRaceEventDates, RACE_COLORS, utcDateStr } from './domain/race-chart';
 
 export { StageBar } from './ui/StageBar';

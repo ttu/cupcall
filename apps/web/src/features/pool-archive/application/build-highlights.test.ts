@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { miniTournament } from '@cup/engine/testing';
-import type { MatchRow, PoolGroupScore, PoolKnockoutPick } from '@cup/db';
+import type { MatchRow, PoolGroupScore, PoolKnockoutPick, PoolFinishScore } from '@cup/db';
 import {
   tournamentId as asTournamentId,
   matchId as asMatchId,
@@ -78,12 +78,12 @@ describe('computeChampionPick', () => {
       { userId: asUserId('u2'), bracketMatchKey: finalKey, winnerTeamId: 'A1' },
       { userId: asUserId('u3'), bracketMatchKey: finalKey, winnerTeamId: 'B1' },
     ];
-    const result = computeChampionPick(picks, miniTournament, 10);
+    const result = computeChampionPick(picks, [], miniTournament, 10);
     expect(result).toEqual({ teamId: 'A1', teamName: 'Team A1', count: 2, total: 10 });
   });
 
-  it('returns null when there are no final-winner picks', () => {
-    expect(computeChampionPick([], miniTournament, 10)).toBeNull();
+  it('returns null when there are no final-winner picks or finish scores', () => {
+    expect(computeChampionPick([], [], miniTournament, 10)).toBeNull();
   });
 
   it('breaks ties by Tournament.teams order', () => {
@@ -93,8 +93,66 @@ describe('computeChampionPick', () => {
       { userId: asUserId('u2'), bracketMatchKey: finalKey, winnerTeamId: 'A1' },
     ];
     // A1 appears before D4 in miniTournament.teams, and both have count 1.
-    const result = computeChampionPick(picks, miniTournament, 10);
+    const result = computeChampionPick(picks, [], miniTournament, 10);
     expect(result?.teamId).toBe('A1');
+  });
+
+  it('derives the champion pick from a finish score when no explicit final pick was made', () => {
+    // The real-world case: a user only submits a Final scoreline (no explicit bracket
+    // pick for the 'final' match key) — their implied winner must still count.
+    const finishScores: PoolFinishScore[] = [
+      {
+        userId: asUserId('u1'),
+        match: 'final',
+        home: 2,
+        away: 1,
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+      },
+      {
+        userId: asUserId('u2'),
+        match: 'final',
+        home: 1,
+        away: 2,
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+      },
+    ];
+    const result = computeChampionPick([], finishScores, miniTournament, 2);
+    expect(result).toEqual({ teamId: 'A1', teamName: 'Team A1', count: 1, total: 2 });
+  });
+
+  it('prefers an explicit final pick over a conflicting finish-score-derived winner', () => {
+    const finalKey = miniTournament.bracket.finalMatch;
+    const picks: PoolKnockoutPick[] = [
+      { userId: asUserId('u1'), bracketMatchKey: finalKey, winnerTeamId: 'B1' },
+    ];
+    const finishScores: PoolFinishScore[] = [
+      {
+        userId: asUserId('u1'),
+        match: 'final',
+        home: 2,
+        away: 1,
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+      },
+    ];
+    const result = computeChampionPick(picks, finishScores, miniTournament, 1);
+    expect(result?.teamId).toBe('B1');
+  });
+
+  it('ignores a drawn finish score with no explicit pick', () => {
+    const finishScores: PoolFinishScore[] = [
+      {
+        userId: asUserId('u1'),
+        match: 'final',
+        home: 1,
+        away: 1,
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+      },
+    ];
+    expect(computeChampionPick([], finishScores, miniTournament, 1)).toBeNull();
   });
 });
 
