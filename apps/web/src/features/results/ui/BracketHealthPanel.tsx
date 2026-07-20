@@ -129,7 +129,7 @@ export function BracketHealthPanel({ health, championPick, bronzeMatch }: Props)
             <span className="text-[13px] font-extrabold text-ink">Your top 4</span>
           </div>
           <div className="flex flex-col gap-1.5">
-            {topFour.map(({ position, teamId, teamName, status, wrongMatchLabel }) => (
+            {topFour.map(({ position, teamId, teamName, status, realOutcomeLabel }) => (
               <div key={position} className="flex items-center gap-2">
                 <span className="text-[11px] font-bold text-ink-muted w-6 shrink-0">
                   {position}
@@ -138,11 +138,11 @@ export function BracketHealthPanel({ health, championPick, bronzeMatch }: Props)
                 <span
                   className={cn(
                     'font-bold text-[13px]',
-                    wrongMatchLabel ? 'text-amber-600' : STATUS_CLASS[status],
+                    realOutcomeLabel ? 'text-amber-600' : STATUS_CLASS[status],
                   )}
                 >
                   {teamName}
-                  {wrongMatchLabel ? ` · playing ${wrongMatchLabel}` : STATUS_TEXT[status]}
+                  {realOutcomeLabel ? ` · ${realOutcomeLabel}` : STATUS_TEXT[status]}
                 </span>
               </div>
             ))}

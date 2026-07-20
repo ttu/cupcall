@@ -87,10 +87,10 @@ describe('buildTopFour', () => {
 
     const germany = rows.find((r) => r.position === '3rd');
     expect(germany?.status).toBe('busted');
-    expect(germany?.wrongMatchLabel).toBeNull();
+    expect(germany?.realOutcomeLabel).toBeNull();
   });
 
-  it('flags the predicted Final runner-up as wrong-match/Bronze when it is actually alive in Bronze', () => {
+  it('flags the predicted Final runner-up as playing Bronze when it is actually alive in Bronze', () => {
     const finalMatch = mkMatch({
       bracketMatchKey: 'final',
       homeTeamId: 'ESP',
@@ -119,10 +119,10 @@ describe('buildTopFour', () => {
 
     const england = rows.find((r) => r.position === '2nd');
     expect(england?.status).toBe('busted');
-    expect(england?.wrongMatchLabel).toBe('Bronze');
+    expect(england?.realOutcomeLabel).toBe('playing Bronze');
   });
 
-  it('flags the predicted Bronze loser as wrong-match/Final when it is actually alive in the Final', () => {
+  it('flags the predicted Bronze loser as playing the Final when it is actually alive in the Final', () => {
     const finalMatch = mkMatch({
       bracketMatchKey: 'final',
       homeTeamId: 'ESP',
@@ -151,10 +151,12 @@ describe('buildTopFour', () => {
 
     const argentina = rows.find((r) => r.position === '4th');
     expect(argentina?.status).toBe('busted');
-    expect(argentina?.wrongMatchLabel).toBe('Final');
+    expect(argentina?.realOutcomeLabel).toBe('playing Final');
   });
 
-  it('does not flag wrong-match once the sibling match is final and the team actually lost it', () => {
+  it('reports the real 4th-place finish once the sibling Bronze match is final and the team lost it', () => {
+    // England was predicted as the Final runner-up (2nd), but the real Bronze match sent it to
+    // 4th place instead — still genuinely in the real top four, so it must not read "eliminated".
     const finalMatch = mkMatch({
       bracketMatchKey: 'final',
       homeTeamId: 'ESP',
@@ -184,7 +186,7 @@ describe('buildTopFour', () => {
 
     const england = rows.find((r) => r.position === '2nd');
     expect(england?.status).toBe('busted');
-    expect(england?.wrongMatchLabel).toBeNull();
+    expect(england?.realOutcomeLabel).toBe('4th place');
   });
 
   it('only overrides busted rows, leaving alive/pending/no-pick untouched', () => {
@@ -205,6 +207,94 @@ describe('buildTopFour', () => {
 
     const spain = rows.find((r) => r.position === '1st');
     expect(spain?.status).toBe('alive');
-    expect(spain?.wrongMatchLabel).toBeNull();
+    expect(spain?.realOutcomeLabel).toBeNull();
+  });
+
+  it('reports "runner-up" for a predicted Bronze pick that actually lost the real Final', () => {
+    // Screenshot scenario: predicted top4 was ESP(1st)/ENG(2nd)/GER(3rd)/ARG(4th), but the real
+    // Final was ESP vs ARG (ESP won) — ARG genuinely reached the real top4 as runner-up, so it
+    // must not read "eliminated" even though its predicted slot (Bronze opponent) was wrong.
+    const finalMatch = mkMatch({
+      bracketMatchKey: 'final',
+      homeTeamId: 'ESP',
+      awayTeamId: 'ARG',
+      status: 'final',
+      actualWinnerId: 'ESP',
+      pickedWinnerId: 'ESP',
+      pickedWinnerName: 'Spain',
+      pickStatus: 'alive',
+      pickedOpponentId: 'ENG',
+      pickedOpponentName: 'England',
+      pickedOpponentStatus: 'busted',
+    });
+    const bronzeMatch = mkMatch({
+      bracketMatchKey: 'bronze',
+      homeTeamId: 'FRA',
+      awayTeamId: 'ENG',
+      status: 'final',
+      actualWinnerId: 'ENG',
+      pickedWinnerId: 'GER',
+      pickedWinnerName: 'Germany',
+      pickStatus: 'busted',
+      pickedOpponentId: 'ARG',
+      pickedOpponentName: 'Argentina',
+      pickedOpponentStatus: 'busted',
+    });
+
+    const rows = buildTopFour(finalMatch, bronzeMatch);
+
+    const argentina = rows.find((r) => r.position === '4th');
+    expect(argentina?.status).toBe('busted');
+    expect(argentina?.realOutcomeLabel).toBe('runner-up');
+
+    const germany = rows.find((r) => r.position === '3rd');
+    expect(germany?.status).toBe('busted');
+    expect(germany?.realOutcomeLabel).toBeNull();
+  });
+
+  it('reports the real finish for every busted slot once both real matches are decided', () => {
+    // The user's whole top-4 prediction was swapped: predicted Final = ARG v GER, predicted
+    // Bronze = FRA v ESP. In reality the Final was ESP v FRA (ESP won) and Bronze was GER v ARG
+    // (ARG won) — every predicted team actually reached the real top four, just in a different
+    // slot than predicted, so none of them should read "eliminated".
+    const finalMatch = mkMatch({
+      bracketMatchKey: 'final',
+      homeTeamId: 'ESP',
+      awayTeamId: 'FRA',
+      status: 'final',
+      actualWinnerId: 'ESP',
+      pickedWinnerId: 'ARG',
+      pickedWinnerName: 'Argentina',
+      pickStatus: 'busted',
+      pickedOpponentId: 'GER',
+      pickedOpponentName: 'Germany',
+      pickedOpponentStatus: 'busted',
+    });
+    const bronzeMatch = mkMatch({
+      bracketMatchKey: 'bronze',
+      homeTeamId: 'GER',
+      awayTeamId: 'ARG',
+      status: 'final',
+      actualWinnerId: 'ARG',
+      pickedWinnerId: 'FRA',
+      pickedWinnerName: 'France',
+      pickStatus: 'busted',
+      pickedOpponentId: 'ESP',
+      pickedOpponentName: 'Spain',
+      pickedOpponentStatus: 'busted',
+    });
+
+    const rows = buildTopFour(finalMatch, bronzeMatch);
+    const labelFor = (position: string) =>
+      rows.find((r) => r.position === position)?.realOutcomeLabel;
+
+    // Predicted Final winner (ARG) actually won Bronze → real 3rd place.
+    expect(labelFor('1st')).toBe('3rd place');
+    // Predicted Final opponent (GER) actually lost Bronze → real 4th place.
+    expect(labelFor('2nd')).toBe('4th place');
+    // Predicted Bronze winner (FRA) actually lost the real Final → runner-up.
+    expect(labelFor('3rd')).toBe('runner-up');
+    // Predicted Bronze opponent (ESP) actually won the real Final → champion.
+    expect(labelFor('4th')).toBe('champion');
   });
 });
