@@ -58,7 +58,7 @@ export function ArchiveHighlightsPanel({ recap, biggestRiser }: Props): ReactEle
             <p className="text-xs text-ink-muted">
               Only {recap.biggestUpset.pickCount} of {recap.biggestUpset.total} players backed{' '}
               {recap.biggestUpset.winnerTeam} over {recap.biggestUpset.loserTeam} in the{' '}
-              {recap.biggestUpset.round} — and it paid off.
+              {recap.biggestUpset.round}.
             </p>
           </li>
         )}
