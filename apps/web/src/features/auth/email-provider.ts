@@ -1,6 +1,12 @@
 import type { EmailProviderSendVerificationRequestParams } from 'next-auth/providers/email';
 
 /**
+ * Sign-in magic-link validity. Also passed as the Resend provider's `maxAge`
+ * (auth.ts) so the token's real expiry and the copy below can't drift apart.
+ */
+export const MAGIC_LINK_MAX_AGE_SECONDS = 60 * 15;
+
+/**
  * Injectable email-sending boundary.
  * The real implementation uses Resend; tests pass a fake.
  */
@@ -84,6 +90,8 @@ function escapeHtml(raw: string): string {
     .replace(/'/g, '&#39;');
 }
 
+const EXPIRY_TEXT = `${MAGIC_LINK_MAX_AGE_SECONDS / 60} minutes`;
+
 function buildHtml(url: string): string {
   const safeUrl = escapeHtml(url);
   return `
@@ -92,12 +100,12 @@ function buildHtml(url: string): string {
   <body>
     <p>Sign in to <strong>CupCall</strong></p>
     <p><a href="${safeUrl}">Click here to sign in</a></p>
-    <p>This link expires in 24 hours.</p>
+    <p>This link expires in ${EXPIRY_TEXT}.</p>
     <p><strong>Did not request this?</strong> Do not click the link above — you can safely ignore this email.</p>
   </body>
 </html>`.trim();
 }
 
 function buildText(url: string): string {
-  return `Sign in to CupCall\n\n${url}\n\nThis link expires in 24 hours.\n\nDid not request this? Do not click the link above — you can safely ignore this email.`;
+  return `Sign in to CupCall\n\n${url}\n\nThis link expires in ${EXPIRY_TEXT}.\n\nDid not request this? Do not click the link above — you can safely ignore this email.`;
 }

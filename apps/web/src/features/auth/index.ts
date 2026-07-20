@@ -8,3 +8,4 @@ export { checkBetaCode } from './beta-code';
 export { GuestLoginForm } from './ui/GuestLoginForm';
 export { EmailLoginForm } from './ui/EmailLoginForm';
 export { ConnectEmailForm } from './ui/ConnectEmailForm';
+export { MAGIC_LINK_MAX_AGE_SECONDS } from './email-provider';

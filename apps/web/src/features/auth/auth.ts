@@ -5,7 +5,11 @@ import { getDb } from '../../shared/db';
 import * as schema from '@cup/db/schema';
 import { getEnv } from '../../shared/env';
 import { logger, safeEmailDomain } from '../../shared/observability/logger';
-import { createSendVerificationRequest, createResendSender } from './email-provider';
+import {
+  createSendVerificationRequest,
+  createResendSender,
+  MAGIC_LINK_MAX_AGE_SECONDS,
+} from './email-provider';
 import { applyDerivedDisplayName } from './create-user';
 import { authConfig } from './auth.config';
 
@@ -38,6 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
         from: 'CupCall <noreply@cupcall.app>',
         apiKey: env.RESEND_API_KEY,
         sendVerificationRequest,
+        maxAge: MAGIC_LINK_MAX_AGE_SECONDS,
       }),
     ],
     events: {

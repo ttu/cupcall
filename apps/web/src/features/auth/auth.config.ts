@@ -10,5 +10,6 @@ export const authConfig = {
   providers: [],
   pages: {
     signIn: '/',
+    verifyRequest: '/login/verify-request',
   },
 } satisfies NextAuthConfig;
