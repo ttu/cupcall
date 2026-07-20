@@ -107,8 +107,12 @@ export type KnockoutMatchView = {
   round: string;
   homeTeamId: string | null;
   homeTeamName: string | null;
+  /** FIFA ranking (lower = stronger), when the tournament data provides one for this team. Null when unranked or the team slot is empty. */
+  homeTeamFifaRanking: number | null;
   awayTeamId: string | null;
   awayTeamName: string | null;
+  /** Same as {@link homeTeamFifaRanking} for the away team. */
+  awayTeamFifaRanking: number | null;
   actualHome: number | null;
   actualAway: number | null;
   actualWinnerId: string | null;

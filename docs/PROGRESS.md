@@ -771,6 +771,24 @@ without reading application code or hand-deriving state from SQL.
 - **Design/plan:** `docs/superpowers/specs/2026-07-18-admin-raw-data-view-design.md`,
   `docs/superpowers/plans/2026-07-18-admin-raw-data-view.md`.
 
+## FIFA ranking in knockout match summary (2026-07-20)
+
+`Team.fifaRanking` already flowed from `tournament.json` through `packages/engine` into `Tournament.teams`
+and was shown in group standings (`GroupTable.tsx`), but the results feature's knockout view-model dropped
+it. Threaded it through so the knockout match summary sheet shows it too.
+
+- **`apps/web/src/features/results/domain/types.ts`** — `KnockoutMatchView` gains
+  `homeTeamFifaRanking`/`awayTeamFifaRanking: number | null`.
+- **`apps/web/src/features/results/application/build-bracket-rounds.ts`** — `buildMatchView` (the sole
+  construction site) populates both fields from a new `teamRankingMap`, mirroring the existing `teamMap`/
+  `teamNameOf` pattern.
+- **`apps/web/src/features/results/ui/MatchSummarySheet.tsx`** — renders a small muted `#N` under each
+  team's name in the header, matching `GroupTable`'s existing ranking style; hidden when null.
+- **Verification gap:** no dev Postgres was reachable in the implementing sandbox — verified via
+  typecheck, lint, and the full test suite (all 1079 tests pass) but **not** browser-tested live.
+  Recommend a quick manual pass on the Results page's knockout match summary before relying on it.
+- **Plan:** `docs/superpowers/plans/2026-07-20-knockout-summary-fifa-ranking.md`.
+
 ## Pool archive champion pick: finish-score fallback (2026-07-20)
 
 Fixed a production bug found via a user report: the "Champion pick" archive highlight showed

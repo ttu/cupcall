@@ -1458,3 +1458,41 @@ describe('buildBracketRounds — predictedGoalsByTeam and team-identity exact-hi
     expect(finalCard.hit).toBe('exact');
   });
 });
+
+describe('buildBracketRounds — FIFA ranking', () => {
+  it('populates homeTeamFifaRanking/awayTeamFifaRanking from tournament team data', () => {
+    const qf1 = makeMatch('qf1', 'QF', {
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      winnerTeamId: 'A1',
+      homeGoals: 1,
+      awayGoals: 0,
+      status: 'final',
+    });
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [qf1],
+      { knockoutPicks: [], finishScores: {} },
+      [],
+      [],
+    );
+    const qfRound = bracketRounds.find((r) => r.label === 'QF')!;
+    const qf1Card = qfRound.matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(qf1Card.homeTeamFifaRanking).toBe(1);
+    expect(qf1Card.awayTeamFifaRanking).toBe(6);
+  });
+
+  it('returns null for an empty team slot', () => {
+    const { bracketRounds } = buildBracketRounds(
+      miniTournament,
+      [], // no matches played yet — sf1 has no confirmed participants
+      { knockoutPicks: [], finishScores: {} },
+      [],
+      [],
+    );
+    const sfRound = bracketRounds.find((r) => r.label === 'SF')!;
+    const sf1Card = sfRound.matches.find((m) => m.bracketMatchKey === 'sf1')!;
+    expect(sf1Card.homeTeamId).toBeNull();
+    expect(sf1Card.homeTeamFifaRanking).toBeNull();
+  });
+});

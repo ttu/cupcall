@@ -41,6 +41,9 @@ export function buildBracketRounds(
   poolKnockoutPicks: PoolKnockoutPick[],
 ): { bracketRounds: BracketRoundResultView[]; bronzeMatch: KnockoutMatchView | null } {
   const teamMap = new Map<string, string>(def.teams.map((t) => [t.id, t.name]));
+  const teamRankingMap = new Map<string, number>(
+    def.teams.filter((t) => t.fifaRanking !== undefined).map((t) => [t.id, t.fifaRanking!]),
+  );
   const matchByKey = new Map<string, MatchRow>(allMatches.map((m) => [m.id, m]));
 
   const knockoutEliminatedTeams = computeKnockoutEliminatedTeams(allMatches);
@@ -194,8 +197,10 @@ export function buildBracketRounds(
       round,
       homeTeamId: homeId,
       homeTeamName: teamNameOf(teamMap, homeId),
+      homeTeamFifaRanking: teamRankingOf(teamRankingMap, homeId),
       awayTeamId: awayId,
       awayTeamName: teamNameOf(teamMap, awayId),
+      awayTeamFifaRanking: teamRankingOf(teamRankingMap, awayId),
       actualHome: actual?.homeGoals ?? null,
       actualAway: actual?.awayGoals ?? null,
       actualWinnerId: winnerId,
@@ -319,6 +324,11 @@ type FinishScore = {
 /** Display name for a team ID, falling back to the raw ID; null when the slot is empty. */
 function teamNameOf(teamMap: Map<string, string>, teamId: string | null): string | null {
   return teamId ? (teamMap.get(teamId) ?? teamId) : null;
+}
+
+/** FIFA ranking for a team ID; null when the slot is empty or the team has no ranking. */
+function teamRankingOf(teamRankingMap: Map<string, number>, teamId: string | null): number | null {
+  return teamId ? (teamRankingMap.get(teamId) ?? null) : null;
 }
 
 /** Points awarded for a card: only outcome/exact hits earn this match's reward. */

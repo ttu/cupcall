@@ -60,8 +60,13 @@ function SheetHeader({
       </div>
       <div className="flex flex-col gap-2 min-w-0 w-fit mx-auto">
         <div className="flex items-center gap-2.5 flex-wrap justify-center">
-          <span className="text-[14px] font-bold text-ink truncate">
-            {match.homeTeamName ?? match.homeTeamId ?? 'TBD'}
+          <span className="flex flex-col items-end">
+            <span className="text-[14px] font-bold text-ink truncate">
+              {match.homeTeamName ?? match.homeTeamId ?? 'TBD'}
+            </span>
+            {match.homeTeamFifaRanking !== null && (
+              <span className="text-[10px] text-ink-muted">#{match.homeTeamFifaRanking}</span>
+            )}
           </span>
           <TeamBadge teamId={match.homeTeamId} size="md" />
           {hasScore ? (
@@ -72,8 +77,13 @@ function SheetHeader({
             <span className="text-xs font-bold text-ink-muted shrink-0">vs</span>
           )}
           <TeamBadge teamId={match.awayTeamId} size="md" />
-          <span className="text-[14px] font-bold text-ink truncate">
-            {match.awayTeamName ?? match.awayTeamId ?? 'TBD'}
+          <span className="flex flex-col items-start">
+            <span className="text-[14px] font-bold text-ink truncate">
+              {match.awayTeamName ?? match.awayTeamId ?? 'TBD'}
+            </span>
+            {match.awayTeamFifaRanking !== null && (
+              <span className="text-[10px] text-ink-muted">#{match.awayTeamFifaRanking}</span>
+            )}
           </span>
         </div>
         {match.decidedBy === 'penalties' && (
