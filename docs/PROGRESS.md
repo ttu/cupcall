@@ -746,6 +746,31 @@ fallback.
   `docs/superpowers/specs/2026-07-19-sf-position-finish-score-fallback-design.md`,
   `docs/superpowers/plans/2026-07-19-sf-position-finish-score-fallback.md`.
 
+## Admin raw data view (2026-07-18)
+
+Pool owners can now inspect the raw, already-computed `CardView`/`ResultsView` JSON for any member
+of their pool in production, at `/pools/[id]/raw` — for debugging scoring/bracket discrepancies
+without reading application code or hand-deriving state from SQL.
+
+- **`apps/web/src/features/admin/`** — new minimal feature slice: `ui/RawJsonBlock.tsx` (JSON
+  dump + copy-to-clipboard), `index.ts` barrel. No new domain/application logic — pure
+  composition of the existing `getResultsView`/`getCardView`.
+- **`apps/web/src/app/(authenticated)/pools/[id]/raw/page.tsx`** — owner-only (404 for
+  non-owners), member picker built from `leaderboard`, dumps both view-models for the selected
+  member.
+- **Pool detail page** — "Raw data (debug)" link added next to `PoolBackupControls`, owner-only.
+- **`apps/web/src/app/not-found.tsx`** — new styled root 404 boundary (was missing app-wide).
+  Investigated whether this would also fix `notFound()` returning HTTP 200 instead of 404 — it
+  doesn't: `/pools/[id]/*` streams under ancestor `loading.tsx` files, and Next.js currently locks
+  the response status once streaming starts, regardless of a later `notFound()` (open Next.js
+  App Router limitation, not an app bug). Fixing that properly means either dropping `loading.tsx`
+  under `/pools/[id]/*` (UX regression) or adding middleware-level auth before streaming starts
+  (real architecture change) — both out of scope here. The e2e test below asserts on rendered
+  404 content via `data-testid`, not `response.status()`, until one of those is worth doing.
+- **`apps/web/e2e/admin-raw-view.spec.ts`** — owner flow + non-owner sees the 404 page content.
+- **Design/plan:** `docs/superpowers/specs/2026-07-18-admin-raw-data-view-design.md`,
+  `docs/superpowers/plans/2026-07-18-admin-raw-data-view.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:
@@ -765,6 +790,11 @@ All planned slices are complete. Potential follow-ups:
 - **Design system merged** — branch `design-system` ready to squash onto `main`.
 - **`makeTestDb` perf** — applies the full migration per test; switch to per-module DB + tx rollbacks
   when the pglite suite exceeds ~120s.
+- **`notFound()` returns HTTP 200, not 404, under streaming routes** — `/pools/[id]/*` (and any
+  other route tree with an ancestor `loading.tsx`) renders correct 404 content but keeps an HTTP
+  200 status, because Next.js locks the response status once streaming starts. Open upstream
+  issue, not unique to this app. Fix requires either removing `loading.tsx` there (UX regression)
+  or middleware-level auth before the response starts streaming (real architecture change).
 - Open product/tech questions live in functional-spec §14 and technical-spec §15.
 
 ## How to continue (workflow)

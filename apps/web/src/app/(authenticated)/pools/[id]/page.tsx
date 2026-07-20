@@ -190,6 +190,15 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
           />
         )}
         <PoolBackupControls poolId={poolId} isOwner={isOwner} />
+        {isOwner && (
+          <Link
+            href={`/pools/${poolId}/raw`}
+            data-testid="pool-raw-data-link"
+            className="self-start inline-block text-xs font-medium px-3 py-1.5 rounded-lg border border-line bg-white text-ink-soft hover:text-ink hover:border-ink-muted transition-colors no-underline"
+          >
+            Raw data (debug)
+          </Link>
+        )}
         <ArchivePoolCard
           poolId={poolId}
           isOwner={isOwner}
