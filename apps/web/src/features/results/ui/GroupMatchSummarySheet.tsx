@@ -4,10 +4,12 @@ import { Fragment } from 'react';
 import type { ReactElement } from 'react';
 import type { GroupMatchDetail, GroupMatchDetailPrediction, MatrixMatch } from '../domain/types';
 import { resolveGroupPredictionHitDisplay } from './group-match-summary-utils';
-import { HitChip } from './HitChip';
+import { HitOrFallbackChip } from './HitOrFallbackChip';
 import { PredictionStatsBar } from './TodayMatchesFeed';
 import { useDialogSheet } from './use-dialog-sheet';
-import { Avatar, Icon, TeamBadge, cn } from '@/shared/ui';
+import { MatchScoreBadges } from './MatchScoreBadges';
+import { PredictionIdentityCell } from './PredictionIdentityCell';
+import { Icon, cn } from '@/shared/ui';
 
 type Props = {
   match: MatrixMatch;
@@ -47,15 +49,13 @@ function SheetHeader({
       <div className="flex flex-col gap-2 min-w-0 w-fit mx-auto">
         <div className="flex items-center gap-2.5 flex-wrap justify-center">
           <span className="text-[14px] font-bold text-ink truncate">{match.homeTeamName}</span>
-          <TeamBadge teamId={match.homeTeamId} size="md" />
-          {hasScore ? (
-            <span className="display tnum text-[32px] leading-none text-ink shrink-0">
-              {match.actualHome}–{match.actualAway}
-            </span>
-          ) : (
-            <span className="text-xs font-bold text-ink-muted shrink-0">vs</span>
-          )}
-          <TeamBadge teamId={match.awayTeamId} size="md" />
+          <MatchScoreBadges
+            homeTeamId={match.homeTeamId}
+            awayTeamId={match.awayTeamId}
+            hasScore={hasScore}
+            actualHome={match.actualHome}
+            actualAway={match.actualAway}
+          />
           <span className="text-[14px] font-bold text-ink truncate">{match.awayTeamName}</span>
         </div>
         {!hasScore && match.kickoff && (
@@ -84,13 +84,7 @@ function YourPickSection({ yourPick }: { yourPick: GroupMatchDetailPrediction })
           {yourPick.predictedHome}–{yourPick.predictedAway}
         </span>
       </div>
-      {display.kind === 'matchHit' ? (
-        <HitChip hit={display.hit} points={yourPick.points} />
-      ) : (
-        <span className={cn('chip text-[11px] h-6', display.tone === 'red' && 'red')}>
-          {display.label}
-        </span>
-      )}
+      <HitOrFallbackChip display={display} points={yourPick.points} />
     </div>
   );
 }
@@ -126,18 +120,13 @@ function PredictionRow({
 
   return (
     <Fragment>
-      <div
-        data-testid={`group-match-summary-prediction-${prediction.userId}`}
+      <PredictionIdentityCell
+        testId={`group-match-summary-prediction-${prediction.userId}`}
+        displayName={prediction.displayName}
+        index={index}
+        isCurrentUser={prediction.isCurrentUser}
         className={cn('gap-2.5 min-w-0 pl-[18px] pr-2', rowCellClass)}
-      >
-        <Avatar name={prediction.displayName} index={index} size={28} />
-        <span className="text-[13px] font-bold text-ink truncate">
-          {prediction.displayName}
-          {prediction.isCurrentUser && (
-            <span className="chip green h-4.5 ml-[7px] text-[9.5px] align-middle">YOU</span>
-          )}
-        </span>
-      </div>
+      />
       <div
         className={cn(
           'gap-1.5 px-2 text-[12px] font-semibold text-ink-soft whitespace-nowrap tnum',
@@ -149,13 +138,7 @@ function PredictionRow({
           : '—'}
       </div>
       <div className={cn('gap-2 justify-end pl-2 pr-[18px]', rowCellClass)}>
-        {display.kind === 'matchHit' ? (
-          <HitChip hit={display.hit} points={prediction.points} />
-        ) : (
-          <span className={cn('chip text-[11px] h-6', display.tone === 'red' && 'red')}>
-            {display.label}
-          </span>
-        )}
+        <HitOrFallbackChip display={display} points={prediction.points} />
       </div>
     </Fragment>
   );

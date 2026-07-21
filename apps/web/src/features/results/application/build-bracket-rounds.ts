@@ -14,6 +14,7 @@ import {
 } from '../domain/knockout-match-winner';
 import { resolveCrossSlotPick } from '../domain/cross-slot-pick';
 import { buildHitPointsMap } from '../domain/hit-points';
+import { getRoundLabel } from '../domain/round-label';
 export { computeBracketHealth } from '../domain/bracket-health';
 export { derivePredictedOpponent, deriveImplicitFinaleWinner } from '../domain/finale-winner';
 
@@ -943,22 +944,6 @@ function resolveFeederKeyForTeam(
   if (fk0 && getMatchWinner(matchByKey.get(fk0) ?? null) === teamId) return fk0;
   if (fk1 && getMatchWinner(matchByKey.get(fk1) ?? null) === teamId) return fk1;
   return prog.from[slotIndex];
-}
-
-function getRoundLabel(matchKey: string, rounds: string[]): string {
-  const prefixMap: Record<string, string> = {
-    'ro32-': 'R32',
-    'ro16-': 'R16',
-    'qf-': 'QF',
-    'sf-': 'SF',
-  };
-  for (const [prefix, label] of Object.entries(prefixMap)) {
-    if (matchKey.startsWith(prefix)) return label;
-  }
-  for (const r of rounds) {
-    if (matchKey.toLowerCase().startsWith(r.toLowerCase().replace(/\s+/g, '-'))) return r;
-  }
-  return matchKey;
 }
 
 /** The advancing team from a feeder key, or null when the feeder slot is empty. */

@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { ChampionBadge } from './ChampionBadge';
 import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = {
@@ -24,13 +25,6 @@ export function ReadOnlyFinishCard({
   pickedWinnerId,
   isFinal,
 }: Props): ReactElement {
-  const champion = (() => {
-    if (pickedWinnerId === null) return null;
-    if (pickedWinnerId === homeTeamId) return { teamId: homeTeamId, teamName: homeTeamName };
-    if (pickedWinnerId === awayTeamId) return { teamId: awayTeamId, teamName: awayTeamName };
-    return null;
-  })();
-
   return (
     <div
       className={cn(
@@ -93,26 +87,14 @@ export function ReadOnlyFinishCard({
         </div>
       </div>
 
-      {champion?.teamId && (
-        <div className="flex justify-center pt-0.5 px-2 pb-2.5">
-          <div
-            className={cn(
-              'inline-flex items-center gap-1.5 py-1 pr-2.5 pl-1.5 rounded-full',
-              isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]',
-            )}
-          >
-            <TeamBadge teamId={champion.teamId} size="sm" />
-            <span
-              className={cn(
-                'display text-[11px] tracking-[0.04em]',
-                isFinal ? 'text-[oklch(0.28_0.06_80)]' : 'text-[oklch(0.32_0.06_55)]',
-              )}
-            >
-              {champion.teamName}
-            </span>
-          </div>
-        </div>
-      )}
+      <ChampionBadge
+        pickedWinnerId={pickedWinnerId}
+        homeTeamId={homeTeamId}
+        homeTeamName={homeTeamName}
+        awayTeamId={awayTeamId}
+        awayTeamName={awayTeamName}
+        isFinal={isFinal}
+      />
     </div>
   );
 }

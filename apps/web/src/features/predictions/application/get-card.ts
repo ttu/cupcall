@@ -33,6 +33,7 @@ import type {
 } from '../domain/types';
 import { getSpecialBetDefs } from '../domain/special-bet-defs';
 import { LATE_JOINER_WINDOW_MS } from '@/shared/authz';
+import { getRoundLabel } from '@/features/results';
 
 type Params = {
   db: Db<AppSchema>;
@@ -654,24 +655,6 @@ function computeCompletionPercent(params: {
     filledSpecialsCount;
 
   return totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
-}
-
-function getRoundLabel(matchKey: string, rounds: string[]): string {
-  // Match key prefixes: "ro32-", "ro16-", "qf-", "sf-" map to round labels
-  const prefixMap: Record<string, string> = {
-    'ro32-': 'R32',
-    'ro16-': 'R16',
-    'qf-': 'QF',
-    'sf-': 'SF',
-  };
-  for (const [prefix, label] of Object.entries(prefixMap)) {
-    if (matchKey.startsWith(prefix)) return label;
-  }
-  // Fallback: find the round in the bracket.rounds list by checking if the key starts with a lowercase version
-  for (const r of rounds) {
-    if (matchKey.toLowerCase().startsWith(r.toLowerCase().replace(' ', '-'))) return r;
-  }
-  return matchKey;
 }
 
 function resolveSlotTeam(

@@ -14,13 +14,40 @@ import type {
   GroupUpcomingMatchRow,
   GroupStandingRow,
   Best3rdStandingRow,
-  MatchPredictionStats,
   MatchResultPoolStats,
   GroupPoints,
 } from '../domain/types';
 import { computeHit } from '../domain/race-chart';
+import { computeMatchPredictionStats } from '../domain/match-prediction-stats';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Maps a not-yet-final group match to its "today/upcoming" row; only `kickoff` formatting differs by caller. */
+function toUpcomingMatchRow(
+  m: MatchRow,
+  groupId: GroupId,
+  teamMap: Map<string, string>,
+  predMap: Map<string, { home: number; away: number }>,
+  poolGroupScores: PoolGroupScore[],
+  kickoff: string | null,
+): GroupUpcomingMatchRow {
+  return {
+    matchId: m.id,
+    groupId,
+    homeTeamId: m.homeTeamId ?? '',
+    homeTeamName: teamMap.get(m.homeTeamId ?? '') ?? m.homeTeamId ?? '',
+    awayTeamId: m.awayTeamId ?? '',
+    awayTeamName: teamMap.get(m.awayTeamId ?? '') ?? m.awayTeamId ?? '',
+    kickoff,
+    predictedHome: predMap.get(m.id)?.home ?? null,
+    predictedAway: predMap.get(m.id)?.away ?? null,
+    poolPredictionStats: computeMatchPredictionStats(
+      poolGroupScores
+        .filter((s) => s.matchId === m.id)
+        .map((s) => ({ home: s.home, away: s.away })),
+    ),
+  };
+}
 
 function calcGroupOrderPoints(positionsCorrect: number, scoring: Tournament['scoring']): number {
   switch (positionsCorrect) {
@@ -94,18 +121,16 @@ export function buildGroupResults(
           m.kickoff !== null &&
           m.kickoff.getTime() <= now.getTime() + ONE_DAY_MS,
       )
-      .map((m) => ({
-        matchId: m.id,
-        groupId: group.id,
-        homeTeamId: m.homeTeamId ?? '',
-        homeTeamName: teamMap.get(m.homeTeamId ?? '') ?? m.homeTeamId ?? '',
-        awayTeamId: m.awayTeamId ?? '',
-        awayTeamName: teamMap.get(m.awayTeamId ?? '') ?? m.awayTeamId ?? '',
-        kickoff: m.kickoff!.toISOString(),
-        predictedHome: predMap.get(m.id)?.home ?? null,
-        predictedAway: predMap.get(m.id)?.away ?? null,
-        poolPredictionStats: computeMatchPredictionStats(m.id, poolGroupScores),
-      }));
+      .map((m) =>
+        toUpcomingMatchRow(
+          m,
+          group.id,
+          teamMap,
+          predMap,
+          poolGroupScores,
+          m.kickoff!.toISOString(),
+        ),
+      );
 
     const upcomingMatches: GroupUpcomingMatchRow[] = allMatches
       .filter(
@@ -115,18 +140,16 @@ export function buildGroupResults(
           m.status !== 'final' &&
           (m.kickoff === null || m.kickoff.getTime() > now.getTime() + ONE_DAY_MS),
       )
-      .map((m) => ({
-        matchId: m.id,
-        groupId: group.id,
-        homeTeamId: m.homeTeamId ?? '',
-        homeTeamName: teamMap.get(m.homeTeamId ?? '') ?? m.homeTeamId ?? '',
-        awayTeamId: m.awayTeamId ?? '',
-        awayTeamName: teamMap.get(m.awayTeamId ?? '') ?? m.awayTeamId ?? '',
-        kickoff: m.kickoff?.toISOString() ?? null,
-        predictedHome: predMap.get(m.id)?.home ?? null,
-        predictedAway: predMap.get(m.id)?.away ?? null,
-        poolPredictionStats: computeMatchPredictionStats(m.id, poolGroupScores),
-      }));
+      .map((m) =>
+        toUpcomingMatchRow(
+          m,
+          group.id,
+          teamMap,
+          predMap,
+          poolGroupScores,
+          m.kickoff?.toISOString() ?? null,
+        ),
+      );
 
     const predictedGroupScores: GroupScore[] = (inputs?.groupScores ?? [])
       .filter((gs) => def.groupMatches.some((gm) => gm.id === gs.matchId && gm.group === group.id))
@@ -532,29 +555,5 @@ function computeMatchResultPoolStats(
     totalPredictions: total,
     exactPct: Math.round((exactCount / total) * 100),
     outcomePct: Math.round((outcomeCount / total) * 100),
-  };
-}
-
-function computeMatchPredictionStats(
-  matchId: string,
-  poolGroupScores: PoolGroupScore[],
-): MatchPredictionStats | null {
-  const preds = poolGroupScores.filter((s) => s.matchId === matchId);
-  if (preds.length === 0) return null;
-
-  const total = preds.length;
-  const homeWins = preds.filter((s) => s.home > s.away).length;
-  const draws = preds.filter((s) => s.home === s.away).length;
-  const awayWins = preds.filter((s) => s.home < s.away).length;
-  const avgHome = preds.reduce((sum, s) => sum + s.home, 0) / total;
-  const avgAway = preds.reduce((sum, s) => sum + s.away, 0) / total;
-
-  return {
-    homeWinPct: Math.round((homeWins / total) * 100),
-    drawPct: Math.round((draws / total) * 100),
-    awayWinPct: Math.round((awayWins / total) * 100),
-    avgHomeGoals: Math.round(avgHome * 10) / 10,
-    avgAwayGoals: Math.round(avgAway * 10) / 10,
-    totalPredictions: total,
   };
 }

@@ -8,6 +8,7 @@ import type {
 } from './types';
 import { resolveGoalsByTeamId } from './predicted-goals';
 import { cellBelongsToMatch } from './knockout-cell-key';
+import { sortPredictionsForDisplay } from './sort-predictions-for-display';
 
 /**
  * Final/Bronze matches are split into 'teams'/'score' matrix columns (see buildKnockoutMatrix), so
@@ -116,11 +117,7 @@ export function buildKnockoutMatchDetail(
   const totalPredictions = predictions.filter((p) => p.pickedTeamId !== null).length;
   const exactScoreCount = predictions.filter((p) => p.isExactScore).length;
 
-  const sorted = predictions.toSorted((a, b) => {
-    if (a.isCurrentUser !== b.isCurrentUser) return a.isCurrentUser ? -1 : 1;
-    if (a.points !== b.points) return b.points - a.points;
-    return a.displayName.localeCompare(b.displayName);
-  });
+  const sorted = sortPredictionsForDisplay(predictions);
 
   return {
     totalPredictions,

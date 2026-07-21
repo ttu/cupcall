@@ -2,9 +2,10 @@ import type {
   GroupMatchDetail,
   GroupMatchDetailPrediction,
   MatchMatrixEntry,
-  MatchPredictionStats,
   MatrixMatch,
 } from './types';
+import { computeMatchPredictionStats } from './match-prediction-stats';
+import { sortPredictionsForDisplay } from './sort-predictions-for-display';
 
 type ScoredPrediction = { predictedHome: number; predictedAway: number };
 
@@ -14,24 +15,10 @@ function hasScore(
   return p.predictedHome !== null && p.predictedAway !== null;
 }
 
-function buildPoolStats(scored: ScoredPrediction[]): MatchPredictionStats | null {
-  if (scored.length === 0) return null;
-
-  const total = scored.length;
-  const homeWins = scored.filter((p) => p.predictedHome > p.predictedAway).length;
-  const draws = scored.filter((p) => p.predictedHome === p.predictedAway).length;
-  const awayWins = scored.filter((p) => p.predictedHome < p.predictedAway).length;
-  const avgHome = scored.reduce((sum, p) => sum + p.predictedHome, 0) / total;
-  const avgAway = scored.reduce((sum, p) => sum + p.predictedAway, 0) / total;
-
-  return {
-    homeWinPct: Math.round((homeWins / total) * 100),
-    drawPct: Math.round((draws / total) * 100),
-    awayWinPct: Math.round((awayWins / total) * 100),
-    avgHomeGoals: Math.round(avgHome * 10) / 10,
-    avgAwayGoals: Math.round(avgAway * 10) / 10,
-    totalPredictions: total,
-  };
+function buildPoolStats(scored: ScoredPrediction[]) {
+  return computeMatchPredictionStats(
+    scored.map((p) => ({ home: p.predictedHome, away: p.predictedAway })),
+  );
 }
 
 /** The actual outcome, or null when the match hasn't finished (or somehow has partial scores). */
@@ -109,11 +96,7 @@ export function buildGroupMatchDetail(
   const poolStats = buildPoolStats(scored);
   const exactScoreCount = predictions.filter((p) => p.hit === 'exact').length;
 
-  const sorted = predictions.toSorted((a, b) => {
-    if (a.isCurrentUser !== b.isCurrentUser) return a.isCurrentUser ? -1 : 1;
-    if (a.points !== b.points) return b.points - a.points;
-    return a.displayName.localeCompare(b.displayName);
-  });
+  const sorted = sortPredictionsForDisplay(predictions);
 
   return {
     totalPredictions: scored.length,

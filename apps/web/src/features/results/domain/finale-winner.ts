@@ -1,5 +1,24 @@
 import type { Tournament } from '@cup/engine';
 
+/** The team the user picked to LOSE an SF (i.e. not the picked SF winner), from the QF picks feeding it. */
+function findSfLoserPick(
+  bracket: Tournament['bracket'],
+  pickMap: Map<string, string>,
+  sfKey: string,
+): string | null {
+  const sfProg = bracket.progression.find((p) => p.match === sfKey);
+  if (!sfProg || sfProg.from.length !== 2) return null;
+  const [qf1Key, qf2Key] = sfProg.from;
+  if (!qf1Key || !qf2Key) return null;
+  const sfWinner = pickMap.get(sfKey) ?? null;
+  if (!sfWinner) return null;
+  const team1 = pickMap.get(qf1Key) ?? null;
+  const team2 = pickMap.get(qf2Key) ?? null;
+  if (team1 && sfWinner !== team1) return team1;
+  if (team2 && sfWinner !== team2) return team2;
+  return null;
+}
+
 /**
  * For Final: both participants are SF winners — return the SF winner that is NOT the picked Final winner.
  * For Bronze: both participants are SF losers — for each SF, find the team the user did NOT pick to win.
@@ -28,23 +47,8 @@ export function derivePredictedOpponent(
   }
 
   // Bronze: participants are SF losers
-  const sfLoser = (sfKey: string): string | null => {
-    const sfProg = bracket.progression.find((p) => p.match === sfKey);
-    if (!sfProg || sfProg.from.length !== 2) return null;
-    const qf1Key = sfProg.from[0];
-    const qf2Key = sfProg.from[1];
-    if (!qf1Key || !qf2Key) return null;
-    const sfWinner = pickMap.get(sfKey) ?? null;
-    if (!sfWinner) return null;
-    const team1 = pickMap.get(qf1Key) ?? null;
-    const team2 = pickMap.get(qf2Key) ?? null;
-    if (team1 && sfWinner !== team1) return team1;
-    if (team2 && sfWinner !== team2) return team2;
-    return null;
-  };
-
-  const loser1 = sfLoser(sf1Key);
-  const loser2 = sfLoser(sf2Key);
+  const loser1 = findSfLoserPick(bracket, pickMap, sf1Key);
+  const loser2 = findSfLoserPick(bracket, pickMap, sf2Key);
   if (!loser1 || !loser2) return null;
   return loser1 === pickedWinner ? loser2 : loser1;
 }
@@ -83,22 +87,8 @@ export function deriveImplicitFinaleWinner(
   }
 
   // Bronze: home side = sf1 loser, away side = sf2 loser
-  const getSfLoser = (sfKey: string): string | null => {
-    const sfProg = bracket.progression.find((p) => p.match === sfKey);
-    if (!sfProg || sfProg.from.length !== 2) return null;
-    const [qf1Key, qf2Key] = sfProg.from;
-    if (!qf1Key || !qf2Key) return null;
-    const sfWinner = pickMap.get(sfKey) ?? null;
-    if (!sfWinner) return null;
-    const team1 = pickMap.get(qf1Key) ?? null;
-    const team2 = pickMap.get(qf2Key) ?? null;
-    if (team1 && sfWinner !== team1) return team1;
-    if (team2 && sfWinner !== team2) return team2;
-    return null;
-  };
-
-  const homeSide = getSfLoser(from1);
-  const awaySide = getSfLoser(from2);
+  const homeSide = findSfLoserPick(bracket, pickMap, from1);
+  const awaySide = findSfLoserPick(bracket, pickMap, from2);
   if (!homeSide || !awaySide) return null;
   return homeGoals > awayGoals ? homeSide : awaySide;
 }

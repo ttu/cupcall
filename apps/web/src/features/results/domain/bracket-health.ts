@@ -1,4 +1,5 @@
 import type { Tournament, BracketMatchKey } from '@cup/engine';
+import { getRoundLabel } from './round-label';
 import type {
   BracketRoundHealth,
   BracketHealth,
@@ -168,20 +169,4 @@ function buildRoundScoringMap(
   addFeedingRound(bracket.semiFinals, 'SF', 0);
 
   return map;
-}
-
-function getRoundLabel(matchKey: string, rounds: string[]): string {
-  const prefixMap: Record<string, string> = {
-    'ro32-': 'R32',
-    'ro16-': 'R16',
-    'qf-': 'QF',
-    'sf-': 'SF',
-  };
-  for (const [prefix, label] of Object.entries(prefixMap)) {
-    if (matchKey.startsWith(prefix)) return label;
-  }
-  for (const r of rounds) {
-    if (matchKey.toLowerCase().startsWith(r.toLowerCase().replace(/\s+/g, '-'))) return r;
-  }
-  return matchKey;
 }

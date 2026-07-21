@@ -4,7 +4,7 @@
  * Uses a real in-memory PGlite database. No mocks for in-system collaborators.
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeTestDb } from '@cup/db/testing';
 import {
   createUser,
@@ -22,6 +22,11 @@ import {
 import { miniTournament } from '@cup/engine/testing';
 import { bracketMatchKey, tournamentId as asTournamentId } from '@cup/engine';
 import type { UserId, TournamentId, PoolId } from '@cup/engine';
+
+// pool-backup.ts imports serializePredictionInputs via the @/features/predictions barrel,
+// which transitively re-exports next-auth bindings (unavailable under vitest's node environment).
+vi.mock('@/features/auth', () => ({ getCurrentActor: vi.fn() }));
+
 import { buildPoolExport, restorePoolFromBackup } from './pool-backup';
 
 // ---------------------------------------------------------------------------

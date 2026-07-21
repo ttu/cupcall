@@ -1,6 +1,27 @@
 import type { GroupId, TeamId } from './brand.js';
 import type { GroupMatchDef, GroupScore, TiebreakKey, Tournament } from './types.js';
 
+type ScoreAccumulator = { points: number; gf: number; ga: number; conduct?: number };
+
+/** Applies one match's score to its home/away rows: goals, conduct (if tracked), and 3/1/0 points. */
+function applyMatchResult(home: ScoreAccumulator, away: ScoreAccumulator, s: GroupScore): void {
+  home.gf += s.home;
+  home.ga += s.away;
+  away.gf += s.away;
+  away.ga += s.home;
+  if (home.conduct !== undefined) home.conduct += s.homeConduct ?? 0;
+  if (away.conduct !== undefined) away.conduct += s.awayConduct ?? 0;
+
+  if (s.home > s.away) {
+    home.points += 3;
+  } else if (s.home < s.away) {
+    away.points += 3;
+  } else {
+    home.points += 1;
+    away.points += 1;
+  }
+}
+
 /**
  * Per-team standings metrics within a group. This is the cross-module contract
  * returned by {@link teamMetrics} (consumed by the qualifiers ranking), so it is
@@ -61,24 +82,7 @@ export function teamMetrics(
     const s = byId.get(m.id);
     if (!s) continue;
 
-    const home = rows.get(m.home)!;
-    const away = rows.get(m.away)!;
-
-    home.gf += s.home;
-    home.ga += s.away;
-    away.gf += s.away;
-    away.ga += s.home;
-    home.conduct += s.homeConduct ?? 0;
-    away.conduct += s.awayConduct ?? 0;
-
-    if (s.home > s.away) {
-      home.points += 3;
-    } else if (s.home < s.away) {
-      away.points += 3;
-    } else {
-      home.points += 1;
-      away.points += 1;
-    }
+    applyMatchResult(rows.get(m.home)!, rows.get(m.away)!, s);
   }
 
   return rows;
@@ -99,22 +103,7 @@ function computeH2HMetrics(
     const s = scoreById.get(m.id);
     if (!s) continue;
 
-    const home = rows.get(m.home)!;
-    const away = rows.get(m.away)!;
-
-    home.gf += s.home;
-    home.ga += s.away;
-    away.gf += s.away;
-    away.ga += s.home;
-
-    if (s.home > s.away) {
-      home.points += 3;
-    } else if (s.home < s.away) {
-      away.points += 3;
-    } else {
-      home.points += 1;
-      away.points += 1;
-    }
+    applyMatchResult(rows.get(m.home)!, rows.get(m.away)!, s);
   }
 
   return rows;

@@ -18,6 +18,7 @@ import {
 import type { UserId, BracketMatchKey, PoolId, TournamentId, PredictionId } from '@cup/engine';
 import { userId as toUserId, bracketMatchKey as bmk } from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
+import { serializePredictionInputs } from '@/features/predictions';
 
 // ---------------------------------------------------------------------------
 // Schemas (Zod) — used both for type derivation and for server-action validation
@@ -88,22 +89,7 @@ export async function buildPoolExport(
       return {
         userId: entry.userId,
         displayName: entry.displayName,
-        prediction: {
-          groupScores: inputs.groupScores.map((gs) => ({
-            matchId: gs.matchId,
-            home: gs.home,
-            away: gs.away,
-          })),
-          knockoutPicks: inputs.knockoutPicks.map((kp) => ({
-            bracketMatchKey: kp.bracketMatchKey,
-            winner: kp.winner,
-          })),
-          finishScores: {
-            ...(inputs.finishScores.final ? { final: inputs.finishScores.final } : {}),
-            ...(inputs.finishScores.bronze ? { bronze: inputs.finishScores.bronze } : {}),
-          },
-          specials: inputs.specials as Record<string, unknown>,
-        },
+        prediction: serializePredictionInputs(inputs),
       };
     }),
   );

@@ -46,6 +46,7 @@ import type { PoolRow, TournamentRow } from '@cup/db';
 import { rescoreAfterEdit } from './rescore-helper';
 import { applyCardImport } from '../application/import-card';
 import { toPair } from '../domain/pair';
+import { serializePredictionInputs } from '../domain/serialize-prediction-inputs';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -83,6 +84,18 @@ async function loadPoolTournamentAndActual(poolId: PoolId) {
     );
 
   return { pool, tournament, actual };
+}
+
+/** Auth + load scaffold shared by executeSelfSave/executeOwnerSave: resolves the actor and the pool's tournament def. */
+async function loadActorAndContext(poolId: PoolId) {
+  const [actor, { pool, tournament, actual }] = await Promise.all([
+    getCurrentActor(),
+    loadPoolTournamentAndActual(poolId),
+  ]);
+  if (!actor) throw new Error('Not signed in');
+  const tournamentDef = tournament.definition!;
+
+  return { actor, pool, tournament, tournamentDef, actual };
 }
 
 /** Build the group-scores map from pre-loaded actual results (avoids an extra DB query). */
@@ -280,12 +293,7 @@ async function executeSelfSave(
   doSave: (ctx: SaveCtx) => Promise<{ updatedInputs?: CardInputs }>,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    const [actor, { pool, tournament, actual }] = await Promise.all([
-      getCurrentActor(),
-      loadPoolTournamentAndActual(poolId),
-    ]);
-    if (!actor) throw new Error('Not signed in');
-    const tournamentDef = tournament.definition!;
+    const { actor, pool, tournament, tournamentDef, actual } = await loadActorAndContext(poolId);
 
     const itemLock = (await getItemHasResult(pool, tournamentDef)) ? 'locked' : 'unlocked';
     await assertCanEditOwnCard(db, {
@@ -330,12 +338,7 @@ async function executeOwnerSave(
   doSave: (ctx: SaveCtx) => Promise<{ audit: AuditData; updatedInputs?: CardInputs }>,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    const [actor, { pool, tournament, actual }] = await Promise.all([
-      getCurrentActor(),
-      loadPoolTournamentAndActual(poolId),
-    ]);
-    if (!actor) throw new Error('Not signed in');
-    const tournamentDef = tournament.definition!;
+    const { actor, pool, tournamentDef, actual } = await loadActorAndContext(poolId);
     const editorUserId = actor.userId;
 
     assertCanOwnerEdit({ userId: editorUserId }, { id: pool.id, ownerId: pool.ownerId });
@@ -701,20 +704,7 @@ export async function exportCard(
     const data = {
       tournamentId: pool.tournamentId,
       version: 1 as const,
-      groupScores: inputs.groupScores.map((gs) => ({
-        matchId: gs.matchId,
-        home: gs.home,
-        away: gs.away,
-      })),
-      knockoutPicks: inputs.knockoutPicks.map((kp) => ({
-        bracketMatchKey: kp.bracketMatchKey,
-        winner: kp.winner,
-      })),
-      finishScores: {
-        ...(inputs.finishScores.final ? { final: inputs.finishScores.final } : {}),
-        ...(inputs.finishScores.bronze ? { bronze: inputs.finishScores.bronze } : {}),
-      },
-      specials: inputs.specials,
+      ...serializePredictionInputs(inputs),
     };
 
     return { ok: true, data };

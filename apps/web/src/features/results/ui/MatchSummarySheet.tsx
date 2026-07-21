@@ -8,9 +8,11 @@ import type {
   KnockoutMatchView,
 } from '../domain/types';
 import { resolvePredictionHitDisplay, isPenaltyWinnerPick } from './match-summary-utils';
-import { HitChip } from './HitChip';
+import { HitOrFallbackChip } from './HitOrFallbackChip';
 import { useDialogSheet } from './use-dialog-sheet';
-import { Avatar, Icon, TeamBadge, cn } from '@/shared/ui';
+import { MatchScoreBadges } from './MatchScoreBadges';
+import { PredictionIdentityCell } from './PredictionIdentityCell';
+import { Icon, TeamBadge, cn } from '@/shared/ui';
 
 type MatchKey = 'final' | 'bronze' | null;
 
@@ -68,15 +70,13 @@ function SheetHeader({
               <span className="text-[10px] text-ink-muted">#{match.homeTeamFifaRanking}</span>
             )}
           </span>
-          <TeamBadge teamId={match.homeTeamId} size="md" />
-          {hasScore ? (
-            <span className="display tnum text-[32px] leading-none text-ink shrink-0">
-              {match.actualHome}–{match.actualAway}
-            </span>
-          ) : (
-            <span className="text-xs font-bold text-ink-muted shrink-0">vs</span>
-          )}
-          <TeamBadge teamId={match.awayTeamId} size="md" />
+          <MatchScoreBadges
+            homeTeamId={match.homeTeamId}
+            awayTeamId={match.awayTeamId}
+            hasScore={hasScore}
+            actualHome={match.actualHome}
+            actualAway={match.actualAway}
+          />
           <span className="flex flex-col items-start">
             <span className="text-[14px] font-bold text-ink truncate">
               {match.awayTeamName ?? match.awayTeamId ?? 'TBD'}
@@ -184,13 +184,7 @@ function YourPickSection({
           )}
         </div>
       </div>
-      {display.kind === 'matchHit' ? (
-        <HitChip hit={display.hit} points={yourPick.points} />
-      ) : (
-        <span className={cn('chip text-[11px] h-6', display.tone === 'red' && 'red')}>
-          {display.label}
-        </span>
-      )}
+      <HitOrFallbackChip display={display} points={yourPick.points} />
     </div>
   );
 }
@@ -256,18 +250,13 @@ function PredictionRow({
 
   return (
     <Fragment>
-      <div
-        data-testid={`match-summary-prediction-${prediction.userId}`}
+      <PredictionIdentityCell
+        testId={`match-summary-prediction-${prediction.userId}`}
+        displayName={prediction.displayName}
+        index={index}
+        isCurrentUser={prediction.isCurrentUser}
         className={cn('gap-2.5 min-w-0 pl-[18px] pr-2', rowCellClass)}
-      >
-        <Avatar name={prediction.displayName} index={index} size={28} />
-        <span className="text-[13px] font-bold text-ink truncate">
-          {prediction.displayName}
-          {prediction.isCurrentUser && (
-            <span className="chip green h-4.5 ml-[7px] text-[9.5px] align-middle">YOU</span>
-          )}
-        </span>
-      </div>
+      />
       <div
         className={cn(
           'gap-1.5 px-2 text-[12px] font-semibold text-ink-soft whitespace-nowrap',
@@ -301,13 +290,7 @@ function PredictionRow({
         )}
       </div>
       <div className={cn('gap-2 justify-end pl-2 pr-[18px]', rowCellClass)}>
-        {display.kind === 'matchHit' ? (
-          <HitChip hit={display.hit} points={prediction.points} />
-        ) : (
-          <span className={cn('chip text-[11px] h-6', display.tone === 'red' && 'red')}>
-            {display.label}
-          </span>
-        )}
+        <HitOrFallbackChip display={display} points={prediction.points} />
       </div>
     </Fragment>
   );

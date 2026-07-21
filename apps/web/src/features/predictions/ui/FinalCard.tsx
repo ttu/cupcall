@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import type { FinishMatchView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
+import { ChampionBadge } from './ChampionBadge';
 import { TeamBadge } from '@/shared/ui';
 import { cn } from '@/shared/ui';
 
@@ -62,17 +63,6 @@ export function FinalCard({
   isPending = false,
 }: Props): ReactElement {
   const isFinal = matchKey === 'final';
-
-  const champion = (() => {
-    if (match.pickedWinnerId === null) return null;
-    if (match.pickedWinnerId === match.homeTeamId) {
-      return { teamId: match.homeTeamId, teamName: match.homeTeamName };
-    }
-    if (match.pickedWinnerId === match.awayTeamId) {
-      return { teamId: match.awayTeamId, teamName: match.awayTeamName };
-    }
-    return null;
-  })();
 
   const scoreIsTied =
     match.predictedHome !== null &&
@@ -170,26 +160,14 @@ export function FinalCard({
         </div>
       )}
 
-      {champion?.teamId && (
-        <div className="flex justify-center px-2 pt-0.5 pb-2.5">
-          <div
-            className={cn(
-              'inline-flex items-center gap-1.5 py-1 pr-2.5 pl-1.5 rounded-full',
-              isFinal ? 'bg-gold' : 'bg-[oklch(0.80_0.06_55)]',
-            )}
-          >
-            <TeamBadge teamId={champion.teamId} size="sm" />
-            <span
-              className={cn(
-                'display text-[11px] tracking-[0.04em]',
-                isFinal ? 'text-[oklch(0.28_0.06_80)]' : 'text-[oklch(0.32_0.06_55)]',
-              )}
-            >
-              {champion.teamName}
-            </span>
-          </div>
-        </div>
-      )}
+      <ChampionBadge
+        pickedWinnerId={match.pickedWinnerId}
+        homeTeamId={match.homeTeamId}
+        homeTeamName={match.homeTeamName}
+        awayTeamId={match.awayTeamId}
+        awayTeamName={match.awayTeamName}
+        isFinal={isFinal}
+      />
     </div>
   );
 }

@@ -19,6 +19,7 @@ export type {
 export { getSpecialBetDefs } from './domain/special-bet-defs';
 export { toAuditEntry } from './domain/audit';
 export { buildMatchScores } from './domain/match-scores';
+export { serializePredictionInputs } from './domain/serialize-prediction-inputs';
 export type { MatchScore } from './ui/ReadOnlyCard';
 
 export { getCardView, buildCardView } from './application/get-card';

@@ -74,6 +74,29 @@ async function withPool<T extends { ok: boolean }>(
   }
 }
 
+const PoolIdOnlySchema = z.object({ poolId: z.string() });
+
+/**
+ * Scaffold for owner-only pool actions that take just `{ poolId }`: parses the input,
+ * asserts ownership, runs `mutate`, revalidates the pool page, and wraps errors as
+ * `{ ok: false, error }`.
+ */
+async function withOwnerPoolMutation<T extends Record<string, unknown>>(
+  raw: unknown,
+  mutate: (poolId: PoolId) => Promise<T>,
+): Promise<({ ok: true } & T) | { ok: false; error: string }> {
+  const parsed = PoolIdOnlySchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.message };
+  const poolId = asPoolId(parsed.data.poolId);
+
+  return withPool(poolId, async (pool, actor) => {
+    assertIsOwner(pool, actor.userId);
+    const result = await mutate(poolId);
+    revalidatePath(`/pools/${poolId}`);
+    return { ok: true, ...result };
+  });
+}
+
 /** Asserts the actor owns the pool and isn't targeting the owner themself. */
 function assertOwnerNotTargetingSelf(
   pool: PoolRow,
@@ -229,89 +252,47 @@ export async function leavePool(
 
 // Clear invite link
 
-const ClearInviteLinkSchema = z.object({ poolId: z.string() });
-
 export async function clearInviteLink(
   raw: unknown,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const parsed = ClearInviteLinkSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId: rawPoolId } = parsed.data;
-  const poolId = asPoolId(rawPoolId);
-
-  return withPool(poolId, async (pool, actor) => {
-    assertIsOwner(pool, actor.userId);
-
+  return withOwnerPoolMutation(raw, async (poolId) => {
     await clearInviteToken(db, poolId);
-    revalidatePath(`/pools/${poolId}`);
-    return { ok: true };
+    return {};
   });
 }
 
 // Rotate token
 
-const RotateTokenSchema = z.object({ poolId: z.string() });
-
 export async function rotateToken(
   raw: unknown,
 ): Promise<{ ok: true; newToken: string } | { ok: false; error: string }> {
-  const parsed = RotateTokenSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId: rawPoolId } = parsed.data;
-  const poolId = asPoolId(rawPoolId);
-
-  return withPool(poolId, async (pool, actor) => {
-    assertIsOwner(pool, actor.userId);
-
+  return withOwnerPoolMutation(raw, async (poolId) => {
     const newToken = generateInviteToken();
     await rotateInviteTokenHash(db, poolId, newToken);
-
-    revalidatePath(`/pools/${poolId}`);
-    return { ok: true, newToken };
+    return { newToken };
   });
 }
 
 // Rotate view token
 
-const RotateViewTokenSchema = z.object({ poolId: z.string() });
-
 export async function rotateViewToken(
   raw: unknown,
 ): Promise<{ ok: true; newToken: string } | { ok: false; error: string }> {
-  const parsed = RotateViewTokenSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId: rawPoolId } = parsed.data;
-  const poolId = asPoolId(rawPoolId);
-
-  return withPool(poolId, async (pool, actor) => {
-    assertIsOwner(pool, actor.userId);
-
+  return withOwnerPoolMutation(raw, async (poolId) => {
     const newToken = generateViewToken();
     await dbRotateViewToken(db, poolId, newToken);
-
-    revalidatePath(`/pools/${poolId}`);
-    return { ok: true, newToken };
+    return { newToken };
   });
 }
 
 // Clear view link
 
-const ClearViewLinkSchema = z.object({ poolId: z.string() });
-
 export async function clearViewLink(
   raw: unknown,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const parsed = ClearViewLinkSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const { poolId: rawPoolId } = parsed.data;
-  const poolId = asPoolId(rawPoolId);
-
-  return withPool(poolId, async (pool, actor) => {
-    assertIsOwner(pool, actor.userId);
-
+  return withOwnerPoolMutation(raw, async (poolId) => {
     await dbClearViewToken(db, poolId);
-    revalidatePath(`/pools/${poolId}`);
-    return { ok: true };
+    return {};
   });
 }
 

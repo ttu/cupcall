@@ -1,4 +1,3 @@
-import { teamId, playerId, matchId, bracketMatchKey } from '@cup/engine';
 import type {
   CardInputs,
   Tournament,
@@ -10,15 +9,7 @@ import type {
   PlayerId,
 } from '@cup/engine';
 import { z } from 'zod';
-
-// ---------------------------------------------------------------------------
-// Primitive id transformers
-// ---------------------------------------------------------------------------
-
-const teamIdSchema = z.string().transform(teamId);
-const playerIdSchema = z.string().transform(playerId);
-const matchIdSchema = z.string().transform(matchId);
-const bracketMatchKeySchema = z.string().transform(bracketMatchKey);
+import { teamIdSchema, playerIdSchema, matchIdSchema, bracketMatchKeySchema } from './ids.js';
 
 // ---------------------------------------------------------------------------
 // Sub-schemas

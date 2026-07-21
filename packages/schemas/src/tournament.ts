@@ -1,12 +1,12 @@
-import { teamId, playerId, groupId, matchId, bracketMatchKey } from '@cup/engine';
 import type { Tournament } from '@cup/engine';
 import { z } from 'zod';
-
-const teamIdSchema = z.string().transform(teamId);
-const playerIdSchema = z.string().transform(playerId);
-const groupIdSchema = z.string().transform(groupId);
-const matchIdSchema = z.string().transform(matchId);
-const bracketMatchKeySchema = z.string().transform(bracketMatchKey);
+import {
+  teamIdSchema,
+  playerIdSchema,
+  groupIdSchema,
+  matchIdSchema,
+  bracketMatchKeySchema,
+} from './ids.js';
 
 const teamSchema = z.object({
   id: teamIdSchema,
