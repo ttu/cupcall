@@ -14,7 +14,8 @@ import {
   deriveImplicitFinaleWinner,
 } from '@/features/results';
 
-const STAGE_LABELS: Record<string, string> = {
+export const STAGE_LABELS: Record<string, string> = {
+  group: 'Group Stage',
   R32: 'Round of 32',
   R16: 'Round of 16',
   QF: 'Quarterfinal',

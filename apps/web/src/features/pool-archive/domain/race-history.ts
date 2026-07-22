@@ -7,6 +7,7 @@ export type StageHistoryPlayer = {
 export type LeadChangeEvent = {
   stageIndex: number;
   stageName: string;
+  stageLabel: string | null;
   leaderDisplayName: string;
   reason: string | null;
   pointsAtStage: number;
@@ -37,13 +38,17 @@ function rankAtStage(players: StageHistoryPlayer[], stageIndex: number): Map<str
 export function computeLeadChanges(
   players: StageHistoryPlayer[],
   stages: string[],
+  stageRoundLabels: (string | null)[] = [],
 ): LeadChangeEvent[] {
   if (players.length === 0 || stages.length === 0) return [];
 
   const events: LeadChangeEvent[] = [];
-  let currentLeader: string | null = null;
+  // Stage 0 ("Start") has everyone tied at 0 points — its "leader" is an artifact of the tie-break,
+  // not a real lead change, so it seeds the baseline without emitting an event.
+  const initialRanks = rankAtStage(players, 0);
+  let currentLeader = [...initialRanks.entries()].find(([, rank]) => rank === 1)?.[0] ?? null;
 
-  for (let stageIndex = 0; stageIndex < stages.length; stageIndex++) {
+  for (let stageIndex = 1; stageIndex < stages.length; stageIndex++) {
     const ranks = rankAtStage(players, stageIndex);
     const leaderName = [...ranks.entries()].find(([, rank]) => rank === 1)?.[0];
     if (leaderName === undefined || leaderName === currentLeader) continue;
@@ -52,6 +57,7 @@ export function computeLeadChanges(
     events.push({
       stageIndex,
       stageName: stages[stageIndex] ?? '',
+      stageLabel: stageRoundLabels[stageIndex] ?? null,
       leaderDisplayName: leaderName,
       reason: leader?.stageReasons?.[stageIndex] ?? null,
       pointsAtStage: leader?.points[stageIndex] ?? 0,

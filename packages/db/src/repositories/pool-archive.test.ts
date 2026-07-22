@@ -154,6 +154,7 @@ describe('pool-archive repository', () => {
 
     const recap: PoolArchiveRecap = {
       stages: ['Start', 'Jul 15', 'Jul 19'],
+      stageRoundLabels: [null, 'Group Stage', 'Final'],
       championPick: { teamId: teamId('ARG'), teamName: 'Argentina', count: 6, total: 10 },
       bestSingleMatch: {
         matchId: matchId('m1'),

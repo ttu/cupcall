@@ -42,7 +42,9 @@ export async function getPoolArchiveView(
     archivedAt: archive.archivedAt,
     entries: entryViews,
     recap: archive.recap,
-    leadChanges: archive.recap ? computeLeadChanges(historyPlayers, stages) : [],
+    leadChanges: archive.recap
+      ? computeLeadChanges(historyPlayers, stages, archive.recap.stageRoundLabels ?? [])
+      : [],
     biggestRiser: archive.recap
       ? computeBiggestRiser(
           historyPlayers,

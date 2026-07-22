@@ -3,47 +3,51 @@ import { computeLeadChanges, computeBiggestRiser } from './race-history';
 import type { StageHistoryPlayer } from './race-history';
 
 const stages = ['Start', 'Jul 15', 'Jul 17', 'Jul 19'];
+const stageRoundLabels = [null, 'Group Stage', 'Round of 16', 'Final'];
 
 describe('computeLeadChanges', () => {
-  it('returns one event when the leader never changes', () => {
+  it('returns no events when the leader never changes past the Start tie-break', () => {
     const players: StageHistoryPlayer[] = [
       { displayName: 'Alice', points: [0, 30, 40, 50], stageReasons: [null, 'a', 'b', 'c'] },
       { displayName: 'Bob', points: [0, 10, 20, 30], stageReasons: [null, null, null, null] },
     ];
     const events = computeLeadChanges(players, stages);
-    expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({
-      stageIndex: 0,
-      stageName: 'Start',
-      leaderDisplayName: 'Alice',
-      reason: null,
-      pointsAtStage: 0,
-    });
+    expect(events).toEqual([]);
   });
 
-  it('emits an event each time the #1 rank changes hands', () => {
+  it('emits an event each time the #1 rank changes hands, skipping the Start baseline', () => {
     const players: StageHistoryPlayer[] = [
       { displayName: 'Alice', points: [0, 30, 30, 60], stageReasons: [null, 'A1', null, 'A3'] },
       { displayName: 'Bob', points: [0, 10, 40, 50], stageReasons: [null, null, 'B2', null] },
     ];
-    const events = computeLeadChanges(players, stages);
-    expect(events.map((e) => e.leaderDisplayName)).toEqual(['Alice', 'Bob', 'Alice']);
-    expect(events[1]).toEqual({
+    const events = computeLeadChanges(players, stages, stageRoundLabels);
+    expect(events.map((e) => e.leaderDisplayName)).toEqual(['Bob', 'Alice']);
+    expect(events[0]).toEqual({
       stageIndex: 2,
       stageName: 'Jul 17',
+      stageLabel: 'Round of 16',
       leaderDisplayName: 'Bob',
       reason: 'B2',
       pointsAtStage: 40,
     });
   });
 
-  it('breaks ties by displayName ascending, matching getLeaderboard convention', () => {
+  it('defaults stageLabel to null when no stageRoundLabels are supplied', () => {
+    const players: StageHistoryPlayer[] = [
+      { displayName: 'Alice', points: [0, 30, 30, 60], stageReasons: [null, 'A1', null, 'A3'] },
+      { displayName: 'Bob', points: [0, 10, 40, 50], stageReasons: [null, null, 'B2', null] },
+    ];
+    const events = computeLeadChanges(players, stages);
+    expect(events.every((e) => e.stageLabel === null)).toBe(true);
+  });
+
+  it('breaks ties by displayName ascending, matching getLeaderboard convention, without emitting a Start event', () => {
     const players: StageHistoryPlayer[] = [
       { displayName: 'Zed', points: [10], stageReasons: [null] },
       { displayName: 'Amy', points: [10], stageReasons: [null] },
     ];
     const events = computeLeadChanges(players, ['Start']);
-    expect(events[0]?.leaderDisplayName).toBe('Amy');
+    expect(events).toEqual([]);
   });
 
   it('returns an empty array for an empty pool or no stages', () => {

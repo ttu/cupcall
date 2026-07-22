@@ -12,7 +12,10 @@ export function ArchiveLeadChangesPanel({ leadChanges }: Props): ReactElement | 
       <ul className="mt-3 space-y-3">
         {leadChanges.map((event) => (
           <li key={event.stageIndex} className="flex gap-3">
-            <span className="chip shrink-0">{event.stageName}</span>
+            <span className="flex shrink-0 gap-1.5">
+              <span className="chip">{event.stageName}</span>
+              {event.stageLabel && <span className="chip">{event.stageLabel}</span>}
+            </span>
             <div>
               <div className="font-bold text-sm">{event.leaderDisplayName} takes the lead</div>
               <p className="text-xs text-ink-muted">

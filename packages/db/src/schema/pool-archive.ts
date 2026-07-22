@@ -35,6 +35,7 @@ export type StageLeader = { userId: UserId; displayName: string; points: number 
 
 export type PoolArchiveRecap = {
   stages: string[];
+  stageRoundLabels: (string | null)[];
   championPick: ChampionPickHighlight | null;
   bestSingleMatch: BestSingleMatchHighlight | null;
   biggestUpset: BiggestUpsetHighlight | null;

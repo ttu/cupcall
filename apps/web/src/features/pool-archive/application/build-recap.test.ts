@@ -189,6 +189,32 @@ describe('buildPoolArchiveRecap', () => {
     expect(recap.overallAccuracyPercent).toBe(0);
   });
 
+  it('labels the Start stage null and a Final-match date with the Final round', async () => {
+    const finalKickoff = new Date('2026-07-19T18:00:00Z');
+    await upsertKnockoutMatch(db, {
+      id: miniTournament.bracket.finalMatch,
+      tournamentId,
+      stage: 'Final',
+      homeTeamId: 'A1',
+      awayTeamId: 'B1',
+      homeGoals: 2,
+      awayGoals: 1,
+      kickoff: finalKickoff,
+      status: 'final',
+    });
+
+    const { recap } = await buildPoolArchiveRecap(db, {
+      poolId,
+      tournamentId,
+      def: miniTournament,
+      scoring: miniTournament.scoring,
+    });
+
+    expect(recap.stageRoundLabels).toHaveLength(recap.stages.length);
+    expect(recap.stageRoundLabels[0]).toBeNull();
+    expect(recap.stageRoundLabels[recap.stages.length - 1]).toBe('Final');
+  });
+
   it('freezes groupCompletionStageIndex and all five leader/performer fields into the recap', async () => {
     const finalKickoff = new Date('2026-07-19T18:00:00Z');
     await upsertKnockoutMatch(db, {

@@ -44,6 +44,7 @@ import {
   computeExactScoreRatePercent,
   computeStageLeaders,
   resolveEffectiveFinalePick,
+  STAGE_LABELS,
 } from './build-highlights';
 
 export type EntryRecapExtras = {
@@ -170,6 +171,36 @@ function buildStageReasons(
   return reasons;
 }
 
+/** The tournament stage/round with the most matches finalized on a given date, for display. */
+function describeStageRound(matchesThisDate: MatchRow[]): string | null {
+  const counts = new Map<string, number>();
+  for (const m of matchesThisDate) counts.set(m.stage, (counts.get(m.stage) ?? 0) + 1);
+  if (counts.size === 0) return null;
+
+  const [dominantStage] = [...counts.entries()].toSorted((a, b) => b[1] - a[1])[0]!;
+  return STAGE_LABELS[dominantStage] ?? null;
+}
+
+/**
+ * Per-stage round label ('Group Stage', 'Round of 16', 'Final', ...), parallel to `stages` —
+ * gives lead-change events context beyond a bare date. Index 0 ('Start') has no round.
+ */
+function buildStageRoundLabels(stages: string[], allMatches: MatchRow[]): (string | null)[] {
+  const eventDates = buildRaceEventDates(allMatches);
+  const labels: (string | null)[] = [null];
+
+  for (const dateStr of eventDates) {
+    const matchesThisDate = allMatches.filter(
+      (m) => m.status === 'final' && m.kickoff && m.kickoff.toISOString().slice(0, 10) === dateStr,
+    );
+    labels.push(describeStageRound(matchesThisDate));
+  }
+
+  while (labels.length < stages.length) labels.push(null);
+
+  return labels;
+}
+
 /**
  * Returns `null` when the member never created a prediction row at all — distinct from a member
  * who has a card with some items left unfilled (e.g. a late joiner). Real scoring never scores a
@@ -288,6 +319,7 @@ export async function buildPoolArchiveRecap(
 
   const recap: PoolArchiveRecap = {
     stages: raceChart.chartStages,
+    stageRoundLabels: buildStageRoundLabels(raceChart.chartStages, allMatches),
     championPick: computeChampionPick(knockoutPicks, finishScores, def, totalMembers),
     bestSingleMatch: computeBestSingleMatch(
       groupScores,
