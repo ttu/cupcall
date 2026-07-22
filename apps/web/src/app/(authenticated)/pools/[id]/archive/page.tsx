@@ -16,8 +16,10 @@ import {
   ArchiveHeroCard,
   ArchiveHighlightsPanel,
   ArchiveLeadChangesPanel,
+  ArchiveCategoryBreakdownPanel,
   ArchiveStatTiles,
   ArchivePoolStatsPanel,
+  buildCategoryBreakdown,
   toRaceChartData,
 } from '@/features/pool-archive';
 import { RaceChart } from '@/features/results';
@@ -64,6 +66,7 @@ export default async function PoolArchivePage({ params }: Props): Promise<ReactE
 
   const matchesPlayed = allMatches.filter((m) => m.status === 'final').length;
   const raceChartData = archive ? toRaceChartData(archive, actor.userId) : null;
+  const categoryBreakdown = archive ? buildCategoryBreakdown(archive.entries, actor.userId) : [];
 
   return (
     <div className="max-w-275 mx-auto p-[28px_20px]">
@@ -113,6 +116,8 @@ export default async function PoolArchivePage({ params }: Props): Promise<ReactE
               <ArchiveLeadChangesPanel leadChanges={archive.leadChanges} />
             </div>
           </div>
+
+          <ArchiveCategoryBreakdownPanel rows={categoryBreakdown} />
 
           <div className="flex flex-col gap-3">
             <p className="text-xs text-ink-muted">
