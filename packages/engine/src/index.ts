@@ -32,6 +32,8 @@ export type {
   ActualResults,
   Scoring,
   ScoreBreakdown,
+  AccuracyBreakdown,
+  CategoryAccuracy,
   // Input sub-types
   GroupScore,
   KnockoutPick,
@@ -45,7 +47,7 @@ export { ok, err } from './result.js';
 
 // Core engine functions
 export { deriveCard } from './derive.js';
-export { scoreCard } from './score.js';
+export { scoreCard, scoreCardAccuracy } from './score.js';
 export { deriveGroupOrders, computeStandings, teamMetrics, metric } from './standings.js';
 export type { TeamMetrics } from './standings.js';
 export { selectQualifiers } from './qualifiers.js';

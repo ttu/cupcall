@@ -224,3 +224,21 @@ export interface ScoreBreakdown {
   specials: Points;
   total: Points;
 }
+
+export interface CategoryAccuracy {
+  hits: number;
+  attempted: number;
+}
+
+export interface AccuracyBreakdown {
+  groupMatches: CategoryAccuracy;
+  groupOrder: CategoryAccuracy;
+  bronze: CategoryAccuracy;
+  final: CategoryAccuracy;
+  roundOf16: CategoryAccuracy;
+  roundOf8: CategoryAccuracy;
+  topFourTeams: CategoryAccuracy;
+  topFourPosition: CategoryAccuracy;
+  specials: CategoryAccuracy;
+  total: CategoryAccuracy;
+}

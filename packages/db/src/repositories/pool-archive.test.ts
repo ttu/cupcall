@@ -175,6 +175,10 @@ describe('pool-archive repository', () => {
       },
       predictionsMade: 1456,
       exactScoreRatePercent: 18,
+      overallAccuracyPercent: 42,
+      groupCompletionStageIndex: 1,
+      groupStageLeader: { userId: owner.id, displayName: 'Owner', points: 20 },
+      knockoutStageLeader: { userId: owner.id, displayName: 'Owner', points: 50 },
     };
 
     await upsertPoolArchive(db, {

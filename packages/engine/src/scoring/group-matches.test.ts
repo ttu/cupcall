@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { matchId } from '../brand.js';
 import { miniScoring } from '../__fixtures__/mini-tournament.js';
 import type { CardInputs, ActualResults } from '../types.js';
-import { scoreGroupMatches } from './group-matches.js';
+import { scoreGroupMatches, scoreGroupMatchesDetail } from './group-matches.js';
 
 // From mini-tournament fixture:
 // Group A matches: mA1=A1vA2, mA2=A1vA3, mA3=A1vA4, mA4=A2vA3, mA5=A2vA4, mA6=A3vA4
@@ -88,5 +88,47 @@ describe('scoreGroupMatches', () => {
       { matchId: matchId('mA4'), home: 1, away: 0 }, // unpredicted
     ]);
     expect(scoreGroupMatches(inputs, actual, miniScoring)).toBe(9); // 6 + 3 + 0 + 0
+  });
+});
+
+describe('scoreGroupMatchesDetail', () => {
+  it('exact score → 1 hit of 1 attempted', () => {
+    const inputs = makeInputs([{ matchId: matchId('mA1'), home: 2, away: 1 }]);
+    const actual = makeActual([{ matchId: matchId('mA1'), home: 2, away: 1 }]);
+    expect(scoreGroupMatchesDetail(inputs, actual)).toEqual({ hits: 1, attempted: 1 });
+  });
+
+  it('correct outcome only still counts as a hit (any credit counts as correct)', () => {
+    const inputs = makeInputs([{ matchId: matchId('mA1'), home: 1, away: 0 }]);
+    const actual = makeActual([{ matchId: matchId('mA1'), home: 3, away: 1 }]);
+    expect(scoreGroupMatchesDetail(inputs, actual)).toEqual({ hits: 1, attempted: 1 });
+  });
+
+  it('wrong prediction → 0 hits of 1 attempted', () => {
+    const inputs = makeInputs([{ matchId: matchId('mA1'), home: 2, away: 0 }]);
+    const actual = makeActual([{ matchId: matchId('mA1'), home: 0, away: 1 }]);
+    expect(scoreGroupMatchesDetail(inputs, actual)).toEqual({ hits: 0, attempted: 1 });
+  });
+
+  it('unpredicted match → not attempted', () => {
+    const inputs = makeInputs([]);
+    const actual = makeActual([{ matchId: matchId('mA1'), home: 2, away: 1 }]);
+    expect(scoreGroupMatchesDetail(inputs, actual)).toEqual({ hits: 0, attempted: 0 });
+  });
+
+  it('multi-match: exact + outcome + wrong + unpredicted → 2 hits of 3 attempted', () => {
+    const inputs = makeInputs([
+      { matchId: matchId('mA1'), home: 2, away: 0 }, // exact
+      { matchId: matchId('mA2'), home: 1, away: 0 }, // outcome only
+      { matchId: matchId('mA3'), home: 2, away: 0 }, // wrong
+      // mA4 not predicted
+    ]);
+    const actual = makeActual([
+      { matchId: matchId('mA1'), home: 2, away: 0 },
+      { matchId: matchId('mA2'), home: 3, away: 1 },
+      { matchId: matchId('mA3'), home: 1, away: 1 },
+      { matchId: matchId('mA4'), home: 1, away: 0 },
+    ]);
+    expect(scoreGroupMatchesDetail(inputs, actual)).toEqual({ hits: 2, attempted: 3 });
   });
 });

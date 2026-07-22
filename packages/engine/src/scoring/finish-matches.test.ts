@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { teamId, type TeamId } from '../brand.js';
 import { miniScoring } from '../__fixtures__/mini-tournament.js';
 import type { CardInputs, DerivedCard, ActualResults } from '../types.js';
-import { scoreBronze, scoreFinal } from './finish-matches.js';
+import { scoreBronze, scoreFinal, scoreBronzeDetail, scoreFinalDetail } from './finish-matches.js';
 
 // Team ids used in tests
 const A1 = teamId('A1');
@@ -222,5 +222,66 @@ describe('scoreBronze', () => {
       bronzeMatch: { home: B1, away: B2, homeGoals: 1, awayGoals: 0, winner: B1 },
     });
     expect(scoreBronze(inputs, derived, actual, miniScoring)).toBe(10); // 10 teams + 0 exact
+  });
+});
+
+describe('scoreFinalDetail', () => {
+  it('both teams correct + exact score → 3 hits of 3 attempted (2 team + 1 exact)', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs({ home: 3, away: 2, homeTeamId: A1, awayTeamId: A2 });
+    const actual = makeActual({
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
+    });
+    expect(scoreFinalDetail(inputs, derived, actual)).toEqual({ hits: 3, attempted: 3 });
+  });
+
+  it('both teams correct, wrong score → 2 hits of 3 attempted', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs({ home: 1, away: 0, homeTeamId: A1, awayTeamId: A2 });
+    const actual = makeActual({
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
+    });
+    expect(scoreFinalDetail(inputs, derived, actual)).toEqual({ hits: 2, attempted: 3 });
+  });
+
+  it('finishScores.final absent → exact score not attempted, teams still attempted', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs();
+    const actual = makeActual({
+      finalMatch: { home: A1, away: A2, homeGoals: 3, awayGoals: 2, winner: A1 },
+    });
+    expect(scoreFinalDetail(inputs, derived, actual)).toEqual({ hits: 2, attempted: 2 });
+  });
+
+  it('actual finalMatch absent, no SF confirmation → nothing attempted', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs({ home: 3, away: 2 });
+    const actual = makeActual({});
+    expect(scoreFinalDetail(inputs, derived, actual)).toEqual({ hits: 0, attempted: 0 });
+  });
+
+  it('one predicted finalist confirmed via SF completion, final unplayed → 1 hit of 2 attempted', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs();
+    const actual = makeActual({ finalists: [A1] });
+    expect(scoreFinalDetail(inputs, derived, actual)).toEqual({ hits: 1, attempted: 2 });
+  });
+});
+
+describe('scoreBronzeDetail', () => {
+  it('both teams correct + exact score → 3 hits of 3 attempted', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs(undefined, { home: 1, away: 0, homeTeamId: B1, awayTeamId: B2 });
+    const actual = makeActual({
+      bronzeMatch: { home: B1, away: B2, homeGoals: 1, awayGoals: 0, winner: B1 },
+    });
+    expect(scoreBronzeDetail(inputs, derived, actual)).toEqual({ hits: 3, attempted: 3 });
+  });
+
+  it('actual bronzeMatch absent → nothing attempted', () => {
+    const derived = makeDerived([A1, A2], [B1, B2]);
+    const inputs = makeInputs(undefined, { home: 1, away: 0, homeTeamId: B1, awayTeamId: B2 });
+    const actual = makeActual({});
+    expect(scoreBronzeDetail(inputs, derived, actual)).toEqual({ hits: 0, attempted: 0 });
   });
 });

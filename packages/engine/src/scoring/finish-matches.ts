@@ -5,6 +5,7 @@ import type {
   Scoring,
   ActualFinishMatch,
   FinishScore,
+  CategoryAccuracy,
 } from '../types.js';
 import type { Points, TeamId } from '../brand.js';
 import { points } from '../brand.js';
@@ -39,30 +40,40 @@ function exactScorePoints(
     : 0;
 }
 
-/**
- * Shared scoring logic for a finish match (bronze or final).
- * - TEAM points: count how many of the player's two derived teams appear in {actual.home, actual.away},
- *   regardless of side. Each match awards 0, perTeam, or perTeam*2.
- * - EXACT SCORE points: award exactScore iff finishScore is present AND home/away goals match exactly.
- *   Independent of team correctness.
- */
-function scoreFinishMatch(
-  derivedPair: TeamId[],
+/** attempted=1 iff the user made this prediction and the match is decided; hit iff exact. */
+function exactScoreDetail(
   finishScore: FinishScore | undefined,
   actualMatch: ActualFinishMatch | undefined,
-  scoring: { exactScore: number; perTeam: number },
-): number {
-  if (actualMatch === undefined) {
-    return 0;
-  }
+): CategoryAccuracy {
+  if (finishScore === undefined || actualMatch === undefined) return { hits: 0, attempted: 0 };
+  return { hits: exactScorePoints(finishScore, actualMatch, 1), attempted: 1 };
+}
 
+function scoreFinishMatchDetail(
+  derivedPair: TeamId[],
+  actualMatch: ActualFinishMatch | undefined,
+): CategoryAccuracy {
+  if (actualMatch === undefined) return { hits: 0, attempted: 0 };
   const actualTeams = new Set<TeamId>([actualMatch.home, actualMatch.away]);
+  return {
+    hits: derivedPair.filter((t) => actualTeams.has(t)).length,
+    attempted: derivedPair.length,
+  };
+}
 
-  // Team points: count derived teams present in actual match team set
-  const teamCount = derivedPair.filter((t) => actualTeams.has(t)).length;
-  const teamPoints = teamCount * scoring.perTeam;
-
-  return teamPoints + exactScorePoints(finishScore, actualMatch, scoring.exactScore);
+function scoreFinalTeamDetail(derived: DerivedCard, actual: ActualResults): CategoryAccuracy {
+  // Confirmed finalists = SF winners (banked as each SF completes) plus, once the final is
+  // played, its two participants (defensive: covers explicit finalMatch without answers).
+  const confirmed = new Set<TeamId>(actual.answers.finalists ?? []);
+  if (actual.finalMatch !== undefined) {
+    confirmed.add(actual.finalMatch.home);
+    confirmed.add(actual.finalMatch.away);
+  }
+  if (confirmed.size === 0) return { hits: 0, attempted: 0 };
+  return {
+    hits: derived.finalists.filter((t) => confirmed.has(t)).length,
+    attempted: derived.finalists.length,
+  };
 }
 
 export function scoreBronze(
@@ -71,14 +82,13 @@ export function scoreBronze(
   actual: ActualResults,
   scoring: Scoring,
 ): Points {
-  return points(
-    scoreFinishMatch(
-      derived.bronzePair,
-      inputs.finishScores.bronze,
-      actual.bronzeMatch,
-      scoring.bronze,
-    ),
+  const team = scoreFinishMatchDetail(derived.bronzePair, actual.bronzeMatch);
+  const exactPoints = exactScorePoints(
+    inputs.finishScores.bronze,
+    actual.bronzeMatch,
+    scoring.bronze.exactScore,
   );
+  return points(team.hits * scoring.bronze.perTeam + exactPoints);
 }
 
 export function scoreFinal(
@@ -87,24 +97,37 @@ export function scoreFinal(
   actual: ActualResults,
   scoring: Scoring,
 ): Points {
-  // Confirmed finalists = SF winners (banked as each SF completes) plus, once the final is
-  // played, its two participants (defensive: covers explicit finalMatch without answers).
-  const confirmed = new Set<TeamId>(actual.answers.finalists ?? []);
-  if (actual.finalMatch !== undefined) {
-    confirmed.add(actual.finalMatch.home);
-    confirmed.add(actual.finalMatch.away);
-  }
-
-  // Team points: perTeam for each predicted finalist confirmed to have reached the final.
-  const teamCount = derived.finalists.filter((t) => confirmed.has(t)).length;
-  const teamPoints = teamCount * scoring.final.perTeam;
-
-  // Exact-score points: only once the final is actually played and goals match exactly.
+  const team = scoreFinalTeamDetail(derived, actual);
   const exactPoints = exactScorePoints(
     inputs.finishScores.final,
     actual.finalMatch,
     scoring.final.exactScore,
   );
+  return points(team.hits * scoring.final.perTeam + exactPoints);
+}
 
-  return points(teamPoints + exactPoints);
+function sum(a: CategoryAccuracy, b: CategoryAccuracy): CategoryAccuracy {
+  return { hits: a.hits + b.hits, attempted: a.attempted + b.attempted };
+}
+
+export function scoreBronzeDetail(
+  inputs: CardInputs,
+  derived: DerivedCard,
+  actual: ActualResults,
+): CategoryAccuracy {
+  return sum(
+    scoreFinishMatchDetail(derived.bronzePair, actual.bronzeMatch),
+    exactScoreDetail(inputs.finishScores.bronze, actual.bronzeMatch),
+  );
+}
+
+export function scoreFinalDetail(
+  inputs: CardInputs,
+  derived: DerivedCard,
+  actual: ActualResults,
+): CategoryAccuracy {
+  return sum(
+    scoreFinalTeamDetail(derived, actual),
+    exactScoreDetail(inputs.finishScores.final, actual.finalMatch),
+  );
 }

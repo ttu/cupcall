@@ -7,6 +7,7 @@ import {
   buildKnockoutSlotDeltasForTest,
   buildKnockoutMilestoneDeltasForTest,
   buildLastDayPoints,
+  findOverallGroupCompletionDate,
 } from '@/shared/race-chart';
 
 // Minimal MatchRow factory for knockout matches
@@ -337,5 +338,47 @@ describe('buildLastDayPoints during knockout (R32) phase', () => {
     const result = buildLastDayPoints([], allMatches, [], tournamentWithR16, []);
 
     expect(result).toBeNull();
+  });
+});
+
+// Minimal MatchRow factory for group matches
+function groupMatch(id: string, groupId: string, kickoff: string, final: boolean): MatchRow {
+  return {
+    id,
+    tournamentId: tournamentId(miniTournament.id),
+    stage: 'group',
+    groupId,
+    homeTeamId: `${groupId}1`,
+    awayTeamId: `${groupId}2`,
+    kickoff: new Date(kickoff),
+    homeGoals: final ? 1 : null,
+    awayGoals: final ? 0 : null,
+    homeConduct: null,
+    awayConduct: null,
+    winnerTeamId: null,
+    decidedBy: null,
+    status: final ? 'final' : 'scheduled',
+  };
+}
+
+describe('findOverallGroupCompletionDate', () => {
+  it('returns the latest completion date across all groups', () => {
+    // miniTournament has 4 groups (A, B, C, D); every group must be final for the
+    // overall date to resolve, so C and D need matches too (finishing earlier than B).
+    const allMatches: MatchRow[] = [
+      groupMatch('mA1', 'A', '2026-07-01T18:00:00Z', true),
+      groupMatch('mB1', 'B', '2026-07-03T18:00:00Z', true), // group B finishes later
+      groupMatch('mC1', 'C', '2026-07-01T18:00:00Z', true),
+      groupMatch('mD1', 'D', '2026-07-01T18:00:00Z', true),
+    ];
+    expect(findOverallGroupCompletionDate(allMatches, miniTournament)).toBe('2026-07-03');
+  });
+
+  it('returns null when any group is not yet fully final', () => {
+    const allMatches: MatchRow[] = [
+      groupMatch('mA1', 'A', '2026-07-01T18:00:00Z', true),
+      groupMatch('mB1', 'B', '2026-07-03T18:00:00Z', false), // group B not final
+    ];
+    expect(findOverallGroupCompletionDate(allMatches, miniTournament)).toBeNull();
   });
 });

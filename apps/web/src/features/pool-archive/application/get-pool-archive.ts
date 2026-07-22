@@ -43,6 +43,12 @@ export async function getPoolArchiveView(
     entries: entryViews,
     recap: archive.recap,
     leadChanges: archive.recap ? computeLeadChanges(historyPlayers, stages) : [],
-    biggestRiser: archive.recap ? computeBiggestRiser(historyPlayers, stages) : null,
+    biggestRiser: archive.recap
+      ? computeBiggestRiser(
+          historyPlayers,
+          stages,
+          (archive.recap.groupCompletionStageIndex ?? 0) + 1,
+        )
+      : null,
   };
 }

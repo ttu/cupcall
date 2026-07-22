@@ -18,3 +18,4 @@ export { ArchiveHeroCard } from './ui/ArchiveHeroCard';
 export { ArchiveHighlightsPanel } from './ui/ArchiveHighlightsPanel';
 export { ArchiveLeadChangesPanel } from './ui/ArchiveLeadChangesPanel';
 export { ArchiveStatTiles } from './ui/ArchiveStatTiles';
+export { ArchivePoolStatsPanel } from './ui/ArchivePoolStatsPanel';

@@ -17,6 +17,7 @@ import {
   ArchiveHighlightsPanel,
   ArchiveLeadChangesPanel,
   ArchiveStatTiles,
+  ArchivePoolStatsPanel,
   toRaceChartData,
 } from '@/features/pool-archive';
 import { RaceChart } from '@/features/results';
@@ -104,6 +105,7 @@ export default async function PoolArchivePage({ params }: Props): Promise<ReactE
                 </div>
               )}
               <ArchiveStatTiles matchesPlayed={matchesPlayed} recap={archive.recap} />
+              <ArchivePoolStatsPanel recap={archive.recap} />
             </div>
 
             <div className="flex flex-col gap-4 min-w-0">

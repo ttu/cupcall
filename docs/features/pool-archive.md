@@ -150,6 +150,17 @@ that are never user-deletable):
   - **Biggest upset called** — the resolved knockout tie with the fewest (but nonzero) correct picks
     on the actual winner, via the existing `resolveActualWinner` helper (`MatchRow.winnerTeamId` is
     only populated for penalty-shootout wins, so this must never read it directly).
+  - **Pool statistics** (`overallAccuracyPercent`, `groupStageLeader`, `knockoutStageLeader`,
+    `groupCompletionStageIndex`) — frozen at archive time alongside the other recap fields.
+    `overallAccuracyPercent` sums hit/attempted accuracy detail (`AccuracyBreakdown`, from
+    `@cup/engine`'s `scoreCardAccuracy`) across every member with a prediction record, using their
+    full `CardInputs`, assembled and augmented the same way `rescoreCard` already does for real
+    scoring — so it can never disagree with the actual points. Members with no prediction row at
+    all are skipped entirely (contribute neither hits nor attempted), matching how real scoring
+    never scores them either. `groupStageLeader`/`knockoutStageLeader` read `pointsHistory` at the
+    group-completion stage index and at tournament end. `groupCompletionStageIndex` is also used to
+    restrict `computeBiggestRiser` to knockout-stage-onward transitions (see below), since
+    group-stage rank swings are mostly noise (many matches resolve per day across a large pool).
   - **Predictions made** / **pool exact-score rate** — simple pool-wide aggregates.
   - **Points-race chart** — the existing `buildRaceChartData`'s output (stage labels + per-member
     cumulative points), frozen verbatim rather than recomputed live. Stage labels are calendar dates
@@ -157,8 +168,10 @@ that are never user-deletable):
     based chart rather than building a second milestone-based variant.
   - **Biggest riser** / **Lead changes** — derived (not stored) from the frozen per-member
     `points_history` at _view_ time, via `race-history.ts`'s pure `computeBiggestRiser`/
-    `computeLeadChanges`. Both use `displayName`-ascending tiebreaks for equal points, matching
-    `getLeaderboard`'s existing convention.
+    `computeLeadChanges`. `computeBiggestRiser` only scans transitions from the group-stage-complete
+    point onward (`recap.groupCompletionStageIndex + 1`), since group-stage rank jumps are mostly
+    noise; `computeLeadChanges` still scans the full tournament. Both use `displayName`-ascending
+    tiebreaks for equal points, matching `getLeaderboard`'s existing convention.
   - **Per-member "stage reasons"** — a short, template-filled reason for each stage transition
     (e.g. `"5 exact scores"`, `"ARG, BRA advance as picked"`, `"Champion pick correct"`), used by the
     lead-changes/biggest-riser UI. Template-filled from bounded aggregates computed at archive time —

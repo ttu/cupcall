@@ -2,7 +2,7 @@ import { integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-o
 import { pools } from './pools';
 import { users } from './auth';
 import type { ScoreBreakdown } from '@cup/engine';
-import type { TeamId, MatchId } from '@cup/engine';
+import type { TeamId, MatchId, UserId } from '@cup/engine';
 
 export type ChampionPickHighlight = {
   teamId: TeamId;
@@ -31,6 +31,8 @@ export type BiggestUpsetHighlight = {
   total: number;
 };
 
+export type StageLeader = { userId: UserId; displayName: string; points: number };
+
 export type PoolArchiveRecap = {
   stages: string[];
   championPick: ChampionPickHighlight | null;
@@ -38,6 +40,10 @@ export type PoolArchiveRecap = {
   biggestUpset: BiggestUpsetHighlight | null;
   predictionsMade: number;
   exactScoreRatePercent: number;
+  overallAccuracyPercent: number;
+  groupCompletionStageIndex: number;
+  groupStageLeader: StageLeader | null;
+  knockoutStageLeader: StageLeader | null;
 };
 
 export const poolArchives = pgTable(

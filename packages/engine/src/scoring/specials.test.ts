@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { teamId, playerId } from '../brand.js';
 import { miniScoring } from '../__fixtures__/mini-tournament.js';
 import type { CardInputs, ActualResults } from '../types.js';
-import { scoreSpecials } from './specials.js';
+import { scoreSpecials, scoreSpecialsDetail } from './specials.js';
 
 const SCORER = playerId('FRA-9');
 const RED_CARD = playerId('GER-4');
@@ -317,5 +317,106 @@ describe('scoreSpecials — full house', () => {
       },
     );
     expect(scoreSpecials(inputs, actual, miniScoring)).toBe(140);
+  });
+});
+
+describe('scoreSpecialsDetail', () => {
+  it('one correct pick among several attempted → counts hits and attempted separately', () => {
+    const inputs = makeInputs({ topScorerPlayer: SCORER, groupTopScoringTeam: ARG });
+    const actual = makeActual({ topScorerPlayer: [SCORER], groupTopScoringTeam: [ESP] });
+    // topScorerPlayer: hit; groupTopScoringTeam: attempted but wrong
+    expect(scoreSpecialsDetail(inputs, actual)).toEqual({ hits: 1, attempted: 2 });
+  });
+
+  it('unattempted bets (no prediction) are excluded from the denominator', () => {
+    const inputs = makeInputs({ topScorerPlayer: SCORER });
+    const actual = makeActual({ topScorerPlayer: [SCORER], groupTopScoringTeam: [ESP] });
+    // groupTopScoringTeam has an actual answer but the user never picked it → not attempted
+    expect(scoreSpecialsDetail(inputs, actual)).toEqual({ hits: 1, attempted: 1 });
+  });
+
+  it('unresolved bets (no actual answer yet) are excluded from the denominator', () => {
+    const inputs = makeInputs({ topScorerPlayer: SCORER, groupTopScoringTeam: ESP });
+    const actual = makeActual({ topScorerPlayer: [SCORER] }); // groupTopScoringTeam unresolved
+    expect(scoreSpecialsDetail(inputs, actual)).toEqual({ hits: 1, attempted: 1 });
+  });
+
+  it('all 11 bets correct → 11 hits of 11 attempted', () => {
+    const inputs = makeInputs({
+      topScorerPlayer: SCORER,
+      groupTopScoringTeam: ESP,
+      groupTopConcedingTeam: RSA,
+      tournamentTopScoringTeam: ARG,
+      tournamentTopConcedingTeam: RSA,
+      highestMatchGoals: 7,
+      mostYellowCardsTeam: CRO,
+      firstRedCardPlayer: RED_CARD,
+      penaltyShootoutCount: 5,
+      finalDecidedByPenalties: true,
+      finalDecisiveGoalPlayer: GOAL_SCORER,
+    });
+    const actual = makeActual(
+      {
+        topScorerPlayer: [SCORER],
+        groupTopScoringTeam: [ESP],
+        groupTopConcedingTeam: [RSA],
+        tournamentTopScoringTeam: [ARG],
+        tournamentTopConcedingTeam: [RSA],
+        highestMatchGoals: 7,
+        mostYellowCardsTeam: [CRO],
+        firstRedCardPlayer: RED_CARD,
+        penaltyShootoutCount: 5,
+      },
+      {
+        home: ARG,
+        away: teamId('FRA'),
+        homeGoals: 3,
+        awayGoals: 2,
+        winner: ARG,
+        decidedBy: 'penalties',
+        decisiveGoalPlayer: GOAL_SCORER,
+      },
+    );
+    expect(scoreSpecialsDetail(inputs, actual)).toEqual({ hits: 11, attempted: 11 });
+  });
+
+  describe('finalDecidedByPenalties', () => {
+    it('predicted false, actual regulation (not by penalties) → hit', () => {
+      const inputs = makeInputs({ finalDecidedByPenalties: false });
+      const actual = makeActual(
+        {},
+        {
+          home: ARG,
+          away: teamId('FRA'),
+          homeGoals: 1,
+          awayGoals: 0,
+          winner: ARG,
+          decidedBy: 'regulation',
+        },
+      );
+      expect(scoreSpecialsDetail(inputs, actual)).toEqual({ hits: 1, attempted: 1 });
+    });
+
+    it('predicted true, actual regulation (not by penalties) → miss', () => {
+      const inputs = makeInputs({ finalDecidedByPenalties: true });
+      const actual = makeActual(
+        {},
+        {
+          home: ARG,
+          away: teamId('FRA'),
+          homeGoals: 1,
+          awayGoals: 0,
+          winner: ARG,
+          decidedBy: 'regulation',
+        },
+      );
+      expect(scoreSpecialsDetail(inputs, actual)).toEqual({ hits: 0, attempted: 1 });
+    });
+
+    it('predicted defined, finalMatch absent → not attempted', () => {
+      const inputs = makeInputs({ finalDecidedByPenalties: true });
+      const actual = makeActual({});
+      expect(scoreSpecialsDetail(inputs, actual)).toEqual({ hits: 0, attempted: 0 });
+    });
   });
 });

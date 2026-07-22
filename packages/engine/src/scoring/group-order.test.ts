@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { groupId, teamId } from '../brand.js';
 import { miniScoring } from '../__fixtures__/mini-tournament.js';
 import type { DerivedCard, ActualResults } from '../types.js';
-import { scoreGroupOrder } from './group-order.js';
+import { scoreGroupOrder, scoreGroupOrderDetail } from './group-order.js';
 
 // Helper to build minimal DerivedCard with only groupOrders populated
 function makeDerived(groupOrders: DerivedCard['groupOrders']): DerivedCard {
@@ -90,5 +90,37 @@ describe('scoreGroupOrder', () => {
       // gB absent
     });
     expect(scoreGroupOrder(derived, actual, miniScoring)).toBe(6);
+  });
+});
+
+describe('scoreGroupOrderDetail', () => {
+  it('all 4 positions correct → 4 hits of 4 attempted', () => {
+    const derived = makeDerived({ [gA]: [A1, A2, A3, A4] });
+    const actual = makeActual({ [gA]: [A1, A2, A3, A4] });
+    expect(scoreGroupOrderDetail(derived, actual)).toEqual({ hits: 4, attempted: 4 });
+  });
+
+  it('2 positions correct → 2 hits of 4 attempted', () => {
+    const derived = makeDerived({ [gA]: [A1, A2, A3, A4] });
+    const actual = makeActual({ [gA]: [A1, A3, A2, A4] });
+    expect(scoreGroupOrderDetail(derived, actual)).toEqual({ hits: 2, attempted: 4 });
+  });
+
+  it('group absent from actual → not attempted', () => {
+    const derived = makeDerived({ [gA]: [A1, A2, A3, A4] });
+    const actual = makeActual({});
+    expect(scoreGroupOrderDetail(derived, actual)).toEqual({ hits: 0, attempted: 0 });
+  });
+
+  it('multi-group sums across groups', () => {
+    const derived = makeDerived({
+      [gA]: [A1, A2, A3, A4], // 4 correct
+      [gB]: [B1, B2, B3, B4], // 2 correct (B1, B4)
+    });
+    const actual = makeActual({
+      [gA]: [A1, A2, A3, A4],
+      [gB]: [B1, B3, B2, B4],
+    });
+    expect(scoreGroupOrderDetail(derived, actual)).toEqual({ hits: 6, attempted: 8 });
   });
 });

@@ -238,7 +238,7 @@ function buildGroupMatchIdsByGroup(def: Tournament): Map<string, Set<string>> {
 }
 
 /** The date the group's last match kicked off, or null if the group isn't fully final yet. */
-function findGroupCompletionDate(groupMatches: MatchRow[]): string | null {
+export function findGroupCompletionDate(groupMatches: MatchRow[]): string | null {
   if (!groupMatches.every((m) => m.status === 'final')) return null;
 
   const withKickoff = groupMatches.filter((m) => m.kickoff !== null);
@@ -249,6 +249,26 @@ function findGroupCompletionDate(groupMatches: MatchRow[]): string | null {
     withKickoff[0]!,
   );
   return utcDateStr(lastMatch.kickoff!);
+}
+
+/**
+ * The date the group stage as a whole completed — the latest of every individual group's own
+ * completion date. Returns null if any group isn't fully final yet (shouldn't happen once a pool
+ * is archived, since archiving only happens for a finished tournament).
+ */
+export function findOverallGroupCompletionDate(
+  allMatches: MatchRow[],
+  def: Tournament,
+): string | null {
+  const dates: string[] = [];
+  for (const group of def.groups) {
+    const groupMatches = allMatches.filter((m) => m.stage === 'group' && m.groupId === group.id);
+    const date = findGroupCompletionDate(groupMatches);
+    if (date === null) return null;
+    dates.push(date);
+  }
+  if (dates.length === 0) return null;
+  return dates.reduce((max, d) => (d > max ? d : max), dates[0]!);
 }
 
 function countMatchingPositions(userOrder: TeamId[], actualOrder: TeamId[]): number {

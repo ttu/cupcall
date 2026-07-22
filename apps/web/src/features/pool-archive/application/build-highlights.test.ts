@@ -13,6 +13,7 @@ import {
   computeBiggestUpset,
   computePredictionsMade,
   computeExactScoreRatePercent,
+  computeStageLeaders,
 } from './build-highlights';
 
 const GROUP_SCORING = { exactScore: 6, correctOutcome: 3 };
@@ -267,5 +268,53 @@ describe('computeExactScoreRatePercent', () => {
 
   it('returns 0 when there are no group guesses on final matches', () => {
     expect(computeExactScoreRatePercent([], [], GROUP_SCORING)).toBe(0);
+  });
+});
+
+describe('computeStageLeaders', () => {
+  it('finds the group-stage leader from pointsHistory at the completion index, and the knockout leader from final totals', () => {
+    const entries = [
+      { userId: asUserId('u1'), displayName: 'Alice', pointsTotal: 50 },
+      { userId: asUserId('u2'), displayName: 'Bob', pointsTotal: 80 },
+    ];
+    const pointsHistory = new Map([
+      [asUserId('u1'), [0, 42, 50]], // leads at index 1 (group stage complete)
+      [asUserId('u2'), [0, 20, 80]], // overtakes by the end
+    ]);
+
+    const result = computeStageLeaders(entries, pointsHistory, 1);
+
+    expect(result.groupStageLeader).toEqual({
+      userId: asUserId('u1'),
+      displayName: 'Alice',
+      points: 42,
+    });
+    expect(result.knockoutStageLeader).toEqual({
+      userId: asUserId('u2'),
+      displayName: 'Bob',
+      points: 80,
+    });
+  });
+
+  it('shows the same person for both leaders when there is no lead change', () => {
+    const entries = [
+      { userId: asUserId('u1'), displayName: 'Alice', pointsTotal: 90 },
+      { userId: asUserId('u2'), displayName: 'Bob', pointsTotal: 60 },
+    ];
+    const pointsHistory = new Map([
+      [asUserId('u1'), [0, 42, 90]],
+      [asUserId('u2'), [0, 20, 60]],
+    ]);
+
+    const result = computeStageLeaders(entries, pointsHistory, 1);
+
+    expect(result.groupStageLeader?.displayName).toBe('Alice');
+    expect(result.knockoutStageLeader?.displayName).toBe('Alice');
+  });
+
+  it('returns null leaders when there are no entries', () => {
+    const result = computeStageLeaders([], new Map(), 1);
+    expect(result.groupStageLeader).toBeNull();
+    expect(result.knockoutStageLeader).toBeNull();
   });
 });

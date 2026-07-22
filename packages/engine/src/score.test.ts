@@ -3,7 +3,7 @@ import { teamId, playerId, matchId, groupId, bracketMatchKey, type TeamId } from
 import { miniTournament, miniScoring } from './__fixtures__/mini-tournament.js';
 import type { CardInputs, DerivedCard, ActualResults } from './types.js';
 import { deriveCard } from './derive.js';
-import { scoreCard } from './score.js';
+import { scoreCard, scoreCardAccuracy } from './score.js';
 
 // ---- Shared full-prediction fixtures ----
 
@@ -382,5 +382,63 @@ describe('scoreCard — SF position bonus survives a deleted explicit Final pick
     // 4 correct semifinalists (membership) + all 4 correct positions (bonus).
     expect(breakdown.topFourPosition).toBeGreaterThan(0);
     expect(breakdown.topFourPosition).toBe(4 * miniScoring.topFourPositionBonus);
+  });
+});
+
+describe('scoreCardAccuracy — §7.7 worked example', () => {
+  it('total.attempted matches the number of resolved categories, total.hits matches earned credit', () => {
+    const accuracy = scoreCardAccuracy(derived77, inputs77, actual77);
+
+    // groupMatches: 2 attempted (1 outcome hit + 1 exact hit) → 2 hits, 2 attempted
+    expect(accuracy.groupMatches).toEqual({ hits: 2, attempted: 2 });
+    // groupOrder: group A, 4 slots attempted, 2 correct
+    expect(accuracy.groupOrder).toEqual({ hits: 2, attempted: 4 });
+    // roundOf8: 6 of 8 attempted correct
+    expect(accuracy.roundOf8).toEqual({ hits: 6, attempted: 8 });
+    // topFourTeams: all 4 predicted semifinalists confirmed
+    expect(accuracy.topFourTeams).toEqual({ hits: 4, attempted: 4 });
+    // topFourPosition: Final played (2 slots attempted), Bronze not played; ARG/FRA both correct
+    expect(accuracy.topFourPosition).toEqual({ hits: 2, attempted: 2 });
+    // final: 2 teams + 1 exact, all correct
+    expect(accuracy.final).toEqual({ hits: 3, attempted: 3 });
+    // bronze: no bronzeMatch in actual → nothing attempted
+    expect(accuracy.bronze).toEqual({ hits: 0, attempted: 0 });
+    // specials: topScorerPlayer + finalDecidedByPenalties, both correct
+    expect(accuracy.specials).toEqual({ hits: 2, attempted: 2 });
+
+    const expectedTotalHits =
+      accuracy.groupMatches.hits +
+      accuracy.groupOrder.hits +
+      accuracy.roundOf8.hits +
+      accuracy.topFourTeams.hits +
+      accuracy.topFourPosition.hits +
+      accuracy.final.hits +
+      accuracy.bronze.hits +
+      accuracy.specials.hits;
+    const expectedTotalAttempted =
+      accuracy.groupMatches.attempted +
+      accuracy.groupOrder.attempted +
+      accuracy.roundOf8.attempted +
+      accuracy.topFourTeams.attempted +
+      accuracy.topFourPosition.attempted +
+      accuracy.final.attempted +
+      accuracy.bronze.attempted +
+      accuracy.specials.attempted;
+    expect(accuracy.total).toEqual({ hits: expectedTotalHits, attempted: expectedTotalAttempted });
+  });
+
+  it('a fully unfilled card has 0 attempted, not NaN', () => {
+    const emptyInputs: CardInputs = {
+      groupScores: [],
+      knockoutPicks: [],
+      finishScores: {},
+      specials: {},
+    };
+    const emptyActual: ActualResults = { matchResults: [], groupOrder: {}, answers: {} };
+    const derived = deriveCard(emptyInputs, miniTournament);
+
+    const accuracy = scoreCardAccuracy(derived, emptyInputs, emptyActual);
+
+    expect(accuracy.total).toEqual({ hits: 0, attempted: 0 });
   });
 });

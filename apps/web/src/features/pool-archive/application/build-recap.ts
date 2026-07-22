@@ -6,6 +6,9 @@ import {
   getFinishScoresByPool,
   getSpecialBetsByPool,
   getLeaderboard,
+  getActualResults,
+  getPrediction,
+  getPredictionInputs,
 } from '@cup/db';
 import type {
   MatchRow,
@@ -20,7 +23,17 @@ import {
   resolveActualWinner,
   computeHit,
 } from '@/features/results';
-import type { PoolId, TournamentId, Tournament, Scoring, UserId } from '@cup/engine';
+import { findOverallGroupCompletionDate } from '@/shared/race-chart';
+import { deriveCard, scoreCardAccuracy } from '@cup/engine';
+import type {
+  PoolId,
+  TournamentId,
+  Tournament,
+  Scoring,
+  UserId,
+  CardInputs,
+  ActualResults,
+} from '@cup/engine';
 import { userId as asUserId } from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
 import {
@@ -29,6 +42,7 @@ import {
   computeBiggestUpset,
   computePredictionsMade,
   computeExactScoreRatePercent,
+  computeStageLeaders,
   resolveEffectiveFinalePick,
 } from './build-highlights';
 
@@ -156,13 +170,70 @@ function buildStageReasons(
   return reasons;
 }
 
+/**
+ * Returns `null` when the member never created a prediction row at all — distinct from a member
+ * who has a card with some items left unfilled (e.g. a late joiner). Real scoring never scores a
+ * no-prediction member (their leaderboard `breakdown` is `null`), so this stat must not
+ * synthesize one either — see `computeOverallAccuracyPercent`.
+ */
+async function buildMemberCardInputs(
+  db: Db<AppSchema>,
+  poolId: PoolId,
+  userId: UserId,
+): Promise<CardInputs | null> {
+  const prediction = await getPrediction(db, poolId, userId);
+  if (!prediction) return null;
+  return getPredictionInputs(db, prediction.id);
+}
+
+/**
+ * Sums hit/attempted accuracy across every pool member's predictions. Mirrors
+ * `@/shared/card-scoring`'s `rescoreCard` augmentation exactly (fills in actual results for any
+ * match a member didn't predict) so this can't diverge from what real scoring already computes.
+ *
+ * Members with no prediction row at all are skipped entirely (contribute 0/0) rather than run
+ * through the augmentation pipeline: an empty `CardInputs` has no saved group scores, so every
+ * match would get backfilled with the real result and `groupOrder` accuracy would come out as a
+ * phantom ~100% for someone who never predicted anything.
+ */
+async function computeOverallAccuracyPercent(
+  db: Db<AppSchema>,
+  poolId: PoolId,
+  leaderboard: { userId: UserId }[],
+  def: Tournament,
+  actual: ActualResults,
+): Promise<number> {
+  const memberInputs = await Promise.all(
+    leaderboard.map((entry) => buildMemberCardInputs(db, poolId, entry.userId)),
+  );
+
+  let totalHits = 0;
+  let totalAttempted = 0;
+
+  for (const inputs of memberInputs) {
+    if (!inputs) continue;
+
+    const savedMatchIds = new Set(inputs.groupScores.map((gs) => gs.matchId as string));
+    const augmentedGroupScores = [
+      ...inputs.groupScores,
+      ...actual.matchResults.filter((r) => !savedMatchIds.has(r.matchId as string)),
+    ];
+    const derived = deriveCard({ ...inputs, groupScores: augmentedGroupScores }, def);
+    const accuracy = scoreCardAccuracy(derived, inputs, actual);
+    totalHits += accuracy.total.hits;
+    totalAttempted += accuracy.total.attempted;
+  }
+
+  return totalAttempted > 0 ? Math.round((totalHits / totalAttempted) * 100) : 0;
+}
+
 export async function buildPoolArchiveRecap(
   db: Db<AppSchema>,
   params: { poolId: PoolId; tournamentId: TournamentId; def: Tournament; scoring: Scoring },
 ): Promise<{ recap: PoolArchiveRecap; entryExtras: Map<UserId, EntryRecapExtras> }> {
   const { poolId, tournamentId, def, scoring } = params;
 
-  const [leaderboard, allMatches, groupScores, knockoutPicks, finishScores, specialBets] =
+  const [leaderboard, allMatches, groupScores, knockoutPicks, finishScores, specialBets, actual] =
     await Promise.all([
       getLeaderboard(db, poolId),
       getMatchesForTournament(db, tournamentId),
@@ -170,6 +241,7 @@ export async function buildPoolArchiveRecap(
       getKnockoutPicksByPool(db, poolId),
       getFinishScoresByPool(db, poolId),
       getSpecialBetsByPool(db, poolId),
+      getActualResults(db, tournamentId),
     ]);
 
   const totalMembers = leaderboard.length;
@@ -197,6 +269,21 @@ export async function buildPoolArchiveRecap(
     });
   }
 
+  const groupCompletionDate = findOverallGroupCompletionDate(allMatches, def);
+  const eventDates = buildRaceEventDates(allMatches);
+  const groupCompletionStageIndex = groupCompletionDate
+    ? eventDates.indexOf(groupCompletionDate) + 1
+    : 0;
+
+  const pointsHistoryByUser = new Map(
+    [...entryExtras.entries()].map(([uid, extras]) => [uid, extras.pointsHistory]),
+  );
+  const { groupStageLeader, knockoutStageLeader } = computeStageLeaders(
+    leaderboard,
+    pointsHistoryByUser,
+    groupCompletionStageIndex,
+  );
+
   const recap: PoolArchiveRecap = {
     stages: raceChart.chartStages,
     championPick: computeChampionPick(knockoutPicks, finishScores, def, totalMembers),
@@ -219,6 +306,16 @@ export async function buildPoolArchiveRecap(
       allMatches,
       scoring.groupMatch,
     ),
+    overallAccuracyPercent: await computeOverallAccuracyPercent(
+      db,
+      poolId,
+      leaderboard,
+      def,
+      actual,
+    ),
+    groupCompletionStageIndex,
+    groupStageLeader,
+    knockoutStageLeader,
   };
 
   return { recap, entryExtras };

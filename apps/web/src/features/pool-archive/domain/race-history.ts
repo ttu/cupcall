@@ -65,13 +65,14 @@ export function computeLeadChanges(
 export function computeBiggestRiser(
   players: StageHistoryPlayer[],
   stages: string[],
+  knockoutStartIndex: number,
 ): BiggestRiserEvent {
   if (players.length < 2 || stages.length < 2) return null;
 
   let best: BiggestRiserEvent = null;
   let bestImprovement = 0;
 
-  for (let stageIndex = 1; stageIndex < stages.length; stageIndex++) {
+  for (let stageIndex = Math.max(1, knockoutStartIndex); stageIndex < stages.length; stageIndex++) {
     const previousRanks = rankAtStage(players, stageIndex - 1);
     const currentRanks = rankAtStage(players, stageIndex);
 

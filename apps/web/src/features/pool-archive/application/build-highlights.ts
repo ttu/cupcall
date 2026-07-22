@@ -3,6 +3,7 @@ import type {
   ChampionPickHighlight,
   BestSingleMatchHighlight,
   BiggestUpsetHighlight,
+  StageLeader,
 } from '@cup/db';
 import type { Tournament, TeamId, UserId } from '@cup/engine';
 import { matchId as asMatchId } from '@cup/engine';
@@ -45,6 +46,41 @@ export function resolveEffectiveFinalePick(
       deriveImplicitFinaleWinner(matchKey, def.bracket, pickMap, home, away),
     )
   );
+}
+
+export function computeStageLeaders(
+  entries: { userId: UserId; displayName: string; pointsTotal: number }[],
+  pointsHistory: Map<UserId, number[]>,
+  groupCompletionStageIndex: number,
+): { groupStageLeader: StageLeader | null; knockoutStageLeader: StageLeader | null } {
+  if (entries.length === 0) {
+    return { groupStageLeader: null, knockoutStageLeader: null };
+  }
+
+  let groupStageLeader: StageLeader | null = null;
+  let bestGroupPoints = -Infinity;
+  for (const entry of entries) {
+    const points = pointsHistory.get(entry.userId)?.[groupCompletionStageIndex] ?? 0;
+    if (points > bestGroupPoints) {
+      bestGroupPoints = points;
+      groupStageLeader = { userId: entry.userId, displayName: entry.displayName, points };
+    }
+  }
+
+  let knockoutStageLeader: StageLeader | null = null;
+  let bestFinalPoints = -Infinity;
+  for (const entry of entries) {
+    if (entry.pointsTotal > bestFinalPoints) {
+      bestFinalPoints = entry.pointsTotal;
+      knockoutStageLeader = {
+        userId: entry.userId,
+        displayName: entry.displayName,
+        points: entry.pointsTotal,
+      };
+    }
+  }
+
+  return { groupStageLeader, knockoutStageLeader };
 }
 
 export function computeChampionPick(

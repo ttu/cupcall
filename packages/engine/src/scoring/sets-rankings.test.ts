@@ -2,7 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { teamId, type TeamId } from '../brand.js';
 import { miniScoring } from '../__fixtures__/mini-tournament.js';
 import type { DerivedCard, ActualResults } from '../types.js';
-import { scoreRoundOf16, scoreRoundOf8, scoreTopFour } from './sets-rankings.js';
+import {
+  scoreRoundOf16,
+  scoreRoundOf8,
+  scoreTopFour,
+  scoreRoundOf16Detail,
+  scoreRoundOf8Detail,
+  scoreTopFourTeamsDetail,
+  scoreTopFourPositionDetail,
+} from './sets-rankings.js';
 
 // Team ids used in tests
 const A1 = teamId('A1');
@@ -314,5 +322,132 @@ describe('scoreTopFour', () => {
       bronzeMatch: { home: NED, away: POR, homeGoals: 1, awayGoals: 0, winner: NED },
     });
     expect(scoreTopFour(derived, actual, miniScoring)).toBe(20); // membership only
+  });
+
+  it('regression: position bonus credits a partial topFour (Final winner picked only), not gated to all-or-nothing', () => {
+    // derived.topFour has only 1 of 4 slots (Final winner) — the player made no Bronze pick.
+    // That one correctly-predicted slot must still earn its position bonus.
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [ARG]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 2, awayGoals: 1, winner: ARG },
+    });
+    // membership: 4 × 5 = 20; position: 1 × 3 = 3 (Final-winner slot only)
+    expect(scoreTopFour(derived, actual, miniScoring)).toBe(23);
+  });
+});
+
+describe('scoreRoundOf16Detail', () => {
+  it('12 of 16 correct → 12 hits of 16 attempted', () => {
+    const r16 = [
+      A1,
+      A2,
+      A3,
+      A4,
+      B1,
+      B2,
+      B3,
+      B4,
+      teamId('C1'),
+      teamId('C2'),
+      teamId('C3'),
+      teamId('C4'),
+      teamId('D1'),
+      teamId('D2'),
+      teamId('D3'),
+      teamId('D4'),
+    ];
+    const actual16 = [
+      A1,
+      A2,
+      A3,
+      A4,
+      B1,
+      B2,
+      B3,
+      B4,
+      teamId('C1'),
+      teamId('C2'),
+      teamId('C3'),
+      teamId('C4'),
+      teamId('E1'),
+      teamId('E2'),
+      teamId('E3'),
+      teamId('E4'),
+    ];
+    const derived = makeDerived([], [], r16);
+    const actual = makeActual({ roundOf16: actual16 });
+    expect(scoreRoundOf16Detail(derived, actual)).toEqual({ hits: 12, attempted: 16 });
+  });
+
+  it('absent actual roundOf16 → not attempted', () => {
+    const derived = makeDerived([], [], [A1, A2]);
+    const actual = makeActual({});
+    expect(scoreRoundOf16Detail(derived, actual)).toEqual({ hits: 0, attempted: 0 });
+  });
+});
+
+describe('scoreRoundOf8Detail', () => {
+  it('6 of 8 correct → 6 hits of 8 attempted', () => {
+    const derived = makeDerived([A1, A2, A3, A4, B1, B2, B3, B4], []);
+    const actual = makeActual({ roundOf8: [A1, A2, A3, A4, B1, B2, teamId('C1'), teamId('C2')] });
+    expect(scoreRoundOf8Detail(derived, actual)).toEqual({ hits: 6, attempted: 8 });
+  });
+});
+
+describe('scoreTopFourTeamsDetail', () => {
+  it('2 of 4 predicted teams confirmed → 2 hits of 4 attempted', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR]);
+    const actual = makeActual({ roundOf4: [ARG, FRA, teamId('X1'), teamId('X2')] });
+    expect(scoreTopFourTeamsDetail(derived, actual)).toEqual({ hits: 2, attempted: 4 });
+  });
+
+  it('absent actual roundOf4 → not attempted', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR]);
+    const actual = makeActual({});
+    expect(scoreTopFourTeamsDetail(derived, actual)).toEqual({ hits: 0, attempted: 0 });
+  });
+});
+
+describe('scoreTopFourPositionDetail', () => {
+  it('all 4 slots correct when Final and Bronze both resolve as predicted → 4 hits of 4 attempted', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [ARG, FRA, NED, POR]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 2, awayGoals: 1, winner: ARG },
+      bronzeMatch: { home: NED, away: POR, homeGoals: 1, awayGoals: 0, winner: NED },
+    });
+    expect(scoreTopFourPositionDetail(derived, actual)).toEqual({ hits: 4, attempted: 4 });
+  });
+
+  it('Final slots swapped → 0 hits of 2 attempted (Bronze not played)', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [ARG, FRA, NED, POR]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 1, awayGoals: 2, winner: FRA },
+    });
+    expect(scoreTopFourPositionDetail(derived, actual)).toEqual({ hits: 0, attempted: 2 });
+  });
+
+  it('no Final/Bronze picks made → not attempted even once both matches resolve', () => {
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], []); // no topFour picks
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 2, awayGoals: 1, winner: ARG },
+      bronzeMatch: { home: NED, away: POR, homeGoals: 1, awayGoals: 0, winner: NED },
+    });
+    expect(scoreTopFourPositionDetail(derived, actual)).toEqual({ hits: 0, attempted: 0 });
+  });
+
+  it('regression: partial topFour (Final winner picked only) still credits that one slot — not gated to all-or-nothing', () => {
+    // Only the Final-winner slot is populated (derived.topFour.length === 1); the player never
+    // made a Final-loser/Bronze pick. This must not zero out the one slot that IS resolvable —
+    // see DerivedCard.topFour, which may hold fewer than 4 entries for a partial card.
+    const derived = makeDerived([], [ARG, FRA, NED, POR], [], [ARG]);
+    const actual = makeActual({
+      roundOf4: [ARG, FRA, NED, POR],
+      finalMatch: { home: ARG, away: FRA, homeGoals: 2, awayGoals: 1, winner: ARG },
+    });
+    expect(scoreTopFourPositionDetail(derived, actual)).toEqual({ hits: 1, attempted: 1 });
   });
 });

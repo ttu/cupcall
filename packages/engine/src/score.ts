@@ -1,16 +1,33 @@
-import type { CardInputs, DerivedCard, ActualResults, Scoring, ScoreBreakdown } from './types.js';
+import type {
+  CardInputs,
+  DerivedCard,
+  ActualResults,
+  Scoring,
+  ScoreBreakdown,
+  AccuracyBreakdown,
+  CategoryAccuracy,
+} from './types.js';
 import { points } from './brand.js';
-import { scoreGroupMatches } from './scoring/group-matches.js';
-import { scoreGroupOrder } from './scoring/group-order.js';
-import { scoreBronze, scoreFinal } from './scoring/finish-matches.js';
+import { scoreGroupMatches, scoreGroupMatchesDetail } from './scoring/group-matches.js';
+import { scoreGroupOrder, scoreGroupOrderDetail } from './scoring/group-order.js';
+import {
+  scoreBronze,
+  scoreFinal,
+  scoreBronzeDetail,
+  scoreFinalDetail,
+} from './scoring/finish-matches.js';
 import {
   scoreRoundOf16,
   scoreRoundOf8,
   scoreTopFour,
   scoreTopFourTeams,
   scoreTopFourPosition,
+  scoreRoundOf16Detail,
+  scoreRoundOf8Detail,
+  scoreTopFourTeamsDetail,
+  scoreTopFourPositionDetail,
 } from './scoring/sets-rankings.js';
-import { scoreSpecials } from './scoring/specials.js';
+import { scoreSpecials, scoreSpecialsDetail } from './scoring/specials.js';
 
 export function scoreCard(
   derived: DerivedCard,
@@ -45,5 +62,51 @@ export function scoreCard(
     topFourPosition,
     specials,
     total,
+  };
+}
+
+function sumAccuracy(parts: CategoryAccuracy[]): CategoryAccuracy {
+  return parts.reduce(
+    (acc, p) => ({ hits: acc.hits + p.hits, attempted: acc.attempted + p.attempted }),
+    { hits: 0, attempted: 0 },
+  );
+}
+
+export function scoreCardAccuracy(
+  derived: DerivedCard,
+  inputs: CardInputs,
+  actual: ActualResults,
+): AccuracyBreakdown {
+  const groupMatches = scoreGroupMatchesDetail(inputs, actual);
+  const groupOrder = scoreGroupOrderDetail(derived, actual);
+  const bronze = scoreBronzeDetail(inputs, derived, actual);
+  const final = scoreFinalDetail(inputs, derived, actual);
+  const roundOf16 = scoreRoundOf16Detail(derived, actual);
+  const roundOf8 = scoreRoundOf8Detail(derived, actual);
+  const topFourTeams = scoreTopFourTeamsDetail(derived, actual);
+  const topFourPosition = scoreTopFourPositionDetail(derived, actual);
+  const specials = scoreSpecialsDetail(inputs, actual);
+
+  return {
+    groupMatches,
+    groupOrder,
+    bronze,
+    final,
+    roundOf16,
+    roundOf8,
+    topFourTeams,
+    topFourPosition,
+    specials,
+    total: sumAccuracy([
+      groupMatches,
+      groupOrder,
+      bronze,
+      final,
+      roundOf16,
+      roundOf8,
+      topFourTeams,
+      topFourPosition,
+      specials,
+    ]),
   };
 }

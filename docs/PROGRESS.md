@@ -816,6 +816,35 @@ implied Final winner was silently excluded from both the highlight and the narra
 - **Design/plan:** none written — small, well-scoped bugfix following an established pattern
   (see the SF Position bonus fix above), done directly via TDD.
 
+## Archive pool statistics (2026-07-20)
+
+Added three new pool-archive stats: a blended `overallAccuracyPercent` (any-credit-counts, across
+every prediction category), and `groupStageLeader`/`knockoutStageLeader` (points-leader callouts at
+group-stage-end and tournament-end). Also restricted `computeBiggestRiser` to knockout-stage-onward
+transitions — group-stage rank swings were mostly noise (many matches resolve per day across an
+11-member pool), making a "biggest riser" pulled from the group stage a misleading highlight.
+
+- **`packages/engine`** — every scoring category function now has a `scoreXxxDetail` sibling
+  reporting `{hits, attempted}`, derived from the exact same comparison used for points (never a
+  parallel calculation). New `scoreCardAccuracy(derived, inputs, actual): AccuracyBreakdown`
+  aggregates all categories. This is what makes `overallAccuracyPercent` unable to drift out of
+  sync with real scoring — the same bug class fixed in the R32/SF-position/champion-pick incidents
+  above was "correctness logic living outside the engine."
+- **`apps/web/src/features/pool-archive/application/build-recap.ts`** — assembles each member's
+  `CardInputs` via `getPrediction`/`getPredictionInputs` (mirroring `rescoreCard`'s late-joiner
+  augmentation exactly), sums `scoreCardAccuracy` across the pool for `overallAccuracyPercent`.
+  `groupCompletionStageIndex` computed via the new `findOverallGroupCompletionDate`
+  (`apps/web/src/shared/race-chart.ts`) resolved to a `stages` index.
+- **`apps/web/src/features/pool-archive/domain/race-history.ts`** — `computeBiggestRiser` gained a
+  required `knockoutStartIndex` parameter.
+- **`ArchivePoolStatsPanel`** (new) — renders the three stats on `/pools/[id]/archive`, below
+  `ArchiveStatTiles`.
+- No DB migration — `PoolArchiveRecap` is a `jsonb` column; new fields are TS-type-only.
+- **Rollout:** the prod WC2026 pool's frozen archive still has the old shape (missing these
+  fields) until the owner re-archives via the existing UI action (idempotent).
+- **Design/plan:** `docs/superpowers/specs/2026-07-20-archive-pool-statistics-design.md`,
+  `docs/superpowers/plans/2026-07-20-archive-pool-statistics.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:
