@@ -12,7 +12,7 @@ import { db } from '@/shared/db';
 import {
   getPoolArchiveView,
   ArchivePoolCard,
-  ArchiveMemberRow,
+  ArchiveStandingsPanel,
   ArchiveHeroCard,
   ArchiveHighlightsPanel,
   ArchiveLeadChangesPanel,
@@ -24,7 +24,7 @@ import {
 } from '@/features/pool-archive';
 import { RaceChart } from '@/features/results';
 import { BackLink } from '@/shared/ui';
-import { poolId as asPoolId } from '@cup/engine';
+import { poolId as asPoolId, computeRemainingMaxPoints } from '@cup/engine';
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -49,6 +49,7 @@ export default async function PoolArchivePage({ params }: Props): Promise<ReactE
   const isOwner = actor.userId === pool.ownerId;
   const scoring = tournament?.scoringConfig ?? null;
   const def = tournament?.definition ?? null;
+  const categoryMax = def ? computeRemainingMaxPoints(def, { finalMatchIds: new Set() }) : null;
 
   const finalMatch = actualResults.finalMatch;
   const final =
@@ -123,13 +124,12 @@ export default async function PoolArchivePage({ params }: Props): Promise<ReactE
             <p className="text-xs text-ink-muted">
               Archived on {archive.archivedAt.toLocaleDateString()} — {archive.tournamentName}
             </p>
-            {archive.entries.map((entry) => (
-              <ArchiveMemberRow
-                key={entry.userId ?? entry.displayName}
-                entry={entry}
-                scoring={scoring}
-              />
-            ))}
+            <ArchiveStandingsPanel
+              entries={archive.entries}
+              currentUserId={actor.userId}
+              scoring={scoring}
+              categoryMax={categoryMax}
+            />
           </div>
         </div>
       )}

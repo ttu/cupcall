@@ -9,12 +9,12 @@ export const AVATAR_PALETTE = [
   'oklch(0.55 0.16 320)',
 ];
 
-function initials(name: string): string {
+export function initials(name: string): string {
   const words = name.trim().split(/\s+/);
   const first = words[0] ?? '';
   if (words.length === 1) return first.slice(0, 2).toUpperCase();
   const second = words[1] ?? '';
-  return (first[0] ?? '' + (second[0] ?? '')).toUpperCase();
+  return ((first[0] ?? '') + (second[0] ?? '')).toUpperCase();
 }
 
 type AvatarProps = {

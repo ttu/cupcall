@@ -1,7 +1,7 @@
 # Archive score breakdown by category — design
 
 **Date:** 2026-07-22
-**Status:** Approved, not yet implemented
+**Status:** Implemented (`a3bee6f`)
 
 ## Problem
 

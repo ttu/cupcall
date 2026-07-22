@@ -867,6 +867,40 @@ over the pool's `leaderboard` (each entry already carries a full `ScoreBreakdown
   `docs/superpowers/specs/2026-07-22-archive-pool-stats-honorable-mentions-design.md`,
   `docs/superpowers/plans/2026-07-22-archive-pool-stats-honorable-mentions.md`.
 
+## Archive final standings redesign (2026-07-22)
+
+Replaced the archive page's stacked rank/name/accordion member rows (`ArchiveMemberRow`) with a
+single ranked list (`ArchiveStandingsPanel` + `ArchiveStandingRow`): medal-colored rank (gold/
+silver/bronze for 1–3), avatar, name, a "YOU" badge and green highlight for the current user, and
+points — matching the app's existing marketing-homepage leaderboard styling (`lb-row`/`lb-rank`/
+`lb-pts`). Clicking a row expands it in place into a per-category score breakdown with a progress
+bar per category (points earned vs. that category's theoretical max), computed via the engine's
+existing `computeRemainingMaxPoints(def, { finalMatchIds: new Set() })` — same call already used
+elsewhere (`results/application/build-race-view.ts`) with an empty progress set to get the absolute
+max. Multiple rows can be expanded independently.
+
+- Fixed a pre-existing bug in `shared/ui/Avatar.tsx`'s `initials()`: an operator-precedence bug
+  (`first[0] ?? '' + (second[0] ?? '')`) always dropped the second word's initial for multi-word
+  names ("Marko V." rendered as "M", not "MV"). This affects every place `Avatar` renders a
+  multi-word name, not just the archive page. Covered by a new `Avatar.test.ts` — this codebase has
+  no DOM/component test tooling (`@testing-library/react` isn't installed), so it's a pure-function
+  test against the exported `initials()`, consistent with how the rest of `shared/ui` is verified
+  (Storybook, not component tests).
+- Extracted `shared/ui/AvatarNameBadge.tsx` (avatar + name + optional "YOU" chip) — the same
+  composition was already duplicated in `results/ui/PredictionIdentityCell.tsx` and inline in
+  `results/ui/MatrixTable.tsx`; `PredictionIdentityCell` now delegates to it.
+  `MatrixTable`'s inline copy is untouched (splits avatar/name into separate sticky grid cells, not
+  a clean fit).
+- Known minor cosmetic quirk (pre-existing, not introduced by this change, out of scope): display
+  names with a trailing `" (late)"` suffix (late joiners) produce a two-character avatar like `N(`
+  — `initials()` just takes the first character of the second whitespace-separated "word", and
+  `(late)` counts as one. Not fixed here.
+- No DB/schema changes — `categoryMax` is derived page-side in `archive/page.tsx` from data already
+  loaded for the final-match card.
+- **Design/plan:**
+  `docs/superpowers/specs/2026-07-22-archive-final-standings-redesign-design.md`,
+  `docs/superpowers/plans/2026-07-22-archive-final-standings-redesign.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

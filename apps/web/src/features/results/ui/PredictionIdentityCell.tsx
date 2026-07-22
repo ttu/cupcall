@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Avatar } from '@/shared/ui';
+import { AvatarNameBadge } from '@/shared/ui';
 
 type Props = {
   testId: string;
@@ -19,13 +19,7 @@ export function PredictionIdentityCell({
 }: Props): ReactElement {
   return (
     <div data-testid={testId} className={className}>
-      <Avatar name={displayName} index={index} size={28} />
-      <span className="text-[13px] font-bold text-ink truncate">
-        {displayName}
-        {isCurrentUser && (
-          <span className="chip green h-4.5 ml-[7px] text-[9.5px] align-middle">YOU</span>
-        )}
-      </span>
+      <AvatarNameBadge name={displayName} avatarIndex={index} isCurrentUser={isCurrentUser} />
     </div>
   );
 }

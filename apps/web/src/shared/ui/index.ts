@@ -5,6 +5,7 @@ export { Chip } from './Chip';
 export { CopyField } from './CopyField';
 export { TurfCard } from './TurfCard';
 export { Avatar, AVATAR_PALETTE } from './Avatar';
+export { AvatarNameBadge } from './AvatarNameBadge';
 export { SectionLabel } from './SectionLabel';
 export { Icon } from './Icon';
 export { BackLink } from './BackLink';
