@@ -43,7 +43,10 @@ export type PoolArchiveRecap = {
   overallAccuracyPercent: number;
   groupCompletionStageIndex: number;
   groupStageLeader: StageLeader | null;
-  knockoutStageLeader: StageLeader | null;
+  preSpecialsLeader: StageLeader | null;
+  finalWinner: StageLeader | null;
+  bestKnockoutPerformer: StageLeader | null;
+  bestSpecialBetsPerformer: StageLeader | null;
 };
 
 export const poolArchives = pgTable(

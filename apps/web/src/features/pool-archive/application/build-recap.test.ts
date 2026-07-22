@@ -189,7 +189,7 @@ describe('buildPoolArchiveRecap', () => {
     expect(recap.overallAccuracyPercent).toBe(0);
   });
 
-  it('freezes groupCompletionStageIndex and stage leaders into the recap', async () => {
+  it('freezes groupCompletionStageIndex and all five leader/performer fields into the recap', async () => {
     const finalKickoff = new Date('2026-07-19T18:00:00Z');
     await upsertKnockoutMatch(db, {
       id: miniTournament.bracket.finalMatch,
@@ -211,8 +211,11 @@ describe('buildPoolArchiveRecap', () => {
     });
 
     expect(typeof recap.groupCompletionStageIndex).toBe('number');
-    // Single-member pool: the only member is both leaders by definition.
+    // Single-member pool: the only member leads every category by definition.
     expect(recap.groupStageLeader?.userId).toBe(ownerId);
-    expect(recap.knockoutStageLeader?.userId).toBe(ownerId);
+    expect(recap.preSpecialsLeader?.userId).toBe(ownerId);
+    expect(recap.finalWinner?.userId).toBe(ownerId);
+    expect(recap.bestKnockoutPerformer?.userId).toBe(ownerId);
+    expect(recap.bestSpecialBetsPerformer?.userId).toBe(ownerId);
   });
 });

@@ -845,6 +845,28 @@ transitions — group-stage rank swings were mostly noise (many matches resolve 
 - **Design/plan:** `docs/superpowers/specs/2026-07-20-archive-pool-statistics-design.md`,
   `docs/superpowers/plans/2026-07-20-archive-pool-statistics.md`.
 
+## Archive pool statistics — honorable mentions (2026-07-22)
+
+Fixed `knockoutStageLeader` being mislabeled — it was always just the final winner including
+special bets, not a knockout-only stat. Renamed to `finalWinner` and added three new fields to
+`PoolArchiveRecap`: `preSpecialsLeader` (who led before special bets), `bestKnockoutPerformer` (most
+points from knockout-bracket picks alone), and `bestSpecialBetsPerformer` (most points from special
+bets alone). All five leader fields are now computed in one pass by the extended
+`computeStageLeaders` (`apps/web/src/features/pool-archive/application/build-highlights.ts`), reused
+over the pool's `leaderboard` (each entry already carries a full `ScoreBreakdown` — no new queries).
+
+- **`ArchivePoolStatsPanel`** gained a new "Honorable mentions" sub-section (best knockout
+  performer, best special-bets performer) below the existing "Pool statistics" list. Each new/renamed
+  row renders only when non-null — an already-archived pool that hasn't been re-archived since this
+  change just shows fewer rows, no crash.
+- No DB migration — `PoolArchiveRecap` is a `jsonb` column; new/renamed fields are TS-type-only.
+- **Rollout:** the prod WC2026 pool's frozen archive still has the old shape (missing
+  `preSpecialsLeader`/`bestKnockoutPerformer`/`bestSpecialBetsPerformer`, and `finalWinner` under its
+  old name) until the owner re-archives via the existing UI action (idempotent).
+- **Design/plan:**
+  `docs/superpowers/specs/2026-07-22-archive-pool-stats-honorable-mentions-design.md`,
+  `docs/superpowers/plans/2026-07-22-archive-pool-stats-honorable-mentions.md`.
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

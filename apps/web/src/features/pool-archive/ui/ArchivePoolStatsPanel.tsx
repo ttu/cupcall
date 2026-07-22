@@ -37,15 +37,38 @@ export function ArchivePoolStatsPanel({ recap }: Props): ReactElement {
               : '—'
           }
         />
-        <StatRow
-          label="Knockout stage leader"
-          value={
-            recap.knockoutStageLeader
-              ? `${recap.knockoutStageLeader.displayName} (${recap.knockoutStageLeader.points} pts)`
-              : '—'
-          }
-        />
+        {recap.preSpecialsLeader && (
+          <StatRow
+            label="Leader before special bets"
+            value={`${recap.preSpecialsLeader.displayName} (${recap.preSpecialsLeader.points} pts)`}
+          />
+        )}
+        {recap.finalWinner && (
+          <StatRow
+            label="Final winner (with specials)"
+            value={`${recap.finalWinner.displayName} (${recap.finalWinner.points} pts)`}
+          />
+        )}
       </ul>
+      {(recap.bestKnockoutPerformer || recap.bestSpecialBetsPerformer) && (
+        <>
+          <span className="section-label mt-4 block">Honorable mentions</span>
+          <ul className="mt-3 space-y-2">
+            {recap.bestKnockoutPerformer && (
+              <StatRow
+                label="Best at knockout stage"
+                value={`${recap.bestKnockoutPerformer.displayName} (${recap.bestKnockoutPerformer.points} pts)`}
+              />
+            )}
+            {recap.bestSpecialBetsPerformer && (
+              <StatRow
+                label="Best at special bets"
+                value={`${recap.bestSpecialBetsPerformer.displayName} (${recap.bestSpecialBetsPerformer.points} pts)`}
+              />
+            )}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

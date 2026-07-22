@@ -278,11 +278,13 @@ export async function buildPoolArchiveRecap(
   const pointsHistoryByUser = new Map(
     [...entryExtras.entries()].map(([uid, extras]) => [uid, extras.pointsHistory]),
   );
-  const { groupStageLeader, knockoutStageLeader } = computeStageLeaders(
-    leaderboard,
-    pointsHistoryByUser,
-    groupCompletionStageIndex,
-  );
+  const {
+    groupStageLeader,
+    preSpecialsLeader,
+    finalWinner,
+    bestKnockoutPerformer,
+    bestSpecialBetsPerformer,
+  } = computeStageLeaders(leaderboard, pointsHistoryByUser, groupCompletionStageIndex);
 
   const recap: PoolArchiveRecap = {
     stages: raceChart.chartStages,
@@ -315,7 +317,10 @@ export async function buildPoolArchiveRecap(
     ),
     groupCompletionStageIndex,
     groupStageLeader,
-    knockoutStageLeader,
+    preSpecialsLeader,
+    finalWinner,
+    bestKnockoutPerformer,
+    bestSpecialBetsPerformer,
   };
 
   return { recap, entryExtras };

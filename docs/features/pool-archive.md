@@ -150,17 +150,25 @@ that are never user-deletable):
   - **Biggest upset called** — the resolved knockout tie with the fewest (but nonzero) correct picks
     on the actual winner, via the existing `resolveActualWinner` helper (`MatchRow.winnerTeamId` is
     only populated for penalty-shootout wins, so this must never read it directly).
-  - **Pool statistics** (`overallAccuracyPercent`, `groupStageLeader`, `knockoutStageLeader`,
-    `groupCompletionStageIndex`) — frozen at archive time alongside the other recap fields.
-    `overallAccuracyPercent` sums hit/attempted accuracy detail (`AccuracyBreakdown`, from
-    `@cup/engine`'s `scoreCardAccuracy`) across every member with a prediction record, using their
-    full `CardInputs`, assembled and augmented the same way `rescoreCard` already does for real
-    scoring — so it can never disagree with the actual points. Members with no prediction row at
-    all are skipped entirely (contribute neither hits nor attempted), matching how real scoring
-    never scores them either. `groupStageLeader`/`knockoutStageLeader` read `pointsHistory` at the
-    group-completion stage index and at tournament end. `groupCompletionStageIndex` is also used to
-    restrict `computeBiggestRiser` to knockout-stage-onward transitions (see below), since
-    group-stage rank swings are mostly noise (many matches resolve per day across a large pool).
+  - **Pool statistics** (`overallAccuracyPercent`, `groupStageLeader`, `preSpecialsLeader`,
+    `finalWinner`, `bestKnockoutPerformer`, `bestSpecialBetsPerformer`, `groupCompletionStageIndex`)
+    — frozen at archive time alongside the other recap fields. `overallAccuracyPercent` sums
+    hit/attempted accuracy detail (`AccuracyBreakdown`, from `@cup/engine`'s `scoreCardAccuracy`)
+    across every member with a prediction record, using their full `CardInputs`, assembled and
+    augmented the same way `rescoreCard` already does for real scoring — so it can never disagree
+    with the actual points. Members with no prediction row at all are skipped entirely (contribute
+    neither hits nor attempted), matching how real scoring never scores them either.
+    `groupStageLeader` reads `pointsHistory` at the group-completion stage index. `finalWinner` is
+    simply the max final `pointsTotal` (renamed from the earlier, mislabeled `knockoutStageLeader`
+    — it was never knockout-only, it's the tournament-end total including special bets).
+    `preSpecialsLeader` is the max of `pointsTotal - breakdown.specials`, i.e. who would have led
+    without special bets. `bestKnockoutPerformer` is the max of
+    `bronze + final + roundOf16 + roundOf8 + topFour` (knockout-bracket categories only, no group or
+    specials). `bestSpecialBetsPerformer` is the max of `breakdown.specials` alone. All five are
+    computed in a single pass over the pool's `leaderboard` (each entry already carries a full
+    `ScoreBreakdown`) by `computeStageLeaders`. `groupCompletionStageIndex` is also used to restrict
+    `computeBiggestRiser` to knockout-stage-onward transitions (see below), since group-stage rank
+    swings are mostly noise (many matches resolve per day across a large pool).
   - **Predictions made** / **pool exact-score rate** — simple pool-wide aggregates.
   - **Points-race chart** — the existing `buildRaceChartData`'s output (stage labels + per-member
     cumulative points), frozen verbatim rather than recomputed live. Stage labels are calendar dates

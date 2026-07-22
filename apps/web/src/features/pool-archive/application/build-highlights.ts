@@ -5,7 +5,7 @@ import type {
   BiggestUpsetHighlight,
   StageLeader,
 } from '@cup/db';
-import type { Tournament, TeamId, UserId } from '@cup/engine';
+import type { Tournament, TeamId, UserId, ScoreBreakdown } from '@cup/engine';
 import { matchId as asMatchId } from '@cup/engine';
 import {
   resolveActualWinner,
@@ -49,38 +49,105 @@ export function resolveEffectiveFinalePick(
 }
 
 export function computeStageLeaders(
-  entries: { userId: UserId; displayName: string; pointsTotal: number }[],
+  entries: {
+    userId: UserId;
+    displayName: string;
+    pointsTotal: number;
+    breakdown: ScoreBreakdown | null;
+  }[],
   pointsHistory: Map<UserId, number[]>,
   groupCompletionStageIndex: number,
-): { groupStageLeader: StageLeader | null; knockoutStageLeader: StageLeader | null } {
+): {
+  groupStageLeader: StageLeader | null;
+  preSpecialsLeader: StageLeader | null;
+  finalWinner: StageLeader | null;
+  bestKnockoutPerformer: StageLeader | null;
+  bestSpecialBetsPerformer: StageLeader | null;
+} {
   if (entries.length === 0) {
-    return { groupStageLeader: null, knockoutStageLeader: null };
+    return {
+      groupStageLeader: null,
+      preSpecialsLeader: null,
+      finalWinner: null,
+      bestKnockoutPerformer: null,
+      bestSpecialBetsPerformer: null,
+    };
   }
 
   let groupStageLeader: StageLeader | null = null;
   let bestGroupPoints = -Infinity;
-  for (const entry of entries) {
-    const points = pointsHistory.get(entry.userId)?.[groupCompletionStageIndex] ?? 0;
-    if (points > bestGroupPoints) {
-      bestGroupPoints = points;
-      groupStageLeader = { userId: entry.userId, displayName: entry.displayName, points };
-    }
-  }
-
-  let knockoutStageLeader: StageLeader | null = null;
+  let preSpecialsLeader: StageLeader | null = null;
+  let bestPreSpecialsPoints = -Infinity;
+  let finalWinner: StageLeader | null = null;
   let bestFinalPoints = -Infinity;
+  let bestKnockoutPerformer: StageLeader | null = null;
+  let bestKnockoutPoints = -Infinity;
+  let bestSpecialBetsPerformer: StageLeader | null = null;
+  let bestSpecialBetsPoints = -Infinity;
+
   for (const entry of entries) {
+    const groupPoints = pointsHistory.get(entry.userId)?.[groupCompletionStageIndex] ?? 0;
+    if (groupPoints > bestGroupPoints) {
+      bestGroupPoints = groupPoints;
+      groupStageLeader = {
+        userId: entry.userId,
+        displayName: entry.displayName,
+        points: groupPoints,
+      };
+    }
+
+    const specials = entry.breakdown?.specials ?? 0;
+    const preSpecialsPoints = entry.pointsTotal - specials;
+    if (preSpecialsPoints > bestPreSpecialsPoints) {
+      bestPreSpecialsPoints = preSpecialsPoints;
+      preSpecialsLeader = {
+        userId: entry.userId,
+        displayName: entry.displayName,
+        points: preSpecialsPoints,
+      };
+    }
+
     if (entry.pointsTotal > bestFinalPoints) {
       bestFinalPoints = entry.pointsTotal;
-      knockoutStageLeader = {
+      finalWinner = {
         userId: entry.userId,
         displayName: entry.displayName,
         points: entry.pointsTotal,
       };
     }
+
+    const knockoutPoints =
+      (entry.breakdown?.bronze ?? 0) +
+      (entry.breakdown?.final ?? 0) +
+      (entry.breakdown?.roundOf16 ?? 0) +
+      (entry.breakdown?.roundOf8 ?? 0) +
+      (entry.breakdown?.topFour ?? 0);
+    if (knockoutPoints > bestKnockoutPoints) {
+      bestKnockoutPoints = knockoutPoints;
+      bestKnockoutPerformer = {
+        userId: entry.userId,
+        displayName: entry.displayName,
+        points: knockoutPoints,
+      };
+    }
+
+    if (specials > bestSpecialBetsPoints) {
+      bestSpecialBetsPoints = specials;
+      bestSpecialBetsPerformer = {
+        userId: entry.userId,
+        displayName: entry.displayName,
+        points: specials,
+      };
+    }
   }
 
-  return { groupStageLeader, knockoutStageLeader };
+  return {
+    groupStageLeader,
+    preSpecialsLeader,
+    finalWinner,
+    bestKnockoutPerformer,
+    bestSpecialBetsPerformer,
+  };
 }
 
 export function computeChampionPick(

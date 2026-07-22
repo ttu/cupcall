@@ -6,7 +6,9 @@ import {
   matchId as asMatchId,
   userId as asUserId,
   bracketMatchKey as asBracketMatchKey,
+  points,
 } from '@cup/engine';
+import type { ScoreBreakdown } from '@cup/engine';
 import {
   computeChampionPick,
   computeBestSingleMatch,
@@ -271,11 +273,28 @@ describe('computeExactScoreRatePercent', () => {
   });
 });
 
+function fakeBreakdown(overrides: Partial<ScoreBreakdown> = {}): ScoreBreakdown {
+  return {
+    groupMatches: points(0),
+    groupOrder: points(0),
+    bronze: points(0),
+    final: points(0),
+    roundOf16: points(0),
+    roundOf8: points(0),
+    topFour: points(0),
+    topFourTeams: points(0),
+    topFourPosition: points(0),
+    specials: points(0),
+    total: points(0),
+    ...overrides,
+  };
+}
+
 describe('computeStageLeaders', () => {
-  it('finds the group-stage leader from pointsHistory at the completion index, and the knockout leader from final totals', () => {
+  it('finds the group-stage leader from pointsHistory at the completion index, and the final winner from final totals', () => {
     const entries = [
-      { userId: asUserId('u1'), displayName: 'Alice', pointsTotal: 50 },
-      { userId: asUserId('u2'), displayName: 'Bob', pointsTotal: 80 },
+      { userId: asUserId('u1'), displayName: 'Alice', pointsTotal: 50, breakdown: fakeBreakdown() },
+      { userId: asUserId('u2'), displayName: 'Bob', pointsTotal: 80, breakdown: fakeBreakdown() },
     ];
     const pointsHistory = new Map([
       [asUserId('u1'), [0, 42, 50]], // leads at index 1 (group stage complete)
@@ -289,7 +308,7 @@ describe('computeStageLeaders', () => {
       displayName: 'Alice',
       points: 42,
     });
-    expect(result.knockoutStageLeader).toEqual({
+    expect(result.finalWinner).toEqual({
       userId: asUserId('u2'),
       displayName: 'Bob',
       points: 80,
@@ -298,8 +317,8 @@ describe('computeStageLeaders', () => {
 
   it('shows the same person for both leaders when there is no lead change', () => {
     const entries = [
-      { userId: asUserId('u1'), displayName: 'Alice', pointsTotal: 90 },
-      { userId: asUserId('u2'), displayName: 'Bob', pointsTotal: 60 },
+      { userId: asUserId('u1'), displayName: 'Alice', pointsTotal: 90, breakdown: fakeBreakdown() },
+      { userId: asUserId('u2'), displayName: 'Bob', pointsTotal: 60, breakdown: fakeBreakdown() },
     ];
     const pointsHistory = new Map([
       [asUserId('u1'), [0, 42, 90]],
@@ -309,12 +328,138 @@ describe('computeStageLeaders', () => {
     const result = computeStageLeaders(entries, pointsHistory, 1);
 
     expect(result.groupStageLeader?.displayName).toBe('Alice');
-    expect(result.knockoutStageLeader?.displayName).toBe('Alice');
+    expect(result.finalWinner?.displayName).toBe('Alice');
   });
 
-  it('returns null leaders when there are no entries', () => {
+  it('finds a pre-specials leader distinct from the final winner when special bets change the outcome', () => {
+    const entries = [
+      // Alice: 70 total, all from group+knockout (no specials) -> pre-specials leader.
+      { userId: asUserId('u1'), displayName: 'Alice', pointsTotal: 70, breakdown: fakeBreakdown() },
+      // Bob: 80 total, but 20 of it is specials -> only 60 pre-specials, yet still the final winner.
+      {
+        userId: asUserId('u2'),
+        displayName: 'Bob',
+        pointsTotal: 80,
+        breakdown: fakeBreakdown({ specials: points(20) }),
+      },
+    ];
+    const pointsHistory = new Map([
+      [asUserId('u1'), [0, 0, 70]],
+      [asUserId('u2'), [0, 0, 80]],
+    ]);
+
+    const result = computeStageLeaders(entries, pointsHistory, 1);
+
+    expect(result.preSpecialsLeader).toEqual({
+      userId: asUserId('u1'),
+      displayName: 'Alice',
+      points: 70,
+    });
+    expect(result.finalWinner).toEqual({
+      userId: asUserId('u2'),
+      displayName: 'Bob',
+      points: 80,
+    });
+  });
+
+  it('finds the best knockout-only performer, excluding group-stage and specials points', () => {
+    const entries = [
+      {
+        userId: asUserId('u1'),
+        displayName: 'Alice',
+        pointsTotal: 100,
+        // 90 of Alice's 100 points are groupMatches/groupOrder, not knockout.
+        breakdown: fakeBreakdown({
+          groupMatches: points(60),
+          groupOrder: points(30),
+          final: points(10),
+        }),
+      },
+      {
+        userId: asUserId('u2'),
+        displayName: 'Bob',
+        pointsTotal: 80,
+        // Bob's 80 points are almost entirely knockout categories.
+        breakdown: fakeBreakdown({
+          bronze: points(10),
+          final: points(20),
+          roundOf16: points(15),
+          roundOf8: points(15),
+          topFour: points(20),
+        }),
+      },
+    ];
+    const pointsHistory = new Map([
+      [asUserId('u1'), [0, 90, 100]],
+      [asUserId('u2'), [0, 0, 80]],
+    ]);
+
+    const result = computeStageLeaders(entries, pointsHistory, 1);
+
+    expect(result.bestKnockoutPerformer).toEqual({
+      userId: asUserId('u2'),
+      displayName: 'Bob',
+      points: 80,
+    });
+  });
+
+  it('finds the best special-bets performer', () => {
+    const entries = [
+      {
+        userId: asUserId('u1'),
+        displayName: 'Alice',
+        pointsTotal: 50,
+        breakdown: fakeBreakdown({ specials: points(5) }),
+      },
+      {
+        userId: asUserId('u2'),
+        displayName: 'Bob',
+        pointsTotal: 40,
+        breakdown: fakeBreakdown({ specials: points(16) }),
+      },
+    ];
+    const pointsHistory = new Map([
+      [asUserId('u1'), [0, 0, 50]],
+      [asUserId('u2'), [0, 0, 40]],
+    ]);
+
+    const result = computeStageLeaders(entries, pointsHistory, 1);
+
+    expect(result.bestSpecialBetsPerformer).toEqual({
+      userId: asUserId('u2'),
+      displayName: 'Bob',
+      points: 16,
+    });
+  });
+
+  it('treats a null breakdown as all-zero categories, not a skip', () => {
+    const entries = [
+      { userId: asUserId('u1'), displayName: 'Alice', pointsTotal: 0, breakdown: null },
+      {
+        userId: asUserId('u2'),
+        displayName: 'Bob',
+        pointsTotal: 30,
+        breakdown: fakeBreakdown({ specials: points(10), bronze: points(5) }),
+      },
+    ];
+    const pointsHistory = new Map([
+      [asUserId('u1'), [0, 0, 0]],
+      [asUserId('u2'), [0, 0, 30]],
+    ]);
+
+    const result = computeStageLeaders(entries, pointsHistory, 1);
+
+    expect(result.bestSpecialBetsPerformer?.displayName).toBe('Bob');
+    expect(result.bestKnockoutPerformer?.displayName).toBe('Bob');
+    expect(result.preSpecialsLeader?.displayName).toBe('Bob');
+  });
+
+  it('returns null for every leader when there are no entries', () => {
     const result = computeStageLeaders([], new Map(), 1);
     expect(result.groupStageLeader).toBeNull();
-    expect(result.knockoutStageLeader).toBeNull();
+    expect(result.preSpecialsLeader).toBeNull();
+    expect(result.finalWinner).toBeNull();
+    expect(result.bestKnockoutPerformer).toBeNull();
+    expect(result.bestSpecialBetsPerformer).toBeNull();
   });
 });

@@ -178,7 +178,10 @@ describe('pool-archive repository', () => {
       overallAccuracyPercent: 42,
       groupCompletionStageIndex: 1,
       groupStageLeader: { userId: owner.id, displayName: 'Owner', points: 20 },
-      knockoutStageLeader: { userId: owner.id, displayName: 'Owner', points: 50 },
+      preSpecialsLeader: { userId: owner.id, displayName: 'Owner', points: 40 },
+      finalWinner: { userId: owner.id, displayName: 'Owner', points: 50 },
+      bestKnockoutPerformer: { userId: owner.id, displayName: 'Owner', points: 30 },
+      bestSpecialBetsPerformer: { userId: owner.id, displayName: 'Owner', points: 10 },
     };
 
     await upsertPoolArchive(db, {
