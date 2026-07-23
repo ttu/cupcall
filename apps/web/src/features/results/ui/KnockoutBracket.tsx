@@ -1,7 +1,9 @@
-import { Fragment, type ReactElement } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactElement } from 'react';
 import type { BracketRoundResultView, KnockoutMatchView } from '../domain/types';
 import { BracketMatchCard } from './BracketMatchCard';
 import { FinalResultCard } from './FinalResultCard';
+import { BracketZoomControls } from './BracketZoomControls';
+import { canZoomIn, canZoomOut, computeAutoFitScale, stepZoomPercent } from './bracket-zoom-utils';
 
 const TIE_H = 114;
 const TIE_GAP = 8;
@@ -126,6 +128,31 @@ export function KnockoutBracket({
   userPredictedKnockoutTeamIds,
   onOpenMatch,
 }: Props): ReactElement {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [zoomPercent, setZoomPercent] = useState(100);
+  const [isManualZoom, setIsManualZoom] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const recomputeAutoFit = () => {
+      if (isManualZoom) return;
+      const containerWidth = container.clientWidth;
+      const contentWidth = content.scrollWidth;
+      const nextScale = computeAutoFitScale(containerWidth, contentWidth);
+      setZoomPercent(Math.round(nextScale * 100));
+    };
+
+    recomputeAutoFit();
+
+    const observer = new ResizeObserver(recomputeAutoFit);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [rounds, isManualZoom]);
+
   if (rounds.length === 0) {
     return (
       <div className="card p-[32px_24px] text-center">
@@ -135,6 +162,28 @@ export function KnockoutBracket({
       </div>
     );
   }
+
+  const handleZoomOut = () => {
+    setIsManualZoom(true);
+    setZoomPercent((current) => stepZoomPercent(current, 'out'));
+  };
+
+  const handleZoomIn = () => {
+    setIsManualZoom(true);
+    setZoomPercent((current) => stepZoomPercent(current, 'in'));
+  };
+
+  const handleResetZoom = () => {
+    setIsManualZoom(false);
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) {
+      setZoomPercent(100);
+      return;
+    }
+    const contentWidth = content.scrollWidth;
+    setZoomPercent(Math.round(computeAutoFitScale(container.clientWidth, contentWidth) * 100));
+  };
 
   // Predicted group qualifiers — only highlighted in entry-round cards,
   // not in later rounds where the team may appear without the user having picked them.
@@ -154,55 +203,75 @@ export function KnockoutBracket({
 
   return (
     <div className="flex flex-col gap-4">
-      <BracketInfoBanner />
+      <div className="flex items-start justify-between gap-3">
+        <BracketInfoBanner />
+        <BracketZoomControls
+          zoomPercent={zoomPercent}
+          onZoomOut={handleZoomOut}
+          onZoomIn={handleZoomIn}
+          onReset={handleResetZoom}
+          canZoomOut={canZoomOut(zoomPercent)}
+          canZoomIn={canZoomIn(zoomPercent)}
+        />
+      </div>
 
-      <div className="overflow-x-auto pb-2">
-        {/* ── Label row ── */}
-        <div className="flex min-w-max mb-2">
-          {mainRounds.map((round, i) => (
-            <Fragment key={round.label}>
-              <div className="min-w-47.5 eyebrow text-ink-muted pl-0.5">{round.label}</div>
-              {/* spacer matches the connector SVG width */}
-              <div style={{ width: CONN_W, flexShrink: 0 }} />
-            </Fragment>
-          ))}
-        </div>
+      <div ref={containerRef} className="overflow-x-auto pb-2">
+        <div
+          ref={contentRef}
+          style={{
+            transform: `scale(${zoomPercent / 100})`,
+            transformOrigin: 'top left',
+          }}
+        >
+          {/* ── Label row ── */}
+          <div className="flex min-w-max mb-2">
+            {mainRounds.map((round, i) => (
+              <Fragment key={round.label}>
+                <div className="min-w-47.5 eyebrow text-ink-muted pl-0.5">{round.label}</div>
+                {/* spacer matches the connector SVG width */}
+                <div style={{ width: CONN_W, flexShrink: 0 }} />
+              </Fragment>
+            ))}
+          </div>
 
-        {/* ── Bracket row (match cards + connector SVGs, no labels) ── */}
-        <div className="flex items-start min-w-max">
-          {mainRounds.map((round, i) => (
-            <Fragment key={round.label}>
-              <div
-                data-testid={`bracket-round-${round.label}`}
-                className="min-w-47.5"
-                style={{ paddingTop: columnPaddingTop(i) }}
-              >
-                <div className="flex flex-col" style={{ gap: columnItemGap(i) }}>
-                  {round.matches.map((match) => (
-                    <BracketMatchCard
-                      key={match.bracketMatchKey}
-                      match={match}
-                      predictedQualifierIds={i === 0 ? predictedQualifierIds : new Set()}
-                      onSelect={onOpenMatch ? () => onOpenMatch(match.bracketMatchKey) : undefined}
-                    />
-                  ))}
+          {/* ── Bracket row (match cards + connector SVGs, no labels) ── */}
+          <div className="flex items-start min-w-max">
+            {mainRounds.map((round, i) => (
+              <Fragment key={round.label}>
+                <div
+                  data-testid={`bracket-round-${round.label}`}
+                  className="min-w-47.5"
+                  style={{ paddingTop: columnPaddingTop(i) }}
+                >
+                  <div className="flex flex-col" style={{ gap: columnItemGap(i) }}>
+                    {round.matches.map((match) => (
+                      <BracketMatchCard
+                        key={match.bracketMatchKey}
+                        match={match}
+                        predictedQualifierIds={i === 0 ? predictedQualifierIds : new Set()}
+                        onSelect={
+                          onOpenMatch ? () => onOpenMatch(match.bracketMatchKey) : undefined
+                        }
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <BracketConnector
-                fromColIndex={i}
-                fromMatchCount={round.matches.length}
-                totalHeight={totalHeight}
-              />
-            </Fragment>
-          ))}
+                <BracketConnector
+                  fromColIndex={i}
+                  fromMatchCount={round.matches.length}
+                  totalHeight={totalHeight}
+                />
+              </Fragment>
+            ))}
 
-          <FinalCards
-            finalMatch={finalMatch}
-            bronzeMatch={bronzeMatch}
-            paddingTop={columnPaddingTop(finalColumnIndex)}
-            onOpenMatch={onOpenMatch}
-          />
+            <FinalCards
+              finalMatch={finalMatch}
+              bronzeMatch={bronzeMatch}
+              paddingTop={columnPaddingTop(finalColumnIndex)}
+              onOpenMatch={onOpenMatch}
+            />
+          </div>
         </div>
       </div>
     </div>
