@@ -11,8 +11,8 @@ export function ArchiveLeadChangesPanel({ leadChanges }: Props): ReactElement | 
       <span className="section-label">Lead changes</span>
       <ul className="mt-3 space-y-3">
         {leadChanges.map((event) => (
-          <li key={event.stageIndex} className="flex gap-3">
-            <span className="flex shrink-0 gap-1.5">
+          <li key={event.stageIndex} className="space-y-1.5">
+            <span className="flex gap-1.5">
               <span className="chip">{event.stageName}</span>
               {event.stageLabel && <span className="chip">{event.stageLabel}</span>}
             </span>
