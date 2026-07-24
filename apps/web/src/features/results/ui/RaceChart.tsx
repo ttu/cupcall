@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import type { RaceChartPlayer } from '../domain/types';
 import { computeYBounds, buildGridLines } from './race-chart-utils';
 
-const PAD = { l: 44, r: 96, t: 22, b: 38 } as const;
+const PAD = { l: 44, r: 160, t: 22, b: 38 } as const;
 const VIEW_W = 780;
 const VIEW_H = 320;
 const PLOT_W = VIEW_W - PAD.l - PAD.r;
@@ -32,8 +32,8 @@ export function RaceChart({
 
   const gridLines = buildGridLines(yMin, yMax);
 
-  // Declutter end labels: enforce min 15px vertical gap.
-  const endLabelGap = 15;
+  // Declutter end labels: enforce min 22px vertical gap (score line + name line).
+  const endLabelGap = 22;
   const byY = players.map((p) => ({ p, y0: Y(p.points[n] ?? 0) })).toSorted((a, b) => a.y0 - b.y0);
   let prev = -Infinity;
   for (const o of byY) {
@@ -216,6 +216,17 @@ export function RaceChart({
               fill={p.color}
             >
               {endVal}
+            </text>
+            <text
+              x={X(n) + 13}
+              y={fy + (p.isCurrentUser ? 18 : 15)}
+              fontFamily="Archivo"
+              fontSize={p.isCurrentUser ? 10 : 9}
+              fontWeight={p.isCurrentUser ? 700 : 500}
+              fill={p.color}
+              opacity="0.8"
+            >
+              {p.displayName}
             </text>
           </g>
         );
