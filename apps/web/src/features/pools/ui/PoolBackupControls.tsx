@@ -2,6 +2,7 @@
 
 import type { ReactElement } from 'react';
 import { useRef, useTransition, useState } from 'react';
+import Link from 'next/link';
 import { exportPool, importPool } from '../api/actions';
 import { TurfCard } from '@/shared/ui';
 
@@ -99,6 +100,15 @@ export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
           <p role="status" className={`text-xs ${message.ok ? 'text-green-700' : 'text-danger'}`}>
             {message.text}
           </p>
+        )}
+        {isOwner && (
+          <Link
+            href={`/pools/${poolId}/raw`}
+            data-testid="pool-raw-data-link"
+            className="self-start inline-block text-xs font-medium px-3 py-1.5 rounded-lg border border-line bg-white text-ink-soft hover:text-ink hover:border-ink-muted transition-colors no-underline"
+          >
+            Raw data (debug)
+          </Link>
         )}
       </div>
     </TurfCard>
