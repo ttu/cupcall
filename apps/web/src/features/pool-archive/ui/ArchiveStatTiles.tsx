@@ -19,12 +19,8 @@ export function ArchiveStatTiles({ matchesPlayed, recap }: Props): ReactElement 
       <Tile label="Predictions made" value={recap ? recap.predictionsMade.toLocaleString() : '—'} />
       <Tile label="Pool exact-score rate" value={recap ? `${recap.exactScoreRatePercent}%` : '—'} />
       <Tile
-        label="Biggest upset called"
-        value={
-          recap?.biggestUpset
-            ? `${recap.biggestUpset.winnerTeam} over ${recap.biggestUpset.loserTeam}`
-            : '—'
-        }
+        label="Overall prediction accuracy"
+        value={recap ? `${recap.overallAccuracyPercent}%` : '—'}
       />
     </div>
   );
