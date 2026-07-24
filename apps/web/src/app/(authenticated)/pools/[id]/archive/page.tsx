@@ -65,6 +65,32 @@ export default async function PoolArchivePage({ params }: Props): Promise<ReactE
         }
       : null;
 
+  const getTeamName = (id: string) => def?.teams.find((t) => t.id === id)?.name ?? id;
+  const topThree = (() => {
+    if (!finalMatch) return [];
+    const champion = finalMatch.winner;
+    const runnerUp = champion === finalMatch.home ? finalMatch.away : finalMatch.home;
+    const third = actualResults.bronzeMatch?.winner;
+    return [
+      { position: 1 as const, teamId: champion, teamName: getTeamName(champion) },
+      { position: 2 as const, teamId: runnerUp, teamName: getTeamName(runnerUp) },
+      ...(third ? [{ position: 3 as const, teamId: third, teamName: getTeamName(third) }] : []),
+    ];
+  })();
+
+  const topEntries = archive
+    ? archive.entries
+        .slice()
+        .sort((a, b) => a.rank - b.rank)
+        .slice(0, 3)
+        .map((e) => ({
+          rank: e.rank,
+          displayName: e.displayName,
+          points: e.pointsTotal,
+          isCurrentUser: e.userId !== null && e.userId === actor.userId,
+        }))
+    : [];
+
   const matchesPlayed = allMatches.filter((m) => m.status === 'final').length;
   const raceChartData = archive ? toRaceChartData(archive, actor.userId) : null;
   const categoryBreakdown = archive ? buildCategoryBreakdown(archive.entries, actor.userId) : [];
@@ -89,12 +115,7 @@ export default async function PoolArchivePage({ params }: Props): Promise<ReactE
         <p className="text-sm text-ink-muted">This pool hasn&apos;t been archived yet.</p>
       ) : (
         <div className="flex flex-col gap-5">
-          <ArchiveHeroCard
-            poolName={archive.poolName}
-            tournamentName={archive.tournamentName}
-            archivedAt={archive.archivedAt}
-            final={final}
-          />
+          <ArchiveHeroCard final={final} topThree={topThree} topEntries={topEntries} />
 
           <div className="grid gap-5 items-start md:grid-cols-[1fr_320px]">
             <div className="flex flex-col gap-4 min-w-0">
