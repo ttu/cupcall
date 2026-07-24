@@ -59,11 +59,10 @@ export function ArchiveHeroCard({ final, topThree, topEntries }: Props): ReactEl
           </div>
           <div className="flex items-center gap-2 text-sm text-on-dark/80">
             <TeamBadge teamId={champion.teamId} size="sm" />
-            <span className="tnum">{champion.goals}</span>
-            <span>–</span>
-            <span className="tnum">{runnerUp.goals}</span>
+            <span className="tnum font-medium">
+              {champion.goals}–{runnerUp.goals}
+            </span>
             <TeamBadge teamId={runnerUp.teamId} size="sm" />
-            <span>{runnerUp.name}</span>
           </div>
           {topThree.length > 0 && (
             <div className="flex items-center gap-6 mt-2 text-sm text-on-dark/80">
@@ -88,8 +87,10 @@ export function ArchiveHeroCard({ final, topThree, topEntries }: Props): ReactEl
           <div className="border-t border-on-dark/20" />
           <div className="flex flex-col items-center gap-2 py-8 px-6">
             <span className="eyebrow text-on-dark/60">Top Predictor</span>
-            <span className="display text-[28px]">{topPredictor.displayName.toUpperCase()}</span>
-            <span className="text-sm font-medium uppercase tracking-wide text-on-dark/70">
+            <span className="display text-[40px] leading-tight">
+              {topPredictor.displayName.toUpperCase()}
+            </span>
+            <span className="text-base font-bold tracking-wide text-on-dark/70">
               {topPredictor.points} PTS
             </span>
             {restPredictors.length > 0 && (
@@ -97,7 +98,11 @@ export function ArchiveHeroCard({ final, topThree, topEntries }: Props): ReactEl
                 {restPredictors.map((entry) => (
                   <div key={entry.rank} className="flex items-center gap-1.5">
                     <span className="text-xs text-on-dark/50 font-medium">{entry.rank}</span>
-                    <span>{entry.isCurrentUser ? 'You' : entry.displayName}</span>
+                    {entry.isCurrentUser ? (
+                      <span className="font-semibold text-green-400">You</span>
+                    ) : (
+                      <span>{entry.displayName}</span>
+                    )}
                     <span className="tnum font-bold">{entry.points}</span>
                   </div>
                 ))}
