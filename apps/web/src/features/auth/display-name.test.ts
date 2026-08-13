@@ -24,9 +24,8 @@ describe('deriveDisplayName', () => {
     expect(deriveDisplayName('alice.smith@example.com')).toBe('alice.smith');
   });
 
-  it.each(FALLBACK_CASES)('returns a fallback for $label', ({ input }) => {
-    const result = deriveDisplayName(input);
-    expect(result.length).toBeGreaterThan(0);
+  it.each(FALLBACK_CASES)('returns the documented fallback "user" for $label', ({ input }) => {
+    expect(deriveDisplayName(input)).toBe('user');
   });
 
   it('handles uppercase by normalising to lowercase', () => {

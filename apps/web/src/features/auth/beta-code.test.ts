@@ -2,8 +2,19 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { checkBetaCode } from './beta-code';
 
 describe('checkBetaCode', () => {
-  afterEach(() => {
+  let originalBetaCode: string | undefined;
+
+  beforeEach(() => {
+    originalBetaCode = process.env.BETA_CODE;
     delete process.env.BETA_CODE;
+  });
+
+  afterEach(() => {
+    if (originalBetaCode === undefined) {
+      delete process.env.BETA_CODE;
+    } else {
+      process.env.BETA_CODE = originalBetaCode;
+    }
   });
 
   describe('when BETA_CODE is not configured', () => {

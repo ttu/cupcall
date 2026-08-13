@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseEnv } from './env';
+import { parseEnv, getPublicBaseUrl } from './env';
 
 const validEnv = {
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
@@ -61,5 +61,24 @@ describe('parseEnv', () => {
     const raw = { ...validEnv, DATABASE_URL: undefined, AUTH_SECRET: undefined };
     expect(() => parseEnv(raw)).toThrow(/DATABASE_URL/);
     expect(() => parseEnv(raw)).toThrow(/AUTH_SECRET/);
+  });
+});
+
+describe('getPublicBaseUrl', () => {
+  it('prefers AUTH_URL when both are set', () => {
+    const url = getPublicBaseUrl({
+      AUTH_URL: 'https://cupcall.app',
+      NEXTAUTH_URL: 'https://fallback.example',
+    });
+    expect(url).toBe('https://cupcall.app');
+  });
+
+  it('falls back to NEXTAUTH_URL when AUTH_URL is unset', () => {
+    const url = getPublicBaseUrl({ NEXTAUTH_URL: 'https://fallback.example' });
+    expect(url).toBe('https://fallback.example');
+  });
+
+  it('returns an empty string when neither is set', () => {
+    expect(getPublicBaseUrl({})).toBe('');
   });
 });

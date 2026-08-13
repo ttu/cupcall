@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { isMember, hasEditsForPool } from '@cup/db';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
+import { getPublicBaseUrl } from '@/shared/env';
 import {
   getPoolDetail,
   Leaderboard,
@@ -47,6 +48,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
   const myEntry = myIndex >= 0 ? detail.leaderboard[myIndex] : undefined;
   const myRank = myIndex >= 0 ? myIndex + 1 : null;
   const raceChart = locked ? detail.raceChart : null;
+  const baseUrl = getPublicBaseUrl();
 
   return (
     <div className="max-w-275 mx-auto p-[28px_20px]">
@@ -164,7 +166,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
             poolId={poolId}
             token={detail.inviteToken}
             isOwner={isOwner}
-            baseUrl={process.env.AUTH_URL ?? ''}
+            baseUrl={baseUrl}
           />
 
           {/* View link */}
@@ -172,7 +174,7 @@ export default async function PoolPage({ params }: Props): Promise<ReactElement>
             poolId={poolId}
             token={detail.viewToken}
             isOwner={isOwner}
-            baseUrl={process.env.AUTH_URL ?? ''}
+            baseUrl={baseUrl}
           />
 
           {/* Leave pool (non-owners only) */}

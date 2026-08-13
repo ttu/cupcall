@@ -79,7 +79,7 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
     getResultsView({ db, poolId, userId: memberUid, now }),
   ]);
 
-  const memberName = memberUser?.displayName ?? memberUser?.email ?? memberId;
+  const memberName = memberUser?.displayName ?? `Member ${memberId.slice(0, 8)}`;
 
   let auditEntries: AuditEntry[] = [];
   if (prediction) {

@@ -1,6 +1,7 @@
 'use server';
 
 import { randomBytes } from 'crypto';
+import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { db } from '@/shared/db';
@@ -8,6 +9,25 @@ import { createGuestUser, createDbSession } from '@cup/db';
 import type { UserId } from '@cup/engine';
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+/** Default landing page used when a redirect target fails validation. */
+const DEFAULT_REDIRECT = '/pools';
+
+// Only app-relative paths are permitted. Rejects absolute URLs ("https://evil.com")
+// and protocol-relative URLs ("//evil.com", which browsers resolve as absolute) so
+// this can never be turned into an open redirect if a caller ever passes through
+// user-controlled input.
+const redirectToSchema = z
+  .string()
+  .refine((path) => path.startsWith('/') && !path.startsWith('//'), {
+    message: 'redirectTo must be an app-relative path',
+  });
+
+/** Validates a redirect target, falling back to a safe default when it isn't app-relative. */
+function safeRedirectPath(redirectTo: string): string {
+  const parsed = redirectToSchema.safeParse(redirectTo);
+  return parsed.success ? parsed.data : DEFAULT_REDIRECT;
+}
 
 function sessionCookieName(): string {
   const authUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
@@ -48,5 +68,5 @@ export async function signInAsExistingGuest(userId: UserId, redirectTo: string):
   await createDbSession(db, { sessionToken, userId, expires });
   await writeSessionCookie(sessionToken, expires);
 
-  redirect(redirectTo);
+  redirect(safeRedirectPath(redirectTo));
 }

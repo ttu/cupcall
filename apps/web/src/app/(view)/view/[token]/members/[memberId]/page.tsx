@@ -37,7 +37,7 @@ export default async function ViewMemberCardPage({ params }: Props): Promise<Rea
     getUserById(db, memberUid),
     getResultsView({ db, poolId: pool.id, userId: memberUid, now }),
   ]);
-  const memberName = memberUser?.displayName ?? memberUser?.email ?? memberId;
+  const memberName = memberUser?.displayName ?? `Member ${memberId.slice(0, 8)}`;
   const matchScores = buildMatchScores(resultsView?.groupResults ?? []);
 
   return (

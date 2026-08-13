@@ -19,16 +19,26 @@ with open('data/tournaments/wc-2026/tournament.json') as f:
 with open('data/tournaments/wc-2026/results.json') as f:
     r = json.load(f)
 
-now = datetime.now(timezone.utc).isoformat()
+now = datetime.now(timezone.utc)
+
+def parse_kickoff(kickoff):
+    # Kickoffs are ISO 8601 with a trailing 'Z'; fromisoformat needs '+00:00' instead.
+    return datetime.fromisoformat(kickoff.replace('Z', '+00:00'))
 
 # Group stage
 done_group = {x['matchId'] for x in r['matchResults']}
 missing_group = [(m['id'], m['home'], m['away'], m['kickoff'])
-    for m in t['groupMatches'] if m['kickoff'] < now and m['id'] not in done_group]
+    for m in t['groupMatches'] if parse_kickoff(m['kickoff']) < now and m['id'] not in done_group]
 
-# Knockout stage
+# Knockout stage — every configured round (R32, R16, QF, SF, Final), not just R32 slots
 done_ko = {x['matchId'] for x in r['knockout']}
-all_ko = {s['match'] for s in t['bracket']['slots']}  # R32 only; add r16/qf/sf/final IDs as needed
+all_ko = (
+    {s['match'] for s in t['bracket']['slots']}       # R32
+    | set(t['bracket']['roundOf16Matches'])            # R16
+    | set(t['bracket']['roundOf8Matches'])             # QF
+    | set(t['bracket']['semiFinals'])                  # SF
+    | {t['bracket']['finalMatch']}                     # Final
+)
 missing_ko = sorted(all_ko - done_ko)
 
 print('Missing group:', missing_group)
@@ -63,13 +73,14 @@ openfootball match numbers align directly: `#77 → r32m77`, `#78 → r32m78`, e
 
 ### 4c — determine `decidedBy`
 
-| Situation | `decidedBy` |
-|---|---|
-| Score differs after 90 min | `"regulation"` |
-| Score level after 90, differs after 120 | `"extraTime"` |
-| Score level after 120 min | `"penalties"` |
+| Situation                               | `decidedBy`    |
+| --------------------------------------- | -------------- |
+| Score differs after 90 min              | `"regulation"` |
+| Score level after 90, differs after 120 | `"extraTime"`  |
+| Score level after 120 min               | `"penalties"`  |
 
 `homeGoals`/`awayGoals` always reflect the **final score**:
+
 - `regulation`: 90-min score
 - `extraTime`: score after 120 min (includes ET goals)
 - `penalties`: score after ET (still tied; winner determined by `winner` field)

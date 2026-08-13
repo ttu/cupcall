@@ -1,8 +1,16 @@
+/** Strips trailing slashes without a backtracking-prone regex. */
+function stripTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') end--;
+  return url.slice(0, end);
+}
+
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === 'edge') return;
 
-  const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
-  if (!endpoint) return;
+  const rawEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+  if (!rawEndpoint) return;
+  const endpoint = stripTrailingSlashes(rawEndpoint);
 
   const [
     { NodeTracerProvider, BatchSpanProcessor },

@@ -14,6 +14,8 @@ import {
   deletePendingEmailLink,
   linkEmailToUser,
   clearUserEmail,
+  getOrCreateLoginToken,
+  getLoginTokenByUserId,
 } from './users';
 import { createPool } from './pools';
 import { upsertTournamentDef } from './tournament';
@@ -59,6 +61,39 @@ describe('users repository', () => {
     it('returns undefined when email does not exist', async () => {
       const result = await getUserByEmail(db, 'nobody@example.com');
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('getOrCreateLoginToken', () => {
+    it('creates a token when none exists', async () => {
+      const user = await createGuestUser(db, { displayName: 'Guest' });
+      const row = await getOrCreateLoginToken(db, user.id, () => 'generated-token');
+      expect(row.token).toBe('generated-token');
+      expect(row.userId).toBe(user.id);
+
+      const persisted = await getLoginTokenByUserId(db, user.id);
+      expect(persisted?.token).toBe('generated-token');
+    });
+
+    it('returns the existing token instead of rotating it', async () => {
+      const user = await createGuestUser(db, { displayName: 'Guest' });
+      const first = await getOrCreateLoginToken(db, user.id, () => 'first-token');
+      const second = await getOrCreateLoginToken(db, user.id, () => 'second-token');
+
+      expect(second.token).toBe('first-token');
+      expect(second.token).toBe(first.token);
+    });
+
+    it('does not rotate the token across concurrent calls (race-safe)', async () => {
+      const user = await createGuestUser(db, { displayName: 'Guest' });
+      const [a, b] = await Promise.all([
+        getOrCreateLoginToken(db, user.id, () => 'token-a'),
+        getOrCreateLoginToken(db, user.id, () => 'token-b'),
+      ]);
+
+      expect(a.token).toBe(b.token);
+      const persisted = await getLoginTokenByUserId(db, user.id);
+      expect(persisted?.token).toBe(a.token);
     });
   });
 

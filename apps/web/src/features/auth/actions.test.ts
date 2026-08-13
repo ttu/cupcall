@@ -119,6 +119,44 @@ describe('updateDisplayNameAction', () => {
 
     expect(mockedUpdate).not.toHaveBeenCalled();
   });
+
+  it('returns an actionable error instead of rejecting when updateDisplayName throws', async () => {
+    mockedGetActor.mockResolvedValue({ userId: userId('user-1') });
+    mockedUpdate.mockRejectedValue(new Error('connection reset'));
+
+    const result = await updateDisplayNameAction(prev, form('Alice'));
+
+    expect(result).toEqual({ error: expect.any(String), saved: false });
+  });
+
+  it('never logs the actor id or a raw error object when updateDisplayName throws', async () => {
+    mockedGetActor.mockResolvedValue({ userId: userId('user-1') });
+    mockedUpdate.mockRejectedValue(new Error('connection reset'));
+    const { logger } = await import('../../shared/observability/logger');
+
+    await updateDisplayNameAction(prev, form('Alice'));
+
+    const errorCalls = vi.mocked(logger.error).mock.calls;
+    expect(errorCalls.length).toBeGreaterThan(0);
+    for (const [payload] of errorCalls) {
+      expect(payload).not.toHaveProperty('userId');
+      expect(JSON.stringify(payload)).not.toContain('connection reset');
+    }
+  });
+
+  it('never logs the actor id when the user is not found', async () => {
+    mockedGetActor.mockResolvedValue({ userId: userId('user-1') });
+    mockedUpdate.mockResolvedValue(undefined);
+    const { logger } = await import('../../shared/observability/logger');
+
+    await updateDisplayNameAction(prev, form('Alice'));
+
+    const errorCalls = vi.mocked(logger.error).mock.calls;
+    expect(errorCalls.length).toBeGreaterThan(0);
+    for (const [payload] of errorCalls) {
+      expect(payload).not.toHaveProperty('userId');
+    }
+  });
 });
 
 describe('unlinkEmailAction', () => {

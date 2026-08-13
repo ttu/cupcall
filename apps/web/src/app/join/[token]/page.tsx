@@ -1,7 +1,9 @@
 import type { ReactElement, ReactNode } from 'react';
 import Link from 'next/link';
+import { z } from 'zod';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
+import { getPublicBaseUrl } from '@/shared/env';
 import {
   getPoolByInviteTokenHash,
   getTournamentById,
@@ -47,7 +49,7 @@ export default async function JoinPage({ params, searchParams }: Props): Promise
       getJoinedPoolsSafely(actor),
       getOrCreateGuestLoginToken(actor),
     ]);
-    const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
+    const baseUrl = getPublicBaseUrl();
 
     return (
       <InvalidInviteForSignedInUser
@@ -189,7 +191,7 @@ function InvalidInviteForSignedInUser({
           </div>
         )}
 
-        {myLoginToken && <MyLoginLink token={myLoginToken} baseUrl={baseUrl} />}
+        {myLoginToken && baseUrl && <MyLoginLink token={myLoginToken} baseUrl={baseUrl} />}
       </div>
     </main>
   );
@@ -327,6 +329,14 @@ function SignedInJoinForm({ token, error }: { token: string; error?: string | un
 
 // ── Guest join form (name only) ────────────────────────────────────────────
 
+// Rejects non-string FormData entries (e.g. a File submitted for a text field)
+// instead of an unsafe `as string` cast, which would throw when `.trim()` is
+// called on a File. `null` covers a missing/empty optional field.
+const GuestJoinFormDataSchema = z.object({
+  displayName: z.string().nullable(),
+  betaCode: z.string().nullable(),
+});
+
 function GuestJoinForm({
   token,
   poolName,
@@ -342,11 +352,21 @@ function GuestJoinForm({
 
   async function handleGuestJoin(formData: FormData) {
     'use server';
-    const displayName = (formData.get('displayName') as string | null)?.trim() ?? '';
-    const betaCode = (formData.get('betaCode') as string | null) ?? '';
+    const parsed = GuestJoinFormDataSchema.safeParse({
+      displayName: formData.get('displayName'),
+      betaCode: formData.get('betaCode'),
+    });
+    if (!parsed.success) {
+      redirect(`/join/${token}?error=${encodeURIComponent('Invalid form submission.')}`);
+    }
+
+    const displayName = parsed.data.displayName?.trim() ?? '';
+    const betaCode = parsed.data.betaCode ?? '';
     // joinAsGuest only returns when there's an error; success redirects internally.
     const result = await joinAsGuest({ displayName, token, betaCode });
-    redirect(`/join/${token}?error=${encodeURIComponent(result.error)}`);
+    if (!result.ok) {
+      redirect(`/join/${token}?error=${encodeURIComponent(result.error)}`);
+    }
   }
 
   return (

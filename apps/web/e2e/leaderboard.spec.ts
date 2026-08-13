@@ -8,6 +8,19 @@ const fixtureIds = JSON.parse(
   readFileSync(path.join(__dirname, '.e2e-fixture-ids.json'), 'utf-8'),
 ) as { seededPoolId: string };
 
+/** Points totals render as whole (possibly negative) numbers — see Points branded type. */
+const NUMERIC_POINTS_PATTERN = /^-?\d+$/;
+
+function parseValidatedPoints(text: string | null): number {
+  expect(text, 'expected points text content to be present').not.toBeNull();
+  const trimmed = (text ?? '').trim();
+  expect(trimmed, 'expected points text content to be non-empty').not.toBe('');
+  expect(trimmed, `expected points text "${trimmed}" to be numeric`).toMatch(
+    NUMERIC_POINTS_PATTERN,
+  );
+  return Number(trimmed);
+}
+
 test('leaderboard ranks members by total points, descending', async ({ page }) => {
   await page.goto('/login/e2e-seeded-owner');
   await page.waitForURL('**/pools');
@@ -18,7 +31,7 @@ test('leaderboard ranks members by total points, descending', async ({ page }) =
     const entry = page.locator(`[data-testid="podium-entry-${rank}"]`);
     await expect(entry).toBeVisible();
     const text = await entry.locator('[data-testid="podium-points"]').textContent();
-    podiumPoints.push(Number(text));
+    podiumPoints.push(parseValidatedPoints(text));
   }
 
   const rows = page.locator('[data-testid^="leaderboard-row-"]');
@@ -28,7 +41,7 @@ test('leaderboard ranks members by total points, descending', async ({ page }) =
   const rowPoints: number[] = [];
   for (let i = 0; i < rowCount; i++) {
     const text = await rows.nth(i).locator('[data-testid="leaderboard-points"]').textContent();
-    rowPoints.push(Number(text));
+    rowPoints.push(parseValidatedPoints(text));
   }
 
   const allPoints = [...podiumPoints, ...rowPoints];

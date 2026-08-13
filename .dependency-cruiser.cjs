@@ -12,29 +12,39 @@ const { join } = require('node:path');
 // @/shared/db -> `import 'server-only'`). Next.js enforces the server-only boundary on
 // the whole barrel file, before tree-shaking, so any named import from it drags the
 // server-only chain into the client bundle and fails the build. These files import
-// their one needed module directly instead.
+// their one needed module directly instead. Each exception is scoped to the exact
+// from-file + to-module pair it needs — not a blanket bypass of the feature's whole
+// internals — so the importing file still can't reach any other private module.
 const CLIENT_COMPONENT_BARREL_EXCEPTIONS = [
-  'apps/web/src/app/\\(authenticated\\)/settings/SettingsForm\\.tsx',
+  {
+    from: 'apps/web/src/app/\\(authenticated\\)/settings/SettingsForm\\.tsx',
+    to: 'apps/web/src/features/auth/actions\\.tsx?',
+  },
 ];
 
 const featuresDir = join(__dirname, 'apps/web/src/features');
 const featureBoundaryRules = readdirSync(featuresDir, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
-  .map(({ name: feature }) => ({
-    name: `no-cross-feature-internals-${feature}`,
-    severity: 'error',
-    comment: `Import '${feature}' only via its index.ts public interface.`,
-    from: {
-      pathNot: [
-        `^apps/web/src/features/${feature}/`,
-        ...CLIENT_COMPONENT_BARREL_EXCEPTIONS.map((p) => `^${p}$`),
-      ],
-    },
-    to: {
-      path: `^apps/web/src/features/${feature}/`,
-      pathNot: `^apps/web/src/features/${feature}/index\\.tsx?$`,
-    },
-  }));
+  .map(({ name: feature }) => {
+    const exceptionsForFeature = CLIENT_COMPONENT_BARREL_EXCEPTIONS.filter((exception) =>
+      exception.to.startsWith(`apps/web/src/features/${feature}/`),
+    );
+    return {
+      name: `no-cross-feature-internals-${feature}`,
+      severity: 'error',
+      comment: `Import '${feature}' only via its index.ts public interface.`,
+      from: {
+        pathNot: [`^apps/web/src/features/${feature}/`],
+      },
+      to: {
+        path: `^apps/web/src/features/${feature}/`,
+        pathNot: [
+          `^apps/web/src/features/${feature}/index\\.tsx?$`,
+          ...exceptionsForFeature.map((exception) => `^${exception.to}$`),
+        ],
+      },
+    };
+  });
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {

@@ -1,11 +1,19 @@
 'use server';
 
 import { randomBytes } from 'crypto';
+import { z } from 'zod';
 import { getCurrentActor } from './session';
 import { db } from '@/shared/db';
-import { getUserById, getUserByEmail, upsertPendingEmailLink } from '@cup/db';
+import {
+  getUserById,
+  getUserByEmail,
+  upsertPendingEmailLink,
+  checkRateLimit,
+  RATE_LIMITS,
+} from '@cup/db';
 import { createResendSender, type EmailSender } from './email-provider';
 import { env } from '@/shared/env';
+import { logger } from '@/shared/observability/logger';
 
 const LINK_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -13,6 +21,19 @@ export type LinkEmailResult = { ok: true } | { ok: false; error: string };
 
 const SEND_FAILURE_ERROR =
   'Sending failed — try again later or use your personal login link to sign in.';
+
+// RFC 5321 caps addresses at 254 chars. The domain part excludes '.' from the
+// repeated segment so there's no ambiguous split point for the regex engine to
+// backtrack over (unlike `[^\s@]+\.[^\s@]+`, which does).
+const EMAIL_REGEX = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
+
+const emailSchema = z
+  .string({ invalid_type_error: 'Email is required.' })
+  .trim()
+  .toLowerCase()
+  .min(1, 'Email is required.')
+  .max(254, 'Invalid email address.')
+  .regex(EMAIL_REGEX, 'Invalid email address.');
 
 // Exported for testing only; production path uses the default.
 export async function requestEmailLinkAction(
@@ -26,20 +47,48 @@ export async function requestEmailLinkAction(
   if (!user) return { ok: false, error: 'User not found.' };
   if (user.email) return { ok: false, error: 'Account already has an email address.' };
 
-  const raw = formData.get('email');
-  if (typeof raw !== 'string' || !raw.trim()) return { ok: false, error: 'Email is required.' };
-  const email = raw.trim().toLowerCase();
+  const parsed = emailSchema.safeParse(formData.get('email'));
+  if (!parsed.success) {
+    logger.info(
+      { op: 'connectEmail', outcome: 'rejected', reason: 'invalid_format' },
+      'auth:connectEmail — validation failed',
+    );
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid email address.' };
+  }
+  const email = parsed.data;
 
-  // RFC 5321 caps addresses at 254 chars. The domain part excludes '.' from the
-  // repeated segment so there's no ambiguous split point for the regex engine to
-  // backtrack over (unlike `[^\s@]+\.[^\s@]+`, which does).
-  if (email.length > 254 || !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
-    return { ok: false, error: 'Invalid email address.' };
+  const now = new Date();
+  const [userRl, emailRl] = await Promise.all([
+    checkRateLimit(db, {
+      key: `connect_email:user:${actor.userId}`,
+      limit: RATE_LIMITS.magicLink.limit,
+      windowMs: RATE_LIMITS.magicLink.windowMs,
+      now,
+    }),
+    checkRateLimit(db, {
+      key: `connect_email:email:${email}`,
+      limit: RATE_LIMITS.magicLink.limit,
+      windowMs: RATE_LIMITS.magicLink.windowMs,
+      now,
+    }),
+  ]);
+  if (!userRl.allowed || !emailRl.allowed) {
+    logger.warn(
+      { op: 'connectEmail', outcome: 'rate_limited' },
+      'auth:connectEmail — rate limited',
+    );
+    return { ok: false, error: 'Too many requests. Please try again later.' };
   }
 
   const existing = await getUserByEmail(db, email);
   // Return ok silently — don't reveal whether an email is already registered (enumeration risk).
-  if (existing) return { ok: true };
+  if (existing) {
+    logger.info(
+      { op: 'connectEmail', outcome: 'accepted_no_send' },
+      'auth:connectEmail — email already registered, skipping send',
+    );
+    return { ok: true };
+  }
 
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + LINK_TTL_MS);
@@ -57,6 +106,7 @@ export async function requestEmailLinkAction(
     url,
   });
 
+  logger.info({ op: 'connectEmail', outcome: 'accepted' }, 'auth:connectEmail — link sent');
   return { ok: true };
 }
 
@@ -101,7 +151,11 @@ export async function connectEmailFormAction(
 ): Promise<LinkEmailResult> {
   try {
     return await requestEmailLinkAction(formData, sender);
-  } catch {
+  } catch (e) {
+    logger.error(
+      { op: 'connectEmail', errClass: e instanceof Error ? e.name : 'unknown' },
+      'auth:connectEmail — send failed',
+    );
     return { ok: false, error: SEND_FAILURE_ERROR };
   }
 }

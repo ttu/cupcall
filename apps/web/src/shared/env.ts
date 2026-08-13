@@ -49,3 +49,13 @@ export const env: Env = new Proxy({} as Env, {
     return getEnv()[prop as keyof Env];
   },
 });
+
+/**
+ * Resolves the public base URL used to build absolute links (invites, view links,
+ * login links). Prefers AUTH_URL, falls back to NEXTAUTH_URL, and returns '' when
+ * neither is configured so callers can decide how to degrade (e.g. skip rendering
+ * a link rather than emit a relative URL).
+ */
+export function getPublicBaseUrl(source: Record<string, string | undefined> = process.env): string {
+  return source.AUTH_URL ?? source.NEXTAUTH_URL ?? '';
+}

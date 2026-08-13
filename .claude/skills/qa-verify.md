@@ -8,7 +8,7 @@ committing/creating a PR.
 
 ## Prerequisites
 
-- Dev server running at `http://localhost:3000` (run `pnpm dev` from the repo root if not running)
+- Dev server running at `http://localhost:3010` (run `pnpm dev` from the repo root if not running)
 - DB seeded with current tournament data (`pnpm seed:fresh:current` to mirror production state, or `pnpm seed:ongoing` for the fixed groups-A-to-F scenario)
 - Playwright MCP available
 
@@ -30,7 +30,7 @@ Maximum 2 retries per phase before escalating to the user.
 
 ## Phase 1 — Server & seed check
 
-1. Navigate to `http://localhost:3000/dev`.
+1. Navigate to `http://localhost:3010/dev`.
 2. If the page shows "No users found": stop, tell the user to run `pnpm seed:fresh:current` (or `pnpm seed:ongoing`), then retry.
 3. Confirm the users list shows at least Alice, Bob, and other seeded users.
 4. Note the current simulation checkpoint shown in the Cup Simulator.
@@ -40,7 +40,7 @@ Maximum 2 retries per phase before escalating to the user.
 
 ## Phase 2 — Unauthenticated home
 
-1. Navigate to `http://localhost:3000/` in a fresh (not yet logged-in) state.
+1. Navigate to `http://localhost:3010/` in a fresh (not yet logged-in) state.
 2. Verify the home page renders with **both** entry options:
    - "Join without email" (guest name form)
    - "Sign in with email" (magic-link form)
@@ -51,7 +51,7 @@ Maximum 2 retries per phase before escalating to the user.
 
 ## Phase 3 — Join page (invite link)
 
-1. Navigate to `http://localhost:3000/join/invalid-token`.
+1. Navigate to `http://localhost:3010/join/invalid-token`.
 2. Verify the page renders (should show an error/invalid state, not a blank crash).
 3. Screenshot → `phase-3-join-invalid-token.png`.
 
@@ -59,7 +59,7 @@ Maximum 2 retries per phase before escalating to the user.
 
 ## Phase 4 — Login as Alice (pool owner)
 
-1. Navigate to `http://localhost:3000/dev`.
+1. Navigate to `http://localhost:3010/dev`.
 2. Click the **Alice** button under "Login as User".
 3. Wait for the redirect to complete (expect `/pools`).
 4. Verify the pools page loads and Alice's pool is listed with a score badge.
@@ -130,7 +130,7 @@ Maximum 2 retries per phase before escalating to the user.
 
 ## Phase 10 — Switch user (member perspective)
 
-1. Navigate to `http://localhost:3000/dev`.
+1. Navigate to `http://localhost:3010/dev`.
 2. Click a **non-Alice** user (e.g. Bob).
 3. Wait for the redirect to `/pools`.
 4. Navigate to the same pool detail.
@@ -165,7 +165,7 @@ For each page visited:
 
 ## Phase 13 — Settings page
 
-1. Navigate to `http://localhost:3000/settings`.
+1. Navigate to `http://localhost:3010/settings`.
 2. Verify the page renders (user display name visible, no crash).
 3. Screenshot → `phase-13-settings.png`.
 

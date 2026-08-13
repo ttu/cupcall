@@ -137,6 +137,35 @@ export async function getLoginTokenByUserId(
   return { userId: userId(row.userId), token: row.token, createdAt: row.createdAt };
 }
 
+/**
+ * Atomically returns the user's existing login token, or creates one if none exists.
+ * Uses a conflict-safe insert (onConflictDoNothing on the unique userId constraint) so
+ * concurrent renders can't race each other into rotating the token — unlike a
+ * read-then-write sequence, only one insert ever wins per user.
+ */
+export async function getOrCreateLoginToken(
+  db: Database,
+  id: UserId,
+  generateToken: () => string,
+): Promise<LoginTokenRow> {
+  const [inserted] = await db
+    .insert(schema.userLoginTokens)
+    .values({ userId: id, token: generateToken() })
+    .onConflictDoNothing({ target: schema.userLoginTokens.userId })
+    .returning();
+  if (inserted) {
+    return {
+      userId: userId(inserted.userId),
+      token: inserted.token,
+      createdAt: inserted.createdAt,
+    };
+  }
+
+  const existing = await getLoginTokenByUserId(db, id);
+  if (!existing) throw new Error('getOrCreateLoginToken: no row after insert conflict');
+  return existing;
+}
+
 export async function listAllUsers(db: Database): Promise<UserRow[]> {
   const rows = await db.select().from(schema.users).orderBy(schema.users.displayName);
   return rows.map(toUserRow);

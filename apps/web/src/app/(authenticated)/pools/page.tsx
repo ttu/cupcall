@@ -2,7 +2,8 @@ import type { ReactElement } from 'react';
 import { redirect } from 'next/navigation';
 import { getCurrentActor, ConnectEmailForm } from '@/features/auth';
 import { db } from '@/shared/db';
-import { getUserById, getLoginTokenByUserId, upsertLoginToken, listTournaments } from '@cup/db';
+import { getPublicBaseUrl } from '@/shared/env';
+import { getUserById, getOrCreateLoginToken, listTournaments } from '@cup/db';
 import {
   getUserPools,
   PoolListItem,
@@ -24,12 +25,10 @@ export default async function PoolsPage(): Promise<ReactElement> {
 
   let myLoginToken: string | null = null;
   if (user && !user.email) {
-    const existing = await getLoginTokenByUserId(db, actor.userId);
-    const token = existing?.token ?? generateLoginToken();
-    if (!existing) await upsertLoginToken(db, actor.userId, token);
-    myLoginToken = token;
+    const tokenRow = await getOrCreateLoginToken(db, actor.userId, generateLoginToken);
+    myLoginToken = tokenRow.token;
   }
-  const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? '';
+  const baseUrl = getPublicBaseUrl();
 
   return (
     <div className="max-w-190 mx-auto px-6 py-8">

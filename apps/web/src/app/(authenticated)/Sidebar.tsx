@@ -30,7 +30,8 @@ export function Sidebar({ pools }: Props): ReactElement {
           <div className="text-xs px-2 py-1.5 text-[rgba(255,255,255,.3)]">No pools yet</div>
         )}
         {pools.map((pool) => {
-          const active = pathname.startsWith(`/pools/${pool.id}`);
+          const poolPath = `/pools/${pool.id}`;
+          const active = pathname === poolPath || pathname.startsWith(`${poolPath}/`);
           return (
             <Link
               key={pool.id}

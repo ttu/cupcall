@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
+import { isMember } from '@cup/db';
 import { getCurrentActor } from '@/features/auth';
 import { db } from '@/shared/db';
 import { getPoolDetail, ScoringGuide } from '@/features/pools';
@@ -14,6 +15,8 @@ export default async function PoolScoringPage({ params }: Props): Promise<ReactE
 
   const actor = await getCurrentActor();
   if (!actor) redirect('/');
+
+  if (!(await isMember(db, poolId, actor.userId))) notFound();
 
   const detail = await getPoolDetail(db, poolId);
   if (!detail) notFound();

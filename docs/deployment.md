@@ -85,7 +85,7 @@ This is optional but recommended once the app is in active use.
 
 ### 2b. Get an API key
 
-**API Keys** → **Create API Key** → name it `cup-prediction-production` → **Full access** → **Create**.
+**API Keys** → **Create API Key** → name it `cup-prediction-production` → permission **Sending access**, restricted to your verified sending domain (not **Full access**) → **Create**.
 
 Copy the key — it starts with `re_`. You won't see it again.
 
@@ -120,12 +120,12 @@ On the import screen, expand **Build and Output Settings** and set:
 
 In **Environment Variables**, add these four (set for **Production**, **Preview**, and **Development**):
 
-| Key              | Value                             | Notes                                  |
-| ---------------- | --------------------------------- | -------------------------------------- |
-| `DATABASE_URL`   | Neon **pooled** connection string | All environments                       |
-| `AUTH_SECRET`    | Random 32+ char string            | Generate: `openssl rand -base64 32`    |
-| `AUTH_URL`       | `https://your-app.vercel.app`     | Update to custom domain if you add one |
-| `RESEND_API_KEY` | `re_xxxx…` from Resend            |                                        |
+| Key              | Value                                                                                                                                                                                     | Notes                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`   | **Production**: Neon **pooled** connection string. **Preview**: an isolated Neon branch/staging DB (see §1d) — never the production string. **Development**: your own local/dev database. | Set a different value per environment                                                      |
+| `AUTH_SECRET`    | Random 32+ char string                                                                                                                                                                    | Generate: `openssl rand -base64 32`                                                        |
+| `AUTH_URL`       | `https://your-app.vercel.app`                                                                                                                                                             | Update to custom domain if you add one                                                     |
+| `RESEND_API_KEY` | `re_xxxx…` from Resend                                                                                                                                                                    | Scoped to `sending_access` on the verified sender domain — not a full-access key (see §2b) |
 
 > **`AUTH_URL`** must be the exact public URL including `https://`. For preview deploys this needs to match the preview URL, which changes per PR. The simplest fix is to only set `AUTH_URL` for the **Production** environment and rely on Auth.js's auto-detection for previews (it reads `VERCEL_URL` automatically when `AUTH_URL` is unset).
 

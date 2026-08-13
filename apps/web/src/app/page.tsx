@@ -79,7 +79,7 @@ export default async function HomePage(): Promise<ReactElement> {
         {/* Left: copy + forms */}
         <div className="max-w-140">
           <Chip variant="green" dot style={{ marginBottom: 22 }}>
-            World Cup 2026 · kicks off June 11
+            World Cup 2026 · the final whistle has blown
           </Chip>
 
           <h1 className="display mb-5" style={{ fontSize: 'clamp(42px, 7vw, 72px)' }}>

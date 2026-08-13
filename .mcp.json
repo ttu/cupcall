@@ -10,15 +10,7 @@
     },
     "playwright": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest",
-        "--headless",
-        "--browser",
-        "chromium",
-        "--no-sandbox",
-        "--isolated"
-      ],
+      "args": ["-y", "@playwright/mcp@latest", "--headless", "--browser", "chromium", "--isolated"],
       "env": {
         "NODE_OPTIONS": ""
       }

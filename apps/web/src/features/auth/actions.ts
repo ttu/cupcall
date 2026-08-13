@@ -38,13 +38,22 @@ export async function updateDisplayNameAction(
 
   const displayName = parsed.data;
 
-  const row = await updateDisplayName(db, actor.userId, displayName);
+  let row;
+  try {
+    row = await updateDisplayName(db, actor.userId, displayName);
+  } catch (e) {
+    logger.error(
+      { op: 'updateDisplayName', errClass: e instanceof Error ? e.name : 'unknown' },
+      'auth:updateDisplayName — failed',
+    );
+    return { error: 'Could not update display name', saved: false };
+  }
   if (!row) {
-    logger.error({ userId: actor.userId }, 'auth:updateDisplayName — user not found');
+    logger.error({ op: 'updateDisplayName' }, 'auth:updateDisplayName — user not found');
     return { error: 'Could not update display name', saved: false };
   }
 
-  logger.info({ userId: actor.userId }, 'auth:updateDisplayName — updated');
+  logger.info({ op: 'updateDisplayName' }, 'auth:updateDisplayName — updated');
   revalidatePath('/settings');
   return { error: null, saved: true };
 }

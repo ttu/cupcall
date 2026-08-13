@@ -193,7 +193,7 @@ FROM pools p
 JOIN scores s ON s.pool_id = p.id
 JOIN "user" u ON u.id = s.user_id
 WHERE p.tournament_id = 'wc-2026'
-ORDER BY p.id, s.points_total DESC;
+ORDER BY p.id, s.points_total DESC, u.display_name ASC, u.id ASC;
 ```
 
 ---
@@ -232,7 +232,7 @@ SELECT
 ### Expired Auth.js verification tokens (magic-link) not yet cleaned up
 
 ```sql
-SELECT identifier, token, expires
+SELECT identifier, expires
 FROM "verificationToken"
 WHERE expires < now();
 ```
@@ -240,7 +240,7 @@ WHERE expires < now();
 ### Expired pending email-link requests (guest → email upgrade)
 
 ```sql
-SELECT user_id, email, token, expires_at
+SELECT user_id, email, expires_at
 FROM pending_email_link
 WHERE expires_at < now();
 ```

@@ -73,15 +73,15 @@ See [`docs/deployment.md`](./docs/deployment.md) for deploying to Vercel + Neon 
 
 ## Scripts
 
-| Command                                                    | Purpose                                                                  |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `pnpm dev`                                                 | Start Postgres (if needed), run migrations, start the Next.js dev server |
-| `pnpm test` / `pnpm test:watch` / `pnpm test:coverage`     | Vitest (unit + pglite integration)                                       |
-| `pnpm e2e`                                                 | Playwright end-to-end tests                                              |
-| `pnpm lint` / `pnpm format` / `pnpm typecheck`             | ESLint / Prettier / `tsc -b`                                             |
-| `pnpm sync -- <tournamentId>`                              | Validate + upsert tournament/results JSON, rescore every card            |
-| `pnpm seed` / `seed:ongoing` / `seed:current` / `seed:e2e` | Seed a demo/test pool (see `scripts/`)                                   |
-| `pnpm db:migrate` / `pnpm db:reset`                        | Run Drizzle migrations / drop + re-migrate the local DB                  |
+| Command                                                                   | Purpose                                                                  |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `pnpm dev`                                                                | Start Postgres (if needed), run migrations, start the Next.js dev server |
+| `pnpm test` / `pnpm test:watch` / `pnpm test:coverage`                    | Vitest (unit + pglite integration)                                       |
+| `pnpm e2e`                                                                | Playwright end-to-end tests                                              |
+| `pnpm lint` / `pnpm format` / `pnpm typecheck`                            | ESLint / Prettier / `tsc -b`                                             |
+| `pnpm sync -- <tournamentId>`                                             | Validate + upsert tournament/results JSON, rescore every card            |
+| `pnpm seed` / `pnpm seed:ongoing` / `pnpm seed:current` / `pnpm seed:e2e` | Seed a demo/test pool (see `scripts/`)                                   |
+| `pnpm db:migrate` / `pnpm db:reset`                                       | Run Drizzle migrations / drop + re-migrate the local DB                  |
 
 Full gate to run before pushing: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm -C apps/web build`.
 
