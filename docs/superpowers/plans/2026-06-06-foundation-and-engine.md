@@ -12,8 +12,10 @@
 
 **Conventions:**
 
-- Conventional Commits (`feat:`, `chore:`, `test:`, `docs:`). Commit after each green step group.
-- TDD strictly: write the failing test, watch it fail, implement minimally, watch it pass, refactor, commit.
+- Conventional Commits (`feat:`, `chore:`, `test:`, `docs:`). One self-contained commit per feature,
+  containing its implementation, tests, and documentation together. No intermediate or partial
+  commits for a feature — do not commit after each green step group; land the whole feature at once.
+- TDD strictly: write the failing test, watch it fail, implement minimally, watch it pass, refactor.
 - All engine functions are **pure** (no IO, clock, or randomness). Data in → data out.
 
 ---
@@ -161,7 +163,7 @@ import tsparser from '@typescript-eslint/parser';
 export default [
   { ignores: ['**/dist/**', '**/node_modules/**', '**/*.tsbuildinfo'] },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.tsx'],
     languageOptions: { parser: tsparser, parserOptions: { project: true } },
     plugins: { '@typescript-eslint': tseslint },
     rules: {
@@ -193,9 +195,14 @@ _(The boundary rule matters once `apps/web/features/_` exists; harmless now.)\*
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  test: { include: ['packages/**/src/**/*.test.ts'], environment: 'node' },
+  test: { include: ['{packages,apps}/**/src/**/*.test.ts'], environment: 'node' },
 });
 ```
+
+_(As actually built, the root `vitest.config.ts` include glob is
+`['{packages,apps}/**/src/**/*.test.ts', 'scripts/**/*.test.ts']` — covering both `packages/` and
+`apps/web/src`, plus the sync script. `.spec.ts` is deliberately **not** included: that suffix is
+reserved for Playwright E2E specs under `apps/web/e2e/`, run by a separate tool, not Vitest.)_
 
 - [ ] **Step 4: Install deps and init husky**
 

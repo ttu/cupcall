@@ -118,11 +118,13 @@ features/pool-archive/
   api/actions.ts                         ← archivePoolAction (owner-only server action)
   api/actions.test.ts                    ← 3 integration tests (owner/non-owner/invalid input)
   ui/ArchivePoolCard.tsx                 ← archive/re-archive button + "View archive" link
-  ui/ArchiveMemberRow.tsx                ← rank/name/points row + embedded ScoreBreakdownCard
+  ui/ArchiveStandingsPanel.tsx           ← ranked list of ArchiveStandingRow entries
+  ui/ArchiveStandingRow.tsx              ← rank/name/points row + embedded ScoreBreakdownCard
   ui/ArchiveHeroCard.tsx                 ← champion/final-score hero card (data read live)
   ui/ArchiveHighlightsPanel.tsx          ← 4 highlight rows
   ui/ArchiveLeadChangesPanel.tsx         ← lead-changes timeline
   ui/ArchiveStatTiles.tsx                ← matches played / predictions made / exact-score rate / upset
+  ui/ArchivePoolStatsPanel.tsx           ← overall prediction accuracy + other pool-level stats
   index.ts                               ← public barrel
 ```
 

@@ -97,7 +97,14 @@
 Implements the `@auth/drizzle-adapter` Postgres schema + the app's `display_name` (functional-spec §5).
 
 - [ ] **Step 1:** Failing test: after migrating a pglite db (use the `make-test-db` harness once it exists — for now, push the schema with `drizzle-kit push` or a programmatic create), inserting a user with `email` + `display_name` round-trips; a second user with the same email violates the unique constraint.
-- [ ] **Step 2:** Implement `auth.ts` with `pgTable`s: `users` (`id` uuid pk default, `email` text unique not null, `displayName` text not null, `emailVerified` timestamp), `accounts`, `sessions`, `verificationTokens` matching the Drizzle adapter's expected columns. Export from `schema/index.ts`.
+- [ ] **Step 2:** Implement `auth.ts` with `pgTable`s: `users` (`id` text pk, app-generated via
+      `crypto.randomUUID()` through Drizzle's `$defaultFn` — not a DB-side uuid default —, `email`
+      text unique, `displayName` text not null, `emailVerified` timestamp), `accounts`, `sessions`,
+      `verificationTokens`. The exported Drizzle identifiers use the plural convenience names
+      (`users`, `accounts`, `sessions`, `verificationTokens`), but each table's **physical** name
+      (the first `pgTable()` argument) must be the `@auth/drizzle-adapter` default — singular:
+      `'user'`, `'account'`, `'session'`, `'verificationToken'` — so the stock `DrizzleAdapter`
+      works without a custom table-name mapping. Export from `schema/index.ts`.
 - [ ] **Step 3:** Run test → pass. Commit `feat(db): auth schema (users, accounts, sessions, verification tokens)`.
 
 ---
@@ -121,14 +128,26 @@ Data-as-code targets (populated by the Plan 3 sync script), per functional-spec 
 Per functional-spec §10 (post per-pool-predictions + owner-edit model).
 
 - [ ] **Step 1:** Failing tests for the key constraints:
-  - `pools` (`id` uuid, `tournament_id` fk, `owner_id` fk→users, `name`, `invite_token_hash`, `token_expires_at?`, `created_at`).
+  - `pools` (`id` text pk, app-generated via `crypto.randomUUID()` — no Postgres `uuid` column type
+    or DB-side default — `tournament_id` fk, `owner_id` fk→users, `name`, `invite_token_hash`,
+    `token_expires_at?`, `created_at`).
   - `pool_members` unique `(pool_id, user_id)`; `pool_kicks` (`pool_id`,`user_id`,`kicked_at`).
-  - `predictions` unique `(pool_id, user_id)`, `locked_at?`; child tables `prediction_group_scores`, `prediction_knockout_picks`, `prediction_finish_scores` (`match` final|bronze), `prediction_specials` (`bet_key`, `value` jsonb).
-  - `prediction_edits` (`prediction_id`, `editor_user_id`, `field_path`, `old_value` jsonb, `new_value` jsonb, `reason?`, `source` manual|import, `edited_at`).
-  - `scores` unique `(pool_id, user_id)`, `points_total`, `breakdown` jsonb (`ScoreBreakdown`), `updated_at`.
-  - `rate_limits` (`key`, `window_start`, `count`).
+  - `predictions` (`id` text pk, same app-generated `crypto.randomUUID()` convention) unique
+    `(pool_id, user_id)`, `locked_at?`; child tables `prediction_group_scores`,
+    `prediction_knockout_picks`, `prediction_finish_scores` (`match` final|bronze),
+    `prediction_specials` (`bet_key`, `value` jsonb) — these child tables have no surrogate `id`,
+    keyed by their natural composite columns instead.
+  - `prediction_edits` (`id` text pk, same `crypto.randomUUID()` convention; `prediction_id`,
+    `editor_user_id`, `field_path`, `old_value` jsonb, `new_value` jsonb, `reason?`, `source`
+    manual|import, `edited_at`).
+  - `scores` unique `(pool_id, user_id)` as its composite pk (no surrogate `id`), `points_total`,
+    `breakdown` jsonb (`ScoreBreakdown`), `updated_at`.
+  - `rate_limits` composite pk `(key, window_start)` (no surrogate `id`), `count`.
     Tests assert the unique constraints actually reject duplicates (insert twice → throws).
-- [ ] **Step 2:** Implement the tables with FKs + unique indexes + jsonb `.$type<>()` from engine types.
+- [ ] **Step 2:** Implement the tables with FKs + unique indexes + jsonb `.$type<>()` from engine
+      types. All ids are `text` columns populated by `crypto.randomUUID()` (via Drizzle's
+      `$defaultFn`) — deliberately not Postgres `uuid` columns and not DB-generated defaults, so
+      the app controls id generation uniformly across environments (including pglite in tests).
 - [ ] **Step 3:** Run → pass. Commit `feat(db): pools, predictions, scores, rate-limit schema`.
 
 ---

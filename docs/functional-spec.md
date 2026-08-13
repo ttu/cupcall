@@ -203,6 +203,10 @@ Results are appended/edited as matches finish, committed, and synced.
   },
 
   // Actual knockout fixtures as they become known (real results, independent of any player).
+  // The sync job derives roundOf16/roundOf8/roundOf4/finalists from this array's winners
+  // (R32→roundOf16, R16→roundOf8, QF→roundOf4, SF→finalists) as each round completes — this
+  // is how `answers.finalists` (consumed by scoreFinal, see scoring.md §2.5) gets its value.
+  // finalists has no explicit slot under "answers" below; it is derivation-only.
   "knockout": [
     {
       "round": "QF",
@@ -228,7 +232,9 @@ Results are appended/edited as matches finish, committed, and synced.
     "decisiveGoalPlayer": "ARG-10",
   },
 
-  // Answers to the discrete bets (§7.4–7.5). null until decided.
+  // Answers to the discrete bets (§7.4–7.5). null until decided. roundOf16/roundOf8/roundOf4
+  // are normally DERIVED from "knockout" above (see note there); may be supplied here to
+  // override, same pattern as "groupOrder".
   "answers": {
     "roundOf8": ["ARG", "BRA", "FRA", "ESP", "ENG", "NED", "POR", "CRO"], // the 8 QF teams
     "roundOf4": ["ARG", "FRA", "NED", "POR"], // teams confirmed to have reached the SF (order doesn't matter)
@@ -296,7 +302,8 @@ time (§8.3).
 - **Auto-derived from these picks** (never hand-entered): the **Round of 8** (the player's eight QF
   teams), the two finalists, the bronze pair, the **predicted semifinalists** (the player's four QF
   winner picks — needs only those picks, scored per §7.4), and the **top-4 ranking** (champion = final
-  winner, runner-up = final loser, 3rd = bronze winner, 4th = bronze loser — display only, not scored).
+  winner, runner-up = final loser, 3rd = bronze winner, 4th = bronze loser — used both for display and
+  as the input to the semifinalist position-bonus scoring, §7.4).
 - **Re-derivation rule:** any edit to group scores (by the player before lock, or by the owner at any
   time per §8.3) rebuilds the bracket; winner picks for teams that no longer appear are dropped and
   must be re-picked. The UI warns before applying a change that disrupts existing picks.
@@ -446,7 +453,9 @@ Each correct answer scores once, from `results.answers` (or the final match for 
 - A card's score (one per user per pool) = sum of all awarded points to date.
 - Scores accrue **incrementally** as results sync in: group match/order points during the group
   stage, Round-of-8 once quarter-finalists are known, semifinalists as each QF match completes,
-  bronze/final at the end, and each special bet as its answer is filled in.
+  each special bet as its answer is filled in, and for the finish matches: Final team points as
+  each semifinal completes (§7.4), Final exact-score points once the Final is played, and Bronze
+  team + exact-score points together once the Bronze match is played (§7.3).
 
 ### 7.7 Worked example
 
@@ -565,7 +574,11 @@ Indicative schema; column types abbreviated.
 - **actual_group_order** — `tournament_id`, `group_id`, `position` (1–4), `team_id` (derived from
   results, or overridden per §4.2)
 - **actual_answers** — `tournament_id`, `bet_key`, `value` (jsonb) — actual results of the discrete
-  bets (Round-of-8 set, top-4 order, special bets); some derivable from `matches`
+  bets: unordered team sets (Round-of-16/8/4 qualifiers, finalists) and special bets; most are
+  auto-derived from `matches`' knockout rows during sync (§4.2), with an explicit value overriding
+  the derived one where supported. The **top-four order** (champion/runner-up/3rd/4th) is not
+  stored here at all — it's derived at read time from the Final/Bronze rows in `matches`
+  (`winner_team_id` per side), same as the engine's `topFour` (§7.4)
 - **predictions** — `id`, `pool_id`, `user_id`, `tournament_id`, `locked_at?`,
   unique `(pool_id, user_id)` _(one card per user per pool — not shared across pools)_
 - **prediction_group_scores** — `prediction_id`, `match_id`, `home_goals`, `away_goals`

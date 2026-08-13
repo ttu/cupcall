@@ -144,6 +144,12 @@ export async function clearPredictionInputs(db: Database, predictionId: string):
 }
 ```
 
+> **As-built note (verified against `packages/db/src/repositories/predictions.ts` today):** the
+> shipped `clearPredictionInputs` still runs these four deletes via `Promise.all`, not inside the
+> repository's transaction API — a mid-flight failure can leave some sub-tables cleared and others
+> not. This plan doc accurately reflects the current implementation; making the four deletes
+> transactional is a real, open code change, out of scope for this docs-only pass.
+
 - [ ] **Step 1.5: Run tests to verify they pass**
 
 ```bash
@@ -410,6 +416,19 @@ export async function clearAllPredictions(
   }
 }
 ```
+
+> **As-built note:** `clearAllPredictions` is, and was always designed to be (see the
+> `// Clear all predictions (own card)` comment above and the plan's Goal statement — "reset...
+> their prediction card"), a **self-service, own-card** dev tool: it gates on `assertCanEditOwnCard`
+> and clears the _acting_ user's own predictions, blocked once locked, same as any other own-card
+> edit — never another member's card. It is not, and was never, a pool-owner moderation tool, so it
+> deliberately does **not** go through `assertCanOwnerEdit`/`executeOwnerSave`'s owner-override
+> flow, and does not call `createPredictionEdit` — the shipped codebase reserves that audit trail
+> for `assertCanOwnerEdit`-gated edits to _other_ members' cards and for backup/CSV imports (see
+> `packages/db/src/repositories/edits.ts` callers), not for a user's own-card operations. A
+> CodeRabbit finding suggesting this function should use the owner-override authz flow and write an
+> audit record appears to misread the feature's scope; the shipped behavior matches this plan's
+> original design.
 
 - [ ] **Step 2.6: Run tests to verify they pass**
 
@@ -678,6 +697,11 @@ export function DevControls({ poolId, isDev }: Props): ReactElement {
     });
   }
 
+  // As-built note: the shipped `apps/web/src/features/predictions/ui/DevControls.tsx` still
+  // matches this sketch — failures only go to `console.error`, with no user-visible status or
+  // live region. This is a real, still-open gap (a dev-only control failing silently in the UI),
+  // not a docs inaccuracy; out of scope for this docs-only pass.
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {isDev && (
@@ -743,6 +767,12 @@ export function PredictStepper({ card, teams, players, isDev }: Props): ReactEle
 }
 <DevControls poolId={card.poolId} isDev={isDev} />;
 ```
+
+_(As-built: `PredictStepper.tsx` also threads a `locked` prop —
+`<DevControls poolId={card.poolId} isDev={isDev} locked={locked} />` — which the shipped
+`DevControls` uses to hide the "Clear all" button once the pool is locked, since `clearAllPredictions`
+clears the actor's own card and is blocked by `assertCanEditOwnCard` after lock, same as any other
+own-card edit.)_
 
 - [ ] **Step 4.3: Pass `isDev` from `predict/page.tsx`**
 

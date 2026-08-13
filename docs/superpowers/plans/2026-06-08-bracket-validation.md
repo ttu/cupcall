@@ -309,6 +309,19 @@ Expected: FAIL — `findInvalidatedPickKeys is not a function` or similar.
 
 - [ ] **Step 1: Add `resolveSlotSafe` and `findInvalidatedPickKeys` to `bracket.ts`**
 
+> **As-built note (verified against `packages/engine/src/bracket.ts` today):** this plan's sketch
+> was implemented essentially as written, including two rough edges that a later CodeRabbit review
+> flagged and that are still present in the shipped code — this is a real code issue, not a docs
+> issue, and is out of scope for a docs-only pass:
+>
+> - `resolveSlotSafe`'s bare `catch { return undefined }` still swallows every exception from
+>   `resolveSlot`, including malformed slot references and any future non-"unresolved" failure
+>   mode, not just the expected "no group order yet" case.
+> - `findInvalidatedPickKeys(t, newGroupOrders, newQualifiers, existingPicks)` still takes no
+>   group-completeness parameter — it cannot distinguish a group's placeholder order (from partial
+>   standings) from a genuinely final one, so it can't invalidate picks resting on slots derived
+>   from a group that later becomes incomplete again.
+
 Append after the existing `export { resolveSlot }` line at the bottom of `packages/engine/src/bracket.ts`:
 
 ```typescript
@@ -785,6 +798,17 @@ function resolveSlotTeam(
   return undefined;
 }
 ```
+
+> **As-built note:** this `resolveSlotTeam` sketch (with its raw `posGroupMatch[2] as GroupId`
+> cast) was superseded before shipping — there is no `resolveSlotTeam` in
+> `packages/engine/src/bracket.ts` today. The shipped `resolveSlot(ref, groupOrders, rankedThirds)`
+> already validates the captured group letter through the branded `groupId()` constructor (from
+> `brand.ts`) rather than an `as GroupId` cast, and throws (rather than returning `undefined`) on
+> an unrecognised or unresolvable reference; callers that need a non-throwing variant use the
+> separate `resolveSlotSafe` wrapper (see the as-built note on Step 1 above for its own caveat).
+> Group-completeness gating is handled differently in the shipped design — via `buildBracket`'s
+> `dropStalePicks`/`resolveEntryParticipants` flow — not via `completeGroups`/`allGroupsComplete`
+> parameters threaded into the resolver itself.
 
 - [ ] **Step 4: Thread the new arguments into all `resolveSlotTeam` call sites**
 

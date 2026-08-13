@@ -17,7 +17,7 @@ track how they're scoring in real time as the tournament progresses.
 **Knockout tab** — bracket tracker:
 
 - All knockout rounds (entry round → Final) with per-tie match cards
-- Each card: actual score / upcoming date, your pick, pick status (alive / busted / upcoming)
+- Each card: actual score / upcoming date, your pick, pick status (alive / busted / pending / no-pick)
 - Third-place match displayed separately
 - Right rail: bracket health (N/M picks alive + progress bar), champion pick status
 
@@ -99,11 +99,21 @@ a player who isn't in that roster:
    ```
 3. Run `pnpm sync -- <tournamentId>`.
 
-This is safe even after predictions lock: predictions are sealed, so growing
-the roster doesn't change anyone's pick. The results view resolves the
-player ID through the updated roster, so the flag + name render correctly.
-No card can match, so every member's special-bet row scores `missed` for
-that bet.
+This is safe even after predictions lock: sealed cards keep their original
+pick, so growing the roster doesn't retroactively change anyone's answer.
+The results view resolves the player ID through the updated roster, so the
+flag + name render correctly. By default no sealed card can match, so every
+member's special-bet row scores `missed` for that bet.
+
+The exception is anything written to the card **after** the roster grows:
+a pool-owner edit (`ownerSaveSpecialBet`) reads player options from the
+live roster, so the newly-added player appears as a selectable choice; a
+backup import (`restorePoolFromBackup`) writes special-bet values from the
+backup JSON without validating them against any roster. Either path can
+produce a prediction that now equals the `results.json` answer and scores
+a `hit`. There's no automatic detection for this — any owner edit or import
+performed after a roster update should be audited and, if it touches an
+affected bet, rescored deliberately.
 
 Sync fails fast if a player ID in `results.json` isn't in
 `tournament.json` → `players[]` — see
