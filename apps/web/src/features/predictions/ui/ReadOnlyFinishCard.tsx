@@ -1,16 +1,17 @@
 import type { ReactElement } from 'react';
+import type { TeamId } from '@cup/engine';
 import { ChampionBadge } from './ChampionBadge';
 import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = {
   label: string;
-  homeTeamId: string | null;
+  homeTeamId: TeamId | null;
   homeTeamName: string | null;
-  awayTeamId: string | null;
+  awayTeamId: TeamId | null;
   awayTeamName: string | null;
   predictedHome: number | null;
   predictedAway: number | null;
-  pickedWinnerId: string | null;
+  pickedWinnerId: TeamId | null;
   isFinal: boolean;
 };
 

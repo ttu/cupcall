@@ -222,7 +222,13 @@ function buildOutcome(options: {
       ? -Infinity
       : Math.max(...rivals.map((r) => r.lockedScore + sumPoints(r.pendingItems)));
 
-  if (leader.lockedScore >= maxRivalCeiling) {
+  const tiedRivalWinsTieBreak = rivals.some(
+    (r) =>
+      r.lockedScore + sumPoints(r.pendingItems) === leader.lockedScore &&
+      r.displayName.localeCompare(leader.displayName) < 0,
+  );
+
+  if (leader.lockedScore >= maxRivalCeiling && !tiedRivalWinsTieBreak) {
     return {
       winnerTeamId: scenarioWinnerTeamId,
       winnerTeamName: scenarioWinnerTeamName,

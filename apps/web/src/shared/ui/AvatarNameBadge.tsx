@@ -17,7 +17,7 @@ export function AvatarNameBadge({
 }: Props): ReactElement {
   return (
     <>
-      <Avatar name={name} index={avatarIndex} size={size} />
+      <Avatar name={name} index={avatarIndex} size={size} decorative />
       <span
         className={cn(
           'text-[13px] font-bold truncate',

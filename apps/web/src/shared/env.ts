@@ -48,6 +48,12 @@ export const env: Env = new Proxy({} as Env, {
   get(_target, prop: string) {
     return getEnv()[prop as keyof Env];
   },
+  ownKeys() {
+    return Reflect.ownKeys(getEnv());
+  },
+  getOwnPropertyDescriptor(_target, prop: string | symbol) {
+    return { ...Reflect.getOwnPropertyDescriptor(getEnv(), prop), configurable: true };
+  },
 });
 
 /**

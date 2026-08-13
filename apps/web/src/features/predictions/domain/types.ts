@@ -15,8 +15,16 @@ import type {
   TournamentId,
   PredictionId,
 } from '@cup/engine';
+import type { MatchHit } from '@/features/results';
 
 export type { BetInputKind, SpecialBetDef };
+
+// ---------------------------------------------------------------------------
+// Read-only card annotations
+// ---------------------------------------------------------------------------
+
+/** Per-match hit/points annotation used to decorate a read-only card with scoring results. */
+export type MatchScore = { hit: MatchHit; points: number };
 
 // ---------------------------------------------------------------------------
 // Card status

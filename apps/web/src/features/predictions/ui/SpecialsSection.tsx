@@ -25,6 +25,7 @@ export function SpecialsSection({
   onSave,
 }: Props): ReactElement {
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const allFilled = specials.every((b) => b.value !== null);
 
@@ -34,9 +35,16 @@ export function SpecialsSection({
       return;
     }
     setPendingKey(betKey);
+    setSaveError(null);
     startTransition(async () => {
-      await saveSpecialBet({ poolId, betKey, value });
-      setPendingKey(null);
+      try {
+        await saveSpecialBet({ poolId, betKey, value });
+      } catch (error) {
+        setSaveError('Could not save your pick. Please try again.');
+        console.error('saveSpecialBet failed', error);
+      } finally {
+        setPendingKey(null);
+      }
     });
   }
 
@@ -46,6 +54,11 @@ export function SpecialsSection({
       aria-label="Special bets"
       className="flex flex-col gap-3"
     >
+      {saveError && (
+        <p role="alert" className="text-xs text-danger">
+          {saveError}
+        </p>
+      )}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
         {specials.map((bet) => (
           <SpecialBetCard

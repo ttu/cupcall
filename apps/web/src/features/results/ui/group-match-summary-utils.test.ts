@@ -47,6 +47,14 @@ describe('resolveGroupPredictionHitDisplay', () => {
     ).toEqual({ kind: 'custom', label: 'No pick', tone: 'muted' });
   });
 
+  it('maps a partial prediction (home set, away missing) to a muted "No pick" chip', () => {
+    expect(
+      resolveGroupPredictionHitDisplay(
+        prediction({ predictedHome: 2, predictedAway: null, hit: 'pending' }),
+      ),
+    ).toEqual({ kind: 'custom', label: 'No pick', tone: 'muted' });
+  });
+
   it('maps a pending hit with a prediction to a muted "Pending" chip', () => {
     expect(
       resolveGroupPredictionHitDisplay(

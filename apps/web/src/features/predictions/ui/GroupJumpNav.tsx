@@ -10,7 +10,7 @@ export function GroupJumpNav({ groups }: { groups: GroupView[] }): ReactElement 
   }
 
   return (
-    <div className="flex gap-1.5 flex-wrap">
+    <nav aria-label="Jump to group" className="flex gap-1.5 flex-wrap">
       {groups.map((g) => {
         const hasIncomplete = g.matches.some((m) => m.predictedHome === null);
         return (
@@ -18,6 +18,7 @@ export function GroupJumpNav({ groups }: { groups: GroupView[] }): ReactElement 
             key={g.groupId}
             type="button"
             onClick={() => jumpToGroup(g.groupId)}
+            aria-label={`Jump to Group ${g.groupId}`}
             className={cn(
               'w-9.5 h-9.5 rounded-cup-sm border-0 cursor-pointer font-[family-name:var(--font-display)] text-base font-normal bg-surface-2 text-ink-soft transition-[background] duration-150',
               hasIncomplete
@@ -29,6 +30,6 @@ export function GroupJumpNav({ groups }: { groups: GroupView[] }): ReactElement 
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }

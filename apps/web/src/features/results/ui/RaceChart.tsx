@@ -16,11 +16,11 @@ export function RaceChart({
   players,
 }: {
   stages: string[];
-  nowIndex: number;
+  nowIndex: number | null;
   players: RaceChartPlayer[];
 }): ReactElement {
   const n = stages.length - 1;
-  if (n === 0 || players.length === 0) return <div className="h-40" />;
+  if (n <= 0 || players.length === 0 || nowIndex === null) return <div className="h-40" />;
 
   const allValues = players.flatMap((p) => p.points);
   const { yMin, yMax } = computeYBounds(allValues);

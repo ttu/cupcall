@@ -6,7 +6,7 @@ import type { SpecialBetView } from '../domain/types';
 import { teamFlag, cn } from '@/shared/ui';
 
 const SELECT_CLS =
-  'w-full rounded-cup-sm border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui';
+  'w-full rounded-cup-sm border border-line py-2 px-3 text-[13px] bg-surface text-ink font-cup-ui outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:border-green-500';
 
 type OnSaveSpecialBet = (key: string, value: string | number | boolean) => void;
 
@@ -135,10 +135,7 @@ function NumberBetInput({
         const v = parseInt(e.target.value, 10);
         if (!isNaN(v)) onSave(bet.key, v);
       }}
-      className={cn(
-        'w-24 rounded-cup-sm border border-line py-2 px-3 text-[13px] bg-surface text-ink outline-none font-cup-ui',
-        locked && 'opacity-50',
-      )}
+      className={cn(SELECT_CLS, 'w-24', locked && 'opacity-50')}
     />
   );
 }
@@ -153,7 +150,8 @@ function BoolBetButtons({
   onSave: OnSaveSpecialBet;
 }): ReactElement {
   return (
-    <div className={cn('flex gap-2', locked && 'opacity-50')}>
+    <fieldset className={cn('flex gap-2 border-0 m-0 p-0', locked && 'opacity-50')}>
+      <legend className="sr-only">{bet.label}</legend>
       {(['Yes', 'No'] as const).map((label) => {
         const boolVal = label === 'Yes';
         const active = bet.value === boolVal;
@@ -165,6 +163,7 @@ function BoolBetButtons({
             onClick={() => onSave(bet.key, boolVal)}
             className={cn(
               'py-1.5 px-4 rounded-cup-sm border-0 text-[13px] font-bold font-cup-ui transition-[background] duration-[120ms]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500',
               locked ? 'cursor-default' : 'cursor-pointer',
               active
                 ? 'bg-green-500 text-[oklch(0.18_0.02_160)]'
@@ -175,7 +174,7 @@ function BoolBetButtons({
           </button>
         );
       })}
-    </div>
+    </fieldset>
   );
 }
 

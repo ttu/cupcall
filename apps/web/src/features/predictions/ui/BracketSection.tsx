@@ -2,6 +2,8 @@
 
 import type { ReactElement } from 'react';
 import { useState, useTransition } from 'react';
+import type { BracketMatchKey, PoolId, TeamId } from '@cup/engine';
+import { bracketMatchKey as bmk, teamId as asTeamId } from '@cup/engine';
 import { saveKnockoutPick, saveFinishScore } from '../api/actions';
 import type { BracketView } from '../domain/types';
 import { TieCard } from './TieCard';
@@ -21,11 +23,13 @@ function columnItemGap(n: number): number {
 
 type Props = {
   bracket: BracketView;
-  poolId: string;
+  poolId: PoolId;
   locked: boolean;
-  onPick?: (bracketMatchKey: string, winner: string) => void | Promise<void>;
+  onPick?: (bracketMatchKey: BracketMatchKey, winner: TeamId) => void | Promise<void>;
   onFinishSave?: (match: 'final' | 'bronze', home: number, away: number) => void;
 };
+
+const DEFAULT_PICK_ERROR = 'Could not save your pick. Please try again.';
 
 export function BracketSection({
   bracket,
@@ -35,19 +39,33 @@ export function BracketSection({
   onFinishSave,
 }: Props): ReactElement {
   const [pendingMatchKey, setPendingMatchKey] = useState<string | null>(null);
+  const [pickError, setPickError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   async function handlePick(bracketMatchKey: string, winner: string) {
+    setPendingMatchKey(bracketMatchKey);
+    setPickError(null);
+
     if (onPick) {
-      setPendingMatchKey(bracketMatchKey);
-      await onPick(bracketMatchKey, winner);
-      setPendingMatchKey(null);
+      try {
+        await onPick(bmk(bracketMatchKey), asTeamId(winner));
+      } catch (err) {
+        setPickError(err instanceof Error ? err.message : DEFAULT_PICK_ERROR);
+      } finally {
+        setPendingMatchKey(null);
+      }
       return;
     }
-    setPendingMatchKey(bracketMatchKey);
+
     startTransition(async () => {
-      await saveKnockoutPick({ poolId, bracketMatchKey, winner });
-      setPendingMatchKey(null);
+      try {
+        const result = await saveKnockoutPick({ poolId, bracketMatchKey, winner });
+        if (!result.ok) setPickError(result.error);
+      } catch (err) {
+        setPickError(err instanceof Error ? err.message : DEFAULT_PICK_ERROR);
+      } finally {
+        setPendingMatchKey(null);
+      }
     });
   }
 
@@ -76,6 +94,12 @@ export function BracketSection({
             Pick the winner of each tie. Your group stage predictions determine who fills each slot.
           </span>
         </div>
+      )}
+
+      {pickError && (
+        <p role="alert" className="text-xs text-danger">
+          {pickError}
+        </p>
       )}
 
       <div className="overflow-x-auto pb-2">

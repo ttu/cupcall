@@ -36,6 +36,7 @@ import {
   saveFinishScore,
   ownerSaveFinishScore,
   ownerSaveGroupScore,
+  ownerSaveKnockoutPick,
   saveKnockoutPick,
   saveGroupScore,
   importCard,
@@ -336,6 +337,167 @@ describe('ownerSaveFinishScore — implicit winner derivation', () => {
     const inputs = await getPredictionInputs(testDb, predictionId);
     const pick = inputs.knockoutPicks.find((kp) => kp.bracketMatchKey === 'final');
     expect(pick?.winner).toBe('B1');
+  });
+});
+
+describe('owner-edit audit trail — oldValue captures the prior value', () => {
+  let poolId: PoolId;
+  let ownerId: UserId;
+  let memberId: UserId;
+  let predictionId: PredictionId;
+
+  beforeAll(async () => {
+    if (!testDb) {
+      testDb = await makeTestDb();
+      await upsertTournamentDef(testDb, miniTournament, firstKickoff, emptyKickoffs);
+    }
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    const owner = await createUser(testDb, {
+      email: `o-audit-${crypto.randomUUID()}@x.com`,
+      displayName: 'Owner',
+    });
+    const member = await createUser(testDb, {
+      email: `m-audit-${crypto.randomUUID()}@x.com`,
+      displayName: 'Alice',
+    });
+    ownerId = owner.id;
+    memberId = member.id;
+
+    const pool = await dbCreatePool(testDb, {
+      tournamentId: asTournamentId('mini-2026'),
+      ownerId,
+      name: 'Audit Pool',
+      inviteTokenHash: `h-${crypto.randomUUID()}`,
+    });
+    poolId = pool.id;
+    await addMember(testDb, poolId, memberId);
+
+    const pred = await getOrCreatePrediction(testDb, {
+      poolId,
+      userId: memberId,
+      tournamentId: asTournamentId('mini-2026'),
+    });
+    predictionId = pred.id;
+    await seedCompleteGroupsAndQfSf(testDb, predictionId);
+
+    mockedGetActor.mockResolvedValue({ userId: ownerId });
+  });
+
+  it('records the previous knockout pick as oldValue when the owner changes it', async () => {
+    await dbUpsertKnockoutPick(testDb, predictionId, bracketMatchKey('qf1'), 'A1');
+
+    const result = await ownerSaveKnockoutPick({
+      poolId,
+      targetUserId: memberId,
+      bracketMatchKey: 'qf1',
+      winner: 'A2',
+    });
+    expect(result).toEqual({ ok: true });
+
+    const edits = await listEditsForPrediction(testDb, predictionId);
+    const edit = edits.find((e) => e.fieldPath === 'knockoutPicks.qf1');
+    expect(edit).toMatchObject({ oldValue: 'A1', newValue: 'A2' });
+  });
+
+  it('records null oldValue for a knockout pick that had no prior value', async () => {
+    // seedCompleteGroupsAndQfSf pre-seeds qf1-4/sf1-2 but not 'final' — finalists (A1, B1)
+    // resolve from the seeded sf picks, so this is a genuinely first-time pick.
+    const result = await ownerSaveKnockoutPick({
+      poolId,
+      targetUserId: memberId,
+      bracketMatchKey: 'final',
+      winner: 'A1',
+    });
+    expect(result).toEqual({ ok: true });
+
+    const edits = await listEditsForPrediction(testDb, predictionId);
+    const edit = edits.find((e) => e.fieldPath === 'knockoutPicks.final');
+    expect(edit).toMatchObject({ oldValue: null, newValue: 'A1' });
+  });
+
+  it('records the previous finish score as oldValue when the owner changes it', async () => {
+    await ownerSaveFinishScore({
+      poolId,
+      targetUserId: memberId,
+      match: 'final',
+      home: 1,
+      away: 0,
+    });
+
+    const result = await ownerSaveFinishScore({
+      poolId,
+      targetUserId: memberId,
+      match: 'final',
+      home: 3,
+      away: 1,
+    });
+    expect(result).toEqual({ ok: true });
+
+    // listEditsForPrediction returns most-recent-first; [0] is the second save's audit entry.
+    const edits = await listEditsForPrediction(testDb, predictionId);
+    const finishEdits = edits.filter((e) => e.fieldPath === 'finishScores.final');
+    const latestEdit = finishEdits[0]!;
+    expect(latestEdit.oldValue).toMatchObject({ home: 1, away: 0 });
+    expect(latestEdit.newValue).toMatchObject({ home: 3, away: 1 });
+  });
+});
+
+describe('executeOwnerSave — target membership check', () => {
+  let poolId: PoolId;
+  let ownerId: UserId;
+  let nonMemberId: UserId;
+
+  beforeAll(async () => {
+    if (!testDb) {
+      testDb = await makeTestDb();
+      await upsertTournamentDef(testDb, miniTournament, firstKickoff, emptyKickoffs);
+    }
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    const owner = await createUser(testDb, {
+      email: `o-mem-${crypto.randomUUID()}@x.com`,
+      displayName: 'Owner',
+    });
+    const outsider = await createUser(testDb, {
+      email: `out-${crypto.randomUUID()}@x.com`,
+      displayName: 'Outsider',
+    });
+    ownerId = owner.id;
+    nonMemberId = outsider.id;
+
+    const pool = await dbCreatePool(testDb, {
+      tournamentId: asTournamentId('mini-2026'),
+      ownerId,
+      name: 'Membership Pool',
+      inviteTokenHash: `h-${crypto.randomUUID()}`,
+    });
+    poolId = pool.id;
+    // Note: nonMemberId is intentionally never added via addMember.
+
+    mockedGetActor.mockResolvedValue({ userId: ownerId });
+  });
+
+  it('rejects an owner-save targeting a user who is not a pool member', async () => {
+    const result = await ownerSaveGroupScore({
+      poolId,
+      targetUserId: nonMemberId,
+      matchId: miniTournament.groupMatches[0]!.id,
+      home: 2,
+      away: 1,
+    });
+
+    expect(result).toMatchObject({ ok: false });
+
+    // No prediction should have been created for the non-member.
+    const prediction = await getPrediction(testDb, poolId, nonMemberId);
+    expect(prediction).toBeUndefined();
   });
 });
 

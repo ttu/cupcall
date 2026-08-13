@@ -1,5 +1,5 @@
 import type { GroupResultView } from '@/features/results';
-import type { MatchScore } from '../ui/ReadOnlyCard';
+import type { MatchScore } from './types';
 
 /** Builds the per-match hit/points lookup that ReadOnlyCard uses to annotate group picks. */
 export function buildMatchScores(groupResults: GroupResultView[]): Map<string, MatchScore> {

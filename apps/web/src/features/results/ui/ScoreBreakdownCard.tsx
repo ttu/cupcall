@@ -78,6 +78,7 @@ export function ScoreBreakdownCard({ breakdown, scoring, topByCategory }: Props)
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
+        aria-controls="score-breakdown-rows"
         className="flex items-center justify-between w-full p-[14px_16px] cursor-pointer bg-transparent border-0 text-left"
       >
         <span className="eyebrow text-ink-muted">Score breakdown</span>
@@ -104,7 +105,11 @@ export function ScoreBreakdownCard({ breakdown, scoring, topByCategory }: Props)
       </button>
 
       {expanded && (
-        <ul className="list-none m-0 p-0 border-t border-line" role="list">
+        <ul
+          id="score-breakdown-rows"
+          className="list-none m-0 p-0 border-t border-line"
+          role="list"
+        >
           {ROWS.map(({ label, key, hint }) => {
             const pts = breakdown[key];
             const leaders = topByCategory?.[key];

@@ -498,6 +498,11 @@ describe('buildKnockoutMatchDetail — split Final/Bronze matrix cells', () => {
     expect(prediction.pickedTeamId).toBe('FRA');
     expect(prediction.points).toBe(6);
     expect(prediction.hit).toBe('hit');
+    // Regression: predictedHome/Away/isExactScore must come from the ":score" cell (the only one
+    // carrying score data), not unconditionally from cells[0] (the ":teams" cell, which has none).
+    expect(prediction.predictedHome).toBe(2);
+    expect(prediction.predictedAway).toBe(1);
+    expect(prediction.isExactScore).toBe(false);
   });
 
   it('regression: reports "no-pick" (not "miss") when Bronze cells exist but nobody picked', () => {

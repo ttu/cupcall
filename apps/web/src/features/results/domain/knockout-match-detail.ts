@@ -1,3 +1,4 @@
+import { bracketMatchKey as toBracketMatchKey } from '@cup/engine';
 import type {
   KnockoutMatchDetail,
   KnockoutMatchDetailPrediction,
@@ -7,7 +8,7 @@ import type {
   KnockoutMatrixEntry,
 } from './types';
 import { resolveGoalsByTeamId } from './predicted-goals';
-import { cellBelongsToMatch } from './knockout-cell-key';
+import { cellBelongsToMatch, asKnockoutCellKey } from './knockout-cell-key';
 import { sortPredictionsForDisplay } from './sort-predictions-for-display';
 
 /**
@@ -17,10 +18,18 @@ import { sortPredictionsForDisplay } from './sort-predictions-for-display';
  * a single combined pick.
  */
 function findMatchCells(row: KnockoutMatrixEntry, bracketMatchKey: string): KnockoutMatrixCell[] {
-  return row.cells.filter((cell) => cellBelongsToMatch(cell.bracketMatchKey, bracketMatchKey));
+  const matchKey = toBracketMatchKey(bracketMatchKey);
+  return row.cells.filter((cell) =>
+    cellBelongsToMatch(asKnockoutCellKey(cell.bracketMatchKey), matchKey),
+  );
 }
 
-/** Combines a match's (possibly split) cells into the single hit/points the summary sheet shows. */
+/**
+ * Combines a match's (possibly split) cells into the single hit/points the summary sheet shows.
+ * The primary cell (general pick data) is the one with a picked winner; the score cell (predicted
+ * score / exact-score state) is whichever cell actually carries score data — for a split Final/Bronze
+ * match those are two different cells ('teams' has the pick, 'score' has the predicted score).
+ */
 function combineMatchCells(cells: KnockoutMatrixCell[]): {
   cell: Omit<KnockoutMatrixCell, 'bracketMatchKey'> | null;
   hit: KnockoutMatchHit;
@@ -29,7 +38,15 @@ function combineMatchCells(cells: KnockoutMatrixCell[]): {
   if (cells.length === 0) return { cell: null, hit: 'no-pick', points: 0 };
 
   const points = cells.reduce((sum, c) => sum + c.points, 0);
-  const primary = cells[0]!;
+  const primary = cells.find((cell) => cell.pickedWinnerId !== null) ?? cells[0]!;
+  const scoreCell =
+    cells.find(
+      (cell) =>
+        cell.predictedScoreByTeam !== null ||
+        cell.predictedHome !== null ||
+        cell.predictedAway !== null ||
+        cell.isExactScore,
+    ) ?? primary;
 
   let hit: KnockoutMatchHit;
   if (primary.pickedWinnerId === null) hit = 'no-pick';
@@ -37,7 +54,15 @@ function combineMatchCells(cells: KnockoutMatrixCell[]): {
   else if (cells.some((c) => c.hit === 'pending')) hit = 'pending';
   else hit = points > 0 ? 'hit' : 'miss';
 
-  return { cell: primary, hit, points };
+  const combined = {
+    ...primary,
+    predictedHome: scoreCell.predictedHome,
+    predictedAway: scoreCell.predictedAway,
+    predictedScoreByTeam: scoreCell.predictedScoreByTeam,
+    isExactScore: cells.some((cell) => cell.isExactScore),
+  };
+
+  return { cell: combined, hit, points };
 }
 
 function resolveTeamName(match: KnockoutMatchView, teamId: string): string | null {

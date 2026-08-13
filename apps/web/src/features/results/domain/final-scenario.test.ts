@@ -266,6 +266,23 @@ describe('buildFinalScenarioView — clinched baseline', () => {
     });
     expect(view!.home.projectedWinnerDisplayName).toBe('Amy');
   });
+
+  it("is not clinched when a lower-scoring rival can tie the leader's ceiling exactly, even when the rival's displayName sorts earlier", () => {
+    const view = buildFinalScenarioView({
+      ...baseParams,
+      leaderboard: [makeLeaderboardEntry('u1', 'Zack', 50), makeLeaderboardEntry('u2', 'Amy', 40)],
+      poolSpecialBets: [makeSpecialBet('u2', 'highestMatchGoals', 5)], // 10 pts -> Amy's ceiling = 50
+      bracketRounds: [makeRound('Final', [finalScheduled])],
+      bronzeMatch: bronzePlayed,
+    });
+    // Zack leads on lockedScore (50 > 40), so the leaderboard-order tie-break never applies here.
+    // But Amy's pending item brings her ceiling to exactly Zack's lockedScore (50) — an exact tie
+    // must not be treated as "Zack has already won"; the naive `leader.lockedScore >= maxRivalCeiling`
+    // check would wrongly report 'clinched'.
+    expect(view!.home.projectedWinnerDisplayName).toBe('Zack');
+    expect(view!.home.status).not.toBe('clinched');
+    expect(view!.home.status).toBe('too-close');
+  });
 });
 
 describe('buildFinalScenarioView — position bonus flips the projected winner', () => {

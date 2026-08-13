@@ -46,12 +46,20 @@ export function SpecialBetCard({
           <Icon name={icon} size={16} stroke={1.8} />
         </div>
         <div className="flex-1 min-w-0">
-          <label
-            htmlFor={`special-${bet.key}`}
-            className="text-[12.5px] font-bold text-ink-soft leading-[1.4] block"
-          >
-            {bet.label}
-          </label>
+          {/* bool bets are a fieldset/legend group (see SpecialBetInput), not a single
+              labelled control, so there's no id here for htmlFor to point at. */}
+          {bet.kind === 'bool' ? (
+            <span className="text-[12.5px] font-bold text-ink-soft leading-[1.4] block">
+              {bet.label}
+            </span>
+          ) : (
+            <label
+              htmlFor={`special-${bet.key}`}
+              className="text-[12.5px] font-bold text-ink-soft leading-[1.4] block"
+            >
+              {bet.label}
+            </label>
+          )}
           <span className="display text-xs text-ink-muted">{bet.points} pts</span>
         </div>
       </div>

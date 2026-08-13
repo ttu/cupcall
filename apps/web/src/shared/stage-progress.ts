@@ -59,7 +59,7 @@ export function buildStageProgress(def: Tournament, allMatches: MatchRow[]): Sta
     const done = finalCountByStage.get(key) ?? 0;
 
     let state: StageProgress['state'];
-    if (total > 0 && done === total) {
+    if (total > 0 && done >= total) {
       state = 'completed';
     } else if (done > 0 && !foundActive) {
       state = 'active';

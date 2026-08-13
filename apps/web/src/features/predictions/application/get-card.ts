@@ -5,7 +5,7 @@
 import type { AppSchema } from '@/shared/db';
 import type { Db } from '@cup/db';
 import { getPrediction, getOrCreatePrediction, getPredictionInputs } from '@cup/db';
-import { deriveCard, matchId, userId as brandUserId } from '@cup/engine';
+import { deriveCard, matchId } from '@cup/engine';
 import type {
   Tournament,
   GroupId,
@@ -18,6 +18,7 @@ import type {
   DerivedCard,
   BracketMatchKey,
   PlayerId,
+  UserId,
 } from '@cup/engine';
 import type {
   CardView,
@@ -38,7 +39,7 @@ import { getRoundLabel } from '@/features/results';
 type Params = {
   db: Db<AppSchema>;
   poolId: PoolId;
-  userId: string;
+  userId: UserId;
   tournamentId: TournamentId;
   tournament: Tournament;
   firstKickoff: Date;
@@ -121,11 +122,11 @@ async function fetchCardData(params: Params): Promise<CardData | null> {
   if (createIfMissing) {
     prediction = await getOrCreatePrediction(db, {
       poolId,
-      userId: brandUserId(userId),
+      userId,
       tournamentId,
     });
   } else {
-    prediction = await getPrediction(db, poolId, brandUserId(userId));
+    prediction = await getPrediction(db, poolId, userId);
     if (!prediction) return null;
   }
 
@@ -437,6 +438,114 @@ function buildTieView(params: {
   };
 }
 
+type TiesByRound = Map<string, TieView[]>;
+
+/**
+ * A stored pick that no longer matches either resolved participant (stale after
+ * bracket changes or updated group results) is treated as absent so the UI shows "no pick".
+ */
+function resolvePickedWinner(
+  rawPick: TeamId | null,
+  homeId: TeamId | null,
+  awayId: TeamId | null,
+): TeamId | null {
+  return rawPick === homeId || rawPick === awayId ? rawPick : null;
+}
+
+function pushSlotTie(params: {
+  slot: Tournament['bracket']['slots'][number];
+  bracket: Tournament['bracket'];
+  derived: DerivedCard;
+  knockoutPickMap: KnockoutPickMap;
+  completeGroupIds: Set<GroupId>;
+  allGroupsComplete: boolean;
+  autoQualifiedCount: number;
+  teamMap: Map<TeamId, string>;
+  itemLocked: (matchIdOrKey: string) => boolean;
+  tiesByRound: TiesByRound;
+}): void {
+  const {
+    slot,
+    bracket,
+    derived,
+    knockoutPickMap,
+    completeGroupIds,
+    allGroupsComplete,
+    autoQualifiedCount,
+    teamMap,
+    itemLocked,
+    tiesByRound,
+  } = params;
+
+  // The slot's match key prefix determines its round (e.g., "ro32-", "ro16-", "qf-", "sf-")
+  const roundLabel = getRoundLabel(slot.match, bracket.rounds);
+  if (!tiesByRound.has(roundLabel)) tiesByRound.set(roundLabel, []);
+
+  // Only resolve slot teams when the relevant group is fully predicted
+  const homeId =
+    resolveSlotTeam(
+      slot.home,
+      derived.qualifiers,
+      autoQualifiedCount,
+      derived.groupOrders,
+      completeGroupIds,
+      allGroupsComplete,
+    ) ?? null;
+  const awayId =
+    resolveSlotTeam(
+      slot.away,
+      derived.qualifiers,
+      autoQualifiedCount,
+      derived.groupOrders,
+      completeGroupIds,
+      allGroupsComplete,
+    ) ?? null;
+  const rawPick = knockoutPickMap.get(slot.match) ?? null;
+  const picked = resolvePickedWinner(rawPick, homeId, awayId);
+
+  tiesByRound.get(roundLabel)!.push(
+    buildTieView({
+      bracketMatchKey: slot.match,
+      homeId,
+      awayId,
+      pickedWinnerId: picked,
+      teamMap,
+      locked: itemLocked(slot.match),
+    }),
+  );
+}
+
+function pushProgressionTie(params: {
+  prog: Tournament['bracket']['progression'][number];
+  bracket: Tournament['bracket'];
+  knockoutPickMap: KnockoutPickMap;
+  teamMap: Map<TeamId, string>;
+  itemLocked: (matchIdOrKey: string) => boolean;
+  tiesByRound: TiesByRound;
+}): void {
+  const { prog, bracket, knockoutPickMap, teamMap, itemLocked, tiesByRound } = params;
+
+  const roundLabel = getRoundLabel(prog.match, bracket.rounds);
+  if (!tiesByRound.has(roundLabel)) tiesByRound.set(roundLabel, []);
+
+  // For progression ties, the teams come from the winner picks of prior rounds
+  const homeId = prog.from[0] != null ? (getProgTeam(prog.from[0], knockoutPickMap) ?? null) : null;
+  const awayId = prog.from[1] != null ? (getProgTeam(prog.from[1], knockoutPickMap) ?? null) : null;
+  const rawPick = knockoutPickMap.get(prog.match) ?? null;
+  const picked = resolvePickedWinner(rawPick, homeId, awayId);
+
+  tiesByRound.get(roundLabel)!.push(
+    buildTieView({
+      bracketMatchKey: prog.match,
+      homeId,
+      awayId,
+      pickedWinnerId: picked,
+      teamMap,
+      locked: itemLocked(prog.match),
+    }),
+  );
+}
+
 function buildBracketRounds(params: {
   bracket: Tournament['bracket'];
   derived: DerivedCard;
@@ -459,73 +568,27 @@ function buildBracketRounds(params: {
   } = params;
 
   // Group ties by round (order: entry round → ... → SF), exclude Final/bronze.
-  const tiesByRound = new Map<string, TieView[]>();
+  const tiesByRound: TiesByRound = new Map();
 
   for (const slot of bracket.slots) {
-    // The slot's match key prefix determines its round (e.g., "ro32-", "ro16-", "qf-", "sf-")
-    const roundLabel = getRoundLabel(slot.match, bracket.rounds);
-    if (!tiesByRound.has(roundLabel)) tiesByRound.set(roundLabel, []);
-
-    const rawPick = knockoutPickMap.get(slot.match) ?? null;
-    // Only resolve slot teams when the relevant group is fully predicted
-    const homeId =
-      resolveSlotTeam(
-        slot.home,
-        derived.qualifiers,
-        autoQualifiedCount,
-        derived.groupOrders,
-        completeGroupIds,
-        allGroupsComplete,
-      ) ?? null;
-    const awayId =
-      resolveSlotTeam(
-        slot.away,
-        derived.qualifiers,
-        autoQualifiedCount,
-        derived.groupOrders,
-        completeGroupIds,
-        allGroupsComplete,
-      ) ?? null;
-
-    // A pick that no longer matches either participant (stale after bracket changes
-    // or updated group results) is treated as absent so the UI shows "no pick".
-    const picked = rawPick === homeId || rawPick === awayId ? rawPick : null;
-
-    tiesByRound.get(roundLabel)!.push(
-      buildTieView({
-        bracketMatchKey: slot.match,
-        homeId,
-        awayId,
-        pickedWinnerId: picked,
-        teamMap,
-        locked: itemLocked(slot.match),
-      }),
-    );
+    pushSlotTie({
+      slot,
+      bracket,
+      derived,
+      knockoutPickMap,
+      completeGroupIds,
+      allGroupsComplete,
+      autoQualifiedCount,
+      teamMap,
+      itemLocked,
+      tiesByRound,
+    });
   }
 
   // Also add progression ties (R16 onwards)
   for (const prog of bracket.progression) {
     if (prog.match === bracket.finalMatch || prog.match === bracket.bronzeMatch) continue;
-    const roundLabel = getRoundLabel(prog.match, bracket.rounds);
-    if (!tiesByRound.has(roundLabel)) tiesByRound.set(roundLabel, []);
-
-    const picked = knockoutPickMap.get(prog.match) ?? null;
-    // For progression ties, the teams come from the winner picks of prior rounds
-    const homeId =
-      prog.from[0] != null ? (getProgTeam(prog.from[0], knockoutPickMap) ?? null) : null;
-    const awayId =
-      prog.from[1] != null ? (getProgTeam(prog.from[1], knockoutPickMap) ?? null) : null;
-
-    tiesByRound.get(roundLabel)!.push(
-      buildTieView({
-        bracketMatchKey: prog.match,
-        homeId,
-        awayId,
-        pickedWinnerId: picked,
-        teamMap,
-        locked: itemLocked(prog.match),
-      }),
-    );
+    pushProgressionTie({ prog, bracket, knockoutPickMap, teamMap, itemLocked, tiesByRound });
   }
 
   return bracket.rounds

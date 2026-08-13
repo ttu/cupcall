@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import type { MatchId, PoolId } from '@cup/engine';
 import type { GroupView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
 import { TeamBadge, Chip } from '@/shared/ui';
@@ -7,9 +8,9 @@ import { DerivedStandingsPanel } from './DerivedStandingsPanel';
 
 type Props = {
   group: GroupView;
-  poolId: string;
+  poolId: PoolId;
   locked: boolean;
-  onSave: (matchId: string, home: number, away: number) => Promise<void>;
+  onSave: (matchId: MatchId, home: number, away: number) => Promise<void>;
 };
 
 export function GroupCard({ group, poolId, locked, onSave }: Props): ReactElement {

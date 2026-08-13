@@ -103,7 +103,7 @@ describe('computeGroupTopScoringLeader', () => {
       koFinal('qf1', 'QF', 'A1', 'B1', 5, 0),
     ];
     const leader = computeGroupTopScoringLeader(miniTournament, matches);
-    expect(leader!.detail).toBe('1 goals'); // QF goals excluded
+    expect(leader!.detail).toBe('1 goal'); // QF goals excluded
   });
 
   it('ignores matches without scores', () => {
@@ -138,7 +138,7 @@ describe('computeGroupTopConcedingLeader', () => {
     ];
     const leader = computeGroupTopConcedingLeader(miniTournament, matches);
     expect(leader!.display).toBe('Team A2');
-    expect(leader!.detail).toBe('1 goals');
+    expect(leader!.detail).toBe('1 goal');
   });
 });
 

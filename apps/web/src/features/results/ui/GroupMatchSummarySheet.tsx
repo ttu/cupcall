@@ -166,9 +166,9 @@ export function GroupMatchSummarySheet({ match, detail, onClose }: Props): React
 
         <SheetHeader match={match} onClose={() => dialogRef.current?.close()} />
 
-        {yourPick !== null && yourPick.predictedHome !== null && (
-          <YourPickSection yourPick={yourPick} />
-        )}
+        {yourPick !== null &&
+          yourPick.predictedHome !== null &&
+          yourPick.predictedAway !== null && <YourPickSection yourPick={yourPick} />}
 
         <PoolPredictionSection detail={detail} />
 

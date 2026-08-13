@@ -21,10 +21,26 @@ type AvatarProps = {
   name: string;
   index?: number;
   size?: number;
+  /**
+   * Mark the avatar as decorative when a visible name label already sits next to it
+   * (e.g. inside `AvatarNameBadge`), so screen readers don't announce the name twice.
+   * Defaults to false — a standalone avatar exposes `name` as its accessible label.
+   */
+  decorative?: boolean;
 };
 
-export function Avatar({ name, index = 0, size = 36 }: AvatarProps): ReactElement {
-  const bg = AVATAR_PALETTE[index % AVATAR_PALETTE.length];
+/** Wraps the palette index so negative values still resolve to a valid palette color. */
+function paletteIndex(index: number): number {
+  return ((index % AVATAR_PALETTE.length) + AVATAR_PALETTE.length) % AVATAR_PALETTE.length;
+}
+
+export function Avatar({
+  name,
+  index = 0,
+  size = 36,
+  decorative = false,
+}: AvatarProps): ReactElement {
+  const bg = AVATAR_PALETTE[paletteIndex(index)];
   return (
     <span
       className="avatar"
@@ -34,6 +50,7 @@ export function Avatar({ name, index = 0, size = 36 }: AvatarProps): ReactElemen
         height: size,
         fontSize: Math.round(size * 0.38),
       }}
+      {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': name })}
     >
       {initials(name)}
     </span>

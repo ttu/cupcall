@@ -19,28 +19,34 @@ const GRID = 'grid-cols-[44px_1fr_52px_52px_64px]';
 
 export function ProjectedStandings({ entries }: { entries: ProjectedEntry[] }): ReactElement {
   return (
-    <div className="overflow-hidden">
-      <div
-        className={cn('grid gap-1.5 p-[8px_16px] bg-surface-2 border-t border-b border-line', GRID)}
-      >
-        {(['Now → Fin', 'Player', 'Now', '+Avail', 'Proj.'] as const).map((hd, i) => (
-          <span
-            key={hd}
-            className={cn(
-              'eyebrow text-ink-muted text-[10px]',
-              i >= 2 ? 'text-right' : 'text-left',
-            )}
-          >
-            {hd}
-          </span>
-        ))}
-      </div>
-      <div className="divide">
+    <table className="[display:contents]">
+      <thead className="[display:contents]">
+        <tr
+          className={cn(
+            'grid gap-1.5 p-[8px_16px] bg-surface-2 border-t border-b border-line',
+            GRID,
+          )}
+        >
+          {(['Now → Fin', 'Player', 'Now', '+Avail', 'Proj.'] as const).map((hd, i) => (
+            <th
+              key={hd}
+              scope="col"
+              className={cn(
+                'eyebrow text-ink-muted text-[10px] font-normal',
+                i >= 2 ? 'text-right' : 'text-left',
+              )}
+            >
+              {hd}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className="divide [display:contents]">
         {entries.map((e) => (
           <ProjectedRow key={e.userId} entry={e} />
         ))}
-      </div>
-    </div>
+      </tbody>
+    </table>
   );
 }
 
@@ -57,14 +63,14 @@ function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
   const isTop3 = projectedRank <= 3;
 
   return (
-    <div
+    <tr
       className={cn(
         'grid gap-1.5 p-[10px_16px] items-center',
         GRID,
         isCurrentUser ? 'bg-green-050' : 'bg-transparent',
       )}
     >
-      <span className="flex items-center gap-1">
+      <td className="flex items-center gap-1">
         <span className={cn('display text-base w-4.5', isTop3 ? 'text-gold' : 'text-ink-muted')}>
           {projectedRank}
         </span>
@@ -81,9 +87,9 @@ function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
             {Math.abs(rankDelta)}
           </span>
         )}
-      </span>
+      </td>
 
-      <span className="min-w-0">
+      <td className="min-w-0">
         <span
           className={cn(
             'block font-bold text-[13px] truncate',
@@ -97,29 +103,27 @@ function ProjectedRow({ entry }: { entry: ProjectedEntry }): ReactElement {
             {displayName.split(' ').slice(1).join(' ')}
           </span>
         )}
-      </span>
+      </td>
 
-      <span className="tnum text-right font-semibold text-[13px] text-ink-muted">
-        {currentPoints}
-      </span>
+      <td className="tnum text-right font-semibold text-[13px] text-ink-muted">{currentPoints}</td>
 
-      <span
+      <td
         className={cn(
           'tnum text-right font-semibold text-[13px]',
           canStillGet > 0 ? 'text-green-600' : 'text-ink-muted',
         )}
       >
         {canStillGet > 0 ? `+${canStillGet}` : '–'}
-      </span>
+      </td>
 
-      <span
+      <td
         className={cn(
           'display tnum text-right text-[18px]',
           isCurrentUser ? 'text-green-600' : 'text-ink',
         )}
       >
         {projectedPoints}
-      </span>
-    </div>
+      </td>
+    </tr>
   );
 }

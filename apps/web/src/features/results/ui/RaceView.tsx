@@ -70,13 +70,18 @@ export function RaceView({
           <div className="flex items-center justify-between mb-2.5 gap-3.5 flex-wrap">
             <RaceLegend players={race.chartPlayers} />
             {zoomOptions.length > 1 && (
-              <span className="flex items-center gap-1.5 shrink-0">
+              <span
+                className="flex items-center gap-1.5 shrink-0"
+                role="group"
+                aria-label="Chart time range"
+              >
                 {zoomOptions.map((opt) => {
                   const active = zoomDays === opt;
                   return (
                     <button
                       key={String(opt)}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => setZoomDays(opt)}
                       data-testid={`race-zoom-${opt}`}
                       className={cn(

@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactElement } from 'react';
+import type { MatchId, PoolId } from '@cup/engine';
 import { saveGroupScore } from '../api/actions';
 import type { GroupView } from '../domain/types';
 import { GroupJumpNav } from './GroupJumpNav';
@@ -8,15 +9,15 @@ import { GroupCard } from './GroupCard';
 
 type Props = {
   groups: GroupView[];
-  poolId: string;
+  poolId: PoolId;
   locked: boolean;
-  onSave?: (matchId: string, home: number, away: number) => void;
+  onSave?: (matchId: MatchId, home: number, away: number) => Promise<void>;
 };
 
 export function GroupScoresSection({ groups, poolId, locked, onSave }: Props): ReactElement {
-  async function handleSave(matchId: string, home: number, away: number): Promise<void> {
+  async function handleSave(matchId: MatchId, home: number, away: number): Promise<void> {
     if (onSave) {
-      onSave(matchId, home, away);
+      await onSave(matchId, home, away);
       return;
     }
     await saveGroupScore({ poolId, matchId, home, away });

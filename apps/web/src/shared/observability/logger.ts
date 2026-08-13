@@ -25,7 +25,7 @@ export const logger = pino({
  * @example safeEmailDomain('alice@example.com') → '@example.com'
  */
 export function safeEmailDomain(email: string): string {
-  const at = email.indexOf('@');
-  if (at === -1) return '[unknown-domain]';
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return '[unknown-domain]';
   return email.slice(at); // "@example.com"
 }

@@ -9,7 +9,7 @@ import type { PredictionHitDisplay } from './match-summary-utils';
 export function resolveGroupPredictionHitDisplay(
   prediction: GroupMatchDetailPrediction,
 ): PredictionHitDisplay {
-  if (prediction.predictedHome === null) {
+  if (prediction.predictedHome === null || prediction.predictedAway === null) {
     return { kind: 'custom', label: 'No pick', tone: 'muted' };
   }
   if (prediction.hit === 'pending') {

@@ -1,8 +1,10 @@
 import type { ReactElement } from 'react';
+import type { MatchId } from '@cup/engine';
+import { matchId as toMatchId } from '@cup/engine';
 import type { GroupResultView, GroupUpcomingMatchRow, MatchPredictionStats } from '../domain/types';
 import { TeamBadge, cn } from '@/shared/ui';
 
-type Props = { groups: GroupResultView[]; onOpenMatch: (matchId: string) => void };
+type Props = { groups: GroupResultView[]; onOpenMatch: (matchId: MatchId) => void };
 
 export function PredictionStatsBar({ stats }: { stats: MatchPredictionStats }): ReactElement {
   return (
@@ -117,7 +119,7 @@ export function TodayMatchesFeed({ groups, onOpenMatch }: Props): ReactElement |
           <button
             key={m.matchId}
             type="button"
-            onClick={() => onOpenMatch(m.matchId)}
+            onClick={() => onOpenMatch(toMatchId(m.matchId))}
             data-testid="today-match-row"
             className="w-full block text-left cursor-pointer bg-transparent border-0 p-0"
           >

@@ -47,7 +47,10 @@ function SheetHeader({
   return (
     <div className="flex flex-col gap-2 p-[16px_18px_10px]">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[11px] font-extrabold tracking-[0.1em] text-green-600 uppercase">
+        <span
+          id="match-summary-round-label"
+          className="text-[11px] font-extrabold tracking-[0.1em] text-green-600 uppercase"
+        >
           {roundLabel(match, matchKey)}
         </span>
         <button
@@ -306,6 +309,7 @@ export function MatchSummarySheet({ match, matchKey, detail, onClose }: Props): 
       ref={dialogRef}
       onClick={handleBackdropClick}
       data-testid="match-summary-sheet"
+      aria-labelledby="match-summary-round-label"
       className={cn(
         'm-0 w-full max-w-none border-0 bg-transparent p-0 backdrop:bg-black/50',
         'fixed inset-x-0 top-auto bottom-0 max-h-[85vh]',

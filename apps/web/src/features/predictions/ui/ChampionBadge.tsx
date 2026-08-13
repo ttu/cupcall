@@ -1,11 +1,12 @@
 import type { ReactElement } from 'react';
+import type { TeamId } from '@cup/engine';
 import { TeamBadge, cn } from '@/shared/ui';
 
 type Props = {
-  pickedWinnerId: string | null;
-  homeTeamId: string | null;
+  pickedWinnerId: TeamId | null;
+  homeTeamId: TeamId | null;
   homeTeamName: string | null;
-  awayTeamId: string | null;
+  awayTeamId: TeamId | null;
   awayTeamName: string | null;
   isFinal: boolean;
 };

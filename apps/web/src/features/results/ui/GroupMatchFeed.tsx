@@ -95,7 +95,7 @@ function MatchFooter({
   pointsAwarded,
   poolMatchStats,
 }: FooterProps): ReactElement | null {
-  const hasPrediction = predictedHome !== null;
+  const hasPrediction = predictedHome !== null && predictedAway !== null;
   const hasPool = poolMatchStats !== null;
   if (!hasPrediction && !hasPool) return null;
 
@@ -171,6 +171,7 @@ function UpcomingMatchRow({ match }: { match: GroupUpcomingMatchRow }): ReactEle
 export function GroupMatchFeed({ group, onOpenMatch }: Props): ReactElement {
   const hasCompleted = group.completedMatches.length > 0;
   const allUpcoming = [...group.todayMatches, ...group.upcomingMatches].toSorted((a, b) => {
+    if (!a.kickoff && !b.kickoff) return 0;
     if (!a.kickoff) return 1;
     if (!b.kickoff) return -1;
     return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();

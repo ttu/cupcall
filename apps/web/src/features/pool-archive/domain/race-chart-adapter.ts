@@ -29,5 +29,6 @@ export function toRaceChartData(
       };
     });
 
-  return { chartStages: stages, chartNowIndex: stages.length - 1, chartPlayers };
+  const chartNowIndex = stages.length > 0 ? stages.length - 1 : null;
+  return { chartStages: stages, chartNowIndex, chartPlayers };
 }

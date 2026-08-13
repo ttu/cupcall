@@ -49,7 +49,7 @@ function describeLeading(stillLive: number): string {
 
 function describeRising(me: ProjectedEntry, entries: ProjectedEntry[]): string {
   const closestRival = entries.find(
-    (e) => !e.isCurrentUser && e.projectedRank === me.projectedRank - 1,
+    (e) => !e.isCurrentUser && e.projectedRank === me.projectedRank + 1,
   );
   const gap = closestRival ? me.projectedPoints - closestRival.projectedPoints : 0;
   const rivalNote = closestRival

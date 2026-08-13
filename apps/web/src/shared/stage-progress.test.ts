@@ -74,4 +74,13 @@ describe('buildStageProgress', () => {
     expect(qf.state).toBe('completed');
     expect(sf.state).toBe('active');
   });
+
+  it('marks a stage as completed when DB has more final rows than expected (duplicate rows)', () => {
+    // Guards against a strict === total regression: extra/duplicate final rows for a
+    // stage must not prevent it from being reported as completed.
+    const duplicateGroupRow = row(miniTournament.groupMatches[0]!.id, 'group', 'final');
+    const result = buildStageProgress(miniTournament, [...allGroupRows(), duplicateGroupRow]);
+    const group = result.find((s) => s.key === 'group')!;
+    expect(group.state).toBe('completed');
+  });
 });

@@ -2,11 +2,12 @@
 
 import type { ReactElement } from 'react';
 import { useRef, useTransition, useState } from 'react';
+import type { PoolId, UserId } from '@cup/engine';
 import { exportCard, importCard } from '../api/actions';
 
 type Props = {
-  poolId: string;
-  targetUserId?: string;
+  poolId: PoolId;
+  targetUserId?: UserId;
 };
 
 export function ExportImportControls({ poolId, targetUserId }: Props): ReactElement {
@@ -38,22 +39,29 @@ export function ExportImportControls({ poolId, targetUserId }: Props): ReactElem
       try {
         const exportData = JSON.parse(reader.result as string) as unknown;
         startTransition(async () => {
-          const result = await importCard({ poolId, targetUserId, exportData });
-          if (!result.ok) {
-            setMessage({ ok: false, text: result.error });
-          } else {
-            const skippedNote = result.skipped.length
-              ? ` Skipped: ${result.skipped.join(', ')}`
-              : '';
-            setMessage({
-              ok: true,
-              text: `Imported ${result.imported} field(s).${skippedNote}`,
-            });
+          try {
+            const result = await importCard({ poolId, targetUserId, exportData });
+            if (!result.ok) {
+              setMessage({ ok: false, text: result.error });
+            } else {
+              const skippedNote = result.skipped.length
+                ? ` Skipped: ${result.skipped.join(', ')}`
+                : '';
+              setMessage({
+                ok: true,
+                text: `Imported ${result.imported} field(s).${skippedNote}`,
+              });
+            }
+          } catch {
+            setMessage({ ok: false, text: 'Import failed. Please try again.' });
           }
         });
       } catch {
         setMessage({ ok: false, text: 'Invalid JSON file.' });
       }
+    };
+    reader.onerror = () => {
+      setMessage({ ok: false, text: 'Could not read the selected file. Please try again.' });
     };
     reader.readAsText(file);
   }

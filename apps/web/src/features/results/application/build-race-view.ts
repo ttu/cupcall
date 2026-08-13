@@ -6,7 +6,7 @@ import type {
   PoolFinishScore,
   PoolSpecialBet,
 } from '@cup/db';
-import { computeRemainingMaxPoints, getSpecialBetDefs } from '@cup/engine';
+import { computeRemainingMaxPoints, getSpecialBetDefs, bracketMatchKey } from '@cup/engine';
 import type { Tournament, ActualResults } from '@cup/engine';
 import { resolveActualForBet, isBetResolved } from '../domain/special-bet-resolution';
 import type {
@@ -1077,7 +1077,7 @@ function buildFinishMatrixCells(
         : finishScorePoints(m, prediction.isExactScore, finishScoring.exactScore);
     return {
       ...classifyFinishCell(m, shared, prediction, pickedOpponentId, points),
-      bracketMatchKey: buildVariantCellKey(m.bracketMatchKey, variant),
+      bracketMatchKey: buildVariantCellKey(bracketMatchKey(m.bracketMatchKey), variant),
     };
   });
 }
@@ -1142,7 +1142,7 @@ export function buildKnockoutMatrix(params: {
     if (!variants) return [{ ...base, bracketMatchKey: m.bracketMatchKey }];
     return variants.map((variant) => ({
       ...base,
-      bracketMatchKey: buildVariantCellKey(m.bracketMatchKey, variant),
+      bracketMatchKey: buildVariantCellKey(bracketMatchKey(m.bracketMatchKey), variant),
       variant,
     }));
   });

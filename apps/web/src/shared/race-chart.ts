@@ -15,7 +15,8 @@ export type RaceChartPlayer = {
 
 export type RaceChartData = {
   chartStages: string[];
-  chartNowIndex: number;
+  /** Index of the "Now" stage in chartStages, or null when there are no stages to plot. */
+  chartNowIndex: number | null;
   chartPlayers: RaceChartPlayer[];
 };
 
@@ -149,6 +150,13 @@ export function computeHit(
   return { hit: 'missed', points: 0 };
 }
 
+/** A match that's final with recorded numeric goals — the only shape a result can be scored from. */
+type DecidedMatch = MatchRow & { homeGoals: number; awayGoals: number };
+
+function hasFinalScore(m: MatchRow): m is DecidedMatch {
+  return m.status === 'final' && m.homeGoals !== null && m.awayGoals !== null;
+}
+
 function buildGroupMatchDeltas(
   poolGroupScores: PoolGroupScore[],
   allMatches: MatchRow[],
@@ -161,7 +169,7 @@ function buildGroupMatchDeltas(
 
   const result = new Map<string, Map<string, number>>();
   const completedGroup = allMatches.filter(
-    (m) => m.stage === 'group' && m.status === 'final' && m.kickoff !== null,
+    (m): m is DecidedMatch => m.stage === 'group' && m.kickoff !== null && hasFinalScore(m),
   );
 
   for (const m of completedGroup) {
@@ -170,8 +178,8 @@ function buildGroupMatchDeltas(
       if (gs.matchId !== m.id) continue;
       const pred = predMap.get(`${gs.userId}::${m.id}`);
       const { points: pts } = computeHit(
-        m.homeGoals!,
-        m.awayGoals!,
+        m.homeGoals,
+        m.awayGoals,
         pred?.home ?? null,
         pred?.away ?? null,
         scoring,
@@ -200,8 +208,8 @@ function computeActualGroupOrders(
   def: Tournament,
 ): Record<GroupId, TeamId[]> {
   const actualScores: GroupScore[] = allMatches
-    .filter((m) => m.stage === 'group' && m.status === 'final')
-    .map((m) => ({ matchId: makeMatchId(m.id), home: m.homeGoals!, away: m.awayGoals! }));
+    .filter((m): m is DecidedMatch => m.stage === 'group' && hasFinalScore(m))
+    .map((m) => ({ matchId: makeMatchId(m.id), home: m.homeGoals, away: m.awayGoals }));
   return deriveGroupOrders(def, actualScores);
 }
 
@@ -237,8 +245,17 @@ function buildGroupMatchIdsByGroup(def: Tournament): Map<string, Set<string>> {
   return groupMatchIds;
 }
 
-/** The date the group's last match kicked off, or null if the group isn't fully final yet. */
-export function findGroupCompletionDate(groupMatches: MatchRow[]): string | null {
+/**
+ * The date the group's last match kicked off, or null if the group isn't fully final yet.
+ * `expectedCount` is the tournament-defined number of matches in this group — without it, a
+ * partially-synced set of rows (e.g. only 1 of 6 group matches loaded) would be misread as
+ * "complete" the moment every row it does have happens to be final.
+ */
+export function findGroupCompletionDate(
+  groupMatches: MatchRow[],
+  expectedCount: number,
+): string | null {
+  if (groupMatches.length < expectedCount) return null;
   if (!groupMatches.every((m) => m.status === 'final')) return null;
 
   const withKickoff = groupMatches.filter((m) => m.kickoff !== null);
@@ -260,10 +277,12 @@ export function findOverallGroupCompletionDate(
   allMatches: MatchRow[],
   def: Tournament,
 ): string | null {
+  const groupMatchIds = buildGroupMatchIdsByGroup(def);
   const dates: string[] = [];
   for (const group of def.groups) {
     const groupMatches = allMatches.filter((m) => m.stage === 'group' && m.groupId === group.id);
-    const date = findGroupCompletionDate(groupMatches);
+    const expectedCount = groupMatchIds.get(group.id)?.size ?? 0;
+    const date = findGroupCompletionDate(groupMatches, expectedCount);
     if (date === null) return null;
     dates.push(date);
   }
@@ -317,7 +336,7 @@ function buildGroupOrderDeltas(
     const matchIds = groupMatchIds.get(group.id) ?? new Set();
     const groupMatches = allMatches.filter((m) => matchIds.has(m.id));
 
-    const groupDate = findGroupCompletionDate(groupMatches);
+    const groupDate = findGroupCompletionDate(groupMatches, matchIds.size);
     if (!groupDate) continue;
 
     const actualOrder = actualGroupOrders[group.id];

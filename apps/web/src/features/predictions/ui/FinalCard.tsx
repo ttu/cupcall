@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import type { PoolId, TeamId } from '@cup/engine';
 import type { FinishMatchView } from '../domain/types';
 import { ScoreCell } from './ScoreCell';
 import { ChampionBadge } from './ChampionBadge';
@@ -46,10 +47,10 @@ function TieButton({
 type Props = {
   match: FinishMatchView;
   matchKey: 'final' | 'bronze';
-  poolId: string;
+  poolId: PoolId;
   locked: boolean;
   onSave: (match: 'final' | 'bronze', home: number, away: number) => void | Promise<void>;
-  onPickWinner: (matchKey: 'final' | 'bronze', winner: string) => void;
+  onPickWinner: (matchKey: 'final' | 'bronze', winner: TeamId) => void;
   isPending?: boolean;
 };
 

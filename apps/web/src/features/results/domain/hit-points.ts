@@ -1,4 +1,5 @@
-import type { Tournament } from '@cup/engine';
+import type { Tournament, BracketMatchKey, Points } from '@cup/engine';
+import { points as toPoints } from '@cup/engine';
 
 type Progression = Tournament['bracket']['progression'];
 
@@ -8,13 +9,13 @@ type Progression = Tournament['bracket']['progression'];
  */
 function creditFeedersOfMatches(
   progression: Progression,
-  matchKeys: string[],
-  points: number,
-  map: Map<string, number>,
+  matchKeys: BracketMatchKey[],
+  points: Points,
+  map: Map<BracketMatchKey, Points>,
 ): void {
   for (const prog of progression) {
-    if (!matchKeys.includes(prog.match as string)) continue;
-    for (const fromKey of prog.from) map.set(fromKey as string, points);
+    if (!matchKeys.includes(prog.match)) continue;
+    for (const fromKey of prog.from) map.set(fromKey, points);
   }
 }
 
@@ -23,34 +24,34 @@ function creditFeedersOfMatches(
  * match's winner. Final and Bronze map to their own key (not a feeder), since there is
  * no later progression match to derive the reward from.
  */
-export function buildHitPointsMap(def: Tournament): Map<string, number> {
-  const map = new Map<string, number>();
+export function buildHitPointsMap(def: Tournament): Map<BracketMatchKey, Points> {
+  const map = new Map<BracketMatchKey, Points>();
   const { bracket, scoring } = def;
 
   creditFeedersOfMatches(
     bracket.progression,
-    bracket.roundOf16Matches as string[],
-    scoring.roundOf16PerTeam,
+    bracket.roundOf16Matches,
+    toPoints(scoring.roundOf16PerTeam),
     map,
   );
   creditFeedersOfMatches(
     bracket.progression,
-    bracket.roundOf8Matches as string[],
-    scoring.roundOf8PerTeam,
+    bracket.roundOf8Matches,
+    toPoints(scoring.roundOf8PerTeam),
     map,
   );
   creditFeedersOfMatches(
     bracket.progression,
-    bracket.semiFinals as string[],
-    scoring.roundOf4PerTeam,
+    bracket.semiFinals,
+    toPoints(scoring.roundOf4PerTeam),
     map,
   );
 
   const finalProg = bracket.progression.find((p) => p.match === bracket.finalMatch);
   if (finalProg) {
-    for (const sfKey of finalProg.from) map.set(sfKey as string, scoring.final.perTeam);
+    for (const sfKey of finalProg.from) map.set(sfKey, toPoints(scoring.final.perTeam));
   }
-  map.set(bracket.finalMatch as string, scoring.final.perTeam);
-  map.set(bracket.bronzeMatch as string, scoring.bronze.perTeam);
+  map.set(bracket.finalMatch, toPoints(scoring.final.perTeam));
+  map.set(bracket.bronzeMatch, toPoints(scoring.bronze.perTeam));
   return map;
 }

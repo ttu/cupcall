@@ -2,6 +2,7 @@
 
 import type { ReactElement } from 'react';
 import { useState } from 'react';
+import type { PlayerId, PoolId, TeamId, UserId } from '@cup/engine';
 import type { CardView } from '../domain/types';
 import { OwnerCardEditor } from './OwnerCardEditor';
 import { OwnerEditBanner } from './OwnerEditBanner';
@@ -10,10 +11,10 @@ import { Button, Icon } from '@/shared/ui';
 
 type Props = {
   card: CardView;
-  poolId: string;
-  targetUserId: string;
-  teams: { id: string; name: string }[];
-  players: { id: string; name: string; team: string }[];
+  poolId: PoolId;
+  targetUserId: UserId;
+  teams: { id: TeamId; name: string }[];
+  players: { id: PlayerId; name: string; team: TeamId }[];
   isDev: boolean;
 };
 

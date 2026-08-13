@@ -361,23 +361,51 @@ function groupMatch(id: string, groupId: string, kickoff: string, final: boolean
   };
 }
 
+// miniTournament defines 6 round-robin matches per group (A, B, C, D) — findGroupCompletionDate
+// now requires all 6 rows per group to be present (not just present rows to be final), so these
+// fixtures build the full set per group via the tournament's own groupMatches definition.
+function idsForGroup(g: 'A' | 'B' | 'C' | 'D'): string[] {
+  return miniTournament.groupMatches.filter((m) => m.group === g).map((m) => m.id);
+}
+
+function fullGroup(g: 'A' | 'B' | 'C' | 'D', kickoff: string, final = true): MatchRow[] {
+  return idsForGroup(g).map((id) => groupMatch(id, g, kickoff, final));
+}
+
 describe('findOverallGroupCompletionDate', () => {
   it('returns the latest completion date across all groups', () => {
-    // miniTournament has 4 groups (A, B, C, D); every group must be final for the
-    // overall date to resolve, so C and D need matches too (finishing earlier than B).
+    // Every group must be fully final for the overall date to resolve, so C and D need
+    // full match sets too (finishing earlier than B).
     const allMatches: MatchRow[] = [
-      groupMatch('mA1', 'A', '2026-07-01T18:00:00Z', true),
-      groupMatch('mB1', 'B', '2026-07-03T18:00:00Z', true), // group B finishes later
-      groupMatch('mC1', 'C', '2026-07-01T18:00:00Z', true),
-      groupMatch('mD1', 'D', '2026-07-01T18:00:00Z', true),
+      ...fullGroup('A', '2026-07-01T18:00:00Z'),
+      ...fullGroup('B', '2026-07-03T18:00:00Z'), // group B finishes later
+      ...fullGroup('C', '2026-07-01T18:00:00Z'),
+      ...fullGroup('D', '2026-07-01T18:00:00Z'),
     ];
     expect(findOverallGroupCompletionDate(allMatches, miniTournament)).toBe('2026-07-03');
   });
 
   it('returns null when any group is not yet fully final', () => {
+    const bIds = idsForGroup('B');
     const allMatches: MatchRow[] = [
-      groupMatch('mA1', 'A', '2026-07-01T18:00:00Z', true),
-      groupMatch('mB1', 'B', '2026-07-03T18:00:00Z', false), // group B not final
+      ...fullGroup('A', '2026-07-01T18:00:00Z'),
+      // group B: all 6 rows present, but one is still scheduled
+      ...bIds.map((id, i) => groupMatch(id, 'B', '2026-07-03T18:00:00Z', i > 0)),
+      ...fullGroup('C', '2026-07-01T18:00:00Z'),
+      ...fullGroup('D', '2026-07-01T18:00:00Z'),
+    ];
+    expect(findOverallGroupCompletionDate(allMatches, miniTournament)).toBeNull();
+  });
+
+  it('returns null when a group has fewer match rows than the tournament-configured count (partial sync)', () => {
+    const allMatches: MatchRow[] = [
+      ...fullGroup('A', '2026-07-01T18:00:00Z'),
+      // group B: only 3 of 6 rows synced, all final — must not be mistaken for "complete".
+      ...idsForGroup('B')
+        .slice(0, 3)
+        .map((id) => groupMatch(id, 'B', '2026-07-03T18:00:00Z', true)),
+      ...fullGroup('C', '2026-07-01T18:00:00Z'),
+      ...fullGroup('D', '2026-07-01T18:00:00Z'),
     ];
     expect(findOverallGroupCompletionDate(allMatches, miniTournament)).toBeNull();
   });

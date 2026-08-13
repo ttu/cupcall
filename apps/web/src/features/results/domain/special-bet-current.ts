@@ -41,7 +41,7 @@ function topTeamsByTally(
 
   return {
     display: leaders.map((id) => nameById.get(id) ?? id).join(', '),
-    detail: `${max} goals`,
+    detail: max === 1 ? '1 goal' : `${max} goals`,
     teamIds: leaders,
   };
 }

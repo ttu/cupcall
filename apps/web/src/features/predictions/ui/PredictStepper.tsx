@@ -83,7 +83,8 @@ export function PredictStepper({ card, teams, players, isDev }: Props): ReactEle
     return false;
   }
 
-  const stepItems = STEPS.map((s) => ({ ...s, done: isStepDone(s.id) }));
+  const visibleSteps = STEPS.filter((s) => s.id !== 'specials' || card.specials.length > 0);
+  const stepItems = visibleSteps.map((s) => ({ ...s, done: isStepDone(s.id) }));
 
   return (
     <div className="flex flex-col gap-4">

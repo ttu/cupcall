@@ -63,24 +63,39 @@ export function MatrixTable<Col, Cell, Extra = unknown>({
 
   return (
     <div>
-      <div className="card overflow-x-auto">
+      <div className="card overflow-x-auto" role="table">
         <div className="min-w-max">
           <div
+            role="row"
             className={cn(
               'grid gap-1 bg-surface-2 border-b border-line',
               headerAlign === 'end' ? 'items-end' : 'items-center',
             )}
             style={{ gridTemplateColumns: colTemplate }}
           >
-            <div className="sticky left-0 z-10 bg-surface-2 self-stretch" />
-            <span className="eyebrow text-ink-muted text-[10px] py-3">Player</span>
-            {columns.map(renderColumnHeader)}
+            <div className="sticky left-0 z-10 bg-surface-2 self-stretch" aria-hidden="true" />
+            <span role="columnheader" className="eyebrow text-ink-muted text-[10px] py-3">
+              Player
+            </span>
+            {columns.map((col, i) => (
+              <div role="columnheader" key={i} className="contents">
+                {renderColumnHeader(col)}
+              </div>
+            ))}
             {extraColumn && (
-              <span className="eyebrow text-ink-muted text-[10px] text-center py-3">
+              <span
+                role="columnheader"
+                className="eyebrow text-ink-muted text-[10px] text-center py-3"
+              >
                 {extraColumn.header}
               </span>
             )}
-            <span className="eyebrow text-ink-muted text-[10px] text-right py-3 pr-4">Total</span>
+            <span
+              role="columnheader"
+              className="eyebrow text-ink-muted text-[10px] text-right py-3 pr-4"
+            >
+              Total
+            </span>
           </div>
 
           <div className="divide">
@@ -128,6 +143,7 @@ function MatrixTableRow<Cell, Extra>({
 
   return (
     <div
+      role="row"
       className={cn(
         'grid items-center gap-1',
         row.isCurrentUser ? 'bg-green-050' : 'bg-transparent',
@@ -135,6 +151,7 @@ function MatrixTableRow<Cell, Extra>({
       style={{ gridTemplateColumns: colTemplate }}
     >
       <div
+        role="cell"
         className={cn(
           'sticky left-0 z-10 flex items-center justify-center self-stretch py-[9px]',
           stickyBg,
@@ -143,7 +160,7 @@ function MatrixTableRow<Cell, Extra>({
         <Avatar name={row.displayName} index={avatarIndex} size={30} />
       </div>
 
-      <span className="flex items-center min-w-0 py-[9px]">
+      <span role="cell" className="flex items-center min-w-0 py-[9px]">
         <span
           className={cn(
             'font-bold text-[13px] truncate',
@@ -158,18 +175,19 @@ function MatrixTableRow<Cell, Extra>({
       </span>
 
       {row.cells.map((cell) => (
-        <span key={getCellKey(cell)} className="grid place-items-center py-[9px]">
+        <span key={getCellKey(cell)} role="cell" className="grid place-items-center py-[9px]">
           {renderCell(cell)}
         </span>
       ))}
 
       {extraColumn && (
-        <span className="display tnum text-center text-[15px] py-[9px] text-ink-muted">
+        <span role="cell" className="display tnum text-center text-[15px] py-[9px] text-ink-muted">
           {extraColumn.renderCell(row)}
         </span>
       )}
 
       <span
+        role="cell"
         className={cn(
           'display tnum text-right text-[18px] py-[9px] pr-4',
           row.isCurrentUser ? 'text-green-600' : 'text-ink',

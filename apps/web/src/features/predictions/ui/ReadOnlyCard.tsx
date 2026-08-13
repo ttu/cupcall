@@ -1,13 +1,10 @@
 import type { ReactElement } from 'react';
-import type { CardView } from '../domain/types';
+import type { CardView, MatchScore } from '../domain/types';
 import { CompletionBar } from './CompletionBar';
 import { ReadOnlyPickRow } from './ReadOnlyPickRow';
 import { ReadOnlyFinishCard } from './ReadOnlyFinishCard';
 import { SectionLabel, Icon, TeamBadge, cn } from '@/shared/ui';
-import type { MatchHit } from '@/features/results';
 import { HitChip } from '@/features/results';
-
-export type MatchScore = { hit: MatchHit; points: number };
 
 type Props = { card: CardView; matchScores?: ReadonlyMap<string, MatchScore> };
 

@@ -18,7 +18,11 @@ type Props = {
 function formatRoundDate(round: BracketRoundResultView): string | null {
   const kickoff = round.matches.find((m) => m.kickoff !== null)?.kickoff ?? null;
   if (!kickoff) return null;
-  return new Date(kickoff).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+  return new Date(kickoff).toLocaleDateString('en-GB', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
 function RoundStatusChip({ round }: { round: BracketRoundResultView }): ReactElement {
@@ -80,6 +84,7 @@ export function KnockoutRoundAccordion({
   // round collapsed with nothing open.
   const mainRounds = rounds.filter((r) => r.label !== 'Final');
   const finalRound = rounds.find((r) => r.label === 'Final') ?? null;
+  const finalMatch = finalRound?.matches[0] ?? null;
 
   const [openLabels, setOpenLabels] = useState<Set<string>>(() => {
     const defaultLabel = pickDefaultExpandedRound(mainRounds);
@@ -128,13 +133,11 @@ export function KnockoutRoundAccordion({
         </AccordionSection>
       ))}
 
-      {finalRound && (
+      {finalMatch && (
         <FinalResultCard
-          match={finalRound.matches[0]!}
+          match={finalMatch}
           matchKey="final"
-          onSelect={
-            onOpenMatch ? () => onOpenMatch(finalRound.matches[0]!.bracketMatchKey) : undefined
-          }
+          onSelect={onOpenMatch ? () => onOpenMatch(finalMatch.bracketMatchKey) : undefined}
         />
       )}
 

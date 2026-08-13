@@ -103,7 +103,7 @@ export default async function MemberCardPage({ params }: Props): Promise<ReactEl
             {isSelf ? 'My Predictions' : `${memberName}'s Predictions`}
           </h1>
         </div>
-        {isOwner && <ExportImportControls poolId={poolId} targetUserId={memberId} />}
+        {isOwner && <ExportImportControls poolId={poolId} targetUserId={memberUid} />}
       </div>
 
       {isOwner && !isSelf && <OwnerEditBanner memberName={memberName} />}

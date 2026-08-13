@@ -21,6 +21,7 @@ import {
   matchHasResult,
   betKeyHasAnswer,
   getActualResults,
+  isMember,
 } from '@cup/db';
 import {
   bracketMatchKey as bmk,
@@ -343,6 +344,11 @@ async function executeOwnerSave(
 
     assertCanOwnerEdit({ userId: editorUserId }, { id: pool.id, ownerId: pool.ownerId });
 
+    const targetIsMember = await isMember(db, pool.id, targetUserId);
+    if (!targetIsMember) {
+      throw new Error('Target user is not a member of this pool');
+    }
+
     const prediction = await getOrCreatePrediction(db, {
       poolId,
       userId: targetUserId,
@@ -538,6 +544,9 @@ export async function ownerSaveKnockoutPick(
     userId(rawTargetUserId),
     reason,
     async ({ tournamentDef, actual, prediction }) => {
+      const oldInputs = await getPredictionInputs(db, prediction.id);
+      const oldPick =
+        oldInputs.knockoutPicks.find((kp) => kp.bracketMatchKey === key)?.winner ?? null;
       const updatedInputs = await applyKnockoutPick(
         prediction.id,
         key,
@@ -546,7 +555,7 @@ export async function ownerSaveKnockoutPick(
         actual,
       );
       return {
-        audit: { fieldPath: `knockoutPicks.${key}`, oldValue: null, newValue: winner },
+        audit: { fieldPath: `knockoutPicks.${key}`, oldValue: oldPick, newValue: winner },
         updatedInputs,
       };
     },
@@ -612,9 +621,11 @@ export async function ownerSaveFinishScore(
     userId(rawTargetUserId),
     reason,
     async ({ tournamentDef, prediction }) => {
+      const oldInputs = await getPredictionInputs(db, prediction.id);
+      const oldScore = oldInputs.finishScores[match] ?? null;
       await applyFinishScore(prediction.id, match, home, away, tournamentDef);
       return {
-        audit: { fieldPath: `finishScores.${match}`, oldValue: null, newValue: { home, away } },
+        audit: { fieldPath: `finishScores.${match}`, oldValue: oldScore, newValue: { home, away } },
       };
     },
   );

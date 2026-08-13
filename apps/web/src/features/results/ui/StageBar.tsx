@@ -4,7 +4,7 @@ import { cn } from '@/shared/ui';
 
 type Props = { stages: StageProgress[]; vertical?: boolean };
 
-const fmt = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' });
+const fmt = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 const dotClass = (state: StageProgress['state']) =>
   cn(

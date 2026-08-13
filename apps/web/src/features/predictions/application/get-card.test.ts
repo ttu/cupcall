@@ -758,6 +758,51 @@ describe('buildCardView — completion percentage', () => {
   });
 });
 
+describe('buildCardView — progression tie stale pick', () => {
+  it('shows null pickedWinnerId when the stored SF pick no longer matches either resolved QF winner', () => {
+    const allGroupScores = ['A', 'B', 'C', 'D'].flatMap((g) =>
+      groupMatchIds2(g).map((mid) => ({ matchId: mid, home: 0, away: 0 })),
+    );
+    const knockoutPicks: CardInputs['knockoutPicks'] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+      // Stale: sf1's participants resolve to A1 vs C1, but the stored pick is neither.
+      { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('B1') },
+    ];
+    const inputs: CardInputs = { ...emptyInputs, groupScores: allGroupScores, knockoutPicks };
+    const derived: DerivedCard = deriveCard(inputs, miniTournament);
+    const card = buildCardView(
+      makeCardData({ inputs, derived, augmentedGroupScores: allGroupScores }),
+    );
+
+    const sfRound = card.bracket.rounds.find((r) => r.label === 'SF')!;
+    const sf1Tie = sfRound.ties.find((t) => t.bracketMatchKey === bracketMatchKey('sf1'))!;
+    expect(sf1Tie.homeTeamId).toBe(teamId('A1'));
+    expect(sf1Tie.awayTeamId).toBe(teamId('C1'));
+    expect(sf1Tie.pickedWinnerId).toBeNull();
+  });
+
+  it('keeps pickedWinnerId when the stored SF pick matches a resolved QF winner', () => {
+    const allGroupScores = ['A', 'B', 'C', 'D'].flatMap((g) =>
+      groupMatchIds2(g).map((mid) => ({ matchId: mid, home: 0, away: 0 })),
+    );
+    const knockoutPicks: CardInputs['knockoutPicks'] = [
+      { bracketMatchKey: bracketMatchKey('qf1'), winner: teamId('A1') },
+      { bracketMatchKey: bracketMatchKey('qf2'), winner: teamId('C1') },
+      { bracketMatchKey: bracketMatchKey('sf1'), winner: teamId('A1') },
+    ];
+    const inputs: CardInputs = { ...emptyInputs, groupScores: allGroupScores, knockoutPicks };
+    const derived: DerivedCard = deriveCard(inputs, miniTournament);
+    const card = buildCardView(
+      makeCardData({ inputs, derived, augmentedGroupScores: allGroupScores }),
+    );
+
+    const sfRound = card.bracket.rounds.find((r) => r.label === 'SF')!;
+    const sf1Tie = sfRound.ties.find((t) => t.bracketMatchKey === bracketMatchKey('sf1'))!;
+    expect(sf1Tie.pickedWinnerId).toBe(teamId('A1'));
+  });
+});
+
 describe('buildCardView — bracket slot resolution', () => {
   it('shows null teams for entry-round slots when groups are incomplete', () => {
     const card = buildCardView(makeCardData());

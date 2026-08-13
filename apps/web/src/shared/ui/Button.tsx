@@ -1,4 +1,5 @@
-import { cloneElement, type ButtonHTMLAttributes, type ReactElement } from 'react';
+import { cloneElement, isValidElement, type ButtonHTMLAttributes, type ReactElement } from 'react';
+import { cn } from './cn';
 
 type ButtonVariant =
   | 'primary'
@@ -11,13 +12,30 @@ type ButtonVariant =
   | 'ghost-danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonBaseProps = {
   variant: ButtonVariant;
   size?: ButtonSize;
   block?: boolean;
-  asChild?: boolean;
-  children?: React.ReactNode;
 };
+
+/** Renders a native `<button>`; `children` is the button's content. */
+type NormalButtonProps = ButtonBaseProps &
+  ButtonHTMLAttributes<HTMLButtonElement> & {
+    asChild?: false;
+  };
+
+/**
+ * Clones `children` instead of rendering a `<button>`, so callers can turn e.g. a `Link`
+ * or `a` into something styled like a button without nesting interactive elements.
+ * Requires exactly one valid React element child.
+ */
+type AsChildButtonProps = ButtonBaseProps &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
+    asChild: true;
+    children: ReactElement;
+  };
+
+export type ButtonProps = NormalButtonProps | AsChildButtonProps;
 
 function buildClassName(
   variant: ButtonVariant,
@@ -33,20 +51,30 @@ function buildClassName(
   return parts.join(' ');
 }
 
-export function Button({
-  variant,
-  size,
-  block,
-  asChild,
-  children,
-  className,
-  ...rest
-}: ButtonProps): ReactElement {
+/** Props a cloned `asChild` element may safely receive — its own props, widened for spreading. */
+type ClonableElementProps = { className?: string } & Record<string, unknown>;
+
+function isSingleElementChild(children: unknown): children is ReactElement<ClonableElementProps> {
+  return isValidElement<ClonableElementProps>(children) && !Array.isArray(children);
+}
+
+export function Button(props: ButtonProps): ReactElement | null {
+  const { variant, size, block, asChild, children, className, ...rest } = props;
   const cls = buildClassName(variant, size, block, className);
 
-  if (asChild && children) {
-    const child = children as ReactElement<{ className?: string }>;
-    return cloneElement(child, { className: cls });
+  if (asChild) {
+    if (!isSingleElementChild(children)) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error(
+          'Button: `asChild` requires exactly one valid React element child — rendering nothing.',
+        );
+      }
+      return null;
+    }
+    return cloneElement(children, {
+      ...rest,
+      className: cn(cls, children.props.className),
+    });
   }
 
   return (

@@ -70,6 +70,8 @@ export async function applyCardImport(deps: Deps): Promise<CardImportResult> {
   const knockoutPicksResult = await importKnockoutPicks(
     db,
     predictionId,
+    editorUserId,
+    isOwnerEdit,
     exportData.knockoutPicks,
     bracketKeys,
     teamIds,
@@ -77,10 +79,18 @@ export async function applyCardImport(deps: Deps): Promise<CardImportResult> {
   const finishScoresImported = await importFinishScores(
     db,
     predictionId,
+    editorUserId,
+    isOwnerEdit,
     tournamentDef,
     exportData.finishScores,
   );
-  const specialsImported = await importSpecialBets(db, predictionId, exportData.specials);
+  const specialsImported = await importSpecialBets(
+    db,
+    predictionId,
+    editorUserId,
+    isOwnerEdit,
+    exportData.specials,
+  );
 
   return {
     imported:
@@ -128,6 +138,8 @@ async function importGroupScores(
 async function importKnockoutPicks(
   db: Db<AppSchema>,
   predictionId: PredictionId,
+  editorUserId: UserId,
+  isOwnerEdit: boolean,
   knockoutPicks: CardExportData['knockoutPicks'],
   bracketKeys: Set<BracketMatchKey>,
   teamIds: Set<TeamId>,
@@ -150,6 +162,16 @@ async function importKnockoutPicks(
       bmk(kp.bracketMatchKey) as BracketMatchKey,
       kp.winner,
     );
+    if (isOwnerEdit) {
+      await createPredictionEdit(db, {
+        predictionId,
+        editorUserId,
+        fieldPath: `knockoutPicks.${kp.bracketMatchKey}`,
+        oldValue: null,
+        newValue: kp.winner,
+        source: 'import',
+      });
+    }
     imported++;
   }
 
@@ -159,6 +181,8 @@ async function importKnockoutPicks(
 async function importFinishScores(
   db: Db<AppSchema>,
   predictionId: PredictionId,
+  editorUserId: UserId,
+  isOwnerEdit: boolean,
   tournamentDef: Tournament,
   finishScores: CardExportData['finishScores'],
 ): Promise<number> {
@@ -180,6 +204,16 @@ async function importFinishScores(
       pair?.[0] ?? null,
       pair?.[1] ?? null,
     );
+    if (isOwnerEdit) {
+      await createPredictionEdit(db, {
+        predictionId,
+        editorUserId,
+        fieldPath: `finishScores.final`,
+        oldValue: null,
+        newValue: final,
+        source: 'import',
+      });
+    }
     imported++;
   }
   if (bronze) {
@@ -193,6 +227,16 @@ async function importFinishScores(
       pair?.[0] ?? null,
       pair?.[1] ?? null,
     );
+    if (isOwnerEdit) {
+      await createPredictionEdit(db, {
+        predictionId,
+        editorUserId,
+        fieldPath: `finishScores.bronze`,
+        oldValue: null,
+        newValue: bronze,
+        source: 'import',
+      });
+    }
     imported++;
   }
 
@@ -202,12 +246,24 @@ async function importFinishScores(
 async function importSpecialBets(
   db: Db<AppSchema>,
   predictionId: PredictionId,
+  editorUserId: UserId,
+  isOwnerEdit: boolean,
   specials: CardExportData['specials'],
 ): Promise<number> {
   let imported = 0;
 
   for (const [betKey, value] of Object.entries(specials ?? {})) {
     await upsertSpecialBet(db, predictionId, betKey, value);
+    if (isOwnerEdit) {
+      await createPredictionEdit(db, {
+        predictionId,
+        editorUserId,
+        fieldPath: `specials.${betKey}`,
+        oldValue: null,
+        newValue: value,
+        source: 'import',
+      });
+    }
     imported++;
   }
 

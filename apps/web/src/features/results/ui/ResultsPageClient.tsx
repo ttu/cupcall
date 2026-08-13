@@ -31,6 +31,16 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'race', label: 'Points Race' },
 ];
 
+/** Stable id shared between a tab button and the panel it controls (see resultsPanelId). */
+function resultsTabId(tab: Tab): string {
+  return `results-tab-${tab}`;
+}
+
+/** Stable id shared between a panel and the tab that labels it (see resultsTabId). */
+function resultsPanelId(tab: Tab): string {
+  return `results-panel-${tab}`;
+}
+
 function ResultsTabNav({
   active,
   onSelect,
@@ -39,11 +49,19 @@ function ResultsTabNav({
   onSelect: (t: Tab) => void;
 }): ReactElement {
   return (
-    <nav aria-label="Results sections" className="flex border-b border-line-soft mb-6">
+    <nav
+      role="tablist"
+      aria-label="Results sections"
+      className="flex border-b border-line-soft mb-6"
+    >
       {TABS.map(({ id, label }) => (
         <button
           key={id}
           type="button"
+          role="tab"
+          id={resultsTabId(id)}
+          aria-selected={active === id}
+          aria-controls={resultsPanelId(id)}
           onClick={() => onSelect(id)}
           data-testid={`results-tab-${id}`}
           className={cn(
@@ -126,7 +144,12 @@ export function ResultsPageClient({
       <ResultsTabNav active={activeTab} onSelect={setActiveTab} />
 
       {activeTab === 'group' && (
-        <section aria-label="Group stage results" className="flex flex-col gap-6">
+        <section
+          role="tabpanel"
+          id={resultsPanelId('group')}
+          aria-labelledby={resultsTabId('group')}
+          className="flex flex-col gap-6"
+        >
           {view.userGroupSummary && <PointsSummaryPanel summary={view.userGroupSummary} />}
           <TodayMatchesFeed groups={view.groupResults} onOpenMatch={setOpenGroupMatchId} />
 
@@ -158,7 +181,12 @@ export function ResultsPageClient({
       )}
 
       {activeTab === 'knockout' && (
-        <div className="flex flex-col gap-6">
+        <div
+          role="tabpanel"
+          id={resultsPanelId('knockout')}
+          aria-labelledby={resultsTabId('knockout')}
+          className="flex flex-col gap-6"
+        >
           {view.userKnockoutSummary && (
             <div className="hidden md:block">
               <PointsSummaryPanel summary={view.userKnockoutSummary} />
@@ -220,21 +248,28 @@ export function ResultsPageClient({
       )}
 
       {activeTab === 'specials' && (
-        <div className="flex flex-col gap-6">
+        <div
+          role="tabpanel"
+          id={resultsPanelId('specials')}
+          aria-labelledby={resultsTabId('specials')}
+          className="flex flex-col gap-6"
+        >
           {view.userSpecialsSummary && <PointsSummaryPanel summary={view.userSpecialsSummary} />}
           <SpecialBetsPanel specialBets={view.specialBets} viewerMode={viewerMode} />
         </div>
       )}
 
       {activeTab === 'race' && (
-        <PointsRaceTab
-          race={view.pointsRaceView}
-          userBreakdown={view.userBreakdown}
-          scoring={view.scoring}
-          viewerMode={viewerMode}
-          leaderboard={view.leaderboard}
-          {...(currentUserId !== undefined && { currentUserId })}
-        />
+        <div role="tabpanel" id={resultsPanelId('race')} aria-labelledby={resultsTabId('race')}>
+          <PointsRaceTab
+            race={view.pointsRaceView}
+            userBreakdown={view.userBreakdown}
+            scoring={view.scoring}
+            viewerMode={viewerMode}
+            leaderboard={view.leaderboard}
+            {...(currentUserId !== undefined && { currentUserId })}
+          />
+        </div>
       )}
 
       {openMatch && (
