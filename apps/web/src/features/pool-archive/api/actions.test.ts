@@ -65,7 +65,7 @@ describe('archivePoolAction', () => {
 
     const result = await archivePoolAction({ poolId });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toMatch(/owner/i);
+    if (!result.ok) expect(result.error).toMatch(/permission/i);
   });
 
   it('rejects invalid input', async () => {

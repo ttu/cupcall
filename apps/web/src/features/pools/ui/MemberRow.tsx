@@ -37,15 +37,20 @@ export function MemberRow({ member, avatarIndex, poolId }: Props): ReactElement 
   async function handleGetLink() {
     setLoginLinkError(null);
     setLoginLinkPending(true);
-    const result = await generateMemberLoginLink({
-      poolId,
-      targetUserId: member.userId as UserId,
-    });
-    setLoginLinkPending(false);
-    if (!result.ok) {
-      setLoginLinkError(result.error);
-    } else {
-      setLoginLink(`${window.location.origin}${result.url}`);
+    try {
+      const result = await generateMemberLoginLink({
+        poolId,
+        targetUserId: member.userId as UserId,
+      });
+      if (!result.ok) {
+        setLoginLinkError(result.error);
+      } else {
+        setLoginLink(`${window.location.origin}${result.url}`);
+      }
+    } catch {
+      setLoginLinkError('Could not generate a login link. Please try again.');
+    } finally {
+      setLoginLinkPending(false);
     }
   }
 

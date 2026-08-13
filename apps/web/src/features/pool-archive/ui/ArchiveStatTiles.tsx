@@ -16,7 +16,10 @@ export function ArchiveStatTiles({ matchesPlayed, recap }: Props): ReactElement 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="archive-stat-tiles">
       <Tile label="Matches played" value={String(matchesPlayed)} />
-      <Tile label="Predictions made" value={recap ? recap.predictionsMade.toLocaleString() : '—'} />
+      <Tile
+        label="Predictions made"
+        value={recap ? recap.predictionsMade.toLocaleString('en-US') : '—'}
+      />
       <Tile label="Pool exact-score rate" value={recap ? `${recap.exactScoreRatePercent}%` : '—'} />
       <Tile
         label="Overall prediction accuracy"

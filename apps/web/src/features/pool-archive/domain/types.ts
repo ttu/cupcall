@@ -16,7 +16,7 @@ export type PoolArchiveEntryView = {
   rank: number;
   pointsTotal: Points;
   breakdown: ScoreBreakdown;
-  pointsHistory: number[] | null;
+  pointsHistory: Points[] | null;
   stageReasons: (string | null)[] | null;
 };
 

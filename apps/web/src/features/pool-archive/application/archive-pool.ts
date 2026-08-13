@@ -50,6 +50,7 @@ export async function archivePool(
   const { recap, entryExtras } = await buildPoolArchiveRecap(db, {
     poolId: input.poolId,
     tournamentId: input.tournamentId,
+    leaderboard,
     def: input.def,
     scoring: input.scoring,
   });

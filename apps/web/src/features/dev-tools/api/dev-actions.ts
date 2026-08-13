@@ -28,6 +28,7 @@ import {
 import type { ActualResults } from '@cup/engine';
 import type { SimulationCheckpoint } from '../application/get-dev-state';
 import type { GroupId, TeamId } from '@cup/engine';
+import { logger } from '@/shared/observability/logger';
 
 const TOURNAMENT_ID = asTournamentId('test-wc-2026');
 
@@ -246,7 +247,7 @@ const FINAL_MATCH = {
   id: 'final',
   home: 'ESP',
   away: 'ARG',
-  winner: 'ARG',
+  winner: 'ESP',
   homeGoals: 1,
   awayGoals: 1,
 } as const;
@@ -414,8 +415,13 @@ async function rescoreAll(actual: ActualResults): Promise<void> {
       const derived = deriveCard(inputs, def);
       const breakdown = scoreCard(derived, inputs, actual, def.scoring);
       await upsertScore(db, { poolId, userId, pointsTotal: breakdown.total, breakdown });
-    } catch {
-      // skip incomplete predictions
+    } catch (error) {
+      // Incomplete predictions are expected (e.g. mid-tournament checkpoints) — log and
+      // continue scoring the rest rather than aborting the whole rescore.
+      logger.warn(
+        { op: 'dev:rescoreAll', predictionId, error },
+        'dev:rescoreAll — skipped prediction',
+      );
     }
   }
 }

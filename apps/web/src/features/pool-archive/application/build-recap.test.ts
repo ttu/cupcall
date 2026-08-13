@@ -12,6 +12,7 @@ import {
   finalizeMatch,
   upsertTournamentResults,
   getOrCreatePrediction,
+  getLeaderboard,
 } from '@cup/db';
 import { miniTournament } from '@cup/engine/testing';
 import { tournamentId as asTournamentId, teamId, groupId, matchId } from '@cup/engine';
@@ -43,6 +44,7 @@ describe('buildPoolArchiveRecap', () => {
     const { recap, entryExtras } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });
@@ -65,6 +67,7 @@ describe('buildPoolArchiveRecap', () => {
     const { recap } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });
@@ -81,6 +84,7 @@ describe('buildPoolArchiveRecap', () => {
     const { recap } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });
@@ -107,6 +111,7 @@ describe('buildPoolArchiveRecap', () => {
     const { entryExtras } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });
@@ -125,6 +130,7 @@ describe('buildPoolArchiveRecap', () => {
     const { recap } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });
@@ -168,6 +174,7 @@ describe('buildPoolArchiveRecap', () => {
     const { recap } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });
@@ -182,6 +189,7 @@ describe('buildPoolArchiveRecap', () => {
     const { recap } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });
@@ -206,6 +214,7 @@ describe('buildPoolArchiveRecap', () => {
     const { recap } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });
@@ -232,6 +241,7 @@ describe('buildPoolArchiveRecap', () => {
     const { recap } = await buildPoolArchiveRecap(db, {
       poolId,
       tournamentId,
+      leaderboard: await getLeaderboard(db, poolId),
       def: miniTournament,
       scoring: miniTournament.scoring,
     });

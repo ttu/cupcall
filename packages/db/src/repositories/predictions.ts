@@ -409,6 +409,21 @@ export async function listPredictionsForTournament(
 }
 
 /**
+ * Returns the userId of every pool member with a prediction row, regardless of whether
+ * they've filled anything in. Used to distinguish "never created a prediction" (skip) from
+ * "prediction row exists but is empty" (count as 0/0) when batching per-member card data —
+ * a single query, instead of one `getPrediction` call per member.
+ */
+export async function getPredictionUserIdsByPool(db: Database, poolId: PoolId): Promise<UserId[]> {
+  const rows = await db
+    .select({ userId: schema.predictions.userId })
+    .from(schema.predictions)
+    .where(eq(schema.predictions.poolId, poolId));
+
+  return rows.map((r) => userId(r.userId));
+}
+
+/**
  * Assembles CardInputs for a given prediction by querying the four sub-tables.
  */
 export async function getPredictionInputs(

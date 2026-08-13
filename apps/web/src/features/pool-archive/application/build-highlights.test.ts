@@ -224,7 +224,7 @@ describe('computeBiggestUpset', () => {
       { userId: asUserId('u2'), bracketMatchKey: asBracketMatchKey('qf1'), winnerTeamId: 'A1' },
       { userId: asUserId('u1'), bracketMatchKey: asBracketMatchKey('qf2'), winnerTeamId: 'D2' },
     ];
-    const result = computeBiggestUpset(picks, allMatches, miniTournament, 3);
+    const result = computeBiggestUpset(picks, [], allMatches, miniTournament, 3);
     expect(result?.matchId).toBe(asMatchId('qf2'));
     expect(result?.pickCount).toBe(1);
     expect(result?.winnerTeam).toBe('Team D2');
@@ -233,12 +233,39 @@ describe('computeBiggestUpset', () => {
   });
 
   it('returns null when there are no resolved knockout ties', () => {
-    expect(computeBiggestUpset([], [], miniTournament, 3)).toBeNull();
+    expect(computeBiggestUpset([], [], [], miniTournament, 3)).toBeNull();
   });
 
   it('returns null when every resolved tie has zero correct picks', () => {
     const allMatches = [knockoutMatch('qf1', 'QF', 'A1', 'B2', 2, 1, '2026-06-10')];
-    expect(computeBiggestUpset([], allMatches, miniTournament, 3)).toBeNull();
+    expect(computeBiggestUpset([], [], allMatches, miniTournament, 3)).toBeNull();
+  });
+
+  it('counts a finish-score-derived pick as correct for the Final, since most players never submit an explicit Final bracket pick', () => {
+    const finalKey = miniTournament.bracket.finalMatch;
+    const allMatches = [knockoutMatch(finalKey, 'Final', 'A1', 'B1', 2, 1, '2026-06-20')];
+    const finishScores: PoolFinishScore[] = [
+      {
+        userId: asUserId('u1'),
+        match: 'final',
+        home: 2,
+        away: 1,
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+      },
+      {
+        userId: asUserId('u2'),
+        match: 'final',
+        home: 1,
+        away: 2,
+        homeTeamId: 'A1',
+        awayTeamId: 'B1',
+      },
+    ];
+    const result = computeBiggestUpset([], finishScores, allMatches, miniTournament, 2);
+    expect(result?.matchId).toBe(asMatchId(finalKey));
+    expect(result?.pickCount).toBe(1); // only u1's finish score implies the actual winner, A1
+    expect(result?.winnerTeam).toBe('Team A1');
   });
 });
 

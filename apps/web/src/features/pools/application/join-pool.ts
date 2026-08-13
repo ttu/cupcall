@@ -52,29 +52,41 @@ export async function joinPool(
     return { ok: true, poolId: pool.id, alreadyMember: true };
   }
 
-  // Pool size cap.
-  const memberCount = await countPoolMembers(db, pool.id);
-  if (memberCount >= MAX_MEMBERS_PER_POOL) {
-    return { ok: false, error: { code: 'pool_full', limit: MAX_MEMBERS_PER_POOL } };
-  }
+  // Pool size cap + membership insert, wrapped in one transaction so two concurrent joins
+  // can't both pass the count check and push membership past MAX_MEMBERS_PER_POOL.
+  const joinOutcome = await db.transaction(async (tx) => {
+    const memberCount = await countPoolMembers(tx, pool.id);
+    if (memberCount >= MAX_MEMBERS_PER_POOL) {
+      return {
+        ok: false as const,
+        error: { code: 'pool_full' as const, limit: MAX_MEMBERS_PER_POOL },
+      };
+    }
 
-  // Rate limit.
-  const rl = await checkRateLimit(db, {
-    key: `join:user:${userId}`,
-    limit: RATE_LIMITS.join.limit,
-    windowMs: RATE_LIMITS.join.windowMs,
-    now,
-  });
-  if (!rl.allowed) {
-    return { ok: false, error: { code: 'rate_limited' } };
-  }
+    // Rate limit.
+    const rl = await checkRateLimit(tx, {
+      key: `join:user:${userId}`,
+      limit: RATE_LIMITS.join.limit,
+      windowMs: RATE_LIMITS.join.windowMs,
+      now,
+    });
+    if (!rl.allowed) {
+      return { ok: false as const, error: { code: 'rate_limited' as const } };
+    }
 
-  await addMember(db, pool.id, userId);
-  await getOrCreatePrediction(db, {
-    poolId: pool.id,
-    userId,
-    tournamentId: pool.tournamentId,
+    await addMember(tx, pool.id, userId);
+    await getOrCreatePrediction(tx, {
+      poolId: pool.id,
+      userId,
+      tournamentId: pool.tournamentId,
+    });
+
+    return { ok: true as const };
   });
+
+  if (!joinOutcome.ok) {
+    return { ok: false, error: joinOutcome.error };
+  }
 
   return { ok: true, poolId: pool.id, alreadyMember: false };
 }

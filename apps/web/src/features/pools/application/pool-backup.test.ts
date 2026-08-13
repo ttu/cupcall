@@ -188,6 +188,10 @@ describe('restorePoolFromBackup', () => {
 
   it('adds members from the backup to the target pool', async () => {
     const userId1 = await seedUser(db, 'Bob');
+    // Bob must already be a member of the target pool for the restore to reuse his account
+    // (e.g. re-importing this pool's own backup) — see the dedicated "does not hijack" test
+    // below for the case where the backed-up userId belongs to an unrelated account.
+    await addMember(db, targetPoolId, userId1);
     const backup = {
       version: 1 as const,
       exportedAt: new Date().toISOString(),
@@ -206,11 +210,49 @@ describe('restorePoolFromBackup', () => {
       db,
       targetPoolId,
       tournamentId,
+      miniTournament,
       backup,
       targetOwnerId,
     );
     expect(result.membersRestored).toBe(1);
     expect(await isMember(db, targetPoolId, userId1)).toBe(true);
+  });
+
+  it('does not hijack an existing global user who is not already a member of the target pool', async () => {
+    // A backup file must never be able to pull an arbitrary, unrelated account into pool
+    // membership just because its userId happens to match — even a genuinely registered
+    // user is restored as a brand-new guest unless they were already in this pool.
+    const outsider = await seedUser(db, 'Outsider');
+    const backup = {
+      version: 1 as const,
+      exportedAt: new Date().toISOString(),
+      tournamentId,
+      poolName: 'Old Pool',
+      members: [
+        {
+          userId: outsider,
+          displayName: 'Outsider',
+          prediction: { groupScores: [], knockoutPicks: [], finishScores: {}, specials: {} },
+        },
+      ],
+    };
+
+    const result = await restorePoolFromBackup(
+      db,
+      targetPoolId,
+      tournamentId,
+      miniTournament,
+      backup,
+      targetOwnerId,
+    );
+
+    expect(result.membersRestored).toBe(1);
+    // The outsider's own account was never added to the pool...
+    expect(await isMember(db, targetPoolId, outsider)).toBe(false);
+    // ...a fresh guest with the backed-up display name was added instead.
+    const restoredUserId = result.restoredPredictions[0]!.userId;
+    expect(restoredUserId).not.toBe(outsider);
+    expect(await isMember(db, targetPoolId, restoredUserId)).toBe(true);
   });
 
   it('creates a guest user when backup userId does not exist in the DB', async () => {
@@ -232,6 +274,7 @@ describe('restorePoolFromBackup', () => {
       db,
       targetPoolId,
       tournamentId,
+      miniTournament,
       backup,
       targetOwnerId,
     );
@@ -244,6 +287,7 @@ describe('restorePoolFromBackup', () => {
 
   it('restores group score predictions', async () => {
     const existingUser = await seedUser(db, 'Carol');
+    await addMember(db, targetPoolId, existingUser);
     const firstMatch = miniTournament.groupMatches[0]!;
 
     const backup = {
@@ -265,7 +309,14 @@ describe('restorePoolFromBackup', () => {
       ],
     };
 
-    await restorePoolFromBackup(db, targetPoolId, tournamentId, backup, targetOwnerId);
+    await restorePoolFromBackup(
+      db,
+      targetPoolId,
+      tournamentId,
+      miniTournament,
+      backup,
+      targetOwnerId,
+    );
 
     const leaderboard = await getLeaderboard(db, targetPoolId);
     const carol = leaderboard.find((e) => e.userId === existingUser);
@@ -316,7 +367,14 @@ describe('restorePoolFromBackup', () => {
       ],
     };
 
-    await restorePoolFromBackup(db, targetPoolId, tournamentId, backup, targetOwnerId);
+    await restorePoolFromBackup(
+      db,
+      targetPoolId,
+      tournamentId,
+      miniTournament,
+      backup,
+      targetOwnerId,
+    );
 
     const inputs = await getPredictionInputs(db, pred.id);
     // Old score (5-5) is gone; only the restored score remains
@@ -331,6 +389,8 @@ describe('restorePoolFromBackup', () => {
   it('returns the correct prediction IDs for rescoring', async () => {
     const user1 = await seedUser(db, 'Eva');
     const user2 = await seedUser(db, 'Frank');
+    await addMember(db, targetPoolId, user1);
+    await addMember(db, targetPoolId, user2);
 
     const backup = {
       version: 1 as const,
@@ -355,6 +415,7 @@ describe('restorePoolFromBackup', () => {
       db,
       targetPoolId,
       tournamentId,
+      miniTournament,
       backup,
       targetOwnerId,
     );
@@ -367,6 +428,7 @@ describe('restorePoolFromBackup', () => {
 
   it('is idempotent: re-importing the same backup restores the same data', async () => {
     const existingUser = await seedUser(db, 'Grace');
+    await addMember(db, targetPoolId, existingUser);
     const firstMatch = miniTournament.groupMatches[0]!;
 
     const backup = {
@@ -388,8 +450,22 @@ describe('restorePoolFromBackup', () => {
       ],
     };
 
-    await restorePoolFromBackup(db, targetPoolId, tournamentId, backup, targetOwnerId);
-    await restorePoolFromBackup(db, targetPoolId, tournamentId, backup, targetOwnerId);
+    await restorePoolFromBackup(
+      db,
+      targetPoolId,
+      tournamentId,
+      miniTournament,
+      backup,
+      targetOwnerId,
+    );
+    await restorePoolFromBackup(
+      db,
+      targetPoolId,
+      tournamentId,
+      miniTournament,
+      backup,
+      targetOwnerId,
+    );
 
     const pred = await getOrCreatePrediction(db, {
       poolId: targetPoolId,
@@ -450,9 +526,19 @@ describe('buildPoolExport + restorePoolFromBackup (round-trip)', () => {
       inviteTokenHash: `h-${crypto.randomUUID()}`,
     });
     await addMember(db, targetPool.id, targetOwnerId);
+    // memberId is restored under their own account (not a fresh guest) because they're
+    // already a member of the target pool — same as re-importing a pool's own backup.
+    await addMember(db, targetPool.id, memberId);
 
     // Restore
-    await restorePoolFromBackup(db, targetPool.id, tournamentId, backup, targetOwnerId);
+    await restorePoolFromBackup(
+      db,
+      targetPool.id,
+      tournamentId,
+      miniTournament,
+      backup,
+      targetOwnerId,
+    );
 
     // Verify member's prediction is in the target pool
     const restoredPred = await getOrCreatePrediction(db, {

@@ -17,6 +17,6 @@ export const GROUP_STAGE_DAYS = [
   '2026-06-26',
   '2026-06-27',
   '2026-06-28',
-] as const satisfies string[];
+] as const satisfies readonly string[];
 
 export type GroupStageDay = (typeof GROUP_STAGE_DAYS)[number];

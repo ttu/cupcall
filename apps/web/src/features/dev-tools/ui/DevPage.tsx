@@ -40,6 +40,7 @@ const CHECKPOINT_LABELS: Record<SimulationCheckpoint, string> = {
   fresh: 'Reset to Fresh',
   'groups-half': 'Groups A–F done',
   'groups-done': 'All groups done',
+  'r32-in-progress': 'R32 in progress',
   'r32-done': 'R32 done',
   'r16-done': 'R16 done',
   'qf-done': 'QF done',

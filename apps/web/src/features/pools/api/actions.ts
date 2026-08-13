@@ -6,8 +6,9 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 import { db } from '@/shared/db';
 import { getActorOrThrow, checkBetaCode } from '@/features/auth';
-import { assertIsOwner } from '@/shared/authz';
+import { assertIsOwner, ForbiddenError, LockedError, NotFoundError } from '@/shared/authz';
 import type { Actor } from '@/shared/authz';
+import { logger } from '@/shared/observability/logger';
 import { userId, poolId as asPoolId, tournamentId as asTournamentId } from '@cup/engine';
 import type { PoolId, UserId } from '@cup/engine';
 import type { PoolRow } from '@cup/db';
@@ -36,6 +37,7 @@ import { signInAsExistingGuest } from '@/features/auth';
 import { rescoreCard } from '@/shared/card-scoring';
 import { createPool as appCreatePool } from '../application/create-pool';
 import { joinPool as appJoinPool } from '../application/join-pool';
+import type { JoinPoolError } from '../application/join-pool';
 import {
   generateInviteToken,
   generateViewToken,
@@ -53,8 +55,28 @@ import type { PoolBackup } from '../application/pool-backup';
 
 async function getPoolOrThrow(poolId: PoolId) {
   const pool = await getPoolById(db, poolId);
-  if (!pool) throw new Error(`Pool ${poolId} not found`);
+  if (!pool) throw new NotFoundError(`Pool ${poolId} not found`);
   return pool;
+}
+
+/**
+ * Logs the raw error with structured context for diagnostics, then returns a message
+ * safe to send to the client. Failures from the `assertIs*` authz guards stay
+ * distinguishable (mapped to a safe authorization message per error kind) instead of
+ * exposing their raw, ID-bearing text; anything unexpected collapses to one generic
+ * message so internals (DB errors, stack traces, etc.) never leak to the caller.
+ */
+function actionErrorMessage(
+  op: string,
+  error: unknown,
+  context: Record<string, unknown> = {},
+): string {
+  logger.error({ op, ...context, error }, `pools:${op} — action failed`);
+
+  if (error instanceof ForbiddenError) return 'You do not have permission to perform this action.';
+  if (error instanceof LockedError) return 'This pool is locked and can no longer be changed.';
+  if (error instanceof NotFoundError) return 'Pool not found.';
+  return 'Something went wrong. Please try again.';
 }
 
 /**
@@ -62,6 +84,7 @@ async function getPoolOrThrow(poolId: PoolId) {
  * (e.g. from an `assertIs*` guard) into an `{ ok: false, error }` result.
  */
 async function withPool<T extends { ok: boolean }>(
+  op: string,
   poolId: PoolId,
   action: (pool: PoolRow, actor: Actor) => Promise<T>,
 ): Promise<T | { ok: false; error: string }> {
@@ -70,7 +93,7 @@ async function withPool<T extends { ok: boolean }>(
     const pool = await getPoolOrThrow(poolId);
     return await action(pool, actor);
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    return { ok: false, error: actionErrorMessage(op, e, { poolId }) };
   }
 }
 
@@ -82,6 +105,7 @@ const PoolIdOnlySchema = z.object({ poolId: z.string() });
  * `{ ok: false, error }`.
  */
 async function withOwnerPoolMutation<T extends Record<string, unknown>>(
+  op: string,
   raw: unknown,
   mutate: (poolId: PoolId) => Promise<T>,
 ): Promise<({ ok: true } & T) | { ok: false; error: string }> {
@@ -89,7 +113,7 @@ async function withOwnerPoolMutation<T extends Record<string, unknown>>(
   if (!parsed.success) return { ok: false, error: parsed.error.message };
   const poolId = asPoolId(parsed.data.poolId);
 
-  return withPool(poolId, async (pool, actor) => {
+  return withPool(op, poolId, async (pool, actor) => {
     assertIsOwner(pool, actor.userId);
     const result = await mutate(poolId);
     revalidatePath(`/pools/${poolId}`);
@@ -106,7 +130,7 @@ function assertOwnerNotTargetingSelf(
 ): void {
   assertIsOwner(pool, actor.userId);
   if (targetUserId === pool.ownerId) {
-    throw new Error(errorMessage);
+    throw new ForbiddenError(errorMessage);
   }
 }
 
@@ -149,7 +173,7 @@ export async function createPool(
     revalidatePath('/pools');
     return { ok: true, poolId: result.pool.id };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    return { ok: false, error: actionErrorMessage('createPool', e) };
   }
 }
 
@@ -187,7 +211,7 @@ export async function joinPool(
     revalidatePath(`/pools/${result.poolId}`);
     return { ok: true, poolId: result.poolId, alreadyMember: result.alreadyMember };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    return { ok: false, error: actionErrorMessage('joinPool', e) };
   }
 }
 
@@ -207,7 +231,7 @@ export async function kickMember(
   const poolId = asPoolId(rawPoolId);
   const targetUserId = userId(rawTargetUserId);
 
-  return withPool(poolId, async (pool, actor) => {
+  return withPool('kickMember', poolId, async (pool, actor) => {
     assertOwnerNotTargetingSelf(pool, actor, targetUserId, 'The pool owner cannot be kicked.');
 
     await deletePrediction(db, poolId, targetUserId);
@@ -232,7 +256,7 @@ export async function leavePool(
   const { poolId: rawPoolId } = parsed.data;
   const poolId = asPoolId(rawPoolId);
 
-  const result = await withPool(poolId, async (pool, actor) => {
+  const result = await withPool('leavePool', poolId, async (pool, actor) => {
     if (actor.userId === pool.ownerId) {
       return { ok: false, error: 'Pool owners cannot leave. Delete the pool instead.' };
     }
@@ -255,7 +279,7 @@ export async function leavePool(
 export async function clearInviteLink(
   raw: unknown,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  return withOwnerPoolMutation(raw, async (poolId) => {
+  return withOwnerPoolMutation('clearInviteLink', raw, async (poolId) => {
     await clearInviteToken(db, poolId);
     return {};
   });
@@ -266,7 +290,7 @@ export async function clearInviteLink(
 export async function rotateToken(
   raw: unknown,
 ): Promise<{ ok: true; newToken: string } | { ok: false; error: string }> {
-  return withOwnerPoolMutation(raw, async (poolId) => {
+  return withOwnerPoolMutation('rotateToken', raw, async (poolId) => {
     const newToken = generateInviteToken();
     await rotateInviteTokenHash(db, poolId, newToken);
     return { newToken };
@@ -278,7 +302,7 @@ export async function rotateToken(
 export async function rotateViewToken(
   raw: unknown,
 ): Promise<{ ok: true; newToken: string } | { ok: false; error: string }> {
-  return withOwnerPoolMutation(raw, async (poolId) => {
+  return withOwnerPoolMutation('rotateViewToken', raw, async (poolId) => {
     const newToken = generateViewToken();
     await dbRotateViewToken(db, poolId, newToken);
     return { newToken };
@@ -290,7 +314,7 @@ export async function rotateViewToken(
 export async function clearViewLink(
   raw: unknown,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  return withOwnerPoolMutation(raw, async (poolId) => {
+  return withOwnerPoolMutation('clearViewLink', raw, async (poolId) => {
     await dbClearViewToken(db, poolId);
     return {};
   });
@@ -308,7 +332,7 @@ export async function deletePool(
   const { poolId: rawPoolId } = parsed.data;
   const poolId = asPoolId(rawPoolId);
 
-  const result = await withPool(poolId, async (pool, actor) => {
+  const result = await withPool('deletePool', poolId, async (pool, actor) => {
     assertIsOwner(pool, actor.userId);
 
     await dbDeletePool(db, poolId);
@@ -360,22 +384,43 @@ export async function joinAsGuest(raw: unknown): Promise<{ ok: false; error: str
     return { ok: false, error: 'Invite link has expired.' };
   }
 
-  const user = await createGuestUser(db, { displayName });
-
-  const joinResult = await appJoinPool(db, { userId: user.id, token, now: new Date() });
-  if (!joinResult.ok) {
-    const { code } = joinResult.error;
-    if (code === 'pool_full')
-      return { ok: false, error: `This pool is full (max ${joinResult.error.limit} members).` };
-    if (code === 'rate_limited') return { ok: false, error: 'Too many attempts. Try again later.' };
-    return { ok: false, error: 'Could not join pool.' };
+  let joined: { userId: UserId; poolId: PoolId };
+  try {
+    // Create the guest account and join it to the pool atomically: if the join fails
+    // (pool full, rate limited, etc.) the transaction rolls back so no orphan guest
+    // user is left behind with no pool membership.
+    joined = await db.transaction(async (tx) => {
+      const user = await createGuestUser(tx, { displayName });
+      const joinResult = await appJoinPool(tx, { userId: user.id, token, now: new Date() });
+      if (!joinResult.ok) {
+        throw new JoinAsGuestFailure(joinResult.error);
+      }
+      return { userId: user.id, poolId: joinResult.poolId };
+    });
+  } catch (e) {
+    if (e instanceof JoinAsGuestFailure) {
+      const { code } = e.joinError;
+      if (code === 'pool_full')
+        return { ok: false, error: `This pool is full (max ${e.joinError.limit} members).` };
+      if (code === 'rate_limited')
+        return { ok: false, error: 'Too many attempts. Try again later.' };
+      return { ok: false, error: 'Could not join pool.' };
+    }
+    return { ok: false, error: actionErrorMessage('joinAsGuest', e) };
   }
 
   // Opens a session cookie and redirects — never returns on success.
-  await signInAsExistingGuest(user.id, `/pools/${joinResult.poolId}`);
+  await signInAsExistingGuest(joined.userId, `/pools/${joined.poolId}`);
 
   // Unreachable; satisfies the return type.
   return { ok: false, error: 'Unexpected error.' };
+}
+
+/** Internal signal carrying a `joinPool` failure out of the guest-join transaction. */
+class JoinAsGuestFailure extends Error {
+  constructor(public readonly joinError: JoinPoolError) {
+    super('joinAsGuest: pool join failed');
+  }
 }
 
 // Generate member login link (owner only)
@@ -394,7 +439,7 @@ export async function generateMemberLoginLink(
   const poolId = asPoolId(rawPoolId);
   const targetUserId = userId(rawTargetUserId);
 
-  return withPool(poolId, async (pool, actor) => {
+  return withPool('generateMemberLoginLink', poolId, async (pool, actor) => {
     assertOwnerNotTargetingSelf(
       pool,
       actor,
@@ -423,7 +468,7 @@ export async function rotateMyLoginToken(): Promise<
     await upsertLoginToken(db, actor.userId, token);
     return { ok: true, token };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    return { ok: false, error: actionErrorMessage('rotateMyLoginToken', e) };
   }
 }
 
@@ -447,7 +492,7 @@ export async function exportPool(
     const backup = await buildPoolExport(db, poolId, pool.name, pool.tournamentId);
     return { ok: true, data: backup };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    return { ok: false, error: actionErrorMessage('exportPool', e, { poolId }) };
   }
 }
 
@@ -482,32 +527,47 @@ export async function importPool(
     if (!tournament?.definition) {
       return { ok: false, error: 'Tournament definition not loaded. Run pnpm sync first.' };
     }
-
-    const { membersRestored, restoredPredictions } = await restorePoolFromBackup(
-      db,
-      poolId,
-      pool.tournamentId,
-      backupData,
-      actor.userId,
-    );
+    const tournamentDef = tournament.definition;
 
     const actual = await getActualResults(db, pool.tournamentId);
-    await Promise.all(
-      restoredPredictions.map(({ predictionId, userId }) =>
-        rescoreCard({
-          db,
-          predictionId,
-          poolId,
-          userId,
-          tournament: tournament.definition!,
-          actual,
-        }),
-      ),
-    );
+
+    // Restore the backup and rescore every restored prediction in one transaction: if any
+    // rescore fails, the whole restore rolls back rather than leaving the pool half-restored.
+    const restoredCount = await db.transaction(async (tx) => {
+      const { membersRestored, restoredPredictions } = await restorePoolFromBackup(
+        tx,
+        poolId,
+        pool.tournamentId,
+        tournamentDef,
+        backupData,
+        actor.userId,
+      );
+
+      // Bounded concurrency — rescore a few predictions at a time instead of firing an
+      // unbounded number of concurrent queries for large pools.
+      const RESCORE_CONCURRENCY = 5;
+      for (let i = 0; i < restoredPredictions.length; i += RESCORE_CONCURRENCY) {
+        const batch = restoredPredictions.slice(i, i + RESCORE_CONCURRENCY);
+        await Promise.all(
+          batch.map(({ predictionId, userId }) =>
+            rescoreCard({
+              db: tx,
+              predictionId,
+              poolId,
+              userId,
+              tournament: tournamentDef,
+              actual,
+            }),
+          ),
+        );
+      }
+
+      return membersRestored;
+    });
 
     revalidatePath(`/pools/${poolId}`);
-    return { ok: true, membersRestored };
+    return { ok: true, membersRestored: restoredCount };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    return { ok: false, error: actionErrorMessage('importPool', e, { poolId }) };
   }
 }

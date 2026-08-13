@@ -49,6 +49,50 @@ export function resolveEffectiveFinalePick(
   );
 }
 
+/**
+ * Resolves a user's effective pick for a single knockout match. Final/Bronze picks are rarely
+ * explicit — most players only submit a finish-score prediction — so those two matches fall back
+ * to the score-derived winner via {@link resolveEffectiveFinalePick}.
+ */
+export function resolveEffectivePickForMatch(
+  matchId: string,
+  def: Tournament,
+  pickMap: Map<string, string>,
+  finishScoreByMatch: Map<PoolFinishScore['match'], PoolFinishScore>,
+): string | null {
+  const { finalMatch, bronzeMatch } = def.bracket;
+  if (matchId !== finalMatch && matchId !== bronzeMatch) return pickMap.get(matchId) ?? null;
+
+  const finishScore = finishScoreByMatch.get(matchId === finalMatch ? 'final' : 'bronze');
+  return resolveEffectiveFinalePick(matchId, def, pickMap, finishScore);
+}
+
+/** Groups every pool member's knockout picks into a per-user `bracketMatchKey → winner` map. */
+export function buildPickMapByUser(
+  knockoutPicks: PoolKnockoutPick[],
+): Map<UserId, Map<string, string>> {
+  const map = new Map<UserId, Map<string, string>>();
+  for (const pick of knockoutPicks) {
+    const userMap = map.get(pick.userId) ?? new Map<string, string>();
+    userMap.set(pick.bracketMatchKey, pick.winnerTeamId);
+    map.set(pick.userId, userMap);
+  }
+  return map;
+}
+
+/** Groups every pool member's finish scores into a per-user `'final'|'bronze' → score` map. */
+export function buildFinishScoreByUserAndMatch(
+  finishScores: PoolFinishScore[],
+): Map<UserId, Map<PoolFinishScore['match'], PoolFinishScore>> {
+  const map = new Map<UserId, Map<PoolFinishScore['match'], PoolFinishScore>>();
+  for (const fs of finishScores) {
+    const userMap = map.get(fs.userId) ?? new Map<PoolFinishScore['match'], PoolFinishScore>();
+    userMap.set(fs.match, fs);
+    map.set(fs.userId, userMap);
+  }
+  return map;
+}
+
 export function computeStageLeaders(
   entries: {
     userId: UserId;
@@ -159,12 +203,7 @@ export function computeChampionPick(
 ): ChampionPickHighlight | null {
   const finalKey = def.bracket.finalMatch;
 
-  const pickMapByUser = new Map<UserId, Map<string, string>>();
-  for (const pick of knockoutPicks) {
-    const map = pickMapByUser.get(pick.userId) ?? new Map<string, string>();
-    map.set(pick.bracketMatchKey, pick.winnerTeamId);
-    pickMapByUser.set(pick.userId, map);
-  }
+  const pickMapByUser = buildPickMapByUser(knockoutPicks);
   const finishScoreByUser = new Map(
     finishScores.filter((fs) => fs.match === 'final').map((fs) => [fs.userId, fs]),
   );
@@ -246,20 +285,33 @@ export function computeBestSingleMatch(
   return bestCount > 0 ? best : null;
 }
 
+/**
+ * Counts how many pool members effectively picked `winner` for `matchId`, including
+ * Final/Bronze picks derived from a finish-score prediction (via `resolveEffectivePickForMatch`)
+ * — not just explicit bracket picks, which most players never submit for those two matches.
+ */
 function countCorrectPicks(
-  knockoutPicks: PoolKnockoutPick[],
   matchId: string,
   winner: string,
+  def: Tournament,
+  pickMapByUser: Map<UserId, Map<string, string>>,
+  finishScoreByUserAndMatch: Map<UserId, Map<PoolFinishScore['match'], PoolFinishScore>>,
 ): number {
+  const userIds = new Set<UserId>([...pickMapByUser.keys(), ...finishScoreByUserAndMatch.keys()]);
   let pickCount = 0;
-  for (const pick of knockoutPicks) {
-    if (pick.bracketMatchKey === matchId && pick.winnerTeamId === winner) pickCount++;
+  for (const uid of userIds) {
+    const pickMap = pickMapByUser.get(uid) ?? new Map<string, string>();
+    const finishScoreByMatch =
+      finishScoreByUserAndMatch.get(uid) ?? new Map<PoolFinishScore['match'], PoolFinishScore>();
+    const effectivePick = resolveEffectivePickForMatch(matchId, def, pickMap, finishScoreByMatch);
+    if (effectivePick === winner) pickCount++;
   }
   return pickCount;
 }
 
 export function computeBiggestUpset(
   knockoutPicks: PoolKnockoutPick[],
+  finishScores: PoolFinishScore[],
   allMatches: MatchRow[],
   def: Tournament,
   totalMembers: number,
@@ -268,6 +320,9 @@ export function computeBiggestUpset(
     .filter((m) => m.stage !== 'group' && m.status === 'final')
     .toSorted((a, b) => (a.kickoff?.getTime() ?? 0) - (b.kickoff?.getTime() ?? 0));
 
+  const pickMapByUser = buildPickMapByUser(knockoutPicks);
+  const finishScoreByUserAndMatch = buildFinishScoreByUserAndMatch(finishScores);
+
   let best: BiggestUpsetHighlight | null = null;
   let bestCount = Infinity;
 
@@ -275,7 +330,13 @@ export function computeBiggestUpset(
     const winner = resolveActualWinner(match);
     if (!winner) continue;
     const loser = winner === match.homeTeamId ? match.awayTeamId : match.homeTeamId;
-    const pickCount = countCorrectPicks(knockoutPicks, match.id, winner);
+    const pickCount = countCorrectPicks(
+      match.id,
+      winner,
+      def,
+      pickMapByUser,
+      finishScoreByUserAndMatch,
+    );
 
     if (pickCount > 0 && pickCount < bestCount) {
       bestCount = pickCount;

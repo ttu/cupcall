@@ -11,14 +11,43 @@ import {
   upsertFinishScore,
   upsertSpecialBet,
   addMember,
-  getUserById,
+  isMember,
   createGuestUser,
   createPredictionEdit,
 } from '@cup/db';
-import type { UserId, BracketMatchKey, PoolId, TournamentId, PredictionId } from '@cup/engine';
-import { userId as toUserId, bracketMatchKey as bmk } from '@cup/engine';
+import type {
+  UserId,
+  BracketMatchKey,
+  MatchId,
+  TeamId,
+  PoolId,
+  Tournament,
+  TournamentId,
+  PredictionId,
+} from '@cup/engine';
+import { userId as toUserId, bracketMatchKey as bmk, SPECIAL_BET_KINDS } from '@cup/engine';
+import type { BetInputKind } from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
 import { serializePredictionInputs } from '@/features/predictions';
+
+// ---------------------------------------------------------------------------
+// Special bets — a discriminated shape built from the known bet keys, instead of an
+// unrestricted z.record(z.unknown()), so a backup file cannot inject arbitrary keys or
+// mistyped values into predictionSpecials.
+// ---------------------------------------------------------------------------
+
+const BET_KIND_SCHEMA: Record<BetInputKind, z.ZodTypeAny> = {
+  player: z.string(),
+  team: z.string(),
+  number: z.number(),
+  bool: z.boolean(),
+};
+
+const specialBetsShape = Object.fromEntries(
+  Object.entries(SPECIAL_BET_KINDS).map(([key, kind]) => [key, BET_KIND_SCHEMA[kind].optional()]),
+);
+
+const SpecialBetsBackupSchema = z.object(specialBetsShape).strict().default({});
 
 // ---------------------------------------------------------------------------
 // Schemas (Zod) — used both for type derivation and for server-action validation
@@ -46,7 +75,7 @@ export const MemberBackupSchema = z.object({
         bronze: z.object({ home: z.number(), away: z.number() }).optional(),
       })
       .default({}),
-    specials: z.record(z.unknown()).default({}),
+    specials: SpecialBetsBackupSchema,
   }),
 });
 
@@ -117,21 +146,100 @@ export type RestoreResult = {
   restoredPredictions: RestoredPrediction[];
 };
 
+/**
+ * Resolves the userId to restore a backup member under: reuses `member.userId` only if that
+ * account is already a member of the target pool; otherwise creates a fresh guest. A backup
+ * file must never be able to pull an arbitrary global user id into pool membership just
+ * because the id happens to match — anyone not already in this pool is restored as a new
+ * guest, even if `member.userId` collides with a real, unrelated account.
+ */
+async function resolveTargetUserId(
+  db: Db<AppSchema>,
+  poolId: PoolId,
+  member: MemberBackup,
+): Promise<UserId> {
+  const candidateUserId = toUserId(member.userId);
+  if (await isMember(db, poolId, candidateUserId)) return candidateUserId;
+  const guest = await createGuestUser(db, { displayName: member.displayName });
+  return guest.id;
+}
+
+type TournamentValidationSets = {
+  matchIds: Set<MatchId>;
+  teamIds: Set<TeamId>;
+  bracketKeys: Set<BracketMatchKey>;
+};
+
+/**
+ * Writes one member's group scores, knockout picks, finish scores, and special bets, skipping
+ * any group score / knockout pick that doesn't validate against the tournament definition.
+ */
+async function restoreMemberPrediction(
+  db: Db<AppSchema>,
+  predictionId: PredictionId,
+  pred: MemberBackup['prediction'],
+  sets: TournamentValidationSets,
+): Promise<void> {
+  for (const gs of pred.groupScores) {
+    if (!sets.matchIds.has(gs.matchId as MatchId)) continue;
+    await upsertGroupScore(db, predictionId, gs.matchId, gs.home, gs.away);
+  }
+  for (const kp of pred.knockoutPicks) {
+    if (!sets.bracketKeys.has(kp.bracketMatchKey as BracketMatchKey)) continue;
+    if (!sets.teamIds.has(kp.winner as TeamId)) continue;
+    await upsertKnockoutPick(
+      db,
+      predictionId,
+      bmk(kp.bracketMatchKey) as BracketMatchKey,
+      kp.winner,
+    );
+  }
+  if (pred.finishScores.final) {
+    await upsertFinishScore(
+      db,
+      predictionId,
+      'final',
+      pred.finishScores.final.home,
+      pred.finishScores.final.away,
+    );
+  }
+  if (pred.finishScores.bronze) {
+    await upsertFinishScore(
+      db,
+      predictionId,
+      'bronze',
+      pred.finishScores.bronze.home,
+      pred.finishScores.bronze.away,
+    );
+  }
+  for (const [betKey, value] of Object.entries(pred.specials)) {
+    await upsertSpecialBet(db, predictionId, betKey, value);
+  }
+}
+
 export async function restorePoolFromBackup(
   db: Db<AppSchema>,
   poolId: PoolId,
   tournamentId: TournamentId,
+  tournamentDef: Tournament,
   backup: PoolBackup,
   restoredByUserId: UserId,
 ): Promise<RestoreResult> {
   const restoredPredictions: RestoredPrediction[] = [];
 
-  for (const member of backup.members) {
-    const existing = await getUserById(db, toUserId(member.userId));
-    const targetUserId = existing
-      ? existing.id
-      : (await createGuestUser(db, { displayName: member.displayName })).id;
+  // Validate group scores / knockout picks against the tournament definition so a crafted
+  // or stale backup can't write scores for matches or teams that don't exist.
+  const validationSets: TournamentValidationSets = {
+    matchIds: new Set(tournamentDef.groupMatches.map((m) => m.id)),
+    teamIds: new Set(tournamentDef.teams.map((t) => t.id)),
+    bracketKeys: new Set([
+      ...tournamentDef.bracket.slots.map((s) => s.match),
+      ...tournamentDef.bracket.progression.map((p) => p.match),
+    ]),
+  };
 
+  for (const member of backup.members) {
+    const targetUserId = await resolveTargetUserId(db, poolId, member);
     await addMember(db, poolId, targetUserId);
 
     const prediction = await getOrCreatePrediction(db, {
@@ -141,40 +249,7 @@ export async function restorePoolFromBackup(
     });
     await clearPredictionInputs(db, prediction.id);
 
-    const pred = member.prediction;
-
-    for (const gs of pred.groupScores) {
-      await upsertGroupScore(db, prediction.id, gs.matchId, gs.home, gs.away);
-    }
-    for (const kp of pred.knockoutPicks) {
-      await upsertKnockoutPick(
-        db,
-        prediction.id,
-        bmk(kp.bracketMatchKey) as BracketMatchKey,
-        kp.winner,
-      );
-    }
-    if (pred.finishScores.final) {
-      await upsertFinishScore(
-        db,
-        prediction.id,
-        'final',
-        pred.finishScores.final.home,
-        pred.finishScores.final.away,
-      );
-    }
-    if (pred.finishScores.bronze) {
-      await upsertFinishScore(
-        db,
-        prediction.id,
-        'bronze',
-        pred.finishScores.bronze.home,
-        pred.finishScores.bronze.away,
-      );
-    }
-    for (const [betKey, value] of Object.entries(pred.specials)) {
-      await upsertSpecialBet(db, prediction.id, betKey, value);
-    }
+    await restoreMemberPrediction(db, prediction.id, member.prediction, validationSets);
 
     await createPredictionEdit(db, {
       predictionId: prediction.id,

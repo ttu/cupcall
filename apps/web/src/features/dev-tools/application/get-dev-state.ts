@@ -7,6 +7,7 @@ export type SimulationCheckpoint =
   | 'fresh'
   | 'groups-half'
   | 'groups-done'
+  | 'r32-in-progress'
   | 'r32-done'
   | 'r16-done'
   | 'qf-done'
@@ -46,6 +47,8 @@ export async function getDevState(db: Db<AppSchema>): Promise<DevState> {
     checkpoint = 'groups-half';
   } else if (groupFinal >= 72 && knockoutFinal === 0) {
     checkpoint = 'groups-done';
+  } else if (knockoutFinal >= 1 && knockoutFinal < 16) {
+    checkpoint = 'r32-in-progress';
   } else if (knockoutFinal >= 16 && knockoutFinal < 24) {
     checkpoint = 'r32-done';
   } else if (knockoutFinal >= 24 && knockoutFinal < 28) {

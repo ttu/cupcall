@@ -1,26 +1,28 @@
 import type { ReactElement } from 'react';
+import { z } from 'zod';
 import { TeamBadge, Icon } from '@/shared/ui';
+import type { TeamId, Points } from '@cup/engine';
 
 type FinalResult = {
-  homeTeamId: string;
+  homeTeamId: TeamId;
   homeTeamName: string;
-  awayTeamId: string;
+  awayTeamId: TeamId;
   awayTeamName: string;
   homeGoals: number;
   awayGoals: number;
-  winnerTeamId: string;
+  winnerTeamId: TeamId;
 };
 
 type TopCountry = {
   position: 1 | 2 | 3;
-  teamId: string;
+  teamId: TeamId;
   teamName: string;
 };
 
 type TopEntry = {
   rank: number;
   displayName: string;
-  points: number;
+  points: Points;
   isCurrentUser: boolean;
 };
 
@@ -30,18 +32,47 @@ type Props = {
   topEntries: TopEntry[];
 };
 
+/**
+ * `winnerTeamId` must be one of the two finalists — validated at the boundary where this
+ * component receives the prop, so a corrupted/unexpected value never falls through to the
+ * champion/runnerUp derivation below and gets silently misattributed to the away team.
+ */
+const FinalResultInvariantSchema = z
+  .object({ homeTeamId: z.string(), awayTeamId: z.string(), winnerTeamId: z.string() })
+  .refine((f) => f.winnerTeamId === f.homeTeamId || f.winnerTeamId === f.awayTeamId, {
+    message: 'winnerTeamId must match either finalist',
+  });
+
 export function ArchiveHeroCard({ final, topThree, topEntries }: Props): ReactElement {
+  const validFinal = final && FinalResultInvariantSchema.safeParse(final).success ? final : null;
+
   const champion =
-    final && final.winnerTeamId === final.homeTeamId
-      ? { teamId: final.homeTeamId, name: final.homeTeamName, goals: final.homeGoals }
-      : final
-        ? { teamId: final.awayTeamId, name: final.awayTeamName, goals: final.awayGoals }
+    validFinal && validFinal.winnerTeamId === validFinal.homeTeamId
+      ? {
+          teamId: validFinal.homeTeamId,
+          name: validFinal.homeTeamName,
+          goals: validFinal.homeGoals,
+        }
+      : validFinal
+        ? {
+            teamId: validFinal.awayTeamId,
+            name: validFinal.awayTeamName,
+            goals: validFinal.awayGoals,
+          }
         : null;
   const runnerUp =
-    final && final.winnerTeamId === final.homeTeamId
-      ? { teamId: final.awayTeamId, name: final.awayTeamName, goals: final.awayGoals }
-      : final
-        ? { teamId: final.homeTeamId, name: final.homeTeamName, goals: final.homeGoals }
+    validFinal && validFinal.winnerTeamId === validFinal.homeTeamId
+      ? {
+          teamId: validFinal.awayTeamId,
+          name: validFinal.awayTeamName,
+          goals: validFinal.awayGoals,
+        }
+      : validFinal
+        ? {
+            teamId: validFinal.homeTeamId,
+            name: validFinal.homeTeamName,
+            goals: validFinal.homeGoals,
+          }
         : null;
 
   const topPredictor = topEntries[0] ?? null;

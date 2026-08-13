@@ -194,7 +194,19 @@ describe('getPoolArchiveView', () => {
     });
 
     const view = await getPoolArchiveView(db, poolId);
-    expect(view?.recap).toEqual(legacyRecap);
+    // The read boundary now validates `recap` and fills in legacy-missing fields with their
+    // defaults, so the returned recap is the fully-shaped object, not the raw partial JSON.
+    expect(view?.recap).toEqual({
+      ...legacyRecap,
+      stageRoundLabels: [],
+      overallAccuracyPercent: 0,
+      groupCompletionStageIndex: 0,
+      groupStageLeader: null,
+      preSpecialsLeader: null,
+      finalWinner: null,
+      bestKnockoutPerformer: null,
+      bestSpecialBetsPerformer: null,
+    });
     // Must not throw or silently drop this to null via a NaN-derived scan range.
     expect(view?.biggestRiser).toEqual({
       displayName: 'Bob',
@@ -203,5 +215,47 @@ describe('getPoolArchiveView', () => {
       stageName: 'Round of 16',
       reason: null,
     });
+  });
+
+  it('treats a genuinely malformed recap (wrong field type) as absent, not a thrown error', async () => {
+    const pool = await getPoolById(db, poolId);
+
+    await upsertPoolArchive(db, {
+      poolId,
+      poolName: 'Test Pool',
+      tournamentId: asTournamentId(miniTournament.id),
+      tournamentName: miniTournament.name,
+      archivedBy: pool!.ownerId,
+      // `stages` should be a string[] — this simulates corrupted/malformed jsonb.
+      recap: { stages: 42 } as unknown as PoolArchiveRecap,
+      entries: [
+        {
+          userId: pool!.ownerId,
+          displayName: 'Owner',
+          rank: 1,
+          pointsTotal: points(0),
+          breakdown: {
+            groupMatches: points(0),
+            groupOrder: points(0),
+            bronze: points(0),
+            final: points(0),
+            roundOf16: points(0),
+            roundOf8: points(0),
+            topFour: points(0),
+            topFourTeams: points(0),
+            topFourPosition: points(0),
+            specials: points(0),
+            total: points(0),
+          },
+          pointsHistory: null,
+          stageReasons: null,
+        },
+      ],
+    });
+
+    const view = await getPoolArchiveView(db, poolId);
+    expect(view?.recap).toBeNull();
+    expect(view?.leadChanges).toEqual([]);
+    expect(view?.biggestRiser).toBeNull();
   });
 });

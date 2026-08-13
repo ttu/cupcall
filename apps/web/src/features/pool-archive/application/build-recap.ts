@@ -5,17 +5,17 @@ import {
   getKnockoutPicksByPool,
   getFinishScoresByPool,
   getSpecialBetsByPool,
-  getLeaderboard,
   getActualResults,
-  getPrediction,
-  getPredictionInputs,
+  getPredictionUserIdsByPool,
 } from '@cup/db';
 import type {
   MatchRow,
   PoolGroupScore,
   PoolKnockoutPick,
   PoolFinishScore,
+  PoolSpecialBet,
   PoolArchiveRecap,
+  LeaderboardEntry,
 } from '@cup/db';
 import {
   buildRaceChartData,
@@ -25,6 +25,8 @@ import {
 } from '@/features/results';
 import { findOverallGroupCompletionDate } from '@/shared/race-chart';
 import { deriveCard, scoreCardAccuracy } from '@cup/engine';
+import { matchId as toMatchId, teamId as toTeamId, playerId as toPlayerId } from '@cup/engine';
+import { SPECIAL_BET_KINDS } from '@cup/engine';
 import type {
   PoolId,
   TournamentId,
@@ -33,6 +35,8 @@ import type {
   UserId,
   CardInputs,
   ActualResults,
+  SpecialBets,
+  BetInputKind,
 } from '@cup/engine';
 import { userId as asUserId } from '@cup/engine';
 import type { AppSchema } from '@/shared/db';
@@ -43,7 +47,9 @@ import {
   computePredictionsMade,
   computeExactScoreRatePercent,
   computeStageLeaders,
-  resolveEffectiveFinalePick,
+  resolveEffectivePickForMatch,
+  buildPickMapByUser,
+  buildFinishScoreByUserAndMatch,
   STAGE_LABELS,
 } from './build-highlights';
 
@@ -53,23 +59,49 @@ export type EntryRecapExtras = {
 };
 
 type StageReasonCtx = {
-  allMatches: MatchRow[];
-  groupScores: PoolGroupScore[];
-  knockoutPicks: PoolKnockoutPick[];
-  finishScores: PoolFinishScore[];
   def: Tournament;
   scoring: Scoring;
 };
 
-function countExactGroupScores(
-  userId: UserId,
-  groupMatchesToday: MatchRow[],
+// ---------------------------------------------------------------------------
+// Precomputed per-pool indexes — built once, reused for every player/date pair
+// instead of rescanning the pool-wide match/pick/score arrays each time.
+// ---------------------------------------------------------------------------
+
+/** Groups finalized matches by their kickoff date (YYYY-MM-DD), for O(1) per-date lookup. */
+function groupFinalMatchesByDate(allMatches: MatchRow[]): Map<string, MatchRow[]> {
+  const byDate = new Map<string, MatchRow[]>();
+  for (const m of allMatches) {
+    if (m.status !== 'final' || !m.kickoff) continue;
+    const dateStr = m.kickoff.toISOString().slice(0, 10);
+    const list = byDate.get(dateStr) ?? [];
+    list.push(m);
+    byDate.set(dateStr, list);
+  }
+  return byDate;
+}
+
+/** Groups pool-wide group scores into a per-user `matchId → score` map. */
+function buildGroupScoresByUserAndMatch(
   groupScores: PoolGroupScore[],
+): Map<UserId, Map<string, PoolGroupScore>> {
+  const byUser = new Map<UserId, Map<string, PoolGroupScore>>();
+  for (const gs of groupScores) {
+    const perUser = byUser.get(gs.userId) ?? new Map<string, PoolGroupScore>();
+    perUser.set(gs.matchId, gs);
+    byUser.set(gs.userId, perUser);
+  }
+  return byUser;
+}
+
+function countExactGroupScores(
+  groupMatchesToday: MatchRow[],
+  groupScoresByMatch: Map<string, PoolGroupScore>,
   scoring: Scoring,
 ): number {
   let exactCount = 0;
   for (const m of groupMatchesToday) {
-    const guess = groupScores.find((gs) => gs.userId === userId && gs.matchId === m.id);
+    const guess = groupScoresByMatch.get(m.id);
     if (!guess || m.homeGoals === null || m.awayGoals === null) continue;
     const { hit } = computeHit(
       m.homeGoals,
@@ -83,39 +115,13 @@ function countExactGroupScores(
   return exactCount;
 }
 
-/**
- * Resolves a user's effective pick for a single knockout match. Final/Bronze picks are rarely
- * explicit — most players only submit a finish-score prediction — so those two matches fall back
- * to the score-derived winner via {@link resolveEffectiveFinalePick}.
- */
-function resolveEffectivePickForMatch(
-  matchId: string,
-  def: Tournament,
+function describeKnockoutOutcome(
+  knockoutMatchesToday: MatchRow[],
   pickMap: Map<string, string>,
   finishScoreByMatch: Map<PoolFinishScore['match'], PoolFinishScore>,
+  def: Tournament,
 ): string | null {
-  const { finalMatch, bronzeMatch } = def.bracket;
-  if (matchId !== finalMatch && matchId !== bronzeMatch) return pickMap.get(matchId) ?? null;
-
-  const finishScore = finishScoreByMatch.get(matchId === finalMatch ? 'final' : 'bronze');
-  return resolveEffectiveFinalePick(matchId, def, pickMap, finishScore);
-}
-
-function describeKnockoutOutcome(
-  userId: UserId,
-  knockoutMatchesToday: MatchRow[],
-  ctx: Pick<StageReasonCtx, 'knockoutPicks' | 'finishScores' | 'def'>,
-): string | null {
-  const { knockoutPicks, finishScores, def } = ctx;
   const finalKey = def.bracket.finalMatch;
-
-  const pickMap = new Map<string, string>();
-  for (const p of knockoutPicks) {
-    if (p.userId === userId) pickMap.set(p.bracketMatchKey, p.winnerTeamId);
-  }
-  const finishScoreByMatch = new Map(
-    finishScores.filter((fs) => fs.userId === userId).map((fs) => [fs.match, fs]),
-  );
 
   const correctTeams: string[] = [];
   let championPickCorrect = false;
@@ -136,32 +142,37 @@ function describeKnockoutOutcome(
 }
 
 function describeStageReason(
-  userId: UserId,
   matchesThisDate: MatchRow[],
+  groupScoresByMatch: Map<string, PoolGroupScore>,
+  pickMap: Map<string, string>,
+  finishScoreByMatch: Map<PoolFinishScore['match'], PoolFinishScore>,
   ctx: StageReasonCtx,
 ): string | null {
   const groupMatchesToday = matchesThisDate.filter((m) => m.stage === 'group');
-  const exactCount = countExactGroupScores(userId, groupMatchesToday, ctx.groupScores, ctx.scoring);
+  const exactCount = countExactGroupScores(groupMatchesToday, groupScoresByMatch, ctx.scoring);
   if (exactCount > 0) return `${exactCount} exact score${exactCount > 1 ? 's' : ''}`;
 
   const knockoutMatchesToday = matchesThisDate.filter((m) => m.stage !== 'group');
-  return describeKnockoutOutcome(userId, knockoutMatchesToday, ctx);
+  return describeKnockoutOutcome(knockoutMatchesToday, pickMap, finishScoreByMatch, ctx.def);
 }
 
 function buildStageReasons(
-  userId: UserId,
   stages: string[],
+  eventDates: string[],
+  matchesByDate: Map<string, MatchRow[]>,
+  groupScoresByMatch: Map<string, PoolGroupScore>,
+  pickMap: Map<string, string>,
+  finishScoreByMatch: Map<PoolFinishScore['match'], PoolFinishScore>,
   ctx: StageReasonCtx,
 ): (string | null)[] {
-  const eventDates = buildRaceEventDates(ctx.allMatches);
   // stages = ['Start', ...eventDates-as-labels(, 'Projected')] — index 0 ('Start') has no reason.
   const reasons: (string | null)[] = [null];
 
   for (const dateStr of eventDates) {
-    const matchesThisDate = ctx.allMatches.filter(
-      (m) => m.status === 'final' && m.kickoff && m.kickoff.toISOString().slice(0, 10) === dateStr,
+    const matchesThisDate = matchesByDate.get(dateStr) ?? [];
+    reasons.push(
+      describeStageReason(matchesThisDate, groupScoresByMatch, pickMap, finishScoreByMatch, ctx),
     );
-    reasons.push(describeStageReason(userId, matchesThisDate, ctx));
   }
 
   // buildRaceEventDates never produces a 'Projected' stage for a finished (fully-archived)
@@ -185,15 +196,15 @@ function describeStageRound(matchesThisDate: MatchRow[]): string | null {
  * Per-stage round label ('Group Stage', 'Round of 16', 'Final', ...), parallel to `stages` —
  * gives lead-change events context beyond a bare date. Index 0 ('Start') has no round.
  */
-function buildStageRoundLabels(stages: string[], allMatches: MatchRow[]): (string | null)[] {
-  const eventDates = buildRaceEventDates(allMatches);
+function buildStageRoundLabels(
+  stages: string[],
+  eventDates: string[],
+  matchesByDate: Map<string, MatchRow[]>,
+): (string | null)[] {
   const labels: (string | null)[] = [null];
 
   for (const dateStr of eventDates) {
-    const matchesThisDate = allMatches.filter(
-      (m) => m.status === 'final' && m.kickoff && m.kickoff.toISOString().slice(0, 10) === dateStr,
-    );
-    labels.push(describeStageRound(matchesThisDate));
+    labels.push(describeStageRound(matchesByDate.get(dateStr) ?? []));
   }
 
   while (labels.length < stages.length) labels.push(null);
@@ -202,19 +213,84 @@ function buildStageRoundLabels(stages: string[], allMatches: MatchRow[]): (strin
 }
 
 /**
- * Returns `null` when the member never created a prediction row at all — distinct from a member
- * who has a card with some items left unfilled (e.g. a late joiner). Real scoring never scores a
- * no-prediction member (their leaderboard `breakdown` is `null`), so this stat must not
- * synthesize one either — see `computeOverallAccuracyPercent`.
+ * Reconstructs each pool member's `CardInputs` from the pool-wide prediction arrays (already
+ * fetched once for the whole pool) instead of issuing per-member `getPrediction` +
+ * `getPredictionInputs` queries. `memberUserIds` seeds one entry per member with a prediction
+ * row — members absent from it are skipped entirely, distinguishing "never predicted" from
+ * "predicted, but every field is empty".
  */
-async function buildMemberCardInputs(
-  db: Db<AppSchema>,
-  poolId: PoolId,
-  userId: UserId,
-): Promise<CardInputs | null> {
-  const prediction = await getPrediction(db, poolId, userId);
-  if (!prediction) return null;
-  return getPredictionInputs(db, prediction.id);
+function buildCardInputsByUser(
+  memberUserIds: UserId[],
+  groupScores: PoolGroupScore[],
+  knockoutPicks: PoolKnockoutPick[],
+  finishScores: PoolFinishScore[],
+  specialBets: PoolSpecialBet[],
+): Map<UserId, CardInputs> {
+  const byUser = new Map<UserId, CardInputs>();
+  for (const uid of memberUserIds) {
+    byUser.set(uid, { groupScores: [], knockoutPicks: [], finishScores: {}, specials: {} });
+  }
+
+  for (const gs of groupScores) {
+    byUser.get(gs.userId)?.groupScores.push({
+      matchId: toMatchId(gs.matchId),
+      home: gs.home,
+      away: gs.away,
+    });
+  }
+  for (const kp of knockoutPicks) {
+    byUser.get(kp.userId)?.knockoutPicks.push({
+      bracketMatchKey: kp.bracketMatchKey,
+      winner: toTeamId(kp.winnerTeamId),
+    });
+  }
+  applyFinishScores(byUser, finishScores);
+  applySpecialBets(byUser, specialBets);
+
+  return byUser;
+}
+
+function applyFinishScores(byUser: Map<UserId, CardInputs>, finishScores: PoolFinishScore[]): void {
+  for (const fs of finishScores) {
+    const inputs = byUser.get(fs.userId);
+    if (!inputs) continue;
+    const score = {
+      home: fs.home,
+      away: fs.away,
+      ...(fs.homeTeamId !== null && { homeTeamId: toTeamId(fs.homeTeamId) }),
+      ...(fs.awayTeamId !== null && { awayTeamId: toTeamId(fs.awayTeamId) }),
+    };
+    if (fs.match === 'final') inputs.finishScores.final = score;
+    else inputs.finishScores.bronze = score;
+  }
+}
+
+function applySpecialBets(byUser: Map<UserId, CardInputs>, specialBets: PoolSpecialBet[]): void {
+  for (const sb of specialBets) {
+    const inputs = byUser.get(sb.userId);
+    if (!inputs) continue;
+    const kind = SPECIAL_BET_KINDS[sb.betKey];
+    if (!kind) continue;
+    assignSpecialBetValue(inputs.specials, sb.betKey as keyof SpecialBets, kind, sb.value);
+  }
+}
+
+/** Assigns a single special-bet value onto `specials`, branded per its declared kind. */
+function assignSpecialBetValue(
+  specials: SpecialBets,
+  key: keyof SpecialBets,
+  kind: BetInputKind,
+  value: unknown,
+): void {
+  if (kind === 'player' && typeof value === 'string') {
+    (specials as Record<string, unknown>)[key] = toPlayerId(value);
+  } else if (kind === 'team' && typeof value === 'string') {
+    (specials as Record<string, unknown>)[key] = toTeamId(value);
+  } else if (kind === 'number' && typeof value === 'number') {
+    (specials as Record<string, unknown>)[key] = value;
+  } else if (kind === 'bool' && typeof value === 'boolean') {
+    (specials as Record<string, unknown>)[key] = value;
+  }
 }
 
 /**
@@ -230,20 +306,26 @@ async function buildMemberCardInputs(
 async function computeOverallAccuracyPercent(
   db: Db<AppSchema>,
   poolId: PoolId,
-  leaderboard: { userId: UserId }[],
+  groupScores: PoolGroupScore[],
+  knockoutPicks: PoolKnockoutPick[],
+  finishScores: PoolFinishScore[],
+  specialBets: PoolSpecialBet[],
   def: Tournament,
   actual: ActualResults,
 ): Promise<number> {
-  const memberInputs = await Promise.all(
-    leaderboard.map((entry) => buildMemberCardInputs(db, poolId, entry.userId)),
+  const memberUserIds = await getPredictionUserIdsByPool(db, poolId);
+  const cardInputsByUser = buildCardInputsByUser(
+    memberUserIds,
+    groupScores,
+    knockoutPicks,
+    finishScores,
+    specialBets,
   );
 
   let totalHits = 0;
   let totalAttempted = 0;
 
-  for (const inputs of memberInputs) {
-    if (!inputs) continue;
-
+  for (const inputs of cardInputsByUser.values()) {
     const savedMatchIds = new Set(inputs.groupScores.map((gs) => gs.matchId as string));
     const augmentedGroupScores = [
       ...inputs.groupScores,
@@ -258,15 +340,60 @@ async function computeOverallAccuracyPercent(
   return totalAttempted > 0 ? Math.round((totalHits / totalAttempted) * 100) : 0;
 }
 
+/** Builds each chart player's per-stage points history and narrative reason, keyed by userId. */
+function buildEntryExtras(
+  raceChart: ReturnType<typeof buildRaceChartData>,
+  eventDates: string[],
+  matchesByDate: Map<string, MatchRow[]>,
+  groupScoresByUserAndMatch: Map<UserId, Map<string, PoolGroupScore>>,
+  pickMapByUser: Map<UserId, Map<string, string>>,
+  finishScoreByUserAndMatch: Map<UserId, Map<PoolFinishScore['match'], PoolFinishScore>>,
+  ctx: StageReasonCtx,
+): Map<UserId, EntryRecapExtras> {
+  const entryExtras = new Map<UserId, EntryRecapExtras>();
+  for (const player of raceChart.chartPlayers) {
+    const uid = asUserId(player.userId);
+    entryExtras.set(uid, {
+      pointsHistory: player.points,
+      stageReasons: buildStageReasons(
+        raceChart.chartStages,
+        eventDates,
+        matchesByDate,
+        groupScoresByUserAndMatch.get(uid) ?? new Map(),
+        pickMapByUser.get(uid) ?? new Map(),
+        finishScoreByUserAndMatch.get(uid) ?? new Map(),
+        ctx,
+      ),
+    });
+  }
+  return entryExtras;
+}
+
+function computeGroupCompletionStageIndex(
+  allMatches: MatchRow[],
+  def: Tournament,
+  eventDates: string[],
+): number {
+  const groupCompletionDate = findOverallGroupCompletionDate(allMatches, def);
+  return groupCompletionDate ? eventDates.indexOf(groupCompletionDate) + 1 : 0;
+}
+
 export async function buildPoolArchiveRecap(
   db: Db<AppSchema>,
-  params: { poolId: PoolId; tournamentId: TournamentId; def: Tournament; scoring: Scoring },
+  params: {
+    poolId: PoolId;
+    tournamentId: TournamentId;
+    /** The pool's leaderboard — pass in the one the caller already fetched (e.g. `archivePool`)
+     *  rather than re-querying it here. */
+    leaderboard: LeaderboardEntry[];
+    def: Tournament;
+    scoring: Scoring;
+  },
 ): Promise<{ recap: PoolArchiveRecap; entryExtras: Map<UserId, EntryRecapExtras> }> {
-  const { poolId, tournamentId, def, scoring } = params;
+  const { poolId, tournamentId, leaderboard, def, scoring } = params;
 
-  const [leaderboard, allMatches, groupScores, knockoutPicks, finishScores, specialBets, actual] =
+  const [allMatches, groupScores, knockoutPicks, finishScores, specialBets, actual] =
     await Promise.all([
-      getLeaderboard(db, poolId),
       getMatchesForTournament(db, tournamentId),
       getGroupScoresByPool(db, poolId),
       getKnockoutPicksByPool(db, poolId),
@@ -284,27 +411,23 @@ export async function buildPoolArchiveRecap(
     knockoutPicks,
   });
 
-  const entryExtras = new Map<UserId, EntryRecapExtras>();
-  for (const player of raceChart.chartPlayers) {
-    const uid = asUserId(player.userId);
-    entryExtras.set(uid, {
-      pointsHistory: player.points,
-      stageReasons: buildStageReasons(uid, raceChart.chartStages, {
-        allMatches,
-        groupScores,
-        knockoutPicks,
-        finishScores,
-        def,
-        scoring,
-      }),
-    });
-  }
-
-  const groupCompletionDate = findOverallGroupCompletionDate(allMatches, def);
   const eventDates = buildRaceEventDates(allMatches);
-  const groupCompletionStageIndex = groupCompletionDate
-    ? eventDates.indexOf(groupCompletionDate) + 1
-    : 0;
+  const matchesByDate = groupFinalMatchesByDate(allMatches);
+  const groupScoresByUserAndMatch = buildGroupScoresByUserAndMatch(groupScores);
+  const pickMapByUser = buildPickMapByUser(knockoutPicks);
+  const finishScoreByUserAndMatch = buildFinishScoreByUserAndMatch(finishScores);
+
+  const entryExtras = buildEntryExtras(
+    raceChart,
+    eventDates,
+    matchesByDate,
+    groupScoresByUserAndMatch,
+    pickMapByUser,
+    finishScoreByUserAndMatch,
+    { def, scoring },
+  );
+
+  const groupCompletionStageIndex = computeGroupCompletionStageIndex(allMatches, def, eventDates);
 
   const pointsHistoryByUser = new Map(
     [...entryExtras.entries()].map(([uid, extras]) => [uid, extras.pointsHistory]),
@@ -319,7 +442,7 @@ export async function buildPoolArchiveRecap(
 
   const recap: PoolArchiveRecap = {
     stages: raceChart.chartStages,
-    stageRoundLabels: buildStageRoundLabels(raceChart.chartStages, allMatches),
+    stageRoundLabels: buildStageRoundLabels(raceChart.chartStages, eventDates, matchesByDate),
     championPick: computeChampionPick(knockoutPicks, finishScores, def, totalMembers),
     bestSingleMatch: computeBestSingleMatch(
       groupScores,
@@ -328,7 +451,7 @@ export async function buildPoolArchiveRecap(
       scoring.groupMatch,
       totalMembers,
     ),
-    biggestUpset: computeBiggestUpset(knockoutPicks, allMatches, def, totalMembers),
+    biggestUpset: computeBiggestUpset(knockoutPicks, finishScores, allMatches, def, totalMembers),
     predictionsMade: computePredictionsMade({
       groupScores: groupScores.length,
       knockoutPicks: knockoutPicks.length,
@@ -343,7 +466,10 @@ export async function buildPoolArchiveRecap(
     overallAccuracyPercent: await computeOverallAccuracyPercent(
       db,
       poolId,
-      leaderboard,
+      groupScores,
+      knockoutPicks,
+      finishScores,
+      specialBets,
       def,
       actual,
     ),

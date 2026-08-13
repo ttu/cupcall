@@ -1,6 +1,8 @@
+import { points, type Points } from '@cup/engine';
+
 export type StageHistoryPlayer = {
   displayName: string;
-  points: number[];
+  points: Points[];
   stageReasons: (string | null)[] | null;
 };
 
@@ -10,7 +12,7 @@ export type LeadChangeEvent = {
   stageLabel: string | null;
   leaderDisplayName: string;
   reason: string | null;
-  pointsAtStage: number;
+  pointsAtStage: Points;
 };
 
 export type BiggestRiserEvent = {
@@ -27,7 +29,7 @@ export type BiggestRiserEvent = {
  */
 function rankAtStage(players: StageHistoryPlayer[], stageIndex: number): Map<string, number> {
   const sorted = [...players]
-    .map((p) => ({ displayName: p.displayName, points: p.points[stageIndex] ?? 0 }))
+    .map((p) => ({ displayName: p.displayName, points: p.points[stageIndex] ?? points(0) }))
     .sort((a, b) => b.points - a.points || a.displayName.localeCompare(b.displayName));
 
   const ranks = new Map<string, number>();
@@ -60,7 +62,7 @@ export function computeLeadChanges(
       stageLabel: stageRoundLabels[stageIndex] ?? null,
       leaderDisplayName: leaderName,
       reason: leader?.stageReasons?.[stageIndex] ?? null,
-      pointsAtStage: leader?.points[stageIndex] ?? 0,
+      pointsAtStage: leader?.points[stageIndex] ?? points(0),
     });
     currentLeader = leaderName;
   }

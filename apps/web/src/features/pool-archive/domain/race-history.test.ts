@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { points } from '@cup/engine';
 import { computeLeadChanges, computeBiggestRiser } from './race-history';
 import type { StageHistoryPlayer } from './race-history';
+
+/** Shorthand for building a branded `Points[]` history from plain numeric literals in tests. */
+function pts(values: number[]): ReturnType<typeof points>[] {
+  return values.map(points);
+}
 
 const stages = ['Start', 'Jul 15', 'Jul 17', 'Jul 19'];
 const stageRoundLabels = [null, 'Group Stage', 'Round of 16', 'Final'];
@@ -8,8 +14,8 @@ const stageRoundLabels = [null, 'Group Stage', 'Round of 16', 'Final'];
 describe('computeLeadChanges', () => {
   it('returns no events when the leader never changes past the Start tie-break', () => {
     const players: StageHistoryPlayer[] = [
-      { displayName: 'Alice', points: [0, 30, 40, 50], stageReasons: [null, 'a', 'b', 'c'] },
-      { displayName: 'Bob', points: [0, 10, 20, 30], stageReasons: [null, null, null, null] },
+      { displayName: 'Alice', points: pts([0, 30, 40, 50]), stageReasons: [null, 'a', 'b', 'c'] },
+      { displayName: 'Bob', points: pts([0, 10, 20, 30]), stageReasons: [null, null, null, null] },
     ];
     const events = computeLeadChanges(players, stages);
     expect(events).toEqual([]);
@@ -17,8 +23,12 @@ describe('computeLeadChanges', () => {
 
   it('emits an event each time the #1 rank changes hands, skipping the Start baseline', () => {
     const players: StageHistoryPlayer[] = [
-      { displayName: 'Alice', points: [0, 30, 30, 60], stageReasons: [null, 'A1', null, 'A3'] },
-      { displayName: 'Bob', points: [0, 10, 40, 50], stageReasons: [null, null, 'B2', null] },
+      {
+        displayName: 'Alice',
+        points: pts([0, 30, 30, 60]),
+        stageReasons: [null, 'A1', null, 'A3'],
+      },
+      { displayName: 'Bob', points: pts([0, 10, 40, 50]), stageReasons: [null, null, 'B2', null] },
     ];
     const events = computeLeadChanges(players, stages, stageRoundLabels);
     expect(events.map((e) => e.leaderDisplayName)).toEqual(['Bob', 'Alice']);
@@ -28,14 +38,18 @@ describe('computeLeadChanges', () => {
       stageLabel: 'Round of 16',
       leaderDisplayName: 'Bob',
       reason: 'B2',
-      pointsAtStage: 40,
+      pointsAtStage: points(40),
     });
   });
 
   it('defaults stageLabel to null when no stageRoundLabels are supplied', () => {
     const players: StageHistoryPlayer[] = [
-      { displayName: 'Alice', points: [0, 30, 30, 60], stageReasons: [null, 'A1', null, 'A3'] },
-      { displayName: 'Bob', points: [0, 10, 40, 50], stageReasons: [null, null, 'B2', null] },
+      {
+        displayName: 'Alice',
+        points: pts([0, 30, 30, 60]),
+        stageReasons: [null, 'A1', null, 'A3'],
+      },
+      { displayName: 'Bob', points: pts([0, 10, 40, 50]), stageReasons: [null, null, 'B2', null] },
     ];
     const events = computeLeadChanges(players, stages);
     expect(events.every((e) => e.stageLabel === null)).toBe(true);
@@ -43,8 +57,8 @@ describe('computeLeadChanges', () => {
 
   it('breaks ties by displayName ascending, matching getLeaderboard convention, without emitting a Start event', () => {
     const players: StageHistoryPlayer[] = [
-      { displayName: 'Zed', points: [10], stageReasons: [null] },
-      { displayName: 'Amy', points: [10], stageReasons: [null] },
+      { displayName: 'Zed', points: pts([10]), stageReasons: [null] },
+      { displayName: 'Amy', points: pts([10]), stageReasons: [null] },
     ];
     const events = computeLeadChanges(players, ['Start']);
     expect(events).toEqual([]);
@@ -53,7 +67,7 @@ describe('computeLeadChanges', () => {
   it('returns an empty array for an empty pool or no stages', () => {
     expect(computeLeadChanges([], stages)).toEqual([]);
     expect(
-      computeLeadChanges([{ displayName: 'Alice', points: [0], stageReasons: [null] }], []),
+      computeLeadChanges([{ displayName: 'Alice', points: pts([0]), stageReasons: [null] }], []),
     ).toEqual([]);
   });
 });
@@ -61,9 +75,13 @@ describe('computeLeadChanges', () => {
 describe('computeBiggestRiser', () => {
   it('finds the single largest rank-improvement transition', () => {
     const players: StageHistoryPlayer[] = [
-      { displayName: 'Alice', points: [0, 50, 55], stageReasons: [null, null, null] },
-      { displayName: 'Bob', points: [0, 40, 45], stageReasons: [null, null, null] },
-      { displayName: 'Carol', points: [0, 10, 60], stageReasons: [null, null, '5 exact scores'] },
+      { displayName: 'Alice', points: pts([0, 50, 55]), stageReasons: [null, null, null] },
+      { displayName: 'Bob', points: pts([0, 40, 45]), stageReasons: [null, null, null] },
+      {
+        displayName: 'Carol',
+        points: pts([0, 10, 60]),
+        stageReasons: [null, null, '5 exact scores'],
+      },
     ];
     // Stage 0->1: Alice(1st) Bob(2nd) Carol(3rd) - no change.
     // Stage 1->2: Carol jumps from 3rd to 1st - biggest riser, +2 ranks.
@@ -80,14 +98,14 @@ describe('computeBiggestRiser', () => {
   it('returns null when no rank ever improves (fewer than 2 members, or ranks only worsen/hold)', () => {
     expect(
       computeBiggestRiser(
-        [{ displayName: 'Alice', points: [0, 10], stageReasons: [null, null] }],
+        [{ displayName: 'Alice', points: pts([0, 10]), stageReasons: [null, null] }],
         ['Start', 'Jul 15'],
         1,
       ),
     ).toBeNull();
     const noImprovement: StageHistoryPlayer[] = [
-      { displayName: 'Alice', points: [10, 20], stageReasons: [null, null] },
-      { displayName: 'Bob', points: [0, 5], stageReasons: [null, null] },
+      { displayName: 'Alice', points: pts([10, 20]), stageReasons: [null, null] },
+      { displayName: 'Bob', points: pts([0, 5]), stageReasons: [null, null] },
     ];
     expect(computeBiggestRiser(noImprovement, ['Start', 'Jul 15'], 1)).toBeNull();
   });
@@ -101,11 +119,15 @@ describe('computeBiggestRiser', () => {
   // Carol        0     50    90   150   → rank:  -    2nd   3rd   2nd   (rises 3rd→2nd in 2→3, knockout-stage)
   const groupCompletionIndex = 2;
   const threePlayerFixture: StageHistoryPlayer[] = [
-    { displayName: 'Alice', points: [0, 1, 200, 200], stageReasons: [null, null, null, null] },
-    { displayName: 'Bob', points: [0, 100, 100, 100], stageReasons: [null, null, null, null] },
+    { displayName: 'Alice', points: pts([0, 1, 200, 200]), stageReasons: [null, null, null, null] },
+    {
+      displayName: 'Bob',
+      points: pts([0, 100, 100, 100]),
+      stageReasons: [null, null, null, null],
+    },
     {
       displayName: 'Carol',
-      points: [0, 50, 90, 150],
+      points: pts([0, 50, 90, 150]),
       stageReasons: [null, null, null, 'exact score'],
     },
   ];

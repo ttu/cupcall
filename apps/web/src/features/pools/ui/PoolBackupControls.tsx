@@ -35,6 +35,9 @@ export function PoolBackupControls({ poolId, isOwner }: Props): ReactElement {
   function handleImportFile(file: File) {
     setMessage(null);
     const reader = new FileReader();
+    reader.onerror = () => {
+      setMessage({ ok: false, text: 'Could not read the selected file.' });
+    };
     reader.onload = () => {
       try {
         const backupData = JSON.parse(reader.result as string) as unknown;

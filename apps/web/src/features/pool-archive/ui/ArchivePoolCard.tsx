@@ -5,8 +5,9 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { archivePoolAction } from '../api/actions';
 import { TurfCard } from '@/shared/ui';
+import type { PoolId } from '@cup/engine';
 
-type Props = { poolId: string; isOwner: boolean; archivedAt: Date | null };
+type Props = { poolId: PoolId; isOwner: boolean; archivedAt: Date | null };
 
 export function ArchivePoolCard({ poolId, isOwner, archivedAt }: Props): ReactElement | null {
   const [isPending, startTransition] = useTransition();
