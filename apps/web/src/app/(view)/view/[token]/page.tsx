@@ -21,6 +21,12 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
   const locked = now >= detail.lockTime;
   const raceChart = locked ? detail.raceChart : null;
 
+  // Demo pools simulate a "you" so visitors feel like a participant, not an observer.
+  const demoUserId = token.startsWith('demo-') ? detail.ownerId : null;
+  const myIndex = demoUserId ? detail.leaderboard.findIndex((e) => e.userId === demoUserId) : -1;
+  const myEntry = myIndex >= 0 ? detail.leaderboard[myIndex] : undefined;
+  const myRank = myIndex >= 0 ? myIndex + 1 : null;
+
   return (
     <div className="max-w-275 mx-auto p-[28px_20px]">
       {/* Page header */}
@@ -31,13 +37,25 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
         locked={locked}
       />
 
+      {/* Your standing — mobile only (above grid) */}
+      {myEntry && myRank && (
+        <div className="card bg-green-050 border border-green-300 p-4.5 mb-6 md:hidden">
+          <div className="eyebrow text-green-700 mb-2.5">Your standing</div>
+          <div className="flex items-baseline gap-2.5">
+            <span className="display text-[44px] text-green-700">#{myRank}</span>
+            <span className="display text-[24px] text-ink">{myEntry.pointsTotal}</span>
+            <span className="text-xs font-bold text-green-700">pts</span>
+          </div>
+        </div>
+      )}
+
       {/* Two-column layout */}
       <div className="grid gap-6 items-start md:grid-cols-[1fr_300px]">
         {/* Left: Leaderboard + Points Race chart */}
         <div className="flex flex-col gap-4">
           <Leaderboard
             entries={detail.leaderboard}
-            currentUserId={null}
+            currentUserId={demoUserId}
             poolId={pool.id}
             isOwner={false}
             locked={locked}
@@ -55,6 +73,18 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
 
         {/* Right rail */}
         <div className="flex flex-col gap-4">
+          {/* Your standing — desktop only */}
+          {myEntry && myRank && (
+            <div className="card bg-green-050 border border-green-300 p-4.5 hidden md:block">
+              <div className="eyebrow text-green-700 mb-2.5">Your standing</div>
+              <div className="flex items-baseline gap-2.5">
+                <span className="display text-[44px] text-green-700">#{myRank}</span>
+                <span className="display text-[24px] text-ink">{myEntry.pointsTotal}</span>
+                <span className="text-xs font-bold text-green-700">pts</span>
+              </div>
+            </div>
+          )}
+
           {/* Results shortcut */}
           <QuickActionLink
             href={`/view/${token}/results`}
@@ -64,6 +94,18 @@ export default async function ViewPage({ params }: Props): Promise<ReactElement>
             title="Results & standings"
             subtitle="Scores, groups & knockout"
           />
+
+          {/* View my card — demo only */}
+          {demoUserId && (
+            <QuickActionLink
+              href={`/view/${token}/members/${demoUserId}`}
+              testId="view-my-card-link"
+              variant="green"
+              iconName="card"
+              title="View my card"
+              subtitle="See your locked picks"
+            />
+          )}
 
           {/* Tournament timeline */}
           {detail.stageProgress.length > 0 && (

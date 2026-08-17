@@ -12,4 +12,9 @@ export default function globalSetup(): void {
   // with varied predictions for the leaderboard/results/late-joiner specs.
   // The script auto-loads apps/web/.env.local when DATABASE_URL is not set.
   execSync('pnpm seed:e2e', { cwd: repoRoot, stdio: 'inherit' });
+
+  // Seeds the three static wc-2026-demo-* pools (fixed view tokens demo-groups/demo-knockout/
+  // demo-completed) into the same e2e database, for demo.spec.ts. Idempotent, so re-running the
+  // full e2e suite locally doesn't duplicate anything.
+  execSync('pnpm seed:demo', { cwd: repoRoot, stdio: 'inherit' });
 }

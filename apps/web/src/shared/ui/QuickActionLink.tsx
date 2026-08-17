@@ -4,7 +4,7 @@ import { Icon } from './Icon';
 
 export type QuickActionVariant = 'orange' | 'green';
 
-const QUICK_ACTION_STYLES: Record<QuickActionVariant, string> = {
+export const QUICK_ACTION_STYLES: Record<QuickActionVariant, string> = {
   orange: 'bg-orange-500 text-[oklch(0.22_0.03_50)] shadow-[0_10px_30px_-16px_var(--orange-500)]',
   green: 'bg-green-500 text-[oklch(0.18_0.02_160)] shadow-[0_10px_30px_-16px_var(--green-500)]',
 };

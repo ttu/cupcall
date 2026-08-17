@@ -1751,6 +1751,26 @@ describe('getResultsView', () => {
     expect(match.hit).toBe('pending');
   });
 
+  it('sets hit=pending on a completed knockout tie when no userId is provided', async () => {
+    await upsertKnockoutMatch(db, {
+      id: 'qf1',
+      tournamentId: miniTId,
+      stage: 'QF',
+      homeTeamId: 'A1',
+      awayTeamId: 'B2',
+      homeGoals: 2,
+      awayGoals: 0,
+      winnerTeamId: 'A1',
+      status: 'final',
+    });
+
+    const view = await getResultsView({ db, poolId, now: NOW });
+    const match = view!.bracketRounds
+      .find((r) => r.label === 'QF')!
+      .matches.find((m) => m.bracketMatchKey === 'qf1')!;
+    expect(match.hit).toBe('pending');
+  });
+
   it('sets hit=exact on Final when predicted score matches actual score', async () => {
     const pred = await getOrCreatePrediction(db, {
       poolId,

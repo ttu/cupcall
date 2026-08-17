@@ -20,6 +20,7 @@ export default async function ViewResultsPage({
   const view = await getResultsView({
     db,
     poolId: pool.id,
+    ...(token.startsWith('demo-') && { userId: pool.ownerId }),
     now: new Date(),
   });
   if (!view) notFound();

@@ -3,6 +3,30 @@ import { redirect } from 'next/navigation';
 import { auth, GuestLoginForm, EmailLoginForm } from '@/features/auth';
 import { Button, Logo, Chip, Avatar } from '@/shared/ui';
 
+function PlayIcon(): ReactElement {
+  return (
+    <svg width="14" height="16" viewBox="0 0 10 12" fill="currentColor" aria-hidden="true">
+      <path d="M0 0L10 6L0 12V0Z" />
+    </svg>
+  );
+}
+
+function NavButtons(): ReactElement {
+  return (
+    <div className="flex items-center gap-2">
+      <Button asChild variant="accent" size="sm">
+        <a href="/demo">
+          <PlayIcon />
+          View live demo
+        </a>
+      </Button>
+      <Button asChild variant="ghost-dark" size="sm">
+        <a href="/login">Sign in</a>
+      </Button>
+    </div>
+  );
+}
+
 function GuestFormCard(): ReactElement {
   return (
     <div className="mb-6">
@@ -16,6 +40,22 @@ function GuestFormCard(): ReactElement {
       >
         <GuestLoginForm />
       </div>
+    </div>
+  );
+}
+
+function DemoCtaRow(): ReactElement {
+  return (
+    <div className="flex items-center gap-4 mb-9">
+      <Button asChild variant="accent" size="lg">
+        <a href="/demo" className="!h-[60px] !px-7 gap-3">
+          <PlayIcon />
+          <span className="font-bold">View live demo</span>
+          <span className="opacity-40 select-none mx-1">|</span>
+          <span className="font-semibold opacity-75">World Cup 2026</span>
+        </a>
+      </Button>
+      <span className="text-on-dark-muted text-sm">or sign in below</span>
     </div>
   );
 }
@@ -66,9 +106,7 @@ export default async function HomePage(): Promise<ReactElement> {
       {/* Nav */}
       <nav className="relative z-[1] flex items-center justify-between py-4.5 px-7 max-w-300 mx-auto">
         <Logo dark />
-        <Button asChild variant="ghost-dark" size="sm">
-          <a href="/login">Sign in</a>
-        </Button>
+        <NavButtons />
       </nav>
 
       {/* Hero */}
@@ -88,10 +126,12 @@ export default async function HomePage(): Promise<ReactElement> {
             Top the table.
           </h1>
 
-          <p className="text-on-dark-soft mb-9 max-w-110" style={{ fontSize: 17, lineHeight: 1.6 }}>
+          <p className="text-on-dark-soft mb-6 max-w-110" style={{ fontSize: 17, lineHeight: 1.6 }}>
             Predict scores, build your bracket, pick the specials. Compete in private pools with
             friends — one winner when the final whistle blows.
           </p>
+
+          <DemoCtaRow />
 
           <GuestFormCard />
 

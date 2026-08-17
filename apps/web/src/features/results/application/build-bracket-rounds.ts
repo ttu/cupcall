@@ -640,6 +640,8 @@ function computeKnockoutHit(args: {
   } = args;
 
   if (actualWinnerId === null) return 'pending';
+  // No pick exists for this match — don't show as missed.
+  if (pickedWinnerId === null && stagePicks === null) return 'pending';
 
   // Exact requires both predicted and actual scores; only Final/Bronze populate predicted.
   // Prefer team-identity comparison when a snapshot is available — it's correct regardless of

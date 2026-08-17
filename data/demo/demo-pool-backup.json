@@ -1,0 +1,5642 @@
+{
+  "version": 1,
+  "exportedAt": "2026-08-14T08:32:19.537Z",
+  "tournamentId": "wc-2026",
+  "poolName": "WC 2026 Demo Source",
+  "members": [
+    {
+      "userId": "demo-user-1",
+      "displayName": "El Nino",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mB1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mC1",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mA1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mA2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mA4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mA6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mB3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB5",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mB6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC3",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mC4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mC5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mC6",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mD1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mD3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD6",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mE2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mE4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mE6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mF1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mE3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mE1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mF3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mF5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mG1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF4",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mF6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mG2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mG3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mG5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mG6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mH1",
+            "home": 4,
+            "away": 1
+          },
+          {
+            "matchId": "mH2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mH3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mI2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mI3",
+            "home": 4,
+            "away": 1
+          },
+          {
+            "matchId": "mI4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ2",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mJ3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mJ4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mJ5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mK1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mK2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mK3",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mK4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mK5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mK6",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mL2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mL3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL4",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mL1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mL6",
+            "home": 3,
+            "away": 1
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "KOR"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "MEX"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "CRO"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "USA"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "ESP"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 2,
+            "away": 1
+          },
+          "bronze": {
+            "home": 3,
+            "away": 2
+          }
+        },
+        "specials": {
+          "topScorerPlayer": "nor-haaland",
+          "finalDecisiveGoalPlayer": "esp-yamal",
+          "mostYellowCardsTeam": "ARG",
+          "groupTopScoringTeam": "ESP",
+          "tournamentTopScoringTeam": "ESP",
+          "highestMatchGoals": 6,
+          "penaltyShootoutCount": 5,
+          "groupTopConcedingTeam": "CPV",
+          "firstRedCardPlayer": "nzl-cacace",
+          "tournamentTopConcedingTeam": "CUW",
+          "finalDecidedByPenalties": false
+        }
+      }
+    },
+    {
+      "userId": "demo-user-2",
+      "displayName": "Falcon9",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mL1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mL2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 4
+          },
+          {
+            "matchId": "mL6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mB1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mB3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mB5",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mB6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mC4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mE1",
+            "home": 5,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mF1",
+            "home": 4,
+            "away": 1
+          },
+          {
+            "matchId": "mF2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mC5",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mD3",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mE6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mF3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mC3",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mC6",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mD1",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mD2",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mD4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mD5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mE2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mE3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mE4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mF6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mG2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mG3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mG5",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mH1",
+            "home": 5,
+            "away": 0
+          },
+          {
+            "matchId": "mH2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mH3",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mH5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mI2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mI4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mI5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mI6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mJ3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mJ5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mK1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mK3",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mK4",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mK5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mG1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mJ2",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mF4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mK6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD6",
+            "home": 1,
+            "away": 1
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "MEX"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "PAR"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "COL"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "EGY"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "ESP"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 1,
+            "away": 2
+          },
+          "bronze": {
+            "home": 2,
+            "away": 1
+          }
+        },
+        "specials": {
+          "topScorerPlayer": "eng-kane",
+          "finalDecisiveGoalPlayer": "eng-kane",
+          "mostYellowCardsTeam": "ENG",
+          "groupTopScoringTeam": "ESP",
+          "groupTopConcedingTeam": "CUW",
+          "tournamentTopScoringTeam": "ESP",
+          "tournamentTopConcedingTeam": "CUW",
+          "finalDecidedByPenalties": false,
+          "penaltyShootoutCount": 6,
+          "firstRedCardPlayer": "mar-hakimi",
+          "highestMatchGoals": 6
+        }
+      }
+    },
+    {
+      "userId": "demo-user-3",
+      "displayName": "OffsideOllie",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mA4",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mA3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mA6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mA5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB3",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mB4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mH3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mC5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mC6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mE4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mF6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mG3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mI4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mI6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mF2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mF4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mG2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mG4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mG5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mH1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mH5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mI5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mD2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mD4",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mD5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mD6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mE2",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mE6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mF1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mE3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mF3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mG1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mI3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mJ1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mJ2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mJ5",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mK1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mK3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mK5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mK6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mL3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mL6",
+            "home": 1,
+            "away": 0
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "BIH"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "CRO"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "USA"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "USA"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "KOR"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "ENG"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 1,
+            "away": 2
+          },
+          "bronze": {
+            "home": 1,
+            "away": 2
+          }
+        },
+        "specials": {
+          "topScorerPlayer": "eng-kane",
+          "finalDecisiveGoalPlayer": "eng-kane",
+          "mostYellowCardsTeam": "ARG",
+          "groupTopScoringTeam": "BRA",
+          "groupTopConcedingTeam": "CUW",
+          "tournamentTopScoringTeam": "ENG",
+          "tournamentTopConcedingTeam": "NED",
+          "highestMatchGoals": 6,
+          "penaltyShootoutCount": 4,
+          "finalDecidedByPenalties": false
+        }
+      }
+    },
+    {
+      "userId": "demo-user-4",
+      "displayName": "TikiTaka",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mA3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mA5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mA6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mA4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mA2",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB5",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mB4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mB3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mB2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mC1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mC5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mC3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mC6",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mD1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mD2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mD3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mD4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mC4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mD6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mE1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mA1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mB1",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mE2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mE3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE4",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mE6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mE5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mF1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mF2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mF3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mF4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mF5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mF6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mG1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mG2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mG5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mG6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mH1",
+            "home": 5,
+            "away": 0
+          },
+          {
+            "matchId": "mH2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mH3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mI3",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mI4",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mI6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mI5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mJ1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mJ2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mJ5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mJ4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mK1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 4
+          },
+          {
+            "matchId": "mK3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK4",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mK5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mK6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mL1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mL3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mL4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mL6",
+            "home": 2,
+            "away": 0
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "CAN"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "MEX"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "USA"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "COL"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "BEL"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 2,
+            "away": 1
+          },
+          "bronze": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "specials": {
+          "finalDecisiveGoalPlayer": "esp-yamal",
+          "firstRedCardPlayer": "rsa-makgopa",
+          "mostYellowCardsTeam": "POR",
+          "groupTopScoringTeam": "ESP",
+          "groupTopConcedingTeam": "CPV",
+          "tournamentTopScoringTeam": "ESP",
+          "tournamentTopConcedingTeam": "CPV",
+          "highestMatchGoals": 5,
+          "penaltyShootoutCount": 4,
+          "topScorerPlayer": "esp-yamal",
+          "finalDecidedByPenalties": false
+        }
+      }
+    },
+    {
+      "userId": "demo-user-5",
+      "displayName": "GoalGetter",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mA1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mA2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mA3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mA4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mB1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mB3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mC3",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mC4",
+            "home": 5,
+            "away": 0
+          },
+          {
+            "matchId": "mC5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mC6",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mD1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mD3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mE1",
+            "home": 6,
+            "away": 0
+          },
+          {
+            "matchId": "mE2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mE3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mE4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mE6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mF1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mF2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mF4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mG1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mG2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mG3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mG5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mG6",
+            "home": 0,
+            "away": 4
+          },
+          {
+            "matchId": "mH1",
+            "home": 6,
+            "away": 0
+          },
+          {
+            "matchId": "mH2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mH3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mH5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mH6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mI2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mI4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mI6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ4",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mJ5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mK1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mK3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mK4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mK5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mK6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mL1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mL2",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mL3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 5
+          },
+          {
+            "matchId": "mL6",
+            "home": 2,
+            "away": 1
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "MEX"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "CRO"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "EGY"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "ESP"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 2,
+            "away": 1
+          },
+          "bronze": {
+            "home": 2,
+            "away": 1
+          }
+        },
+        "specials": {
+          "topScorerPlayer": "eng-kane",
+          "finalDecisiveGoalPlayer": "esp-pedri",
+          "mostYellowCardsTeam": "NOR",
+          "groupTopScoringTeam": "ESP",
+          "groupTopConcedingTeam": "CUW",
+          "tournamentTopScoringTeam": "ESP",
+          "tournamentTopConcedingTeam": "CUW",
+          "highestMatchGoals": 6,
+          "penaltyShootoutCount": 7,
+          "finalDecidedByPenalties": false,
+          "firstRedCardPlayer": "rsa-makgopa"
+        }
+      }
+    },
+    {
+      "userId": "demo-user-6",
+      "displayName": "NetBuster",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mE1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mE3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mE6",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mF1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mF3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF4",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mF5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mF6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mA1",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mA2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mA3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mA5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mA6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB1",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mB3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mB5",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mB6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mC3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mC5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mC6",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mD1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mD3",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mD4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD5",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mD6",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mG1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mG2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mG3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mG5",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mH2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mH3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mH5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mI2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mI3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mI4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI6",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mJ1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mJ3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ4",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mJ5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mJ6",
+            "home": 1,
+            "away": 4
+          },
+          {
+            "matchId": "mK1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mK3",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mK4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mK6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mL1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mL2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mL3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mL6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mC4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mH1",
+            "home": 5,
+            "away": 0
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "MEX"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "CRO"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "AUS"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "FRA"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 1,
+            "away": 0
+          },
+          "bronze": {
+            "home": 2,
+            "away": 0
+          }
+        },
+        "specials": {
+          "topScorerPlayer": "fra-mbappe",
+          "finalDecisiveGoalPlayer": "fra-mbappe",
+          "firstRedCardPlayer": "tur-akturkoglu",
+          "mostYellowCardsTeam": "ENG",
+          "groupTopScoringTeam": "GER",
+          "groupTopConcedingTeam": "CPV",
+          "highestMatchGoals": 5,
+          "penaltyShootoutCount": 2,
+          "finalDecidedByPenalties": false,
+          "tournamentTopScoringTeam": "FRA",
+          "tournamentTopConcedingTeam": "ARG"
+        }
+      }
+    },
+    {
+      "userId": "demo-user-7",
+      "displayName": "CornerKick",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mA1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mA4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA2",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mA6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mB1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mB3",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mB4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mB5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mC5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mC1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mC4",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mC3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mC6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mD6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mD4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mE1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mE2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mE3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mE6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mF6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mF5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mF3",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mF4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mG6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mG5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mG1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mG2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mH3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mH5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mH1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mI3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mI4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mI5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mI6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mJ5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mJ1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mJ2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mK5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mK6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mK3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mL6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mK4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mL2",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mL3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 2
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "CAN"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "bronze",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "KOR"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "SEN"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "MEX"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "USA"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "COL"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "GER"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 3,
+            "away": 1
+          },
+          "bronze": {
+            "home": 1,
+            "away": 2
+          }
+        },
+        "specials": {
+          "topScorerPlayer": "eng-kane",
+          "finalDecisiveGoalPlayer": "ger-musiala",
+          "firstRedCardPlayer": "swe-isak",
+          "mostYellowCardsTeam": "POR",
+          "groupTopScoringTeam": "ESP",
+          "groupTopConcedingTeam": "HAI",
+          "tournamentTopScoringTeam": "ESP",
+          "tournamentTopConcedingTeam": "ARG",
+          "highestMatchGoals": 4,
+          "penaltyShootoutCount": 4,
+          "finalDecidedByPenalties": false
+        }
+      }
+    },
+    {
+      "userId": "demo-user-8",
+      "displayName": "PitchPanther",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mA1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA3",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mA4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA5",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mA6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mB1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mB2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mB3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mB4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mB5",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mB6",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mC1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mC3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mC4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mC5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mC6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mD1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mD3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mD5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mE1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mE3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mF2",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mF3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mI1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mI4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mJ2",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mL5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mE2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mE6",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mF1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mG3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH1",
+            "home": 5,
+            "away": 0
+          },
+          {
+            "matchId": "mH2",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mE4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mG2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mG5",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mH5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mI6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mJ1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mK6",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mG6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mH3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mI3",
+            "home": 4,
+            "away": 1
+          },
+          {
+            "matchId": "mJ5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mK1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mK3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mK5",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mL1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mL2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mL3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mL6",
+            "home": 3,
+            "away": 1
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "MEX"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "CRO"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "USA"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "final",
+            "winner": "BRA"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 2,
+            "away": 2
+          },
+          "bronze": {
+            "home": 2,
+            "away": 1
+          }
+        },
+        "specials": {
+          "groupTopScoringTeam": "GER",
+          "tournamentTopScoringTeam": "ESP",
+          "groupTopConcedingTeam": "CPV",
+          "tournamentTopConcedingTeam": "FRA",
+          "highestMatchGoals": 6,
+          "penaltyShootoutCount": 5,
+          "finalDecidedByPenalties": true,
+          "topScorerPlayer": "fra-mbappe",
+          "finalDecisiveGoalPlayer": "bra-neymar",
+          "firstRedCardPlayer": "jpn-doan",
+          "mostYellowCardsTeam": "ENG"
+        }
+      }
+    },
+    {
+      "userId": "demo-user-9",
+      "displayName": "ExtraTimeEddie",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mK3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mA1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA2",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mA4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mA5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mB1",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mB3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mB4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB5",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mB6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mK4",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mC1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mC3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mC4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mC5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mC6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mD1",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mD2",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mD3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mD4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mD5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mD6",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mE1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mE2",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mE3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mE4",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mE6",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mF1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mF4",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mF5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mG1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG2",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mG3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mG5",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mG6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mH1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mH2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mH3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH4",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mH5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mI3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mI4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ1",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mJ4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mK5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mJ5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 4
+          },
+          {
+            "matchId": "mK1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mK6",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mL1",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mL2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 4
+          },
+          {
+            "matchId": "mL6",
+            "home": 2,
+            "away": 2
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "EGY"
+          },
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "CRO"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "SEN"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "CIV"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "PAR"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "final",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "BEL"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 1,
+            "away": 1
+          },
+          "bronze": {
+            "home": 2,
+            "away": 1
+          }
+        },
+        "specials": {
+          "penaltyShootoutCount": 8,
+          "finalDecidedByPenalties": true,
+          "topScorerPlayer": "eng-kane",
+          "finalDecisiveGoalPlayer": "eng-bellingham",
+          "firstRedCardPlayer": "irq-attwan",
+          "mostYellowCardsTeam": "AUT",
+          "highestMatchGoals": 5,
+          "groupTopScoringTeam": "ESP",
+          "groupTopConcedingTeam": "CPV",
+          "tournamentTopScoringTeam": "ESP",
+          "tournamentTopConcedingTeam": "CPV"
+        }
+      }
+    },
+    {
+      "userId": "demo-user-10",
+      "displayName": "LastManStanding",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mF2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mF3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mF4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA2",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mA3",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mA4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mA5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mA6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mB1",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mB3",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB5",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mB6",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mC1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mC3",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mC4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mC5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mC6",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mD1",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mD2",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mD3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mD4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mD5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mD6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mE1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mE2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mE4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mE5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mE6",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mF1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mF5",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mF6",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mG1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mG2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mG3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mG4",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mG5",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mG6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mH1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mH2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mH3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mH4",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mH5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mI5",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mJ6",
+            "home": 0,
+            "away": 5
+          },
+          {
+            "matchId": "mK1",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mL3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mH6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mI6",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mJ2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mJ3",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mL1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 5
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mI2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mI3",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mK3",
+            "home": 5,
+            "away": 1
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mI4",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mJ4",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mL2",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mL6",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mJ5",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mK4",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mK5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mK6",
+            "home": 0,
+            "away": 0
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "NOR"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "KOR"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "TUR"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "COL"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "EGY"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "NED"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "POR"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "NED"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 0,
+            "away": 2
+          },
+          "bronze": {
+            "home": 0,
+            "away": 3
+          }
+        },
+        "specials": {
+          "topScorerPlayer": "eng-kane",
+          "finalDecisiveGoalPlayer": "eng-kane",
+          "firstRedCardPlayer": "bih-kolasinac",
+          "mostYellowCardsTeam": "NED",
+          "groupTopScoringTeam": "GER",
+          "groupTopConcedingTeam": "CUW",
+          "tournamentTopScoringTeam": "NED",
+          "tournamentTopConcedingTeam": "PAN",
+          "highestMatchGoals": 7,
+          "penaltyShootoutCount": 3,
+          "finalDecidedByPenalties": false
+        }
+      }
+    },
+    {
+      "userId": "demo-user-11",
+      "displayName": "VAR Whisperer",
+      "prediction": {
+        "groupScores": [
+          {
+            "matchId": "mA4",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mA5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mA1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mA2",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mA3",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mA6",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mB1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mB2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mB3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mB4",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mB5",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mB6",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mC1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mC2",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mC3",
+            "home": 4,
+            "away": 1
+          },
+          {
+            "matchId": "mC4",
+            "home": 5,
+            "away": 0
+          },
+          {
+            "matchId": "mC5",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mC6",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mD1",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mD3",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mF3",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mH3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mH5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mJ1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mD2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mD4",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mD5",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mE5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mF1",
+            "home": 3,
+            "away": 1
+          },
+          {
+            "matchId": "mF4",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mH6",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mI1",
+            "home": 2,
+            "away": 1
+          },
+          {
+            "matchId": "mJ3",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mD6",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mE1",
+            "home": 7,
+            "away": 0
+          },
+          {
+            "matchId": "mI5",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mE2",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mE3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mE4",
+            "home": 4,
+            "away": 0
+          },
+          {
+            "matchId": "mG1",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mG3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mI3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mJ4",
+            "home": 2,
+            "away": 4
+          },
+          {
+            "matchId": "mE6",
+            "home": 1,
+            "away": 3
+          },
+          {
+            "matchId": "mF2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mF5",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mG2",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mH1",
+            "home": 6,
+            "away": 0
+          },
+          {
+            "matchId": "mJ2",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mF6",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mG4",
+            "home": 0,
+            "away": 1
+          },
+          {
+            "matchId": "mG5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mI4",
+            "home": 4,
+            "away": 1
+          },
+          {
+            "matchId": "mG6",
+            "home": 1,
+            "away": 5
+          },
+          {
+            "matchId": "mH2",
+            "home": 1,
+            "away": 4
+          },
+          {
+            "matchId": "mH4",
+            "home": 5,
+            "away": 1
+          },
+          {
+            "matchId": "mI2",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mI6",
+            "home": 0,
+            "away": 0
+          },
+          {
+            "matchId": "mJ5",
+            "home": 1,
+            "away": 0
+          },
+          {
+            "matchId": "mJ6",
+            "home": 2,
+            "away": 4
+          },
+          {
+            "matchId": "mK1",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mK2",
+            "home": 0,
+            "away": 2
+          },
+          {
+            "matchId": "mK3",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mK4",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mK5",
+            "home": 1,
+            "away": 1
+          },
+          {
+            "matchId": "mK6",
+            "home": 2,
+            "away": 2
+          },
+          {
+            "matchId": "mL1",
+            "home": 1,
+            "away": 2
+          },
+          {
+            "matchId": "mL2",
+            "home": 3,
+            "away": 0
+          },
+          {
+            "matchId": "mL3",
+            "home": 2,
+            "away": 0
+          },
+          {
+            "matchId": "mL4",
+            "home": 0,
+            "away": 3
+          },
+          {
+            "matchId": "mL5",
+            "home": 0,
+            "away": 5
+          },
+          {
+            "matchId": "mL6",
+            "home": 1,
+            "away": 1
+          }
+        ],
+        "knockoutPicks": [
+          {
+            "bracketMatchKey": "r32m87",
+            "winner": "GHA"
+          },
+          {
+            "bracketMatchKey": "r16m94",
+            "winner": "PAR"
+          },
+          {
+            "bracketMatchKey": "r16m96",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r16m92",
+            "winner": "CIV"
+          },
+          {
+            "bracketMatchKey": "qf100",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m79",
+            "winner": "CIV"
+          },
+          {
+            "bracketMatchKey": "r32m82",
+            "winner": "BEL"
+          },
+          {
+            "bracketMatchKey": "qf98",
+            "winner": "PAR"
+          },
+          {
+            "bracketMatchKey": "r32m80",
+            "winner": "CRO"
+          },
+          {
+            "bracketMatchKey": "qf99",
+            "winner": "CIV"
+          },
+          {
+            "bracketMatchKey": "sf101",
+            "winner": "PAR"
+          },
+          {
+            "bracketMatchKey": "sf102",
+            "winner": "CIV"
+          },
+          {
+            "bracketMatchKey": "r32m73",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "r32m74",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r32m75",
+            "winner": "SCO"
+          },
+          {
+            "bracketMatchKey": "r32m76",
+            "winner": "BRA"
+          },
+          {
+            "bracketMatchKey": "r32m77",
+            "winner": "FRA"
+          },
+          {
+            "bracketMatchKey": "r32m78",
+            "winner": "ECU"
+          },
+          {
+            "bracketMatchKey": "r32m81",
+            "winner": "PAR"
+          },
+          {
+            "bracketMatchKey": "r32m86",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m84",
+            "winner": "ESP"
+          },
+          {
+            "bracketMatchKey": "r16m89",
+            "winner": "GER"
+          },
+          {
+            "bracketMatchKey": "r16m91",
+            "winner": "ECU"
+          },
+          {
+            "bracketMatchKey": "r32m83",
+            "winner": "ENG"
+          },
+          {
+            "bracketMatchKey": "r16m95",
+            "winner": "ARG"
+          },
+          {
+            "bracketMatchKey": "r32m85",
+            "winner": "SUI"
+          },
+          {
+            "bracketMatchKey": "r16m90",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "qf97",
+            "winner": "CZE"
+          },
+          {
+            "bracketMatchKey": "r32m88",
+            "winner": "USA"
+          },
+          {
+            "bracketMatchKey": "r16m93",
+            "winner": "ENG"
+          }
+        ],
+        "finishScores": {
+          "final": {
+            "home": 1,
+            "away": 0
+          },
+          "bronze": {
+            "home": 1,
+            "away": 2
+          }
+        },
+        "specials": {
+          "topScorerPlayer": "ecu-caicedo",
+          "finalDecisiveGoalPlayer": "par-rojas",
+          "firstRedCardPlayer": "sui-xhaka",
+          "mostYellowCardsTeam": "SUI",
+          "groupTopScoringTeam": "CIV",
+          "groupTopConcedingTeam": "PAN",
+          "tournamentTopScoringTeam": "PAR",
+          "tournamentTopConcedingTeam": "HAI",
+          "highestMatchGoals": 8,
+          "penaltyShootoutCount": 5,
+          "finalDecidedByPenalties": true
+        }
+      }
+    }
+  ]
+}

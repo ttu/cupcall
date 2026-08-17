@@ -12,6 +12,20 @@ type ButtonVariant =
   | 'ghost-danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
+// Written as a literal per-variant map (not a template literal like `btn-${variant}`) so every
+// class name appears verbatim in this file — Tailwind's static scanner can't see class names
+// that only exist at runtime, and would silently drop the CSS for any variant it can't find.
+const VARIANT_CLASS_NAMES: Record<ButtonVariant, string> = {
+  primary: 'btn-primary',
+  accent: 'btn-accent',
+  dark: 'btn-dark',
+  ghost: 'btn-ghost',
+  'ghost-dark': 'btn-ghost-dark',
+  soft: 'btn-soft',
+  danger: 'btn-danger',
+  'ghost-danger': 'btn-ghost-danger',
+};
+
 type ButtonBaseProps = {
   variant: ButtonVariant;
   size?: ButtonSize;
@@ -43,7 +57,7 @@ function buildClassName(
   block?: boolean,
   extra?: string,
 ) {
-  const parts = ['btn', `btn-${variant}`];
+  const parts = ['btn', VARIANT_CLASS_NAMES[variant]];
   if (size === 'sm') parts.push('sm');
   if (size === 'lg') parts.push('lg');
   if (block) parts.push('block');
