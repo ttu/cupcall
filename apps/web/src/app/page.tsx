@@ -11,18 +11,25 @@ function PlayIcon(): ReactElement {
   );
 }
 
-function NavButtons(): ReactElement {
+function PennantIcon(): ReactElement {
   return (
-    <div className="flex items-center gap-2">
-      <Button asChild variant="accent" size="sm">
-        <a href="/demo">
-          <PlayIcon />
-          View live demo
-        </a>
-      </Button>
-      <Button asChild variant="ghost-dark" size="sm">
-        <a href="/login">Sign in</a>
-      </Button>
+    <svg width="15" height="14" viewBox="0 0 15 14" fill="currentColor" aria-hidden="true">
+      <rect x="0.75" y="0" width="1.5" height="14" rx="0.75" />
+      <path d="M2.25 0.5L13.5 5L2.25 9.5Z" />
+    </svg>
+  );
+}
+
+function NextUpBanner(): ReactElement {
+  return (
+    <div
+      className="relative z-[2] w-full flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium"
+      style={{ background: 'var(--orange-500)', color: 'oklch(0.18 0.04 47)' }}
+    >
+      <PennantIcon />
+      <span>
+        Next up: <strong>UEFA Euro 2028</strong> — sign-in will open closer to the tournament start.
+      </span>
     </div>
   );
 }
@@ -46,7 +53,7 @@ function GuestFormCard(): ReactElement {
 
 function DemoCtaRow(): ReactElement {
   return (
-    <div className="flex items-center gap-4 mb-9">
+    <div className="flex flex-col gap-3 mb-9 sm:flex-row sm:items-center sm:gap-4">
       <Button asChild variant="accent" size="lg">
         <a href="/demo" className="!h-[60px] !px-7 gap-3">
           <PlayIcon />
@@ -79,6 +86,8 @@ export default async function HomePage(): Promise<ReactElement> {
 
   return (
     <main className="turf min-h-screen text-on-dark relative overflow-hidden">
+      <NextUpBanner />
+
       {/* Radial glows */}
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none z-[0]">
         <div
@@ -104,9 +113,8 @@ export default async function HomePage(): Promise<ReactElement> {
       </div>
 
       {/* Nav */}
-      <nav className="relative z-[1] flex items-center justify-between py-4.5 px-7 max-w-300 mx-auto">
+      <nav className="relative z-[1] py-4.5 px-7 max-w-300 mx-auto">
         <Logo dark />
-        <NavButtons />
       </nav>
 
       {/* Hero */}
