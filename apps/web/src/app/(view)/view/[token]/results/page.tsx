@@ -17,10 +17,15 @@ export default async function ViewResultsPage({
   const pool = await getPoolByViewToken(db, token);
   if (!pool) notFound();
 
+  // Demo checkpoints personalize the view as the pool owner, so the owner-facing bracket
+  // health / points breakdown panels should render too — real shared view links have no
+  // associated user and stay in read-only viewer mode.
+  const isDemo = token.startsWith('demo-');
+
   const view = await getResultsView({
     db,
     poolId: pool.id,
-    ...(token.startsWith('demo-') && { userId: pool.ownerId }),
+    ...(isDemo && { userId: pool.ownerId }),
     now: new Date(),
   });
   if (!view) notFound();
@@ -64,7 +69,7 @@ export default async function ViewResultsPage({
       <StageBar stages={view.stageProgress} />
 
       {/* Main content: tabs + panels */}
-      <ResultsPageClient view={view} initialTab={resolvedTab} viewerMode />
+      <ResultsPageClient view={view} initialTab={resolvedTab} viewerMode={!isDemo} />
     </div>
   );
 }

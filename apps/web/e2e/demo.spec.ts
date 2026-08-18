@@ -30,6 +30,15 @@ for (const { token, activeKey, inactiveKeys } of [
     await expect(page.locator('[data-testid="leave-pool-btn"]')).toHaveCount(0);
   });
 
+  test(`${token}: results knockout tab shows the owner's bracket health and points breakdown`, async ({
+    page,
+  }) => {
+    await page.goto(`/view/${token}/results?tab=knockout`);
+
+    await expect(page.locator('[data-testid="knockout-points-panel"]')).toBeVisible();
+    await expect(page.locator('[data-testid="knockout-points-row-SF · Position"]')).toBeVisible();
+  });
+
   test(`${token}: demo banner highlights the current stage and links to the other two`, async ({
     page,
   }) => {
