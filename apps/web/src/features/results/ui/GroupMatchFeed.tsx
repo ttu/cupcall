@@ -37,8 +37,8 @@ function MatchScoreRow({
   awayTeamName,
 }: ScoreRowProps): ReactElement {
   return (
-    <div className="flex items-center justify-center gap-2 p-[10px_14px_6px]">
-      <div className="flex items-center justify-end gap-1.5 flex-1 min-w-0">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(40px,max-content)_minmax(0,1fr)] items-center gap-2 p-[10px_14px_6px]">
+      <div className="flex items-center justify-end gap-1.5 min-w-0">
         <span
           className={cn(
             'text-[13px] font-bold truncate',
@@ -50,13 +50,13 @@ function MatchScoreRow({
         <TeamBadge teamId={homeTeamId} size="sm" />
       </div>
 
-      <span className="display tnum text-[19px] text-ink shrink-0">
+      <span className="display tnum text-[19px] text-ink text-center">
         {actualHome}
         <span className="text-ink-muted mx-0.5 text-sm">–</span>
         {actualAway}
       </span>
 
-      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+      <div className="flex items-center gap-1.5 min-w-0">
         <TeamBadge teamId={awayTeamId} size="sm" />
         <span
           className={cn(
