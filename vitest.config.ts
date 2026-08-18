@@ -46,6 +46,9 @@ export default defineConfig({
       },
     ],
   },
+  // Metadata image routes (opengraph-image, icon) are .tsx rendered through `next/og`; the
+  // automatic runtime lets tests import them without a React-in-scope shim.
+  esbuild: { jsx: 'automatic' },
   test: {
     include: ['{packages,apps}/**/src/**/*.test.ts', 'scripts/**/*.test.ts'],
     environment: 'node',

@@ -102,11 +102,12 @@ export default function OgImage(): ImageResponse {
             color: '#ffffff',
             lineHeight: 1.05,
             letterSpacing: '-0.01em',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          Call every match.
-          <br />
-          Then defend it.
+          <div style={{ display: 'flex' }}>Call every match.</div>
+          <div style={{ display: 'flex' }}>Then defend it.</div>
         </div>
         <div
           style={{
