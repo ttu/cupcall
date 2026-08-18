@@ -57,9 +57,17 @@ export default function DemoBanner(): ReactElement | null {
 
   return (
     <div data-testid="demo-banner" className="turf flex items-center gap-3 px-5 py-3 flex-wrap">
-      <span className="eyebrow text-on-dark-muted flex items-center gap-1.5 shrink-0">
-        ⚽ Live demo
-      </span>
+      <div className="shrink-0">
+        <span className="eyebrow text-on-dark-muted text-sm flex items-center gap-1.5">
+          ⚽ Live demo
+        </span>
+        <span
+          data-testid="demo-banner-viewer"
+          className="block text-sm font-medium text-on-dark-muted mt-0.5"
+        >
+          Viewing as El Nino
+        </span>
+      </div>
       <nav className="flex items-center gap-2.5 flex-wrap">
         {STAGES.map((s) => {
           const active = stage === s.key;
@@ -68,8 +76,10 @@ export default function DemoBanner(): ReactElement | null {
               key={s.key}
               href={`${STAGE_ROOTS[s.key]}${subPath}`}
               data-testid={`demo-banner-link-${s.key}`}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-cup text-sm no-underline transition-opacity ${QUICK_ACTION_STYLES[s.variant]} ${
-                active ? 'font-bold opacity-100' : 'font-semibold opacity-60 hover:opacity-90'
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-cup text-sm no-underline transition-all ${QUICK_ACTION_STYLES[s.variant]} ${
+                active
+                  ? 'font-bold opacity-100 shadow-lg'
+                  : 'font-semibold opacity-45 grayscale-[0.5] hover:opacity-75 hover:grayscale-0'
               }`}
             >
               <Icon name={s.icon} size={16} color="currentColor" />

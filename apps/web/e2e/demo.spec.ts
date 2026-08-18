@@ -7,6 +7,7 @@ test('/demo redirects to the completed stage checkpoint with no auth required', 
 
   await expect(page).toHaveURL(/\/view\/demo-completed$/);
   await expect(page.locator('[data-testid="demo-banner"]')).toBeVisible();
+  await expect(page.locator('[data-testid="demo-banner-viewer"]')).toHaveText('Viewing as El Nino');
   await expect(page.locator('[data-testid="demo-banner-link-groups"]')).toBeVisible();
   await expect(page.locator('[data-testid="demo-banner-link-knockout"]')).toBeVisible();
   await expect(page.locator('[data-testid="demo-banner-link-completed"]')).toBeVisible();
