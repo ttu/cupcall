@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react';
-import type { KnockoutMatchView, MatchHit } from '../domain/types';
+import type { KnockoutMatchView } from '../domain/types';
 import { resolveGoalsByTeamId } from '../domain/predicted-goals';
+import { computeFinalPickBreakdown } from '../domain/final-pick-breakdown';
+import type { FinalPickBreakdown, FinalPickTier } from '../domain/final-pick-breakdown';
 import { TeamBadge, Icon, cn } from '@/shared/ui';
 
 type Props = {
@@ -102,21 +104,22 @@ function PenaltyNote({ match }: { match: KnockoutMatchView }): ReactElement | nu
   );
 }
 
-function borderClassForPickHit(hit: MatchHit): string {
-  if (hit === 'exact' || hit === 'outcome') return 'border-green-300';
-  if (hit === 'missed') return 'border-red-300';
+function borderClassForTier(tier: FinalPickTier): string {
+  if (tier === 'full') return 'border-green-300';
+  if (tier === 'partial') return 'border-amber-300';
+  if (tier === 'zero') return 'border-red-300';
   return 'border-line-soft';
 }
 
-function PickBadge({ hit }: { hit: MatchHit }): ReactElement | null {
-  if (hit === 'exact' || hit === 'outcome') {
+function PickBadge({ tier }: { tier: FinalPickTier }): ReactElement | null {
+  if (tier === 'full') {
     return (
       <span className="absolute -right-1.5 -top-1.5 grid place-items-center w-5 h-5 rounded-full bg-green-500">
         <Icon name="check" size={11} color="var(--on-dark)" />
       </span>
     );
   }
-  if (hit === 'missed') {
+  if (tier === 'zero') {
     return (
       <span className="absolute -right-1.5 -top-1.5 grid place-items-center w-5 h-5 rounded-full bg-red-600">
         <Icon name="close" size={11} color="var(--on-dark)" />
@@ -126,34 +129,66 @@ function PickBadge({ hit }: { hit: MatchHit }): ReactElement | null {
   return null;
 }
 
+function TeamPickMark({ correct }: { correct: boolean }): ReactElement {
+  return (
+    <span
+      className={cn(
+        'absolute -right-1 -top-1 grid place-items-center w-3.5 h-3.5 rounded-full',
+        correct ? 'bg-green-500' : 'bg-red-600',
+      )}
+    >
+      <Icon name={correct ? 'check' : 'close'} size={8} color="var(--on-dark)" />
+    </span>
+  );
+}
+
 function PickPill({
   leftId,
   rightId,
   leftGoals,
   rightGoals,
-  hit,
+  breakdown,
 }: {
   leftId: string | null;
   rightId: string | null;
   leftGoals: number | null;
   rightGoals: number | null;
-  hit: MatchHit;
+  breakdown: FinalPickBreakdown;
 }): ReactElement {
   return (
     <div
       data-testid="final-card-pick-pill"
       className={cn(
         'relative flex items-center gap-1.5 mt-2.5 p-[8px_14px] rounded-full border bg-surface w-fit mx-auto',
-        borderClassForPickHit(hit),
+        borderClassForTier(breakdown.tier),
       )}
     >
       <span className="text-[11px] font-bold text-ink-muted">Your pick:</span>
-      {leftId !== null && <TeamBadge teamId={leftId} size="sm" />}
-      <span className="tnum text-[12px] font-extrabold text-ink">
+      {leftId !== null && (
+        <span className="relative inline-flex">
+          <TeamBadge teamId={leftId} size="sm" />
+          {!breakdown.isPending && <TeamPickMark correct={breakdown.leftCorrect} />}
+        </span>
+      )}
+      <span
+        className={cn(
+          'tnum text-[12px] font-extrabold',
+          breakdown.isPending
+            ? 'text-ink'
+            : breakdown.scoreExact
+              ? 'text-green-600'
+              : 'text-red-600',
+        )}
+      >
         {leftGoals}–{rightGoals}
       </span>
-      {rightId !== null && <TeamBadge teamId={rightId} size="sm" />}
-      <PickBadge hit={hit} />
+      {rightId !== null && (
+        <span className="relative inline-flex">
+          <TeamBadge teamId={rightId} size="sm" />
+          {!breakdown.isPending && <TeamPickMark correct={breakdown.rightCorrect} />}
+        </span>
+      )}
+      <PickBadge tier={breakdown.tier} />
     </div>
   );
 }
@@ -206,6 +241,8 @@ export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElem
       ? resolveGoalsByTeamId(match.predictedGoalsByTeam, pickRowRightId)
       : match.predictedAway;
 
+  const breakdown = computeFinalPickBreakdown(match, pickRowLeftId, pickRowRightId);
+
   // A tie is only worth opening once at least one side is a confirmed (non-TBD) team.
   const isTappable =
     onSelect !== undefined && (match.homeTeamId !== null || match.awayTeamId !== null);
@@ -247,7 +284,7 @@ export function FinalResultCard({ match, matchKey, onSelect }: Props): ReactElem
           rightId={pickRowRightId}
           leftGoals={pickLeftGoals}
           rightGoals={pickRightGoals}
-          hit={match.hit}
+          breakdown={breakdown}
         />
       )}
     </div>
