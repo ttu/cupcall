@@ -879,7 +879,9 @@ describe('buildKnockoutMatrix', () => {
         bracketRounds: [makeRound('Final', [finalMatch])],
         bronzeMatch: null,
         poolKnockoutPicks: [],
-        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        poolFinishScores: [
+          makeFinishScore('u1', 'final', 2, 1, { homeTeamId: 'USA', awayTeamId: 'BRA' }),
+        ],
         def: miniTournament,
       });
 
@@ -903,12 +905,42 @@ describe('buildKnockoutMatrix', () => {
         bracketRounds: [makeRound('Final', [finalMatch])],
         bronzeMatch: null,
         poolKnockoutPicks: [],
-        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)],
+        poolFinishScores: [
+          makeFinishScore('u1', 'final', 2, 1, { homeTeamId: 'USA', awayTeamId: 'BRA' }),
+        ],
         def: miniTournament,
       });
 
       const cell = knockoutMatrix[0]!.cells[0]!;
       expect(cell.isExactScore).toBe(false);
+    });
+
+    it('marks isExactScore false when the finish score has no team-id snapshot, even if the positional score matches the actual result exactly', () => {
+      // Regression: a finish score saved without a team-id snapshot (e.g. demo-seeded data) must
+      // never be credited as exact by blind positional comparison — the predicted "2-1" could
+      // belong to entirely different teams than the ones that actually played the final.
+      const alice = makeLeaderboardEntry('u1', 'Alice');
+      const finalMatch = makeKnockoutMatch('final', 'Final', 'final', {
+        homeTeamId: 'USA',
+        awayTeamId: 'BRA',
+        actualWinnerId: 'USA',
+        actualHome: 2,
+        actualAway: 1,
+      });
+
+      const { knockoutMatrix } = buildKnockoutMatrix({
+        leaderboard: [alice],
+        userId: null,
+        bracketRounds: [makeRound('Final', [finalMatch])],
+        bronzeMatch: null,
+        poolKnockoutPicks: [],
+        poolFinishScores: [makeFinishScore('u1', 'final', 2, 1)], // no snapshot
+        def: miniTournament,
+      });
+
+      const cell = knockoutMatrix[0]!.cells[0]!;
+      expect(cell.isExactScore).toBe(false);
+      expect(cell.points).toBe(0);
     });
 
     it('leaves predictedHome/predictedAway null and isExactScore false when no finish score exists', () => {
@@ -953,7 +985,9 @@ describe('buildKnockoutMatrix', () => {
         bracketRounds: [],
         bronzeMatch: bronze,
         poolKnockoutPicks: [],
-        poolFinishScores: [makeFinishScore('u1', 'bronze', 3, 1)],
+        poolFinishScores: [
+          makeFinishScore('u1', 'bronze', 3, 1, { homeTeamId: 'ARG', awayTeamId: 'FRA' }),
+        ],
         def: miniTournament,
       });
 

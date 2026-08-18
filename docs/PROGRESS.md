@@ -901,6 +901,50 @@ max. Multiple rows can be expanded independently.
   `docs/superpowers/specs/2026-07-22-archive-final-standings-redesign-design.md`,
   `docs/superpowers/plans/2026-07-22-archive-final-standings-redesign.md`.
 
+## Group results row alignment (2026-08-18)
+
+Fixed a display bug found via a user report: in the group-stage results feed
+(`results/ui/GroupMatchFeed.tsx`, `MatchScoreRow`), the two team-name columns used `flex-1` around a
+`shrink-0` score span sized to its own text content. Kerning differences between different score
+digits made that span's rendered width drift by 1–3px row to row, which shifted the flanking team
+badges out of pixel-alignment down the list (confirmed via `getBoundingClientRect`). Switched the
+row to CSS Grid (`grid-cols-[minmax(0,1fr)_minmax(40px,max-content)_minmax(0,1fr)]`) so the score
+column has a deterministic minimum width — badges now land on the identical x-position on every row
+regardless of the score digits. Checked the knockout bracket cards and match-detail sheet header for
+the same pattern; neither is susceptible (different, non-repeating layouts).
+
+## Final/Bronze exact-score display: stale positional fallback in build-race-view.ts (2026-08-18)
+
+Fixed a production-adjacent bug found via a user report comparing a demo pool against its source
+production pool: the Final match's summary sheet showed two demo predictions with the **wrong**
+finalist teams (e.g. "France 1–0 England" against an actual Spain 1–0 Argentina final) as
+"✓ Exact · +5", while the identical prediction data in the real production pool correctly showed
+"Missed". Root cause: `resolveFinishScorePrediction`
+(`apps/web/src/features/results/application/build-race-view.ts`) still had the exact
+positional-only exact-score fallback (`fs.home === m.actualHome && fs.away === m.actualAway`,
+ignoring team identity) that the engine's `exactScorePoints`
+(`packages/engine/src/scoring/finish-matches.ts`) already removed in the
+[pre-migration positional fallback cleanup](#finalbronze-exact-score-removed-pre-migration-positional-fallback-2026-07-18)
+— this display-layer duplicate was never updated to match, so it silently diverged. Production data
+was never actually mis-scored (real save paths always populate the `homeTeamId`/`awayTeamId`
+snapshot), but the display would credit a false "Exact" any time a `prediction_finish_scores` row
+lacks the snapshot — which `scripts/seed-demo.ts`'s `upsertFinishScore` calls always do (it never
+passes `homeTeamId`/`awayTeamId`), making every demo pool a reliable reproducer.
+
+- Removed `isPositionalExactScore` and its call site; `isExactScore` (and therefore the points
+  computed from it, since this same value drives `finishScorePoints`) now requires the team-identity
+  snapshot, matching the engine exactly. `predictedHome`/`predictedAway` (legacy positional display
+  fields) are untouched.
+- Updated `build-race-view.test.ts`'s three tests that asserted on a snapshot-less `makeFinishScore`
+  call to include the team-id snapshot where they mean to test a true positive, and added a
+  regression test asserting `isExactScore`/`points` stay `false`/`0` for a snapshot-less row even
+  when the positional score happens to match exactly.
+- **Not done:** demo data still doesn't carry the team-id snapshot (`scripts/seed-demo.ts`,
+  `scripts/export-demo-pool.ts`, `demo-backup-schema.ts`, and the checked-in
+  `data/demo/demo-pool-backup.json` would all need updating, the last by re-exporting from
+  production). Left out of scope since the display fix alone already eliminates the user-visible
+  symptom — a snapshot-less row now correctly shows "Missed" instead of a false "Exact".
+
 ## What's next (the remaining-plan sequence)
 
 All planned slices are complete. Potential follow-ups:

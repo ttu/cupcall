@@ -814,16 +814,6 @@ function buildFinishScoreMap(
   return finishScoreMap;
 }
 
-/** Whether a finish score's positional home/away figures exactly match the actual result. */
-function isPositionalExactScore(fs: { home: number; away: number }, m: KnockoutMatchView): boolean {
-  return (
-    m.actualHome !== null &&
-    m.actualAway !== null &&
-    fs.home === m.actualHome &&
-    fs.away === m.actualAway
-  );
-}
-
 /**
  * Whether a team-identity finish score snapshot exactly matches the actual result. Correct
  * regardless of how the real match's home/away assignment relates to the user's predicted
@@ -849,9 +839,11 @@ function isTeamIdentityExactScore(
 }
 
 /**
- * Final/Bronze prediction derived from the user's finish score. The team-identity snapshot (when
- * present) drives the exact-score check and the effective winner; the positional figures and the
- * raw knockoutPick are the fallbacks for legacy rows that predate the snapshot.
+ * Final/Bronze prediction derived from the user's finish score. The exact-score check requires a
+ * team-identity snapshot — without one there's no way to know which team each predicted goal
+ * count belongs to, so no exact-score credit is given (matches the engine's
+ * packages/engine/src/scoring/finish-matches.ts). predictedHome/predictedAway (legacy positional
+ * display fields) and knockoutPick remain the fallbacks for rows that predate the snapshot.
  */
 function resolveFinishScorePrediction(
   m: KnockoutMatchView,
@@ -870,7 +862,6 @@ function resolveFinishScorePrediction(
   if (fs !== undefined) {
     predictedHome = fs.home;
     predictedAway = fs.away;
-    isExactScore = isPositionalExactScore(fs, m);
     if (fs.homeTeamId != null && fs.awayTeamId != null) {
       predictedScoreByTeam = [
         { teamId: fs.homeTeamId, goals: fs.home },
