@@ -89,25 +89,50 @@ function BracketInfoBanner(): ReactElement {
 type FinalCardsProps = {
   finalMatch: KnockoutMatchView | null;
   bronzeMatch: KnockoutMatchView | null;
-  paddingTop: number;
+  // Y coordinate (in the same pre-zoom coordinate space as the SF connectors)
+  // that the final match card's vertical centre should line up with.
+  targetCenterY: number;
   onOpenMatch?: ((bracketMatchKey: string) => void) | undefined;
 };
 
 function FinalCards({
   finalMatch,
   bronzeMatch,
-  paddingTop,
+  targetCenterY,
   onOpenMatch,
 }: FinalCardsProps): ReactElement | null {
+  const finalSectionRef = useRef<HTMLDivElement>(null);
+  const [marginTop, setMarginTop] = useState(0);
+
+  // The final match card carries a title/subtitle and pick pill that regular
+  // bracket cards don't, so its rendered height isn't TIE_H — measure it and
+  // offset upward so its centre (not its top) lines up with the SF midpoint.
+  useEffect(() => {
+    const section = finalSectionRef.current;
+    if (!section) return;
+
+    const recomputeOffset = () => {
+      setMarginTop(Math.max(0, targetCenterY - section.offsetHeight / 2));
+    };
+
+    recomputeOffset();
+
+    const observer = new ResizeObserver(recomputeOffset);
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [targetCenterY]);
+
   if (!finalMatch && !bronzeMatch) return null;
   return (
-    <div className="min-w-55" style={{ paddingTop }}>
+    <div className="min-w-55">
       {finalMatch && (
-        <FinalResultCard
-          match={finalMatch}
-          matchKey="final"
-          onSelect={onOpenMatch ? () => onOpenMatch(finalMatch.bracketMatchKey) : undefined}
-        />
+        <div ref={finalSectionRef} style={{ marginTop }}>
+          <FinalResultCard
+            match={finalMatch}
+            matchKey="final"
+            onSelect={onOpenMatch ? () => onOpenMatch(finalMatch.bracketMatchKey) : undefined}
+          />
+        </div>
       )}
       {bronzeMatch && (
         <div className="mt-4">
@@ -268,7 +293,7 @@ export function KnockoutBracket({
             <FinalCards
               finalMatch={finalMatch}
               bronzeMatch={bronzeMatch}
-              paddingTop={columnPaddingTop(finalColumnIndex)}
+              targetCenterY={matchCenterY(finalColumnIndex, 0)}
               onOpenMatch={onOpenMatch}
             />
           </div>
