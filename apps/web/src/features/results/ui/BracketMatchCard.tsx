@@ -11,8 +11,8 @@ type Props = {
 
 function borderClassForHit(hit: MatchHit, softCard: boolean): string {
   if (softCard) return 'border-line-soft border-dashed';
-  if (hit === 'outcome' || hit === 'exact') return 'border-green-300';
-  if (hit === 'missed') return 'border-[oklch(0.85_0.08_25)]';
+  if (hit === 'outcome' || hit === 'exact') return 'border-2 border-green-500';
+  if (hit === 'missed') return 'border-2 border-red-600';
   return 'border-line-soft';
 }
 
