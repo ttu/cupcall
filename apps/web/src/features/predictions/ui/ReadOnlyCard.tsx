@@ -29,7 +29,7 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
                       key={match.matchId}
                       className={cn(
                         'grid items-center gap-2.5 py-2.5 px-4',
-                        score ? 'grid-cols-[1fr_auto_1fr_auto]' : 'grid-cols-[1fr_auto_1fr]',
+                        score ? 'grid-cols-[1fr_auto_1fr_104px]' : 'grid-cols-[1fr_auto_1fr]',
                       )}
                     >
                       <div className="flex items-center justify-end gap-2 min-w-0">
@@ -64,7 +64,11 @@ export function ReadOnlyCard({ card, matchScores }: Props): ReactElement {
                         </span>
                       </div>
 
-                      {score && <HitChip hit={score.hit} points={score.points} />}
+                      {score && (
+                        <div className="flex justify-end min-w-0">
+                          <HitChip hit={score.hit} points={score.points} />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
